@@ -38,6 +38,7 @@ class CheckInApp {
     }
     
     async saveTeams() {
+        console.log('saveTeams called with teams:', this.teams);
         try {
             const response = await fetch('/api/teams', {
                 method: 'POST',
@@ -46,6 +47,9 @@ class CheckInApp {
                 },
                 body: JSON.stringify(this.teams)
             });
+            
+            console.log('Response status:', response.status);
+            console.log('Response ok:', response.ok);
             
             if (!response.ok) {
                 const errorText = await response.text();
@@ -235,6 +239,7 @@ class CheckInApp {
     
     // Team Management
     showAddTeamModal() {
+        console.log('showAddTeamModal called');
         this.currentEditingTeam = null;
         this.showTeamModal();
     }
@@ -269,9 +274,12 @@ class CheckInApp {
     }
     
     async saveTeam() {
+        console.log('saveTeam called');
         const name = document.getElementById('team-name').value.trim();
         const color = document.getElementById('team-color').value;
         const description = document.getElementById('team-description').value.trim();
+        
+        console.log('Form values:', { name, color, description });
         
         if (!name) {
             alert('Please enter a team name');
@@ -295,6 +303,7 @@ class CheckInApp {
             this.teams.push(newTeam);
         }
         
+        console.log('About to call saveTeams, current teams:', this.teams);
         try {
             await this.saveTeams();
             this.renderTeams();
