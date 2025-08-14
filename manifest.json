@@ -1,0 +1,16 @@
+{
+    "name": "CheckIn App",
+    "short_name": "CheckIn",
+    "description": "Team and event management application",
+    "start_url": "/",
+    "display": "standalone",
+    "background_color": "#667db6",
+    "theme_color": "#2196F3",
+    "icons": [
+        {
+            "src": "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iMTkyIiBoZWlnaHQ9IjE5MiIgdmlld0JveD0iMCAwIDE5MiAxOTIiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CjxyZWN0IHdpZHRoPSIxOTIiIGhlaWdodD0iMTkyIiByeD0iMjQiIGZpbGw9IiMyMTk2RjMiLz4KPHN2ZyB4PSI0OCIgeT0iNDgiIHdpZHRoPSI5NiIgaGVpZ2h0PSI5NiIgdmlld0JveD0iMCAwIDI0IDI0IiBmaWxsPSJub25lIiBzdHJva2U9IndoaXRlIiBzdHJva2Utd2lkdGg9IjIiIHN0cm9rZS1saW5lY2FwPSJyb3VuZCIgc3Ryb2tlLWxpbmVqb2luPSJyb3VuZCI+CjxwYXRoIGQ9Ik05IDExSDVhMiAyIDAgMCAwLTIgMnY3YTIgMiAwIDAgMCAyIDJoMTBhMiAyIDAgMCAwIDItMnYtN2EyIDIgMCAwIDAtMi0yaC00WiIvPgo8cGF0aCBkPSJNOSAxMVY5YTMgMyAwIDAgMSA2IDB2MiIvPgo8cGF0aCBkPSJNOSAxMWgtNGEyIDIgMCAwIDAtMiAydjdhMiAyIDAgMCAwIDIgMmgxMGEyIDIgMCAwIDAgMi0ydi03YTIgMiAwIDAgMC0yLTJoLTQiLz4KPC9zdmc+Cjwvc3ZnPgo=",
+            "sizes": "192x192",
+            "type": "image/svg+xml"
+        }
+    ]
+}
