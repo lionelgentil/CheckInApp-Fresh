@@ -48,7 +48,9 @@ class CheckInApp {
             });
             
             if (!response.ok) {
-                throw new Error('Failed to save teams');
+                const errorText = await response.text();
+                console.error('Server response:', errorText);
+                throw new Error(`Failed to save teams: ${response.status} ${response.statusText}`);
             }
             
             return await response.json();
@@ -298,7 +300,8 @@ class CheckInApp {
             this.renderTeams();
             this.closeModal();
         } catch (error) {
-            alert('Failed to save team. Please try again.');
+            console.error('Save team error:', error);
+            alert(`Failed to save team: ${error.message}\n\nCheck the browser console for more details.`);
         }
     }
     
