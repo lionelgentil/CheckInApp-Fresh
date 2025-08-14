@@ -109,6 +109,7 @@ function getTeams($db) {
         $teams[] = [
             'id' => $team['id'],
             'name' => $team['name'],
+            'category' => $team['category'],
             'colorData' => $team['color'],
             'description' => $team['description'],
             'members' => $members
@@ -134,12 +135,13 @@ function saveTeams($db) {
         
         foreach ($input as $team) {
             $stmt = $db->prepare('
-                INSERT INTO teams (id, name, color, description)
-                VALUES (?, ?, ?, ?)
+                INSERT INTO teams (id, name, category, color, description)
+                VALUES (?, ?, ?, ?, ?)
             ');
             $stmt->execute([
                 $team['id'],
                 $team['name'],
+                $team['category'] ?? null,
                 $team['colorData'] ?? '#2196F3',
                 $team['description'] ?? ''
             ]);
@@ -364,6 +366,7 @@ function initializeDatabase($db) {
         CREATE TABLE IF NOT EXISTS teams (
             id TEXT PRIMARY KEY,
             name TEXT NOT NULL,
+            category TEXT,
             color TEXT DEFAULT "#2196F3",
             description TEXT,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP

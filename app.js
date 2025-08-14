@@ -149,7 +149,10 @@ class CheckInApp {
         container.innerHTML = this.teams.map(team => `
             <div class="team-card" style="border-left-color: ${team.colorData}">
                 <div class="team-header">
-                    <div class="team-name">${team.name}</div>
+                    <div>
+                        <div class="team-name">${team.name}</div>
+                        <div class="team-category">${team.category || ''}</div>
+                    </div>
                     <div class="team-actions">
                         <button class="btn btn-small" onclick="app.showAddMemberModal('${team.id}')">Add Member</button>
                         <button class="btn btn-small btn-secondary" onclick="app.editTeam('${team.id}')">Edit</button>
@@ -257,6 +260,14 @@ class CheckInApp {
                 <input type="text" class="form-input" id="team-name" value="${team ? team.name : ''}" required>
             </div>
             <div class="form-group">
+                <label class="form-label">Age Category *</label>
+                <select class="form-select" id="team-category" required>
+                    <option value="">Select age category</option>
+                    <option value="Over 30" ${team && team.category === 'Over 30' ? 'selected' : ''}>Over 30</option>
+                    <option value="Over 40" ${team && team.category === 'Over 40' ? 'selected' : ''}>Over 40</option>
+                </select>
+            </div>
+            <div class="form-group">
                 <label class="form-label">Team Color</label>
                 <input type="color" class="form-input" id="team-color" value="${team ? team.colorData : '#2196F3'}">
             </div>
@@ -276,19 +287,26 @@ class CheckInApp {
     async saveTeam() {
         console.log('saveTeam called');
         const name = document.getElementById('team-name').value.trim();
+        const category = document.getElementById('team-category').value;
         const color = document.getElementById('team-color').value;
         const description = document.getElementById('team-description').value.trim();
         
-        console.log('Form values:', { name, color, description });
+        console.log('Form values:', { name, category, color, description });
         
         if (!name) {
             alert('Please enter a team name');
             return;
         }
         
+        if (!category) {
+            alert('Please select an age category');
+            return;
+        }
+        
         if (this.currentEditingTeam) {
             // Edit existing team
             this.currentEditingTeam.name = name;
+            this.currentEditingTeam.category = category;
             this.currentEditingTeam.colorData = color;
             this.currentEditingTeam.description = description;
         } else {
@@ -296,6 +314,7 @@ class CheckInApp {
             const newTeam = {
                 id: this.generateUUID(),
                 name: name,
+                category: category,
                 colorData: color,
                 description: description,
                 members: []
