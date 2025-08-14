@@ -74,8 +74,14 @@ try {
             echo json_encode(['error' => 'Endpoint not found']);
     }
 } catch (Exception $e) {
+    error_log("API Error: " . $e->getMessage());
+    error_log("API Stack trace: " . $e->getTraceAsString());
     http_response_code(500);
-    echo json_encode(['error' => $e->getMessage()]);
+    echo json_encode([
+        'error' => $e->getMessage(),
+        'file' => $e->getFile(),
+        'line' => $e->getLine()
+    ]);
 }
 
 function getTeams($db) {

@@ -301,7 +301,7 @@ class CheckInApp {
             this.closeModal();
         } catch (error) {
             console.error('Save team error:', error);
-            alert(`Failed to save team: ${error.message}\n\nCheck the browser console for more details.`);
+            alert(`Failed to save team: ${error.message}\n\nPlease check the browser console (F12) for more details.`);
         }
     }
     
