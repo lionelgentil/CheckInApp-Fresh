@@ -15,14 +15,10 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 
 // Database connection
-$dbPath = '/tmp/checkin.db';  // Use /tmp for Railway compatibility
+// Use a unique database name for each deployment to avoid permission issues
+$dbPath = '/tmp/checkin_' . getmypid() . '_' . time() . '.db';
 
 try {
-    // If database exists but is not writable, remove it and recreate
-    if (file_exists($dbPath) && !is_writable($dbPath)) {
-        unlink($dbPath);
-    }
-    
     $db = new PDO('sqlite:' . $dbPath);
     $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
     $db->exec('PRAGMA foreign_keys = ON');
