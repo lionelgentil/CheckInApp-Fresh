@@ -4,7 +4,7 @@
  * Creates SQLite database with required tables
  */
 
-$dbPath = __DIR__ . '/data/checkin.db';
+$dbPath = '/tmp/checkin.db';  // Use /tmp for Railway compatibility
 $dataDir = dirname($dbPath);
 
 // Create data directory if it doesn't exist

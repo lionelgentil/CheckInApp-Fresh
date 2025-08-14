@@ -15,7 +15,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 
 // Database connection
-$dbPath = __DIR__ . '/data/checkin.db';
+$dbPath = '/tmp/checkin.db';  // Use /tmp for Railway compatibility
 $dataDir = dirname($dbPath);
 
 // Create data directory if it doesn't exist
