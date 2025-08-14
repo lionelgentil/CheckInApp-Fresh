@@ -447,6 +447,19 @@
                 gap: 10px;
             }
         }
+        
+        .version-footer {
+            position: fixed;
+            bottom: 10px;
+            right: 10px;
+            background: rgba(255, 255, 255, 0.9);
+            padding: 5px 10px;
+            border-radius: 15px;
+            font-size: 0.8em;
+            color: #666;
+            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+            z-index: 1000;
+        }
     </style>
 </head>
 <body>
@@ -465,7 +478,7 @@
         <div id="teams-section" class="content-section active">
             <div class="section-header">
                 <h2 class="section-title">Teams Management</h2>
-                <button class="btn" onclick="showAddTeamModal()">Add Team</button>
+                <button class="btn" onclick="app.showAddTeamModal()">Add Team</button>
             </div>
             
             <div id="teams-container" class="teams-grid">
@@ -477,7 +490,7 @@
         <div id="events-section" class="content-section">
             <div class="section-header">
                 <h2 class="section-title">Events Management</h2>
-                <button class="btn" onclick="showAddEventModal()">Add Event</button>
+                <button class="btn" onclick="app.showAddEventModal()">Add Event</button>
             </div>
             
             <div id="events-container" class="events-list">
@@ -485,6 +498,8 @@
             </div>
         </div>
     </div>
+    
+    <div class="version-footer">v2.0.1</div>
     
     <script src="app.js"></script>
 </body>
