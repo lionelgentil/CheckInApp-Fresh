@@ -18,19 +18,14 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 $dbPath = '/tmp/checkin.db';  // Use /tmp for Railway compatibility
 
 try {
-    // Ensure the database file is writable
-    if (file_exists($dbPath)) {
-        chmod($dbPath, 0666);
+    // If database exists but is not writable, remove it and recreate
+    if (file_exists($dbPath) && !is_writable($dbPath)) {
+        unlink($dbPath);
     }
     
     $db = new PDO('sqlite:' . $dbPath);
     $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
     $db->exec('PRAGMA foreign_keys = ON');
-    
-    // Set database file permissions after creation
-    if (file_exists($dbPath)) {
-        chmod($dbPath, 0666);
-    }
     
     // Initialize database tables if they don't exist
     initializeDatabase($db);
