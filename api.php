@@ -16,17 +16,21 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 
 // Database connection
 $dbPath = '/tmp/checkin.db';  // Use /tmp for Railway compatibility
-$dataDir = dirname($dbPath);
-
-// Create data directory if it doesn't exist
-if (!is_dir($dataDir)) {
-    mkdir($dataDir, 0755, true);
-}
 
 try {
+    // Ensure the database file is writable
+    if (file_exists($dbPath)) {
+        chmod($dbPath, 0666);
+    }
+    
     $db = new PDO('sqlite:' . $dbPath);
     $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
     $db->exec('PRAGMA foreign_keys = ON');
+    
+    // Set database file permissions after creation
+    if (file_exists($dbPath)) {
+        chmod($dbPath, 0666);
+    }
     
     // Initialize database tables if they don't exist
     initializeDatabase($db);
@@ -45,11 +49,19 @@ $method = $_SERVER['REQUEST_METHOD'];
 try {
     switch ($path) {
         case 'health':
+            $dbInfo = [
+                'exists' => file_exists($dbPath),
+                'readable' => is_readable($dbPath),
+                'writable' => is_writable($dbPath),
+                'path' => $dbPath,
+                'tmp_writable' => is_writable('/tmp')
+            ];
             echo json_encode([
                 'status' => 'OK',
                 'timestamp' => date('c'),
                 'database' => 'SQLite',
-                'php_version' => PHP_VERSION
+                'php_version' => PHP_VERSION,
+                'database_info' => $dbInfo
             ]);
             break;
             
