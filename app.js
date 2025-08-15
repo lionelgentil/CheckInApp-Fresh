@@ -222,9 +222,15 @@ class CheckInApp {
                         return `
                             <div class="match-item">
                                 <div class="match-teams">
-                                    <span class="team-name-match">${homeTeam ? homeTeam.name : 'Unknown Team'}</span>
+                                    <div class="team-info-match">
+                                        <span class="team-name-match">${homeTeam ? homeTeam.name : 'Unknown Team'}</span>
+                                        ${homeTeam && homeTeam.category ? `<div class="team-category-small">${homeTeam.category}</div>` : ''}
+                                    </div>
                                     <span class="vs-text">VS</span>
-                                    <span class="team-name-match">${awayTeam ? awayTeam.name : 'Unknown Team'}</span>
+                                    <div class="team-info-match">
+                                        <span class="team-name-match">${awayTeam ? awayTeam.name : 'Unknown Team'}</span>
+                                        ${awayTeam && awayTeam.category ? `<div class="team-category-small">${awayTeam.category}</div>` : ''}
+                                    </div>
                                 </div>
                                 ${match.field ? `<div class="match-field">Field: ${match.field}</div>` : ''}
                                 ${match.time ? `<div class="match-time">Time: ${match.time}</div>` : ''}
@@ -763,10 +769,24 @@ class CheckInApp {
         const attendeesArray = teamType === 'home' ? match.homeTeamAttendees : match.awayTeamAttendees;
         const existingIndex = attendeesArray.findIndex(a => a.memberId === memberId);
         
+        // Update UI immediately for smooth experience
+        const attendeeElement = document.querySelector(`[onclick*="'${memberId}'"][onclick*="'${teamType}'"]`);
+        let wasCheckedIn = existingIndex >= 0;
+        
         if (existingIndex >= 0) {
             // Remove attendance
             attendeesArray.splice(existingIndex, 1);
             console.log('Removed attendance for member:', memberId);
+            
+            // Update UI immediately
+            if (attendeeElement) {
+                attendeeElement.classList.remove('checked-in');
+                const statusElement = attendeeElement.querySelector('div:last-child');
+                if (statusElement) {
+                    statusElement.innerHTML = '○';
+                    statusElement.style.color = '#6c757d';
+                }
+            }
         } else {
             // Add attendance
             const team = this.teams.find(t => t.id === (teamType === 'home' ? match.homeTeamId : match.awayTeamId));
@@ -784,17 +804,57 @@ class CheckInApp {
                 checkedInAt: new Date().toISOString()
             });
             console.log('Added attendance for member:', memberId);
+            
+            // Update UI immediately
+            if (attendeeElement) {
+                attendeeElement.classList.add('checked-in');
+                const statusElement = attendeeElement.querySelector('div:last-child');
+                if (statusElement) {
+                    statusElement.innerHTML = '✓';
+                    statusElement.style.color = '#28a745';
+                }
+            }
         }
         
         try {
             console.log('Saving events...');
             await this.saveEvents();
             console.log('Events saved successfully');
-            // Refresh the modal
-            this.closeModal();
-            setTimeout(() => this.viewMatch(eventId, matchId), 100);
         } catch (error) {
             console.error('Failed to save events:', error);
+            
+            // Revert UI changes on error
+            if (wasCheckedIn) {
+                // Re-add attendance
+                attendeesArray.push({
+                    memberId: memberId,
+                    name: member.name,
+                    checkedInAt: new Date().toISOString()
+                });
+                if (attendeeElement) {
+                    attendeeElement.classList.add('checked-in');
+                    const statusElement = attendeeElement.querySelector('div:last-child');
+                    if (statusElement) {
+                        statusElement.innerHTML = '✓';
+                        statusElement.style.color = '#28a745';
+                    }
+                }
+            } else {
+                // Remove attendance
+                const revertIndex = attendeesArray.findIndex(a => a.memberId === memberId);
+                if (revertIndex >= 0) {
+                    attendeesArray.splice(revertIndex, 1);
+                }
+                if (attendeeElement) {
+                    attendeeElement.classList.remove('checked-in');
+                    const statusElement = attendeeElement.querySelector('div:last-child');
+                    if (statusElement) {
+                        statusElement.innerHTML = '○';
+                        statusElement.style.color = '#6c757d';
+                    }
+                }
+            }
+            
             alert(`Failed to update attendance: ${error.message}\n\nCheck browser console for details.`);
         }
     }
