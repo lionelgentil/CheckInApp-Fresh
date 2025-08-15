@@ -249,6 +249,27 @@
         
         .members-list {
             margin-top: 15px;
+            max-height: 300px;
+            overflow-y: auto;
+            padding-right: 5px;
+        }
+        
+        .members-list::-webkit-scrollbar {
+            width: 6px;
+        }
+        
+        .members-list::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 3px;
+        }
+        
+        .members-list::-webkit-scrollbar-thumb {
+            background: #c1c1c1;
+            border-radius: 3px;
+        }
+        
+        .members-list::-webkit-scrollbar-thumb:hover {
+            background: #a8a8a8;
         }
         
         .member-item {
@@ -850,7 +871,7 @@
     <div class="container">
         <div class="app-header">
             <h1>CheckIn App</h1>
-            <div class="version-info">Version 2.0 - PHP Edition</div>
+            <div class="version-info">Version 2.9 - PHP Edition</div>
         </div>
         
         <nav class="main-nav">
