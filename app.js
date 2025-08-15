@@ -1012,17 +1012,38 @@ class CheckInApp {
         const match = event.matches.find(m => m.id === matchId);
         const homeTeam = this.teams.find(t => t.id === match.homeTeamId);
         const awayTeam = this.teams.find(t => t.id === match.awayTeamId);
+        const mainReferee = match.mainRefereeId ? this.referees.find(r => r.id === match.mainRefereeId) : null;
+        const assistantReferee = match.assistantRefereeId ? this.referees.find(r => r.id === match.assistantRefereeId) : null;
         
         const modal = this.createModal(`Match: ${homeTeam.name} vs ${awayTeam.name}`, `
-            <div style="margin-bottom: 20px;">
+            <div style="margin-bottom: 20px; padding: 15px; background: #f8f9fa; border-radius: 8px;">
+                <p><strong>Date:</strong> ${new Date(event.date).toLocaleDateString()}</p>
                 ${match.field ? `<p><strong>Field:</strong> ${match.field}</p>` : ''}
                 ${match.time ? `<p><strong>Time:</strong> ${match.time}</p>` : ''}
+                ${mainReferee ? `<p><strong>Referee:</strong> ${mainReferee.name}${assistantReferee ? `, ${assistantReferee.name}` : ''}</p>` : ''}
                 ${match.notes ? `<p><strong>Notes:</strong> ${match.notes}</p>` : ''}
             </div>
             
+            <div style="margin-bottom: 20px;">
+                <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                    <input type="radio" name="team-toggle" value="both" checked onchange="app.toggleTeamView('both')">
+                    <span>Show Both Teams</span>
+                </label>
+                <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; margin-top: 8px;">
+                    <input type="radio" name="team-toggle" value="home" onchange="app.toggleTeamView('home')">
+                    <span>Show ${homeTeam.name} Only</span>
+                </label>
+                <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; margin-top: 8px;">
+                    <input type="radio" name="team-toggle" value="away" onchange="app.toggleTeamView('away')">
+                    <span>Show ${awayTeam.name} Only</span>
+                </label>
+            </div>
+            
             <div style="display: flex; flex-direction: column; gap: 20px;">
-                <div>
-                    <h3 style="color: ${homeTeam.colorData}; margin-bottom: 15px;">${homeTeam.name} (Home)</h3>
+                <div id="home-team-section">
+                    <div style="background: ${homeTeam.colorData}; color: white; padding: 12px; border-radius: 8px; margin-bottom: 15px;">
+                        <h3 style="margin: 0; text-shadow: 1px 1px 2px rgba(0,0,0,0.3);">${homeTeam.name} (Home)</h3>
+                    </div>
                     <div class="attendees-list">
                         ${homeTeam.members.map(member => {
                             const isCheckedIn = match.homeTeamAttendees.some(a => a.memberId === member.id);
@@ -1049,8 +1070,10 @@ class CheckInApp {
                     </div>
                 </div>
                 
-                <div>
-                    <h3 style="color: ${awayTeam.colorData}; margin-bottom: 15px;">${awayTeam.name} (Away)</h3>
+                <div id="away-team-section">
+                    <div style="background: ${awayTeam.colorData}; color: white; padding: 12px; border-radius: 8px; margin-bottom: 15px;">
+                        <h3 style="margin: 0; text-shadow: 1px 1px 2px rgba(0,0,0,0.3);">${awayTeam.name} (Away)</h3>
+                    </div>
                     <div class="attendees-list">
                         ${awayTeam.members.map(member => {
                             const isCheckedIn = match.awayTeamAttendees.some(a => a.memberId === member.id);
@@ -1084,6 +1107,29 @@ class CheckInApp {
         `);
         
         document.body.appendChild(modal);
+    }
+    
+    toggleTeamView(viewType) {
+        const homeSection = document.getElementById('home-team-section');
+        const awaySection = document.getElementById('away-team-section');
+        
+        if (!homeSection || !awaySection) return;
+        
+        switch (viewType) {
+            case 'home':
+                homeSection.style.display = 'block';
+                awaySection.style.display = 'none';
+                break;
+            case 'away':
+                homeSection.style.display = 'none';
+                awaySection.style.display = 'block';
+                break;
+            case 'both':
+            default:
+                homeSection.style.display = 'block';
+                awaySection.style.display = 'block';
+                break;
+        }
     }
     
     async toggleMatchAttendance(eventId, matchId, memberId, teamType) {
