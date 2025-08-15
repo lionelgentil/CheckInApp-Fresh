@@ -15,8 +15,8 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 
 // Database connection
-// Use Railway volume for persistent storage, fallback to /tmp for local development
-$dbPath = file_exists('/data') ? '/data/checkin.db' : '/tmp/checkin_' . getmypid() . '_' . time() . '.db';
+// Use /tmp for Railway compatibility - will reset on deployments but works reliably
+$dbPath = '/tmp/checkin_' . getmypid() . '_' . time() . '.db';
 
 try {
     $db = new PDO('sqlite:' . $dbPath);
