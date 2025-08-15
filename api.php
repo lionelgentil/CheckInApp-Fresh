@@ -64,10 +64,12 @@ if (!in_array('pgsql', PDO::getAvailableDrivers())) {
 }
 
 try {
-    // Fix PostgreSQL URL format - convert postgres:// to pgsql://
+    // Fix PostgreSQL URL format - convert postgres:// or postgresql:// to pgsql://
     $fixedUrl = $databaseUrl;
     if (strpos($databaseUrl, 'postgres://') === 0) {
         $fixedUrl = 'pgsql://' . substr($databaseUrl, 11);
+    } elseif (strpos($databaseUrl, 'postgresql://') === 0) {
+        $fixedUrl = 'pgsql://' . substr($databaseUrl, 13);
     }
     
     $db = new PDO($fixedUrl);
@@ -81,9 +83,10 @@ try {
     echo json_encode([
         'error' => 'PostgreSQL connection failed: ' . $e->getMessage(),
         'database_url_found' => !empty($databaseUrl),
-        'original_url' => substr($databaseUrl, 0, 20) . '...',
-        'fixed_url' => substr($fixedUrl, 0, 20) . '...',
-        'available_drivers' => PDO::getAvailableDrivers()
+        'original_url' => substr($databaseUrl, 0, 25) . '...',
+        'fixed_url' => substr($fixedUrl, 0, 25) . '...',
+        'available_drivers' => PDO::getAvailableDrivers(),
+        'conversion_applied' => $databaseUrl !== $fixedUrl
     ]);
     exit();
 }
@@ -98,7 +101,7 @@ try {
         case 'health':
             echo json_encode([
                 'status' => 'OK',
-                'version' => '2.2.0',
+                'version' => '2.2.1',
                 'timestamp' => date('c'),
                 'database' => 'PostgreSQL',
                 'php_version' => PHP_VERSION,
