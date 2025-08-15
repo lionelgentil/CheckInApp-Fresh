@@ -176,17 +176,41 @@ class CheckInApp {
     renderTeams() {
         const container = document.getElementById('teams-container');
         
-        if (this.teams.length === 0) {
+        // Get current filter state
+        const filterValue = document.getElementById('category-filter')?.value || 'all';
+        
+        // Filter and sort teams
+        let teamsToShow = this.teams.slice(); // Create a copy
+        
+        if (filterValue !== 'all') {
+            teamsToShow = teamsToShow.filter(team => team.category === filterValue);
+        }
+        
+        // Sort alphabetically
+        teamsToShow.sort((a, b) => a.name.localeCompare(b.name));
+        
+        if (teamsToShow.length === 0) {
+            let emptyMessage = 'No teams yet';
+            let emptySubtext = 'Create your first team to get started';
+            
+            if (filterValue === 'Over 30') {
+                emptyMessage = 'No Over 30 teams yet';
+                emptySubtext = 'Create teams with Over 30 category';
+            } else if (filterValue === 'Over 40') {
+                emptyMessage = 'No Over 40 teams yet';
+                emptySubtext = 'Create teams with Over 40 category';
+            }
+            
             container.innerHTML = `
                 <div class="empty-state">
-                    <h3>No teams yet</h3>
-                    <p>Create your first team to get started</p>
+                    <h3>${emptyMessage}</h3>
+                    <p>${emptySubtext}</p>
                 </div>
             `;
             return;
         }
         
-        container.innerHTML = this.teams.map(team => `
+        container.innerHTML = teamsToShow.map(team => `
             <div class="team-card" style="border-left-color: ${team.colorData}">
                 <div class="team-header">
                     <div>

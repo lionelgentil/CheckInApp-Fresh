@@ -98,6 +98,49 @@
             border-bottom: 2px solid #f0f0f0;
         }
         
+        .header-controls {
+            display: flex;
+            align-items: center;
+            gap: 20px;
+        }
+        
+        .filter-toggle {
+            display: flex;
+            align-items: center;
+        }
+        
+        .toggle-label {
+            display: flex;
+            align-items: center;
+            gap: 8px;
+            cursor: pointer;
+            font-size: 14px;
+            color: #666;
+            font-weight: 500;
+        }
+        
+        .toggle-label input[type="checkbox"] {
+            width: 16px;
+            height: 16px;
+            cursor: pointer;
+        }
+        
+        .filter-select {
+            padding: 8px 12px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            font-size: 14px;
+            background: white;
+            color: #666;
+            cursor: pointer;
+            min-width: 120px;
+        }
+        
+        .filter-select:focus {
+            outline: none;
+            border-color: #2196F3;
+        }
+        
         .section-title {
             font-size: 1.8em;
             color: #333;
@@ -509,6 +552,28 @@
                 gap: 15px;
             }
             
+            .header-controls {
+                width: 100%;
+                justify-content: space-between;
+                gap: 15px;
+            }
+            
+            .filter-toggle {
+                order: 1;
+            }
+            
+            .header-controls .btn {
+                order: 2;
+                flex: 1;
+                max-width: 150px;
+            }
+            
+            .filter-select {
+                padding: 12px 15px;
+                font-size: 16px; /* Prevents zoom on iOS */
+                min-width: 140px;
+            }
+            
             .btn {
                 padding: 15px 25px; /* Larger touch targets */
                 font-size: 16px;
@@ -666,7 +731,18 @@
         <div id="teams-section" class="content-section active">
             <div class="section-header">
                 <h2 class="section-title">Teams Management</h2>
-                <button class="btn" onclick="app.showAddTeamModal()">Add Team</button>
+                <div class="header-controls">
+                    <div class="filter-toggle">
+                        <label class="toggle-label">
+                            <select id="category-filter" onchange="app.renderTeams()" class="filter-select">
+                                <option value="all">All Teams</option>
+                                <option value="Over 30">Over 30 Only</option>
+                                <option value="Over 40">Over 40 Only</option>
+                            </select>
+                        </label>
+                    </div>
+                    <button class="btn" onclick="app.showAddTeamModal()">Add Team</button>
+                </div>
             </div>
             
             <div id="teams-container" class="teams-grid">
@@ -699,8 +775,8 @@
         </div>
     </div>
     
-    <div class="version-footer">v2.5.2</div>
+    <div class="version-footer">v2.6.1</div>
     
-    <script src="app.js?v=2.5.2"></script>
+    <script src="app.js?v=2.6.1"></script>
 </body>
 </html>
