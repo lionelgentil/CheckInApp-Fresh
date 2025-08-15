@@ -110,7 +110,7 @@ try {
         case 'health':
             echo json_encode([
                 'status' => 'OK',
-                'version' => '2.5.1',
+                'version' => '2.5.2',
                 'timestamp' => date('c'),
                 'database' => 'PostgreSQL',
                 'php_version' => PHP_VERSION,
@@ -597,6 +597,14 @@ function initializeDatabase($db) {
         $db->exec('CREATE INDEX IF NOT EXISTS idx_general_attendees_event_id ON general_attendees(event_id)');
     } catch (Exception $e) {
         // Indexes might already exist, ignore errors
+    }
+    
+    // Add referee columns to existing matches table if they don't exist
+    try {
+        $db->exec('ALTER TABLE matches ADD COLUMN IF NOT EXISTS main_referee_id TEXT');
+        $db->exec('ALTER TABLE matches ADD COLUMN IF NOT EXISTS assistant_referee_id TEXT');
+    } catch (Exception $e) {
+        // Columns might already exist, ignore errors
     }
 }
 ?>
