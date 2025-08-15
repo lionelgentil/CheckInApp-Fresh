@@ -1,17 +1,21 @@
 FROM php:8.2-apache
 
-# Install system dependencies
+# Install PostgreSQL dependencies only
 RUN apt-get update && apt-get install -y \
     libpq-dev \
     postgresql-client \
     && rm -rf /var/lib/apt/lists/*
 
-# Install PHP extensions
-RUN docker-php-ext-install pdo pdo_pgsql
+# Install PostgreSQL PHP extensions with explicit configuration
+RUN docker-php-ext-configure pgsql -with-pgsql=/usr/local/pgsql \
+    && docker-php-ext-install pdo pdo_pgsql pgsql
 
-# Verify extensions are loaded
-RUN php -m | grep -i pdo
-RUN php -m | grep -i pgsql
+# Verify PostgreSQL extensions are loaded (will fail build if not working)
+RUN php -m | grep pdo_pgsql || (echo "ERROR: pdo_pgsql extension not loaded" && exit 1)
+RUN php -m | grep pgsql || (echo "ERROR: pgsql extension not loaded" && exit 1)
+
+# Test PDO PostgreSQL driver availability
+RUN php -r "if (!in_array('pgsql', PDO::getAvailableDrivers())) { echo 'ERROR: PostgreSQL PDO driver not available'; exit(1); } else { echo 'SUCCESS: PostgreSQL PDO driver available'; }"
 
 # Enable Apache modules
 RUN a2enmod rewrite headers expires

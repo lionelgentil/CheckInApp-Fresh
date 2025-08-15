@@ -14,9 +14,7 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     exit();
 }
 
-// Database connection
-// Use PostgreSQL only - requires Railway PostgreSQL addon
-// Try different Railway PostgreSQL variable patterns
+// Database connection - PostgreSQL ONLY
 $databaseUrl = null;
 
 // Check common Railway PostgreSQL variable patterns
@@ -38,24 +36,29 @@ foreach ($_ENV as $key => $value) {
     }
 }
 
+// Fail if no PostgreSQL database URL found
 if (!$databaseUrl) {
-    // Debug: Show available environment variables
-    $availableVars = array_keys($_ENV);
-    $dbVars = array_filter($availableVars, function($var) {
-        return strpos(strtolower($var), 'database') !== false || 
-               strpos(strtolower($var), 'postgres') !== false ||
-               strpos(strtolower($var), 'db') !== false ||
-               strpos($var, 'URL') !== false;
-    });
-    
     http_response_code(500);
     echo json_encode([
-        'error' => 'PostgreSQL database required. Please connect PostgreSQL service.',
-        'instructions' => 'In Railway: Go to your app service → Variables → Add DATABASE_URL → Reference your PostgreSQL service',
-        'debug' => [
-            'available_db_vars' => array_values($dbVars),
-            'total_env_vars' => count($availableVars)
-        ]
+        'error' => 'PostgreSQL database required. No DATABASE_URL found.',
+        'instructions' => 'Add PostgreSQL service in Railway and connect DATABASE_URL variable',
+        'available_drivers' => PDO::getAvailableDrivers(),
+        'debug_env_vars' => array_keys(array_filter($_ENV, function($key) {
+            return strpos(strtolower($key), 'database') !== false || 
+                   strpos(strtolower($key), 'postgres') !== false ||
+                   strpos($key, 'URL') !== false;
+        }, ARRAY_FILTER_USE_KEY))
+    ]);
+    exit();
+}
+
+// Fail if PostgreSQL driver not available
+if (!in_array('pgsql', PDO::getAvailableDrivers())) {
+    http_response_code(500);
+    echo json_encode([
+        'error' => 'PostgreSQL driver not available',
+        'available_drivers' => PDO::getAvailableDrivers(),
+        'php_extensions' => get_loaded_extensions()
     ]);
     exit();
 }
@@ -64,12 +67,16 @@ try {
     $db = new PDO($databaseUrl);
     $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
     
-    // Initialize database tables if they don't exist
+    // Initialize PostgreSQL database
     initializeDatabase($db);
     
 } catch (PDOException $e) {
     http_response_code(500);
-    echo json_encode(['error' => 'Database connection failed: ' . $e->getMessage()]);
+    echo json_encode([
+        'error' => 'PostgreSQL connection failed: ' . $e->getMessage(),
+        'database_url_found' => !empty($databaseUrl),
+        'available_drivers' => PDO::getAvailableDrivers()
+    ]);
     exit();
 }
 
@@ -83,13 +90,11 @@ try {
         case 'health':
             echo json_encode([
                 'status' => 'OK',
-                'version' => '2.1.7',
+                'version' => '2.1.9',
                 'timestamp' => date('c'),
                 'database' => 'PostgreSQL',
                 'php_version' => PHP_VERSION,
-                'persistent' => true,
-                'available_drivers' => PDO::getAvailableDrivers(),
-                'has_pgsql' => in_array('pgsql', PDO::getAvailableDrivers())
+                'persistent' => true
             ]);
             break;
             
