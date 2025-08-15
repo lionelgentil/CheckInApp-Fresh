@@ -28,9 +28,11 @@ foreach ($possibleVars as $var) {
     }
 }
 
-// Also check for Postgres service variables (Railway pattern)
+// Also check for any PostgreSQL connection strings in environment
 foreach ($_ENV as $key => $value) {
-    if (strpos($key, 'DATABASE_URL') !== false && !empty($value)) {
+    if ((strpos($key, 'DATABASE_URL') !== false || 
+         strpos($key, 'POSTGRES') !== false) && 
+        strpos($value, 'postgres://') === 0) {
         $databaseUrl = $value;
         break;
     }
