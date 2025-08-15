@@ -16,17 +16,50 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 
 // Database connection
 // Use PostgreSQL only - requires Railway PostgreSQL addon
-if (!isset($_ENV['DATABASE_URL'])) {
+// Try different Railway PostgreSQL variable patterns
+$databaseUrl = null;
+
+// Check common Railway PostgreSQL variable patterns
+$possibleVars = ['DATABASE_URL', 'POSTGRES_URL', 'POSTGRESQL_URL'];
+foreach ($possibleVars as $var) {
+    if (isset($_ENV[$var])) {
+        $databaseUrl = $_ENV[$var];
+        break;
+    }
+}
+
+// Also check for Postgres service variables (Railway pattern)
+foreach ($_ENV as $key => $value) {
+    if (strpos($key, 'DATABASE_URL') !== false && !empty($value)) {
+        $databaseUrl = $value;
+        break;
+    }
+}
+
+if (!$databaseUrl) {
+    // Debug: Show available environment variables
+    $availableVars = array_keys($_ENV);
+    $dbVars = array_filter($availableVars, function($var) {
+        return strpos(strtolower($var), 'database') !== false || 
+               strpos(strtolower($var), 'postgres') !== false ||
+               strpos(strtolower($var), 'db') !== false ||
+               strpos($var, 'URL') !== false;
+    });
+    
     http_response_code(500);
     echo json_encode([
-        'error' => 'PostgreSQL database required. Please add PostgreSQL addon in Railway dashboard.',
-        'instructions' => 'Go to Railway → Add Service → Database → PostgreSQL'
+        'error' => 'PostgreSQL database required. Please connect PostgreSQL service.',
+        'instructions' => 'In Railway: Go to your app service → Variables → Add DATABASE_URL → Reference your PostgreSQL service',
+        'debug' => [
+            'available_db_vars' => array_values($dbVars),
+            'total_env_vars' => count($availableVars)
+        ]
     ]);
     exit();
 }
 
 try {
-    $db = new PDO($_ENV['DATABASE_URL']);
+    $db = new PDO($databaseUrl);
     $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
     
     // Initialize database tables if they don't exist
