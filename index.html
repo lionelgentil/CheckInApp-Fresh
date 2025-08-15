@@ -323,6 +323,22 @@
             margin-bottom: 5px;
         }
         
+        .match-referee {
+            color: #666;
+            font-size: 0.9em;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+        
+        .referee-contact {
+            color: #666;
+            font-size: 0.85em;
+            margin-top: 8px;
+            display: flex;
+            align-items: center;
+            gap: 5px;
+        }
+        
         .modal {
             position: fixed;
             top: 0;
@@ -643,6 +659,7 @@
         <nav class="main-nav">
             <button class="nav-btn active" onclick="showSection('teams')">Teams</button>
             <button class="nav-btn" onclick="showSection('events')">Events</button>
+            <button class="nav-btn" onclick="showSection('referees')">Referees</button>
         </nav>
         
         <!-- Teams Section -->
@@ -668,10 +685,22 @@
                 <div class="loading">Loading events...</div>
             </div>
         </div>
+        
+        <!-- Referees Section -->
+        <div id="referees-section" class="content-section">
+            <div class="section-header">
+                <h2 class="section-title">Referees Management</h2>
+                <button class="btn" onclick="app.showAddRefereeModal()">Add Referee</button>
+            </div>
+            
+            <div id="referees-container" class="teams-grid">
+                <div class="loading">Loading referees...</div>
+            </div>
+        </div>
     </div>
     
-    <div class="version-footer">v2.4.1</div>
+    <div class="version-footer">v2.5.0</div>
     
-    <script src="app.js?v=2.4.1"></script>
+    <script src="app.js?v=2.5.0"></script>
 </body>
 </html>

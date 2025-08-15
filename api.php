@@ -110,7 +110,7 @@ try {
         case 'health':
             echo json_encode([
                 'status' => 'OK',
-                'version' => '2.4.1',
+                'version' => '2.5.0',
                 'timestamp' => date('c'),
                 'database' => 'PostgreSQL',
                 'php_version' => PHP_VERSION,
@@ -131,6 +131,14 @@ try {
                 getEvents($db);
             } elseif ($method === 'POST') {
                 saveEvents($db);
+            }
+            break;
+            
+        case 'referees':
+            if ($method === 'GET') {
+                getReferees($db);
+            } elseif ($method === 'POST') {
+                saveReferees($db);
             }
             break;
             
@@ -277,6 +285,8 @@ function getEvents($db) {
                 'awayTeamId' => $match['away_team_id'],
                 'field' => $match['field'],
                 'time' => $match['match_time'],
+                'mainRefereeId' => $match['main_referee_id'],
+                'assistantRefereeId' => $match['assistant_referee_id'],
                 'notes' => $match['notes'],
                 'homeTeamAttendees' => $homeAttendees,
                 'awayTeamAttendees' => $awayAttendees
@@ -342,8 +352,8 @@ function saveEvents($db) {
             if (isset($event['matches']) && is_array($event['matches'])) {
                 foreach ($event['matches'] as $match) {
                     $stmt = $db->prepare('
-                        INSERT INTO matches (id, event_id, home_team_id, away_team_id, field, match_time, notes)
-                        VALUES (?, ?, ?, ?, ?, ?, ?)
+                        INSERT INTO matches (id, event_id, home_team_id, away_team_id, field, match_time, main_referee_id, assistant_referee_id, notes)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
                     ');
                     $stmt->execute([
                         $match['id'],
@@ -352,6 +362,8 @@ function saveEvents($db) {
                         $match['awayTeamId'],
                         $match['field'] ?? null,
                         $match['time'] ?? null,
+                        $match['mainRefereeId'] ?? null,
+                        $match['assistantRefereeId'] ?? null,
                         $match['notes'] ?? null
                     ]);
                     
@@ -427,6 +439,61 @@ function saveEvents($db) {
     }
 }
 
+function getReferees($db) {
+    $stmt = $db->query('SELECT * FROM referees ORDER BY name');
+    $referees = [];
+    
+    while ($referee = $stmt->fetch(PDO::FETCH_ASSOC)) {
+        $referees[] = [
+            'id' => $referee['id'],
+            'name' => $referee['name'],
+            'level' => $referee['level'],
+            'phone' => $referee['phone'],
+            'email' => $referee['email'],
+            'description' => $referee['description']
+        ];
+    }
+    
+    echo json_encode($referees);
+}
+
+function saveReferees($db) {
+    $input = json_decode(file_get_contents('php://input'), true);
+    if (!$input) {
+        http_response_code(400);
+        echo json_encode(['error' => 'Invalid JSON data']);
+        return;
+    }
+    
+    $db->beginTransaction();
+    
+    try {
+        $db->exec('DELETE FROM referees');
+        
+        foreach ($input as $referee) {
+            $stmt = $db->prepare('
+                INSERT INTO referees (id, name, level, phone, email, description)
+                VALUES (?, ?, ?, ?, ?, ?)
+            ');
+            $stmt->execute([
+                $referee['id'],
+                $referee['name'],
+                $referee['level'] ?? null,
+                $referee['phone'] ?? null,
+                $referee['email'] ?? null,
+                $referee['description'] ?? null
+            ]);
+        }
+        
+        $db->commit();
+        echo json_encode(['success' => true]);
+        
+    } catch (Exception $e) {
+        $db->rollBack();
+        throw $e;
+    }
+}
+
 function generateUUID() {
     return sprintf(
         '%04x%04x-%04x-%04x-%04x-%04x%04x%04x',
@@ -475,6 +542,18 @@ function initializeDatabase($db) {
     ');
     
     $db->exec('
+        CREATE TABLE IF NOT EXISTS referees (
+            id TEXT PRIMARY KEY,
+            name TEXT NOT NULL,
+            level TEXT,
+            phone TEXT,
+            email TEXT,
+            description TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    ');
+    
+    $db->exec('
         CREATE TABLE IF NOT EXISTS matches (
             id TEXT PRIMARY KEY,
             event_id TEXT NOT NULL,
@@ -482,6 +561,8 @@ function initializeDatabase($db) {
             away_team_id TEXT NOT NULL,
             field TEXT,
             match_time TIME,
+            main_referee_id TEXT,
+            assistant_referee_id TEXT,
             notes TEXT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE

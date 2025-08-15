@@ -7,9 +7,11 @@ class CheckInApp {
     constructor() {
         this.teams = [];
         this.events = [];
+        this.referees = [];
         this.currentEditingTeam = null;
         this.currentEditingMember = null;
         this.currentEditingEvent = null;
+        this.currentEditingReferee = null;
         
         this.init();
     }
@@ -17,8 +19,10 @@ class CheckInApp {
     async init() {
         await this.loadTeams();
         await this.loadEvents();
+        await this.loadReferees();
         this.renderTeams();
         this.renderEvents();
+        this.renderReferees();
     }
     
     // API Methods
@@ -96,6 +100,42 @@ class CheckInApp {
             return await response.json();
         } catch (error) {
             console.error('Error saving events:', error);
+            throw error;
+        }
+    }
+    
+    async loadReferees() {
+        try {
+            const response = await fetch('/api/referees');
+            if (response.ok) {
+                this.referees = await response.json();
+            } else {
+                console.error('Failed to load referees');
+                this.referees = [];
+            }
+        } catch (error) {
+            console.error('Error loading referees:', error);
+            this.referees = [];
+        }
+    }
+    
+    async saveReferees() {
+        try {
+            const response = await fetch('/api/referees', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(this.referees)
+            });
+            
+            if (!response.ok) {
+                throw new Error('Failed to save referees');
+            }
+            
+            return await response.json();
+        } catch (error) {
+            console.error('Error saving referees:', error);
             throw error;
         }
     }
@@ -216,9 +256,35 @@ class CheckInApp {
                 </div>
                 <div class="event-description">${event.description || ''}</div>
                 <div class="matches-container">
-                    ${event.matches.map(match => {
+                    ${event.matches
+                        .sort((a, b) => {
+                            // Sort by time first
+                            if (a.time && b.time) {
+                                if (a.time !== b.time) {
+                                    return a.time.localeCompare(b.time);
+                                }
+                            } else if (a.time && !b.time) {
+                                return -1;
+                            } else if (!a.time && b.time) {
+                                return 1;
+                            }
+                            
+                            // Then sort by field
+                            if (a.field && b.field) {
+                                return parseInt(a.field) - parseInt(b.field);
+                            } else if (a.field && !b.field) {
+                                return -1;
+                            } else if (!a.field && b.field) {
+                                return 1;
+                            }
+                            
+                            return 0;
+                        })
+                        .map(match => {
                         const homeTeam = this.teams.find(t => t.id === match.homeTeamId);
                         const awayTeam = this.teams.find(t => t.id === match.awayTeamId);
+                        const mainReferee = match.mainRefereeId ? this.referees.find(r => r.id === match.mainRefereeId) : null;
+                        const assistantReferee = match.assistantRefereeId ? this.referees.find(r => r.id === match.assistantRefereeId) : null;
                         return `
                             <div class="match-item">
                                 <div class="match-teams">
@@ -234,6 +300,7 @@ class CheckInApp {
                                 </div>
                                 ${match.field ? `<div class="match-field">Field: ${match.field}</div>` : ''}
                                 ${match.time ? `<div class="match-time">Time: ${match.time}</div>` : ''}
+                                ${mainReferee ? `<div class="match-referee">🟨 ${mainReferee.name}${assistantReferee ? `, ${assistantReferee.name}` : ''}</div>` : ''}
                                 <div class="match-actions">
                                     <button class="btn btn-small" onclick="app.viewMatch('${event.id}', '${match.id}')">View Match</button>
                                     <button class="btn btn-small btn-danger" onclick="app.deleteMatch('${event.id}', '${match.id}')">Delete</button>
@@ -564,6 +631,144 @@ class CheckInApp {
         }
     }
     
+    renderReferees() {
+        const container = document.getElementById('referees-container');
+        
+        if (this.referees.length === 0) {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <h3>No referees yet</h3>
+                    <p>Add referees to assign to matches</p>
+                </div>
+            `;
+            return;
+        }
+        
+        container.innerHTML = this.referees.map(referee => `
+            <div class="team-card" style="border-left-color: #28a745">
+                <div class="team-header">
+                    <div>
+                        <div class="team-name">${referee.name}</div>
+                        <div class="team-category">${referee.level || 'Referee'}</div>
+                    </div>
+                    <div class="team-actions">
+                        <button class="btn btn-small btn-secondary" onclick="app.editReferee('${referee.id}')">Edit</button>
+                        <button class="btn btn-small btn-danger" onclick="app.deleteReferee('${referee.id}')">Delete</button>
+                    </div>
+                </div>
+                <div class="team-description">${referee.description || ''}</div>
+                ${referee.phone ? `<div class="referee-contact">📞 ${referee.phone}</div>` : ''}
+                ${referee.email ? `<div class="referee-contact">📧 ${referee.email}</div>` : ''}
+            </div>
+        `).join('');
+    }
+    
+    // Referee Management
+    showAddRefereeModal() {
+        this.currentEditingReferee = null;
+        this.showRefereeModal();
+    }
+    
+    editReferee(refereeId) {
+        this.currentEditingReferee = this.referees.find(r => r.id === refereeId);
+        this.showRefereeModal(this.currentEditingReferee);
+    }
+    
+    showRefereeModal(referee = null) {
+        const isEdit = referee !== null;
+        const modal = this.createModal(isEdit ? 'Edit Referee' : 'Add Referee', `
+            <div class="form-group">
+                <label class="form-label">Referee Name *</label>
+                <input type="text" class="form-input" id="referee-name" value="${referee ? referee.name : ''}" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Level</label>
+                <select class="form-select" id="referee-level">
+                    <option value="">Select level</option>
+                    <option value="Level 1" ${referee && referee.level === 'Level 1' ? 'selected' : ''}>Level 1</option>
+                    <option value="Level 2" ${referee && referee.level === 'Level 2' ? 'selected' : ''}>Level 2</option>
+                    <option value="Level 3" ${referee && referee.level === 'Level 3' ? 'selected' : ''}>Level 3</option>
+                    <option value="Regional" ${referee && referee.level === 'Regional' ? 'selected' : ''}>Regional</option>
+                    <option value="National" ${referee && referee.level === 'National' ? 'selected' : ''}>National</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Phone</label>
+                <input type="tel" class="form-input" id="referee-phone" value="${referee ? referee.phone || '' : ''}">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Email</label>
+                <input type="email" class="form-input" id="referee-email" value="${referee ? referee.email || '' : ''}">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Notes</label>
+                <textarea class="form-input" id="referee-description" rows="3">${referee ? referee.description || '' : ''}</textarea>
+            </div>
+            <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                <button class="btn btn-secondary" onclick="app.closeModal()">Cancel</button>
+                <button class="btn" onclick="app.saveReferee()">${isEdit ? 'Update' : 'Add'} Referee</button>
+            </div>
+        `);
+        
+        document.body.appendChild(modal);
+    }
+    
+    async saveReferee() {
+        const name = document.getElementById('referee-name').value.trim();
+        const level = document.getElementById('referee-level').value;
+        const phone = document.getElementById('referee-phone').value.trim();
+        const email = document.getElementById('referee-email').value.trim();
+        const description = document.getElementById('referee-description').value.trim();
+        
+        if (!name) {
+            alert('Please enter a referee name');
+            return;
+        }
+        
+        if (this.currentEditingReferee) {
+            // Edit existing referee
+            this.currentEditingReferee.name = name;
+            this.currentEditingReferee.level = level;
+            this.currentEditingReferee.phone = phone;
+            this.currentEditingReferee.email = email;
+            this.currentEditingReferee.description = description;
+        } else {
+            // Add new referee
+            const newReferee = {
+                id: this.generateUUID(),
+                name: name,
+                level: level,
+                phone: phone,
+                email: email,
+                description: description
+            };
+            this.referees.push(newReferee);
+        }
+        
+        try {
+            await this.saveReferees();
+            this.renderReferees();
+            this.closeModal();
+        } catch (error) {
+            alert('Failed to save referee. Please try again.');
+        }
+    }
+    
+    async deleteReferee(refereeId) {
+        if (!confirm('Are you sure you want to delete this referee?')) {
+            return;
+        }
+        
+        this.referees = this.referees.filter(r => r.id !== refereeId);
+        
+        try {
+            await this.saveReferees();
+            this.renderReferees();
+        } catch (error) {
+            alert('Failed to delete referee. Please try again.');
+        }
+    }
+    
     // Match Management
     showAddMatchModal(eventId) {
         if (this.teams.length < 2) {
@@ -607,6 +812,20 @@ class CheckInApp {
                 </select>
             </div>
             <div class="form-group">
+                <label class="form-label">Main Referee</label>
+                <select class="form-select" id="main-referee">
+                    <option value="">Select main referee</option>
+                    ${this.referees.map(referee => `<option value="${referee.id}">${referee.name}${referee.level ? ` (${referee.level})` : ''}</option>`).join('')}
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Assistant Referee</label>
+                <select class="form-select" id="assistant-referee">
+                    <option value="">Select assistant referee (optional)</option>
+                    ${this.referees.map(referee => `<option value="${referee.id}">${referee.name}${referee.level ? ` (${referee.level})` : ''}</option>`).join('')}
+                </select>
+            </div>
+            <div class="form-group">
                 <label class="form-label">Notes</label>
                 <textarea class="form-input" id="match-notes" rows="3"></textarea>
             </div>
@@ -622,8 +841,10 @@ class CheckInApp {
     async saveMatch(eventId) {
         const homeTeamId = document.getElementById('home-team').value;
         const awayTeamId = document.getElementById('away-team').value;
-        const field = document.getElementById('match-field').value.trim();
+        const field = document.getElementById('match-field').value;
         const time = document.getElementById('match-time').value;
+        const mainRefereeId = document.getElementById('main-referee').value;
+        const assistantRefereeId = document.getElementById('assistant-referee').value;
         const notes = document.getElementById('match-notes').value.trim();
         
         if (!homeTeamId || !awayTeamId) {
@@ -636,6 +857,11 @@ class CheckInApp {
             return;
         }
         
+        if (mainRefereeId && assistantRefereeId && mainRefereeId === assistantRefereeId) {
+            alert('Main and assistant referees must be different');
+            return;
+        }
+        
         const event = this.events.find(e => e.id === eventId);
         if (!event) return;
         
@@ -645,6 +871,8 @@ class CheckInApp {
             awayTeamId: awayTeamId,
             field: field || null,
             time: time || null,
+            mainRefereeId: mainRefereeId || null,
+            assistantRefereeId: assistantRefereeId || null,
             notes: notes,
             homeTeamAttendees: [],
             awayTeamAttendees: []
