@@ -15,27 +15,22 @@ if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
 }
 
 // Database connection
-// Use PostgreSQL if available (Railway addon), fallback to SQLite for local development
-if (isset($_ENV['DATABASE_URL'])) {
-    // Railway PostgreSQL
-    $db = new PDO($_ENV['DATABASE_URL']);
-    $dbType = 'postgresql';
-} else {
-    // Local SQLite fallback
-    $dbPath = '/tmp/checkin_' . getmypid() . '_' . time() . '.db';
-    $db = new PDO('sqlite:' . $dbPath);
-    $dbType = 'sqlite';
+// Use PostgreSQL only - requires Railway PostgreSQL addon
+if (!isset($_ENV['DATABASE_URL'])) {
+    http_response_code(500);
+    echo json_encode([
+        'error' => 'PostgreSQL database required. Please add PostgreSQL addon in Railway dashboard.',
+        'instructions' => 'Go to Railway → Add Service → Database → PostgreSQL'
+    ]);
+    exit();
 }
 
 try {
+    $db = new PDO($_ENV['DATABASE_URL']);
     $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
     
-    if ($dbType === 'sqlite') {
-        $db->exec('PRAGMA foreign_keys = ON');
-    }
-    
     // Initialize database tables if they don't exist
-    initializeDatabase($db, $dbType);
+    initializeDatabase($db);
     
 } catch (PDOException $e) {
     http_response_code(500);
@@ -53,11 +48,11 @@ try {
         case 'health':
             echo json_encode([
                 'status' => 'OK',
-                'version' => '2.1.2',
+                'version' => '2.1.3',
                 'timestamp' => date('c'),
-                'database' => $dbType === 'postgresql' ? 'PostgreSQL' : 'SQLite',
+                'database' => 'PostgreSQL',
                 'php_version' => PHP_VERSION,
-                'persistent' => $dbType === 'postgresql'
+                'persistent' => true
             ]);
             break;
             
@@ -367,160 +362,83 @@ function generateUUID() {
     );
 }
 
-function initializeDatabase($db, $dbType = 'sqlite') {
-    if ($dbType === 'postgresql') {
-        // PostgreSQL schema
-        $db->exec('
-            CREATE TABLE IF NOT EXISTS teams (
-                id TEXT PRIMARY KEY,
-                name TEXT NOT NULL,
-                category TEXT,
-                color TEXT DEFAULT \'#2196F3\',
-                description TEXT,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        ');
-        
-        $db->exec('
-            CREATE TABLE IF NOT EXISTS team_members (
-                id TEXT PRIMARY KEY,
-                team_id TEXT NOT NULL,
-                name TEXT NOT NULL,
-                jersey_number INTEGER,
-                gender TEXT CHECK(gender IN (\'male\', \'female\')),
-                photo TEXT,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY (team_id) REFERENCES teams(id) ON DELETE CASCADE
-            )
-        ');
-        
-        $db->exec('
-            CREATE TABLE IF NOT EXISTS events (
-                id TEXT PRIMARY KEY,
-                name TEXT NOT NULL,
-                date TIMESTAMP NOT NULL,
-                description TEXT,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            )
-        ');
-        
-        $db->exec('
-            CREATE TABLE IF NOT EXISTS matches (
-                id TEXT PRIMARY KEY,
-                event_id TEXT NOT NULL,
-                home_team_id TEXT NOT NULL,
-                away_team_id TEXT NOT NULL,
-                field TEXT,
-                match_time TIME,
-                notes TEXT,
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE
-            )
-        ');
-        
-        $db->exec('
-            CREATE TABLE IF NOT EXISTS match_attendees (
-                id SERIAL PRIMARY KEY,
-                match_id TEXT NOT NULL,
-                member_id TEXT NOT NULL,
-                team_type TEXT NOT NULL CHECK(team_type IN (\'home\', \'away\')),
-                checked_in_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY (match_id) REFERENCES matches(id) ON DELETE CASCADE,
-                UNIQUE(match_id, member_id)
-            )
-        ');
-        
-        $db->exec('
-            CREATE TABLE IF NOT EXISTS general_attendees (
-                id SERIAL PRIMARY KEY,
-                event_id TEXT NOT NULL,
-                member_id TEXT NOT NULL,
-                name TEXT NOT NULL,
-                team_name TEXT,
-                status TEXT DEFAULT \'present\',
-                checked_in_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE,
-                UNIQUE(event_id, member_id)
-            )
-        ');
-    } else {
-        // SQLite schema (existing)
-        $db->exec('
-            CREATE TABLE IF NOT EXISTS teams (
-                id TEXT PRIMARY KEY,
-                name TEXT NOT NULL,
-                category TEXT,
-                color TEXT DEFAULT "#2196F3",
-                description TEXT,
-                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-            )
-        ');
-        
-        $db->exec('
-            CREATE TABLE IF NOT EXISTS team_members (
-                id TEXT PRIMARY KEY,
-                team_id TEXT NOT NULL,
-                name TEXT NOT NULL,
-                jersey_number INTEGER,
-                gender TEXT CHECK(gender IN ("male", "female")),
-                photo TEXT,
-                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY (team_id) REFERENCES teams(id) ON DELETE CASCADE
-            )
-        ');
-        
-        $db->exec('
-            CREATE TABLE IF NOT EXISTS events (
-                id TEXT PRIMARY KEY,
-                name TEXT NOT NULL,
-                date DATETIME NOT NULL,
-                description TEXT,
-                created_at DATETIME DEFAULT CURRENT_TIMESTAMP
-            )
-        ');
-        
-        $db->exec('
-            CREATE TABLE IF NOT EXISTS matches (
-                id TEXT PRIMARY KEY,
-                event_id TEXT NOT NULL,
-                home_team_id TEXT NOT NULL,
-                away_team_id TEXT NOT NULL,
-                field TEXT,
-                match_time TIME,
-                notes TEXT,
-                created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE
-            )
-        ');
-        
-        $db->exec('
-            CREATE TABLE IF NOT EXISTS match_attendees (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                match_id TEXT NOT NULL,
-                member_id TEXT NOT NULL,
-                team_type TEXT NOT NULL CHECK(team_type IN ("home", "away")),
-                checked_in_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY (match_id) REFERENCES matches(id) ON DELETE CASCADE,
-                UNIQUE(match_id, member_id)
-            )
-        ');
-        
-        $db->exec('
-            CREATE TABLE IF NOT EXISTS general_attendees (
-                id INTEGER PRIMARY KEY AUTOINCREMENT,
-                event_id TEXT NOT NULL,
-                member_id TEXT NOT NULL,
-                name TEXT NOT NULL,
-                team_name TEXT,
-                status TEXT DEFAULT "present",
-                checked_in_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-                FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE,
-                UNIQUE(event_id, member_id)
-            )
-        ');
-    }
+function initializeDatabase($db) {
+    // PostgreSQL schema only
+    $db->exec('
+        CREATE TABLE IF NOT EXISTS teams (
+            id TEXT PRIMARY KEY,
+            name TEXT NOT NULL,
+            category TEXT,
+            color TEXT DEFAULT \'#2196F3\',
+            description TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    ');
     
-    // Create indexes (work for both databases)
+    $db->exec('
+        CREATE TABLE IF NOT EXISTS team_members (
+            id TEXT PRIMARY KEY,
+            team_id TEXT NOT NULL,
+            name TEXT NOT NULL,
+            jersey_number INTEGER,
+            gender TEXT CHECK(gender IN (\'male\', \'female\')),
+            photo TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (team_id) REFERENCES teams(id) ON DELETE CASCADE
+        )
+    ');
+    
+    $db->exec('
+        CREATE TABLE IF NOT EXISTS events (
+            id TEXT PRIMARY KEY,
+            name TEXT NOT NULL,
+            date TIMESTAMP NOT NULL,
+            description TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
+        )
+    ');
+    
+    $db->exec('
+        CREATE TABLE IF NOT EXISTS matches (
+            id TEXT PRIMARY KEY,
+            event_id TEXT NOT NULL,
+            home_team_id TEXT NOT NULL,
+            away_team_id TEXT NOT NULL,
+            field TEXT,
+            match_time TIME,
+            notes TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE
+        )
+    ');
+    
+    $db->exec('
+        CREATE TABLE IF NOT EXISTS match_attendees (
+            id SERIAL PRIMARY KEY,
+            match_id TEXT NOT NULL,
+            member_id TEXT NOT NULL,
+            team_type TEXT NOT NULL CHECK(team_type IN (\'home\', \'away\')),
+            checked_in_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (match_id) REFERENCES matches(id) ON DELETE CASCADE,
+            UNIQUE(match_id, member_id)
+        )
+    ');
+    
+    $db->exec('
+        CREATE TABLE IF NOT EXISTS general_attendees (
+            id SERIAL PRIMARY KEY,
+            event_id TEXT NOT NULL,
+            member_id TEXT NOT NULL,
+            name TEXT NOT NULL,
+            team_name TEXT,
+            status TEXT DEFAULT \'present\',
+            checked_in_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE,
+            UNIQUE(event_id, member_id)
+        )
+    ');
+    
+    // Create indexes
     try {
         $db->exec('CREATE INDEX IF NOT EXISTS idx_team_members_team_id ON team_members(team_id)');
         $db->exec('CREATE INDEX IF NOT EXISTS idx_matches_event_id ON matches(event_id)');
