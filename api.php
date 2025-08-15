@@ -110,7 +110,7 @@ try {
         case 'health':
             echo json_encode([
                 'status' => 'OK',
-                'version' => '2.2.2',
+                'version' => '2.2.3',
                 'timestamp' => date('c'),
                 'database' => 'PostgreSQL',
                 'php_version' => PHP_VERSION,
@@ -358,29 +358,43 @@ function saveEvents($db) {
                     // Save attendees
                     if (isset($match['homeTeamAttendees'])) {
                         foreach ($match['homeTeamAttendees'] as $attendee) {
-                            $stmt = $db->prepare('
-                                INSERT INTO match_attendees (match_id, member_id, team_type, checked_in_at)
-                                VALUES (?, ?, "home", ?)
-                            ');
-                            $stmt->execute([
-                                $match['id'],
-                                $attendee['memberId'],
-                                $attendee['checkedInAt']
-                            ]);
+                            try {
+                                $stmt = $db->prepare('
+                                    INSERT INTO match_attendees (match_id, member_id, team_type, checked_in_at)
+                                    VALUES (?, ?, ?, ?)
+                                ');
+                                $stmt->execute([
+                                    $match['id'],
+                                    $attendee['memberId'],
+                                    'home',
+                                    $attendee['checkedInAt']
+                                ]);
+                            } catch (Exception $e) {
+                                error_log("Error saving home attendee: " . $e->getMessage());
+                                error_log("Match ID: " . $match['id'] . ", Member ID: " . $attendee['memberId']);
+                                throw $e;
+                            }
                         }
                     }
                     
                     if (isset($match['awayTeamAttendees'])) {
                         foreach ($match['awayTeamAttendees'] as $attendee) {
-                            $stmt = $db->prepare('
-                                INSERT INTO match_attendees (match_id, member_id, team_type, checked_in_at)
-                                VALUES (?, ?, "away", ?)
-                            ');
-                            $stmt->execute([
-                                $match['id'],
-                                $attendee['memberId'],
-                                $attendee['checkedInAt']
-                            ]);
+                            try {
+                                $stmt = $db->prepare('
+                                    INSERT INTO match_attendees (match_id, member_id, team_type, checked_in_at)
+                                    VALUES (?, ?, ?, ?)
+                                ');
+                                $stmt->execute([
+                                    $match['id'],
+                                    $attendee['memberId'],
+                                    'away',
+                                    $attendee['checkedInAt']
+                                ]);
+                            } catch (Exception $e) {
+                                error_log("Error saving away attendee: " . $e->getMessage());
+                                error_log("Match ID: " . $match['id'] . ", Member ID: " . $attendee['memberId']);
+                                throw $e;
+                            }
                         }
                     }
                 }
