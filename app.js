@@ -12,6 +12,7 @@ class CheckInApp {
         this.currentEditingMember = null;
         this.currentEditingEvent = null;
         this.currentEditingReferee = null;
+        this.currentModalType = null; // Track current modal type
         
         this.init();
     }
@@ -309,17 +310,25 @@ class CheckInApp {
                         const awayTeam = this.teams.find(t => t.id === match.awayTeamId);
                         const mainReferee = match.mainRefereeId ? this.referees.find(r => r.id === match.mainRefereeId) : null;
                         const assistantReferee = match.assistantRefereeId ? this.referees.find(r => r.id === match.assistantRefereeId) : null;
+                        
+                        const homeAttendanceCount = match.homeTeamAttendees ? match.homeTeamAttendees.length : 0;
+                        const awayAttendanceCount = match.awayTeamAttendees ? match.awayTeamAttendees.length : 0;
+                        const homeTotalPlayers = homeTeam ? homeTeam.members.length : 0;
+                        const awayTotalPlayers = awayTeam ? awayTeam.members.length : 0;
+                        
                         return `
                             <div class="match-item">
                                 <div class="match-teams">
                                     <div class="team-info-match">
                                         <span class="team-name-match">${homeTeam ? homeTeam.name : 'Unknown Team'}</span>
                                         ${homeTeam && homeTeam.category ? `<div class="team-category-small">${homeTeam.category}</div>` : ''}
+                                        <div class="attendance-count">👥 ${homeAttendanceCount}/${homeTotalPlayers}</div>
                                     </div>
                                     <span class="vs-text">VS</span>
                                     <div class="team-info-match">
                                         <span class="team-name-match">${awayTeam ? awayTeam.name : 'Unknown Team'}</span>
                                         ${awayTeam && awayTeam.category ? `<div class="team-category-small">${awayTeam.category}</div>` : ''}
+                                        <div class="attendance-count">👥 ${awayAttendanceCount}/${awayTotalPlayers}</div>
                                     </div>
                                 </div>
                                 ${match.field ? `<div class="match-field">Field: ${match.field}</div>` : ''}
@@ -901,6 +910,7 @@ class CheckInApp {
     }
     
     viewMatch(eventId, matchId) {
+        this.currentModalType = 'match'; // Set modal type
         const event = this.events.find(e => e.id === eventId);
         const match = event.matches.find(m => m.id === matchId);
         const homeTeam = this.teams.find(t => t.id === match.homeTeamId);
@@ -1067,10 +1077,20 @@ class CheckInApp {
     }
     
     closeModal() {
+        const wasMatchModal = this.currentModalType === 'match';
+        
         const modals = document.querySelectorAll('.modal');
         modals.forEach(modal => {
             modal.remove();
         });
+        
+        // Reset modal type
+        this.currentModalType = null;
+        
+        // Refresh events display if we just closed a match modal
+        if (wasMatchModal) {
+            this.renderEvents();
+        }
     }
 }
 

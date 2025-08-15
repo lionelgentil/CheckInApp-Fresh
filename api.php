@@ -110,7 +110,7 @@ try {
         case 'health':
             echo json_encode([
                 'status' => 'OK',
-                'version' => '2.6.1',
+                'version' => '2.7.0',
                 'timestamp' => date('c'),
                 'database' => 'PostgreSQL',
                 'php_version' => PHP_VERSION,
