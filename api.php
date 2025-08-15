@@ -217,6 +217,7 @@ function getEvents($db) {
                 'id' => $match['id'],
                 'homeTeamId' => $match['home_team_id'],
                 'awayTeamId' => $match['away_team_id'],
+                'field' => $match['field'],
                 'time' => $match['match_time'],
                 'notes' => $match['notes'],
                 'homeTeamAttendees' => $homeAttendees,
@@ -283,14 +284,15 @@ function saveEvents($db) {
             if (isset($event['matches']) && is_array($event['matches'])) {
                 foreach ($event['matches'] as $match) {
                     $stmt = $db->prepare('
-                        INSERT INTO matches (id, event_id, home_team_id, away_team_id, match_time, notes)
-                        VALUES (?, ?, ?, ?, ?, ?)
+                        INSERT INTO matches (id, event_id, home_team_id, away_team_id, field, match_time, notes)
+                        VALUES (?, ?, ?, ?, ?, ?, ?)
                     ');
                     $stmt->execute([
                         $match['id'],
                         $event['id'],
                         $match['homeTeamId'],
                         $match['awayTeamId'],
+                        $match['field'] ?? null,
                         $match['time'] ?? null,
                         $match['notes'] ?? null
                     ]);
@@ -407,6 +409,7 @@ function initializeDatabase($db, $dbType = 'sqlite') {
                 event_id TEXT NOT NULL,
                 home_team_id TEXT NOT NULL,
                 away_team_id TEXT NOT NULL,
+                field TEXT,
                 match_time TIME,
                 notes TEXT,
                 created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
@@ -481,6 +484,7 @@ function initializeDatabase($db, $dbType = 'sqlite') {
                 event_id TEXT NOT NULL,
                 home_team_id TEXT NOT NULL,
                 away_team_id TEXT NOT NULL,
+                field TEXT,
                 match_time TIME,
                 notes TEXT,
                 created_at DATETIME DEFAULT CURRENT_TIMESTAMP,

@@ -226,6 +226,7 @@ class CheckInApp {
                                     <span class="vs-text">VS</span>
                                     <span class="team-name-match">${awayTeam ? awayTeam.name : 'Unknown Team'}</span>
                                 </div>
+                                ${match.field ? `<div class="match-field">Field: ${match.field}</div>` : ''}
                                 ${match.time ? `<div class="match-time">Time: ${match.time}</div>` : ''}
                                 <div class="match-actions">
                                     <button class="btn btn-small" onclick="app.viewMatch('${event.id}', '${match.id}')">View Match</button>
@@ -580,6 +581,10 @@ class CheckInApp {
                 </select>
             </div>
             <div class="form-group">
+                <label class="form-label">Field</label>
+                <input type="text" class="form-input" id="match-field" placeholder="e.g., Field A, Main Stadium, Court 1">
+            </div>
+            <div class="form-group">
                 <label class="form-label">Match Time</label>
                 <input type="time" class="form-input" id="match-time">
             </div>
@@ -599,6 +604,7 @@ class CheckInApp {
     async saveMatch(eventId) {
         const homeTeamId = document.getElementById('home-team').value;
         const awayTeamId = document.getElementById('away-team').value;
+        const field = document.getElementById('match-field').value.trim();
         const time = document.getElementById('match-time').value;
         const notes = document.getElementById('match-notes').value.trim();
         
@@ -619,6 +625,7 @@ class CheckInApp {
             id: this.generateUUID(),
             homeTeamId: homeTeamId,
             awayTeamId: awayTeamId,
+            field: field || null,
             time: time || null,
             notes: notes,
             homeTeamAttendees: [],
@@ -662,6 +669,7 @@ class CheckInApp {
         
         const modal = this.createModal(`Match: ${homeTeam.name} vs ${awayTeam.name}`, `
             <div style="margin-bottom: 20px;">
+                ${match.field ? `<p><strong>Field:</strong> ${match.field}</p>` : ''}
                 ${match.time ? `<p><strong>Time:</strong> ${match.time}</p>` : ''}
                 ${match.notes ? `<p><strong>Notes:</strong> ${match.notes}</p>` : ''}
             </div>
