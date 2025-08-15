@@ -649,16 +649,13 @@ class CheckInApp {
                 <div class="team-header">
                     <div>
                         <div class="team-name">${referee.name}</div>
-                        <div class="team-category">${referee.level || 'Referee'}</div>
+                        ${referee.phone ? `<div class="team-category">📞 ${referee.phone}</div>` : ''}
                     </div>
                     <div class="team-actions">
                         <button class="btn btn-small btn-secondary" onclick="app.editReferee('${referee.id}')">Edit</button>
                         <button class="btn btn-small btn-danger" onclick="app.deleteReferee('${referee.id}')">Delete</button>
                     </div>
                 </div>
-                <div class="team-description">${referee.description || ''}</div>
-                ${referee.phone ? `<div class="referee-contact">📞 ${referee.phone}</div>` : ''}
-                ${referee.email ? `<div class="referee-contact">📧 ${referee.email}</div>` : ''}
             </div>
         `).join('');
     }
@@ -682,27 +679,8 @@ class CheckInApp {
                 <input type="text" class="form-input" id="referee-name" value="${referee ? referee.name : ''}" required>
             </div>
             <div class="form-group">
-                <label class="form-label">Level</label>
-                <select class="form-select" id="referee-level">
-                    <option value="">Select level</option>
-                    <option value="Level 1" ${referee && referee.level === 'Level 1' ? 'selected' : ''}>Level 1</option>
-                    <option value="Level 2" ${referee && referee.level === 'Level 2' ? 'selected' : ''}>Level 2</option>
-                    <option value="Level 3" ${referee && referee.level === 'Level 3' ? 'selected' : ''}>Level 3</option>
-                    <option value="Regional" ${referee && referee.level === 'Regional' ? 'selected' : ''}>Regional</option>
-                    <option value="National" ${referee && referee.level === 'National' ? 'selected' : ''}>National</option>
-                </select>
-            </div>
-            <div class="form-group">
                 <label class="form-label">Phone</label>
                 <input type="tel" class="form-input" id="referee-phone" value="${referee ? referee.phone || '' : ''}">
-            </div>
-            <div class="form-group">
-                <label class="form-label">Email</label>
-                <input type="email" class="form-input" id="referee-email" value="${referee ? referee.email || '' : ''}">
-            </div>
-            <div class="form-group">
-                <label class="form-label">Notes</label>
-                <textarea class="form-input" id="referee-description" rows="3">${referee ? referee.description || '' : ''}</textarea>
             </div>
             <div style="display: flex; gap: 10px; justify-content: flex-end;">
                 <button class="btn btn-secondary" onclick="app.closeModal()">Cancel</button>
@@ -715,10 +693,7 @@ class CheckInApp {
     
     async saveReferee() {
         const name = document.getElementById('referee-name').value.trim();
-        const level = document.getElementById('referee-level').value;
         const phone = document.getElementById('referee-phone').value.trim();
-        const email = document.getElementById('referee-email').value.trim();
-        const description = document.getElementById('referee-description').value.trim();
         
         if (!name) {
             alert('Please enter a referee name');
@@ -728,19 +703,13 @@ class CheckInApp {
         if (this.currentEditingReferee) {
             // Edit existing referee
             this.currentEditingReferee.name = name;
-            this.currentEditingReferee.level = level;
             this.currentEditingReferee.phone = phone;
-            this.currentEditingReferee.email = email;
-            this.currentEditingReferee.description = description;
         } else {
             // Add new referee
             const newReferee = {
                 id: this.generateUUID(),
                 name: name,
-                level: level,
-                phone: phone,
-                email: email,
-                description: description
+                phone: phone
             };
             this.referees.push(newReferee);
         }
@@ -815,14 +784,14 @@ class CheckInApp {
                 <label class="form-label">Main Referee</label>
                 <select class="form-select" id="main-referee">
                     <option value="">Select main referee</option>
-                    ${this.referees.map(referee => `<option value="${referee.id}">${referee.name}${referee.level ? ` (${referee.level})` : ''}</option>`).join('')}
+                    ${this.referees.map(referee => `<option value="${referee.id}">${referee.name}</option>`).join('')}
                 </select>
             </div>
             <div class="form-group">
                 <label class="form-label">Assistant Referee</label>
                 <select class="form-select" id="assistant-referee">
                     <option value="">Select assistant referee (optional)</option>
-                    ${this.referees.map(referee => `<option value="${referee.id}">${referee.name}${referee.level ? ` (${referee.level})` : ''}</option>`).join('')}
+                    ${this.referees.map(referee => `<option value="${referee.id}">${referee.name}</option>`).join('')}
                 </select>
             </div>
             <div class="form-group">

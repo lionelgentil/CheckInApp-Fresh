@@ -110,7 +110,7 @@ try {
         case 'health':
             echo json_encode([
                 'status' => 'OK',
-                'version' => '2.5.0',
+                'version' => '2.5.1',
                 'timestamp' => date('c'),
                 'database' => 'PostgreSQL',
                 'php_version' => PHP_VERSION,
@@ -447,10 +447,7 @@ function getReferees($db) {
         $referees[] = [
             'id' => $referee['id'],
             'name' => $referee['name'],
-            'level' => $referee['level'],
-            'phone' => $referee['phone'],
-            'email' => $referee['email'],
-            'description' => $referee['description']
+            'phone' => $referee['phone']
         ];
     }
     
@@ -472,16 +469,13 @@ function saveReferees($db) {
         
         foreach ($input as $referee) {
             $stmt = $db->prepare('
-                INSERT INTO referees (id, name, level, phone, email, description)
-                VALUES (?, ?, ?, ?, ?, ?)
+                INSERT INTO referees (id, name, phone)
+                VALUES (?, ?, ?)
             ');
             $stmt->execute([
                 $referee['id'],
                 $referee['name'],
-                $referee['level'] ?? null,
-                $referee['phone'] ?? null,
-                $referee['email'] ?? null,
-                $referee['description'] ?? null
+                $referee['phone'] ?? null
             ]);
         }
         
