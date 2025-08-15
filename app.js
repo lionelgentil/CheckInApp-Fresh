@@ -230,10 +230,10 @@ class CheckInApp {
                         ${captain ? `<div class="team-captain">👑 Captain: ${captain.name}</div>` : ''}
                     </div>
                     <div class="team-actions">
-                        <button class="btn btn-small" onclick="app.showAddMemberModal('${team.id}')">Add Member</button>
-                        ${team.members.length > 0 ? `<button class="btn btn-small btn-captain" onclick="app.showCaptainModal('${team.id}')">Set Captain</button>` : ''}
-                        <button class="btn btn-small btn-secondary" onclick="app.editTeam('${team.id}')">Edit</button>
-                        <button class="btn btn-small btn-danger" onclick="app.deleteTeam('${team.id}')">Delete</button>
+                        <button class="btn btn-small" onclick="app.showAddMemberModal('${team.id}')" title="Add Member">+</button>
+                        ${team.members.length > 0 ? `<button class="btn btn-small btn-captain" onclick="app.showCaptainModal('${team.id}')" title="Set Captain">👑</button>` : ''}
+                        <button class="btn btn-small btn-secondary" onclick="app.editTeam('${team.id}')" title="Edit Team">✏️</button>
+                        <button class="btn btn-small btn-danger" onclick="app.deleteTeam('${team.id}')" title="Delete Team">🗑️</button>
                     </div>
                 </div>
                 <div class="team-description">${team.description || ''}</div>
@@ -254,8 +254,8 @@ class CheckInApp {
                                 </div>
                             </div>
                             <div class="member-actions">
-                                <button class="btn btn-small btn-secondary" onclick="app.editMember('${team.id}', '${member.id}')">Edit</button>
-                                <button class="btn btn-small btn-danger" onclick="app.deleteMember('${team.id}', '${member.id}')">Delete</button>
+                                <button class="btn btn-small btn-secondary" onclick="app.editMember('${team.id}', '${member.id}')" title="Edit Member">✏️</button>
+                                <button class="btn btn-small btn-danger" onclick="app.deleteMember('${team.id}', '${member.id}')" title="Delete Member">🗑️</button>
                             </div>
                         </div>
                     `).join('')}

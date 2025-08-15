@@ -192,8 +192,13 @@
         }
         
         .btn-small {
-            padding: 8px 15px;
-            font-size: 12px;
+            padding: 8px 12px;
+            font-size: 16px;
+            min-width: 36px;
+            min-height: 36px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
         }
         
         .teams-grid {
@@ -714,9 +719,10 @@
             }
             
             .btn-small {
-                padding: 12px 20px;
-                font-size: 14px;
+                padding: 10px 12px;
+                font-size: 18px;
                 min-height: 40px;
+                min-width: 40px;
             }
             
             .teams-grid {
@@ -738,10 +744,10 @@
             }
             
             .team-actions .btn-small {
-                flex: 1;
-                min-width: 70px;
-                font-size: 11px;
-                padding: 10px 8px;
+                flex: 0 0 auto;
+                min-width: 40px;
+                font-size: 16px;
+                padding: 10px 12px;
             }
             
             .member-item {
@@ -761,8 +767,9 @@
             }
             
             .member-actions .btn-small {
-                flex: 1;
+                flex: 0 0 auto;
                 margin: 0 5px;
+                min-width: 40px;
             }
             
             .event-header {
