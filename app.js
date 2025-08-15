@@ -286,9 +286,9 @@ class CheckInApp {
                         <div class="event-date">${new Date(event.date).toLocaleDateString()}</div>
                     </div>
                     <div class="team-actions">
-                        <button class="btn btn-small" onclick="app.showAddMatchModal('${event.id}')">Add Match</button>
-                        <button class="btn btn-small btn-secondary" onclick="app.editEvent('${event.id}')">Edit</button>
-                        <button class="btn btn-small btn-danger" onclick="app.deleteEvent('${event.id}')">Delete</button>
+                        <button class="btn btn-small" onclick="app.showAddMatchModal('${event.id}')" title="Add Match">+</button>
+                        <button class="btn btn-small btn-secondary" onclick="app.editEvent('${event.id}')" title="Edit Event">✏️</button>
+                        <button class="btn btn-small btn-danger" onclick="app.deleteEvent('${event.id}')" title="Delete Event">🗑️</button>
                     </div>
                 </div>
                 <div class="event-description">${event.description || ''}</div>
@@ -347,8 +347,8 @@ class CheckInApp {
                                 ${match.time ? `<div class="match-time">Time: ${match.time}</div>` : ''}
                                 ${mainReferee ? `<div class="match-referee">🟨 ${mainReferee.name}${assistantReferee ? `, ${assistantReferee.name}` : ''}</div>` : ''}
                                 <div class="match-actions">
-                                    <button class="btn btn-small" onclick="app.viewMatch('${event.id}', '${match.id}')">View Match</button>
-                                    <button class="btn btn-small btn-danger" onclick="app.deleteMatch('${event.id}', '${match.id}')">Delete</button>
+                                    <button class="btn btn-small" onclick="app.viewMatch('${event.id}', '${match.id}')" title="View Match">👁️</button>
+                                    <button class="btn btn-small btn-danger" onclick="app.deleteMatch('${event.id}', '${match.id}')" title="Delete Match">🗑️</button>
                                 </div>
                             </div>
                         `;
@@ -782,8 +782,8 @@ class CheckInApp {
                         ${referee.phone ? `<div class="team-category">📞 ${referee.phone}</div>` : ''}
                     </div>
                     <div class="team-actions">
-                        <button class="btn btn-small btn-secondary" onclick="app.editReferee('${referee.id}')">Edit</button>
-                        <button class="btn btn-small btn-danger" onclick="app.deleteReferee('${referee.id}')">Delete</button>
+                        <button class="btn btn-small btn-secondary" onclick="app.editReferee('${referee.id}')" title="Edit Referee">✏️</button>
+                        <button class="btn btn-small btn-danger" onclick="app.deleteReferee('${referee.id}')" title="Delete Referee">🗑️</button>
                     </div>
                 </div>
             </div>
