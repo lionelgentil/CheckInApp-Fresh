@@ -408,9 +408,7 @@ function initializeDatabase($db) {
             match_time TIME,
             notes TEXT,
             created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE,
-            FOREIGN KEY (home_team_id) REFERENCES teams(id) ON DELETE CASCADE,
-            FOREIGN KEY (away_team_id) REFERENCES teams(id) ON DELETE CASCADE
+            FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE
         )
     ');
     
@@ -423,7 +421,6 @@ function initializeDatabase($db) {
             team_type TEXT NOT NULL CHECK(team_type IN ("home", "away")),
             checked_in_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (match_id) REFERENCES matches(id) ON DELETE CASCADE,
-            FOREIGN KEY (member_id) REFERENCES team_members(id) ON DELETE CASCADE,
             UNIQUE(match_id, member_id)
         )
     ');
@@ -439,7 +436,6 @@ function initializeDatabase($db) {
             status TEXT DEFAULT "present",
             checked_in_at DATETIME DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE,
-            FOREIGN KEY (member_id) REFERENCES team_members(id) ON DELETE CASCADE,
             UNIQUE(event_id, member_id)
         )
     ');
