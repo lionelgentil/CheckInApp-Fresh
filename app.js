@@ -582,11 +582,23 @@ class CheckInApp {
             </div>
             <div class="form-group">
                 <label class="form-label">Field</label>
-                <input type="text" class="form-input" id="match-field" placeholder="e.g., Field A, Main Stadium, Court 1">
+                <select class="form-select" id="match-field">
+                    <option value="">Select field</option>
+                    <option value="8">Field 8</option>
+                    <option value="9">Field 9</option>
+                    <option value="10">Field 10</option>
+                    <option value="11">Field 11</option>
+                    <option value="12">Field 12</option>
+                </select>
             </div>
             <div class="form-group">
                 <label class="form-label">Match Time</label>
-                <input type="time" class="form-input" id="match-time">
+                <select class="form-select" id="match-time">
+                    <option value="">Select time</option>
+                    <option value="09:00">9:00 AM</option>
+                    <option value="11:00">11:00 AM</option>
+                    <option value="13:00">1:00 PM</option>
+                </select>
             </div>
             <div class="form-group">
                 <label class="form-label">Notes</label>

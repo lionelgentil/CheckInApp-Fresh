@@ -447,30 +447,158 @@
         }
         
         @media (max-width: 768px) {
+            body {
+                padding: 10px;
+                font-size: 16px; /* Prevents zoom on iOS */
+            }
+            
+            .app-header h1 {
+                font-size: 2em;
+            }
+            
             .main-nav {
                 flex-direction: column;
                 align-items: center;
+                gap: 10px;
             }
             
             .nav-btn {
                 width: 100%;
                 max-width: 300px;
+                padding: 18px 25px; /* Larger touch targets */
+                font-size: 18px;
+            }
+            
+            .content-section {
+                padding: 20px;
+                border-radius: 10px;
+            }
+            
+            .section-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 15px;
+            }
+            
+            .btn {
+                padding: 15px 25px; /* Larger touch targets */
+                font-size: 16px;
+                min-height: 44px; /* iOS recommended minimum */
+            }
+            
+            .btn-small {
+                padding: 12px 20px;
+                font-size: 14px;
+                min-height: 40px;
             }
             
             .teams-grid {
                 grid-template-columns: 1fr;
+                gap: 15px;
             }
             
             .team-header {
                 flex-direction: column;
                 align-items: flex-start;
-                gap: 10px;
+                gap: 15px;
+            }
+            
+            .team-actions {
+                display: flex;
+                flex-wrap: wrap;
+                gap: 8px;
+                width: 100%;
+            }
+            
+            .team-actions .btn-small {
+                flex: 1;
+                min-width: 80px;
             }
             
             .member-item {
                 flex-direction: column;
                 align-items: flex-start;
+                gap: 15px;
+                padding: 15px;
+            }
+            
+            .member-info {
+                width: 100%;
+            }
+            
+            .member-actions {
+                width: 100%;
+                justify-content: space-between;
+            }
+            
+            .member-actions .btn-small {
+                flex: 1;
+                margin: 0 5px;
+            }
+            
+            .event-header {
+                flex-direction: column;
+                align-items: flex-start;
+                gap: 15px;
+            }
+            
+            .match-teams {
+                flex-direction: column;
+                text-align: center;
+                gap: 8px;
+            }
+            
+            .team-name-match {
+                font-size: 16px;
+            }
+            
+            .match-actions {
+                display: flex;
                 gap: 10px;
+                margin-top: 10px;
+            }
+            
+            .match-actions .btn-small {
+                flex: 1;
+            }
+            
+            .modal-content {
+                width: 95%;
+                max-width: none;
+                margin: 10px;
+                padding: 20px;
+                max-height: 90vh;
+            }
+            
+            .form-input, .form-select {
+                padding: 15px; /* Larger touch targets */
+                font-size: 16px; /* Prevents zoom on iOS */
+                border-radius: 10px;
+            }
+            
+            .form-label {
+                font-size: 16px;
+                margin-bottom: 8px;
+            }
+            
+            .attendees-grid {
+                grid-template-columns: 1fr;
+                gap: 10px;
+            }
+            
+            .attendee-item {
+                padding: 15px;
+                border-radius: 10px;
+            }
+            
+            .attendee-item .member-photo {
+                width: 35px;
+                height: 35px;
+            }
+            
+            .version-footer {
+                font-size: 0.75em;
+                padding: 8px 12px;
             }
         }
         
@@ -525,8 +653,8 @@
         </div>
     </div>
     
-    <div class="version-footer">v2.2.3</div>
+    <div class="version-footer">v2.3.0</div>
     
-    <script src="app.js?v=2.2.3"></script>
+    <script src="app.js?v=2.3.0"></script>
 </body>
 </html>
