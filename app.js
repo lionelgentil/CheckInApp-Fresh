@@ -1020,26 +1020,28 @@ class CheckInApp {
                 ${match.notes ? `<p><strong>Notes:</strong> ${match.notes}</p>` : ''}
             </div>
             
-            <div style="display: grid; grid-template-columns: 1fr 1fr; gap: 20px;">
+            <div style="display: flex; flex-direction: column; gap: 20px;">
                 <div>
                     <h3 style="color: ${homeTeam.colorData}; margin-bottom: 15px;">${homeTeam.name} (Home)</h3>
-                    <div class="attendees-grid">
+                    <div class="attendees-list">
                         ${homeTeam.members.map(member => {
                             const isCheckedIn = match.homeTeamAttendees.some(a => a.memberId === member.id);
                             return `
-                                <div class="attendee-item ${isCheckedIn ? 'checked-in' : ''}" onclick="app.toggleMatchAttendance('${eventId}', '${matchId}', '${member.id}', 'home')">
-                                    <div class="member-info">
-                                        ${member.photo ? `<img src="${member.photo}" alt="${member.name}" class="member-photo">` : `<div class="member-photo"></div>`}
-                                        <div class="member-details">
-                                            <div class="member-name">${member.name}</div>
-                                            <div class="member-meta">
+                                <div class="attendee-row ${isCheckedIn ? 'checked-in' : ''}" onclick="app.toggleMatchAttendance('${eventId}', '${matchId}', '${member.id}', 'home')">
+                                    <div class="member-info-full">
+                                        ${member.photo ? `<img src="${member.photo}" alt="${member.name}" class="member-photo-small">` : `<div class="member-photo-small"></div>`}
+                                        <div class="member-details-full">
+                                            <div class="member-name-full">${member.name}</div>
+                                            <div class="member-meta-full">
                                                 ${member.jerseyNumber ? `#${member.jerseyNumber}` : ''}
                                                 ${member.gender ? ` • ${member.gender}` : ''}
                                             </div>
                                         </div>
                                     </div>
-                                    <div style="color: ${isCheckedIn ? '#28a745' : '#6c757d'}; font-weight: bold;">
-                                        ${isCheckedIn ? '✓' : '○'}
+                                    <div class="checkbox-area">
+                                        <div class="attendance-checkbox ${isCheckedIn ? 'checked' : ''}">
+                                            ${isCheckedIn ? '✓' : '○'}
+                                        </div>
                                     </div>
                                 </div>
                             `;
@@ -1049,23 +1051,25 @@ class CheckInApp {
                 
                 <div>
                     <h3 style="color: ${awayTeam.colorData}; margin-bottom: 15px;">${awayTeam.name} (Away)</h3>
-                    <div class="attendees-grid">
+                    <div class="attendees-list">
                         ${awayTeam.members.map(member => {
                             const isCheckedIn = match.awayTeamAttendees.some(a => a.memberId === member.id);
                             return `
-                                <div class="attendee-item ${isCheckedIn ? 'checked-in' : ''}" onclick="app.toggleMatchAttendance('${eventId}', '${matchId}', '${member.id}', 'away')">
-                                    <div class="member-info">
-                                        ${member.photo ? `<img src="${member.photo}" alt="${member.name}" class="member-photo">` : `<div class="member-photo"></div>`}
-                                        <div class="member-details">
-                                            <div class="member-name">${member.name}</div>
-                                            <div class="member-meta">
+                                <div class="attendee-row ${isCheckedIn ? 'checked-in' : ''}" onclick="app.toggleMatchAttendance('${eventId}', '${matchId}', '${member.id}', 'away')">
+                                    <div class="member-info-full">
+                                        ${member.photo ? `<img src="${member.photo}" alt="${member.name}" class="member-photo-small">` : `<div class="member-photo-small"></div>`}
+                                        <div class="member-details-full">
+                                            <div class="member-name-full">${member.name}</div>
+                                            <div class="member-meta-full">
                                                 ${member.jerseyNumber ? `#${member.jerseyNumber}` : ''}
                                                 ${member.gender ? ` • ${member.gender}` : ''}
                                             </div>
                                         </div>
                                     </div>
-                                    <div style="color: ${isCheckedIn ? '#28a745' : '#6c757d'}; font-weight: bold;">
-                                        ${isCheckedIn ? '✓' : '○'}
+                                    <div class="checkbox-area">
+                                        <div class="attendance-checkbox ${isCheckedIn ? 'checked' : ''}">
+                                            ${isCheckedIn ? '✓' : '○'}
+                                        </div>
                                     </div>
                                 </div>
                             `;

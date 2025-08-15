@@ -508,6 +508,96 @@
             margin-top: 15px;
         }
         
+        .attendees-list {
+            display: flex;
+            flex-direction: column;
+            gap: 8px;
+            margin-top: 15px;
+        }
+        
+        .attendee-row {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px;
+            background: white;
+            border-radius: 8px;
+            border: 1px solid #e9ecef;
+            cursor: pointer;
+            transition: background-color 0.2s;
+        }
+        
+        .attendee-row:hover {
+            background: #f8f9fa;
+        }
+        
+        .attendee-row.checked-in {
+            background: #d4edda;
+            border-color: #28a745;
+        }
+        
+        .member-info-full {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex: 1;
+        }
+        
+        .member-photo-small {
+            width: 35px;
+            height: 35px;
+            border-radius: 50%;
+            object-fit: cover;
+            background: #e9ecef;
+            flex-shrink: 0;
+        }
+        
+        .member-details-full {
+            flex: 1;
+            min-width: 0;
+        }
+        
+        .member-name-full {
+            font-weight: 600;
+            color: #333;
+            font-size: 15px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .member-meta-full {
+            font-size: 13px;
+            color: #666;
+            margin-top: 2px;
+        }
+        
+        .checkbox-area {
+            flex-shrink: 0;
+            margin-left: 15px;
+        }
+        
+        .attendance-checkbox {
+            width: 32px;
+            height: 32px;
+            border-radius: 50%;
+            border: 2px solid #e9ecef;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-weight: bold;
+            font-size: 16px;
+            color: #6c757d;
+            background: white;
+            transition: all 0.2s;
+        }
+        
+        .attendance-checkbox.checked {
+            background: #28a745;
+            border-color: #28a745;
+            color: white;
+        }
+        
         .attendee-item {
             display: flex;
             align-items: center;
@@ -708,6 +798,24 @@
                 gap: 10px;
             }
             
+            .attendee-row {
+                padding: 15px 12px;
+            }
+            
+            .member-name-full {
+                font-size: 16px; /* Prevents zoom on iOS */
+            }
+            
+            .member-meta-full {
+                font-size: 14px;
+            }
+            
+            .attendance-checkbox {
+                width: 36px;
+                height: 36px;
+                font-size: 18px;
+            }
+            
             .attendee-item {
                 padding: 15px;
                 border-radius: 10px;
@@ -799,8 +907,8 @@
         </div>
     </div>
     
-    <div class="version-footer">v2.8.1</div>
+    <div class="version-footer">v2.9.0</div>
     
-    <script src="app.js?v=2.8.1"></script>
+    <script src="app.js?v=2.9.0"></script>
 </body>
 </html>
