@@ -737,8 +737,16 @@ class CheckInApp {
     }
     
     async toggleMatchAttendance(eventId, matchId, memberId, teamType) {
+        console.log('toggleMatchAttendance called:', { eventId, matchId, memberId, teamType });
+        
         const event = this.events.find(e => e.id === eventId);
         const match = event.matches.find(m => m.id === matchId);
+        
+        if (!event || !match) {
+            console.error('Event or match not found:', { event: !!event, match: !!match });
+            alert('Event or match not found. Please refresh and try again.');
+            return;
+        }
         
         const attendeesArray = teamType === 'home' ? match.homeTeamAttendees : match.awayTeamAttendees;
         const existingIndex = attendeesArray.findIndex(a => a.memberId === memberId);
@@ -746,25 +754,36 @@ class CheckInApp {
         if (existingIndex >= 0) {
             // Remove attendance
             attendeesArray.splice(existingIndex, 1);
+            console.log('Removed attendance for member:', memberId);
         } else {
             // Add attendance
             const team = this.teams.find(t => t.id === (teamType === 'home' ? match.homeTeamId : match.awayTeamId));
             const member = team.members.find(m => m.id === memberId);
+            
+            if (!team || !member) {
+                console.error('Team or member not found:', { team: !!team, member: !!member });
+                alert('Team or member not found. Please refresh and try again.');
+                return;
+            }
             
             attendeesArray.push({
                 memberId: memberId,
                 name: member.name,
                 checkedInAt: new Date().toISOString()
             });
+            console.log('Added attendance for member:', memberId);
         }
         
         try {
+            console.log('Saving events...');
             await this.saveEvents();
+            console.log('Events saved successfully');
             // Refresh the modal
             this.closeModal();
             setTimeout(() => this.viewMatch(eventId, matchId), 100);
         } catch (error) {
-            alert('Failed to update attendance. Please try again.');
+            console.error('Failed to save events:', error);
+            alert(`Failed to update attendance: ${error.message}\n\nCheck browser console for details.`);
         }
     }
     
