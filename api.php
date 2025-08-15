@@ -53,7 +53,7 @@ try {
         case 'health':
             echo json_encode([
                 'status' => 'OK',
-                'version' => '2.1.1',
+                'version' => '2.1.2',
                 'timestamp' => date('c'),
                 'database' => $dbType === 'postgresql' ? 'PostgreSQL' : 'SQLite',
                 'php_version' => PHP_VERSION,
