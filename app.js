@@ -24,6 +24,9 @@ class CheckInApp {
         this.renderTeams();
         this.renderEvents();
         this.renderReferees();
+        
+        // Ensure Events section is shown by default
+        this.showSection('events');
     }
     
     // API Methods
@@ -165,7 +168,12 @@ class CheckInApp {
         document.querySelectorAll('.nav-btn').forEach(btn => {
             btn.classList.remove('active');
         });
-        event.target.classList.add('active');
+        
+        // Find and activate the clicked button
+        const clickedBtn = event?.target || document.querySelector(`[onclick*="${sectionName}"]`);
+        if (clickedBtn) {
+            clickedBtn.classList.add('active');
+        }
         
         // Show section
         document.querySelectorAll('.content-section').forEach(section => {
@@ -223,6 +231,7 @@ class CheckInApp {
                     </div>
                     <div class="team-actions">
                         <button class="btn btn-small" onclick="app.showAddMemberModal('${team.id}')">Add Member</button>
+                        ${team.members.length > 0 ? `<button class="btn btn-small btn-captain" onclick="app.showCaptainModal('${team.id}')">Set Captain</button>` : ''}
                         <button class="btn btn-small btn-secondary" onclick="app.editTeam('${team.id}')">Edit</button>
                         <button class="btn btn-small btn-danger" onclick="app.deleteTeam('${team.id}')">Delete</button>
                     </div>
@@ -469,6 +478,77 @@ class CheckInApp {
             this.renderTeams();
         } catch (error) {
             alert('Failed to delete team. Please try again.');
+        }
+    }
+    
+    // Captain Management
+    showCaptainModal(teamId) {
+        const team = this.teams.find(t => t.id === teamId);
+        if (!team || team.members.length === 0) {
+            alert('This team has no members yet. Add members first to select a captain.');
+            return;
+        }
+        
+        const modal = this.createModal('Select Team Captain', `
+            <div class="form-group">
+                <label class="form-label">Choose Captain for ${team.name} *</label>
+                <select class="form-select" id="captain-select" required>
+                    <option value="">Select team captain</option>
+                    ${team.members.map(member => 
+                        `<option value="${member.id}" ${team.captainId === member.id ? 'selected' : ''}>${member.name}${member.jerseyNumber ? ` (#${member.jerseyNumber})` : ''}</option>`
+                    ).join('')}
+                </select>
+            </div>
+            <div class="form-group">
+                <button class="btn btn-secondary" onclick="app.removeCaptain('${teamId}')" ${!team.captainId ? 'disabled' : ''}>Remove Captain</button>
+            </div>
+            <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                <button class="btn btn-secondary" onclick="app.closeModal()">Cancel</button>
+                <button class="btn" onclick="app.saveCaptain('${teamId}')">Set Captain</button>
+            </div>
+        `);
+        
+        document.body.appendChild(modal);
+    }
+    
+    async saveCaptain(teamId) {
+        const captainId = document.getElementById('captain-select').value;
+        
+        if (!captainId) {
+            alert('Please select a captain');
+            return;
+        }
+        
+        const team = this.teams.find(t => t.id === teamId);
+        if (!team) return;
+        
+        team.captainId = captainId;
+        
+        try {
+            await this.saveTeams();
+            this.renderTeams();
+            this.closeModal();
+        } catch (error) {
+            alert('Failed to set captain. Please try again.');
+        }
+    }
+    
+    async removeCaptain(teamId) {
+        if (!confirm('Remove the current team captain?')) {
+            return;
+        }
+        
+        const team = this.teams.find(t => t.id === teamId);
+        if (!team) return;
+        
+        team.captainId = null;
+        
+        try {
+            await this.saveTeams();
+            this.renderTeams();
+            this.closeModal();
+        } catch (error) {
+            alert('Failed to remove captain. Please try again.');
         }
     }
     
