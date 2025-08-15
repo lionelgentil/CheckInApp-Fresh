@@ -83,11 +83,13 @@ try {
         case 'health':
             echo json_encode([
                 'status' => 'OK',
-                'version' => '2.1.3',
+                'version' => '2.1.7',
                 'timestamp' => date('c'),
                 'database' => 'PostgreSQL',
                 'php_version' => PHP_VERSION,
-                'persistent' => true
+                'persistent' => true,
+                'available_drivers' => PDO::getAvailableDrivers(),
+                'has_pgsql' => in_array('pgsql', PDO::getAvailableDrivers())
             ]);
             break;
             
