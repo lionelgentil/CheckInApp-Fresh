@@ -769,24 +769,13 @@ class CheckInApp {
         const attendeesArray = teamType === 'home' ? match.homeTeamAttendees : match.awayTeamAttendees;
         const existingIndex = attendeesArray.findIndex(a => a.memberId === memberId);
         
-        // Update UI immediately for smooth experience
-        const attendeeElement = document.querySelector(`[onclick*="'${memberId}'"][onclick*="'${teamType}'"]`);
-        let wasCheckedIn = existingIndex >= 0;
+        // Store original state for potential rollback
+        const originalAttendees = [...attendeesArray];
         
         if (existingIndex >= 0) {
             // Remove attendance
             attendeesArray.splice(existingIndex, 1);
             console.log('Removed attendance for member:', memberId);
-            
-            // Update UI immediately
-            if (attendeeElement) {
-                attendeeElement.classList.remove('checked-in');
-                const statusElement = attendeeElement.querySelector('div:last-child');
-                if (statusElement) {
-                    statusElement.innerHTML = '○';
-                    statusElement.style.color = '#6c757d';
-                }
-            }
         } else {
             // Add attendance
             const team = this.teams.find(t => t.id === (teamType === 'home' ? match.homeTeamId : match.awayTeamId));
@@ -804,17 +793,11 @@ class CheckInApp {
                 checkedInAt: new Date().toISOString()
             });
             console.log('Added attendance for member:', memberId);
-            
-            // Update UI immediately
-            if (attendeeElement) {
-                attendeeElement.classList.add('checked-in');
-                const statusElement = attendeeElement.querySelector('div:last-child');
-                if (statusElement) {
-                    statusElement.innerHTML = '✓';
-                    statusElement.style.color = '#28a745';
-                }
-            }
         }
+        
+        // Immediately refresh the modal with the updated data
+        this.closeModal();
+        setTimeout(() => this.viewMatch(eventId, matchId), 50);
         
         try {
             console.log('Saving events...');
@@ -823,39 +806,18 @@ class CheckInApp {
         } catch (error) {
             console.error('Failed to save events:', error);
             
-            // Revert UI changes on error
-            if (wasCheckedIn) {
-                // Re-add attendance
-                attendeesArray.push({
-                    memberId: memberId,
-                    name: member.name,
-                    checkedInAt: new Date().toISOString()
-                });
-                if (attendeeElement) {
-                    attendeeElement.classList.add('checked-in');
-                    const statusElement = attendeeElement.querySelector('div:last-child');
-                    if (statusElement) {
-                        statusElement.innerHTML = '✓';
-                        statusElement.style.color = '#28a745';
-                    }
-                }
+            // Revert the data changes on error
+            if (teamType === 'home') {
+                match.homeTeamAttendees = originalAttendees;
             } else {
-                // Remove attendance
-                const revertIndex = attendeesArray.findIndex(a => a.memberId === memberId);
-                if (revertIndex >= 0) {
-                    attendeesArray.splice(revertIndex, 1);
-                }
-                if (attendeeElement) {
-                    attendeeElement.classList.remove('checked-in');
-                    const statusElement = attendeeElement.querySelector('div:last-child');
-                    if (statusElement) {
-                        statusElement.innerHTML = '○';
-                        statusElement.style.color = '#6c757d';
-                    }
-                }
+                match.awayTeamAttendees = originalAttendees;
             }
             
-            alert(`Failed to update attendance: ${error.message}\n\nCheck browser console for details.`);
+            // Refresh the modal again with reverted data
+            this.closeModal();
+            setTimeout(() => this.viewMatch(eventId, matchId), 50);
+            
+            alert(`Failed to update attendance: ${error.message}\n\nChanges have been reverted.`);
         }
     }
     
