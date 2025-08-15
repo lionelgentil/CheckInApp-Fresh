@@ -211,12 +211,15 @@ class CheckInApp {
             return;
         }
         
-        container.innerHTML = teamsToShow.map(team => `
+        container.innerHTML = teamsToShow.map(team => {
+            const captain = team.captainId ? team.members.find(m => m.id === team.captainId) : null;
+            return `
             <div class="team-card" style="border-left-color: ${team.colorData}">
                 <div class="team-header">
                     <div>
                         <div class="team-name">${team.name}</div>
                         <div class="team-category">${team.category || ''}</div>
+                        ${captain ? `<div class="team-captain">👑 Captain: ${captain.name}</div>` : ''}
                     </div>
                     <div class="team-actions">
                         <button class="btn btn-small" onclick="app.showAddMemberModal('${team.id}')">Add Member</button>
@@ -234,7 +237,7 @@ class CheckInApp {
                                     `<div class="member-photo"></div>`
                                 }
                                 <div class="member-details">
-                                    <div class="member-name">${member.name}</div>
+                                    <div class="member-name">${member.name}${member.id === team.captainId ? ' 👑' : ''}</div>
                                     <div class="member-meta">
                                         ${member.jerseyNumber ? `#${member.jerseyNumber}` : ''}
                                         ${member.gender ? ` • ${member.gender}` : ''}
@@ -250,7 +253,7 @@ class CheckInApp {
                     ${team.members.length === 0 ? '<div class="empty-state"><p>No members yet</p></div>' : ''}
                 </div>
             </div>
-        `).join('');
+        `}).join('');
     }
     
     renderEvents() {
@@ -374,6 +377,17 @@ class CheckInApp {
                     <option value="Over 40" ${team && team.category === 'Over 40' ? 'selected' : ''}>Over 40</option>
                 </select>
             </div>
+            ${team && team.members && team.members.length > 0 ? `
+            <div class="form-group">
+                <label class="form-label">Team Captain</label>
+                <select class="form-select" id="team-captain">
+                    <option value="">Select team captain (optional)</option>
+                    ${team.members.map(member => 
+                        `<option value="${member.id}" ${team.captainId === member.id ? 'selected' : ''}>${member.name}</option>`
+                    ).join('')}
+                </select>
+            </div>
+            ` : ''}
             <div class="form-group">
                 <label class="form-label">Team Color</label>
                 <input type="color" class="form-input" id="team-color" value="${team ? team.colorData : '#2196F3'}">
@@ -397,8 +411,9 @@ class CheckInApp {
         const category = document.getElementById('team-category').value;
         const color = document.getElementById('team-color').value;
         const description = document.getElementById('team-description').value.trim();
+        const captainId = document.getElementById('team-captain')?.value || null;
         
-        console.log('Form values:', { name, category, color, description });
+        console.log('Form values:', { name, category, color, description, captainId });
         
         if (!name) {
             alert('Please enter a team name');
@@ -416,6 +431,7 @@ class CheckInApp {
             this.currentEditingTeam.category = category;
             this.currentEditingTeam.colorData = color;
             this.currentEditingTeam.description = description;
+            this.currentEditingTeam.captainId = captainId;
         } else {
             // Add new team
             const newTeam = {
@@ -424,6 +440,7 @@ class CheckInApp {
                 category: category,
                 colorData: color,
                 description: description,
+                captainId: null, // New teams don't have captains until members are added
                 members: []
             };
             this.teams.push(newTeam);

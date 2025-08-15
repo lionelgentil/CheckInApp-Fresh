@@ -227,6 +227,13 @@
             margin-top: 2px;
         }
         
+        .team-captain {
+            font-size: 0.85em;
+            color: #f39c12;
+            font-weight: 600;
+            margin-top: 4px;
+        }
+        
         .team-actions {
             display: flex;
             gap: 10px;
@@ -729,13 +736,13 @@
         </div>
         
         <nav class="main-nav">
-            <button class="nav-btn active" onclick="showSection('teams')">Teams</button>
-            <button class="nav-btn" onclick="showSection('events')">Events</button>
+            <button class="nav-btn" onclick="showSection('teams')">Teams</button>
+            <button class="nav-btn active" onclick="showSection('events')">Events</button>
             <button class="nav-btn" onclick="showSection('referees')">Referees</button>
         </nav>
         
         <!-- Teams Section -->
-        <div id="teams-section" class="content-section active">
+        <div id="teams-section" class="content-section">
             <div class="section-header">
                 <h2 class="section-title">Teams Management</h2>
                 <div class="header-controls">
@@ -758,7 +765,7 @@
         </div>
         
         <!-- Events Section -->
-        <div id="events-section" class="content-section">
+        <div id="events-section" class="content-section active">
             <div class="section-header">
                 <h2 class="section-title">Events Management</h2>
                 <button class="btn" onclick="app.showAddEventModal()">Add Event</button>
@@ -782,8 +789,8 @@
         </div>
     </div>
     
-    <div class="version-footer">v2.7.0</div>
+    <div class="version-footer">v2.8.0</div>
     
-    <script src="app.js?v=2.7.0"></script>
+    <script src="app.js?v=2.8.0"></script>
 </body>
 </html>

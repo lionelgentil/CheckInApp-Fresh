@@ -110,7 +110,7 @@ try {
         case 'health':
             echo json_encode([
                 'status' => 'OK',
-                'version' => '2.7.0',
+                'version' => '2.8.0',
                 'timestamp' => date('c'),
                 'database' => 'PostgreSQL',
                 'php_version' => PHP_VERSION,
@@ -182,6 +182,7 @@ function getTeams($db) {
             'category' => $team['category'],
             'colorData' => $team['color'],
             'description' => $team['description'],
+            'captainId' => $team['captain_id'],
             'members' => $members
         ];
     }
@@ -205,15 +206,16 @@ function saveTeams($db) {
         
         foreach ($input as $team) {
             $stmt = $db->prepare('
-                INSERT INTO teams (id, name, category, color, description)
-                VALUES (?, ?, ?, ?, ?)
+                INSERT INTO teams (id, name, category, color, description, captain_id)
+                VALUES (?, ?, ?, ?, ?, ?)
             ');
             $stmt->execute([
                 $team['id'],
                 $team['name'],
                 $team['category'] ?? null,
                 $team['colorData'] ?? '#2196F3',
-                $team['description'] ?? ''
+                $team['description'] ?? '',
+                $team['captainId'] ?? null
             ]);
             
             if (isset($team['members']) && is_array($team['members'])) {
@@ -508,6 +510,7 @@ function initializeDatabase($db) {
             category TEXT,
             color TEXT DEFAULT \'#2196F3\',
             description TEXT,
+            captain_id TEXT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
         )
     ');
@@ -603,6 +606,7 @@ function initializeDatabase($db) {
     try {
         $db->exec('ALTER TABLE matches ADD COLUMN IF NOT EXISTS main_referee_id TEXT');
         $db->exec('ALTER TABLE matches ADD COLUMN IF NOT EXISTS assistant_referee_id TEXT');
+        $db->exec('ALTER TABLE teams ADD COLUMN IF NOT EXISTS captain_id TEXT');
     } catch (Exception $e) {
         // Columns might already exist, ignore errors
     }
