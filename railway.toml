@@ -3,8 +3,6 @@ builder = "dockerfile"
 
 [deploy]
 healthcheckPath = "/api/health"
-healthcheckTimeout = 300
-restartPolicyType = "never"
 
 [[deploy.volumes]]
 mountPath = "/data"

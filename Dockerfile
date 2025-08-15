@@ -16,13 +16,9 @@ WORKDIR /var/www/html
 # Copy application files
 COPY . .
 
-# Create data directory and set permissions
-RUN mkdir -p /var/www/html/data \
-    && chown -R www-data:www-data /var/www/html \
+# Set permissions
+RUN chown -R www-data:www-data /var/www/html \
     && chmod -R 755 /var/www/html
-
-# Initialize database
-RUN php init_db.php
 
 # Expose port
 EXPOSE 80

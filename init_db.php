@@ -4,7 +4,7 @@
  * Creates SQLite database with required tables
  */
 
-$dbPath = '/tmp/checkin.db';  // Use /tmp for Railway compatibility
+$dbPath = file_exists('/data') ? '/data/checkin.db' : '/tmp/checkin.db';  // Use Railway volume or fallback
 $dataDir = dirname($dbPath);
 
 // Create data directory if it doesn't exist
