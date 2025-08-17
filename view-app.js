@@ -1,5 +1,5 @@
 /**
- * CheckIn App v2.9.7 - View Only Mode
+ * CheckIn App v2.9.8 - View Only Mode
  * Read-only version for public viewing
  */
 
@@ -305,7 +305,7 @@ class CheckInViewApp {
                         ${homeTeam.members.map(member => {
                             const isCheckedIn = match.homeTeamAttendees.some(a => a.memberId === member.id);
                             return `
-                                <div class="attendee-row ${isCheckedIn ? 'checked-in' : ''}">
+                                <div class="attendee-row ${isCheckedIn ? 'checked-in' : ''}" onclick="app.toggleMatchAttendance('${eventId}', '${matchId}', '${member.id}', 'home')">
                                     <div class="member-info-full">
                                         ${member.photo ? `<img src="${member.photo}" alt="${member.name}" class="member-photo-small">` : `<div class="member-photo-small"></div>`}
                                         <div class="member-details-full">
@@ -335,7 +335,7 @@ class CheckInViewApp {
                         ${awayTeam.members.map(member => {
                             const isCheckedIn = match.awayTeamAttendees.some(a => a.memberId === member.id);
                             return `
-                                <div class="attendee-row ${isCheckedIn ? 'checked-in' : ''}">
+                                <div class="attendee-row ${isCheckedIn ? 'checked-in' : ''}" onclick="app.toggleMatchAttendance('${eventId}', '${matchId}', '${member.id}', 'away')">
                                     <div class="member-info-full">
                                         ${member.photo ? `<img src="${member.photo}" alt="${member.name}" class="member-photo-small">` : `<div class="member-photo-small"></div>`}
                                         <div class="member-details-full">
@@ -364,6 +364,123 @@ class CheckInViewApp {
         `);
         
         document.body.appendChild(modal);
+    }
+    
+    // Save Events (for attendance updates)
+    async saveEvents() {
+        try {
+            const response = await fetch('/api/events', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(this.events)
+            });
+            
+            if (!response.ok) {
+                throw new Error('Failed to save events');
+            }
+            
+            return await response.json();
+        } catch (error) {
+            console.error('Error saving events:', error);
+            throw error;
+        }
+    }
+    
+    // Toggle Match Attendance (same as main app but optimized for view mode)
+    async toggleMatchAttendance(eventId, matchId, memberId, teamType) {
+        console.log('toggleMatchAttendance called:', { eventId, matchId, memberId, teamType });
+        
+        const event = this.events.find(e => e.id === eventId);
+        const match = event.matches.find(m => m.id === matchId);
+        
+        if (!event || !match) {
+            console.error('Event or match not found:', { event: !!event, match: !!match });
+            alert('Event or match not found. Please refresh and try again.');
+            return;
+        }
+        
+        const attendeesArray = teamType === 'home' ? match.homeTeamAttendees : match.awayTeamAttendees;
+        const existingIndex = attendeesArray.findIndex(a => a.memberId === memberId);
+        
+        // Store original state for potential rollback
+        const originalAttendees = [...attendeesArray];
+        
+        // Update the UI immediately for smooth UX
+        const attendeeRow = document.querySelector(`[onclick*="'${memberId}'"][onclick*="'${teamType}'"]`);
+        const checkbox = attendeeRow?.querySelector('.attendance-checkbox');
+        
+        if (existingIndex >= 0) {
+            // Remove attendance
+            attendeesArray.splice(existingIndex, 1);
+            console.log('Removed attendance for member:', memberId);
+            
+            // Update UI immediately
+            if (attendeeRow && checkbox) {
+                attendeeRow.classList.remove('checked-in');
+                checkbox.classList.remove('checked');
+                checkbox.textContent = '○';
+            }
+        } else {
+            // Add attendance
+            const team = this.teams.find(t => t.id === (teamType === 'home' ? match.homeTeamId : match.awayTeamId));
+            const member = team.members.find(m => m.id === memberId);
+            
+            if (!team || !member) {
+                console.error('Team or member not found:', { team: !!team, member: !!member });
+                alert('Team or member not found. Please refresh and try again.');
+                return;
+            }
+            
+            attendeesArray.push({
+                memberId: memberId,
+                name: member.name,
+                checkedInAt: new Date().toISOString()
+            });
+            console.log('Added attendance for member:', memberId);
+            
+            // Update UI immediately
+            if (attendeeRow && checkbox) {
+                attendeeRow.classList.add('checked-in');
+                checkbox.classList.add('checked');
+                checkbox.textContent = '✓';
+            }
+        }
+        
+        try {
+            console.log('Saving events...');
+            await this.saveEvents();
+            console.log('Events saved successfully');
+            
+            // Update the events display in the background (no modal refresh)
+            this.renderEvents();
+        } catch (error) {
+            console.error('Failed to save events:', error);
+            
+            // Revert the data changes on error
+            if (teamType === 'home') {
+                match.homeTeamAttendees = originalAttendees;
+            } else {
+                match.awayTeamAttendees = originalAttendees;
+            }
+            
+            // Revert UI changes on error
+            if (attendeeRow && checkbox) {
+                const wasCheckedIn = originalAttendees.some(a => a.memberId === memberId);
+                if (wasCheckedIn) {
+                    attendeeRow.classList.add('checked-in');
+                    checkbox.classList.add('checked');
+                    checkbox.textContent = '✓';
+                } else {
+                    attendeeRow.classList.remove('checked-in');
+                    checkbox.classList.remove('checked');
+                    checkbox.textContent = '○';
+                }
+            }
+            
+            alert(`Failed to update attendance: ${error.message}\\n\\nChanges have been reverted.`);
+        }
     }
     
     // Modal Management
