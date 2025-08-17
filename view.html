@@ -595,16 +595,23 @@
             }
             
             .main-nav {
-                flex-direction: column;
-                align-items: center;
-                gap: 10px;
+                flex-direction: row;
+                justify-content: space-between;
+                gap: 5px;
+                margin-bottom: 20px;
+                flex-wrap: nowrap;
             }
             
             .nav-btn {
-                width: 100%;
-                max-width: 300px;
-                padding: 18px 25px;
-                font-size: 18px;
+                flex: 1;
+                padding: 12px 8px;
+                font-size: 14px;
+                white-space: nowrap;
+                min-width: 0;
+            }
+            
+            .version-footer {
+                display: none;
             }
             
             .content-section {
@@ -754,7 +761,7 @@
     <div class="container">
         <div class="app-header">
             <h1>CheckIn App</h1>
-            <div class="version-info">Version 2.10.0 - PHP Edition</div>
+            <div class="version-info">Version 2.10.1 - PHP Edition</div>
             <div class="view-only-badge">👀 View Only Mode</div>
         </div>
         
@@ -809,8 +816,8 @@
         </div>
     </div>
     
-    <div class="version-footer">v2.10.0 - View Only</div>
+    <div class="version-footer">v2.10.1 - View Only</div>
     
-    <script src="view-app.js?v=2.10.0"></script>
+    <script src="view-app.js?v=2.10.1"></script>
 </body>
 </html>
