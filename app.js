@@ -145,6 +145,10 @@ class CheckInApp {
     }
     
     // Utility Methods
+    isMobileDevice() {
+        return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+    }
+    
     generateUUID() {
         return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
             const r = Math.random() * 16 | 0;
@@ -566,6 +570,9 @@ class CheckInApp {
     
     showMemberModal(teamId, member = null) {
         const isEdit = member !== null;
+        const isMobile = this.isMobileDevice();
+        const photoLabel = isMobile ? 'Take Photo' : 'Photo';
+        
         const modal = this.createModal(isEdit ? 'Edit Member' : 'Add Member', `
             <div class="form-group">
                 <label class="form-label">Member Name *</label>
@@ -584,9 +591,10 @@ class CheckInApp {
                 </select>
             </div>
             <div class="form-group">
-                <label class="form-label">Photo</label>
-                <input type="file" class="form-input file-input" id="member-photo" accept="image/*">
+                <label class="form-label">${photoLabel}</label>
+                <input type="file" class="form-input file-input" id="member-photo" accept="image/*" ${isMobile ? 'capture="environment"' : ''}>
                 ${member && member.photo ? `<img src="${member.photo}" alt="Current photo" class="preview-image">` : ''}
+                ${isMobile ? '<small style="color: #666; font-size: 0.85em; display: block; margin-top: 5px;">📸 This will open your camera</small>' : ''}
             </div>
             <div style="display: flex; gap: 10px; justify-content: flex-end;">
                 <button class="btn btn-secondary" onclick="app.closeModal()">Cancel</button>
