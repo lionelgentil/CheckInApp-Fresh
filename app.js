@@ -1150,10 +1150,21 @@ class CheckInApp {
         // Store original state for potential rollback
         const originalAttendees = [...attendeesArray];
         
+        // Update the UI immediately for smooth UX
+        const attendeeRow = document.querySelector(`[onclick*="'${memberId}'"][onclick*="'${teamType}'"]`);
+        const checkbox = attendeeRow?.querySelector('.attendance-checkbox');
+        
         if (existingIndex >= 0) {
             // Remove attendance
             attendeesArray.splice(existingIndex, 1);
             console.log('Removed attendance for member:', memberId);
+            
+            // Update UI immediately
+            if (attendeeRow && checkbox) {
+                attendeeRow.classList.remove('checked-in');
+                checkbox.classList.remove('checked');
+                checkbox.textContent = '○';
+            }
         } else {
             // Add attendance
             const team = this.teams.find(t => t.id === (teamType === 'home' ? match.homeTeamId : match.awayTeamId));
@@ -1171,16 +1182,22 @@ class CheckInApp {
                 checkedInAt: new Date().toISOString()
             });
             console.log('Added attendance for member:', memberId);
+            
+            // Update UI immediately
+            if (attendeeRow && checkbox) {
+                attendeeRow.classList.add('checked-in');
+                checkbox.classList.add('checked');
+                checkbox.textContent = '✓';
+            }
         }
-        
-        // Immediately refresh the modal with the updated data
-        this.closeModal();
-        setTimeout(() => this.viewMatch(eventId, matchId), 50);
         
         try {
             console.log('Saving events...');
             await this.saveEvents();
             console.log('Events saved successfully');
+            
+            // Update the events display in the background (no modal refresh)
+            this.renderEvents();
         } catch (error) {
             console.error('Failed to save events:', error);
             
@@ -1191,11 +1208,21 @@ class CheckInApp {
                 match.awayTeamAttendees = originalAttendees;
             }
             
-            // Refresh the modal again with reverted data
-            this.closeModal();
-            setTimeout(() => this.viewMatch(eventId, matchId), 50);
+            // Revert UI changes on error
+            if (attendeeRow && checkbox) {
+                const wasCheckedIn = originalAttendees.some(a => a.memberId === memberId);
+                if (wasCheckedIn) {
+                    attendeeRow.classList.add('checked-in');
+                    checkbox.classList.add('checked');
+                    checkbox.textContent = '✓';
+                } else {
+                    attendeeRow.classList.remove('checked-in');
+                    checkbox.classList.remove('checked');
+                    checkbox.textContent = '○';
+                }
+            }
             
-            alert(`Failed to update attendance: ${error.message}\n\nChanges have been reverted.`);
+            alert(`Failed to update attendance: ${error.message}\\n\\nChanges have been reverted.`);
         }
     }
     
