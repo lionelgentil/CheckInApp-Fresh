@@ -4,6 +4,9 @@
  * RESTful API for team and event management
  */
 
+// Version constant - update this single location to change version everywhere
+const APP_VERSION = '2.10.3';
+
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
@@ -110,7 +113,7 @@ try {
         case 'health':
             echo json_encode([
                 'status' => 'OK',
-                'version' => '2.10.1',
+                'version' => APP_VERSION,
                 'timestamp' => date('c'),
                 'database' => 'PostgreSQL',
                 'php_version' => PHP_VERSION,

@@ -1,7 +1,10 @@
 /**
- * CheckIn App v2.10.1 - View Only Mode
+ * CheckIn App v2.10.3 - View Only Mode
  * Read-only version for public viewing
  */
+
+// Version constant - update this single location to change version everywhere
+const APP_VERSION = '2.10.3';
 
 class CheckInViewApp {
     constructor() {
@@ -347,8 +350,8 @@ class CheckInViewApp {
                                     </div>
                                 </div>
                                 ${match.field ? `<div class="match-field">Field: ${match.field}</div>` : ''}
-                                ${match.time ? `<div class="match-time">Time: ${match.time}</div>` : ''}
-                                ${mainReferee ? `<div class="match-referee">🟨 ${mainReferee.name}${assistantReferee ? `, ${assistantReferee.name}` : ''}</div>` : ''}
+                                ${match.time ? `<div class="match-time">Time: ${match.time.substring(0, 5)}</div>` : ''}
+                                ${mainReferee ? `<div class="match-referee">Referee: ${mainReferee.name}${assistantReferee ? `, ${assistantReferee.name}` : ''}</div>` : ''}
                                 <div class="match-actions">
                                     <button class="btn btn-small" onclick="app.viewMatch('${event.id}', '${match.id}')" title="View Match">👁️</button>
                                 </div>
@@ -400,7 +403,7 @@ class CheckInViewApp {
             <div style="margin-bottom: 20px; padding: 15px; background: #f8f9fa; border-radius: 8px;">
                 <p><strong>Date:</strong> ${new Date(event.date).toLocaleDateString()}</p>
                 ${match.field ? `<p><strong>Field:</strong> ${match.field}</p>` : ''}
-                ${match.time ? `<p><strong>Time:</strong> ${match.time}</p>` : ''}
+                ${match.time ? `<p><strong>Time:</strong> ${match.time.substring(0, 5)}</p>` : ''}
                 ${mainReferee ? `<p><strong>Referee:</strong> ${mainReferee.name}${assistantReferee ? `, ${assistantReferee.name}` : ''}</p>` : ''}
                 ${match.notes ? `<p><strong>Notes:</strong> ${match.notes}</p>` : ''}
             </div>

@@ -665,6 +665,57 @@
             .attendee-row {
                 padding: 15px 12px;
             }
+            
+            .match-item {
+                padding: 10px;
+                margin-bottom: 8px;
+                border-radius: 6px;
+            }
+            
+            .match-teams {
+                margin-bottom: 8px;
+            }
+            
+            .team-name-match {
+                font-size: 14px;
+            }
+            
+            .team-category-small {
+                font-size: 0.7em;
+            }
+            
+            .attendance-count {
+                font-size: 0.65em;
+            }
+            
+            .match-field,
+            .match-time,
+            .match-referee {
+                font-size: 0.8em;
+                margin-bottom: 3px;
+                line-height: 1.2;
+            }
+            
+            .match-actions {
+                margin-top: 8px;
+            }
+            
+            .event-card {
+                padding: 15px;
+                margin-bottom: 12px;
+            }
+            
+            .event-header {
+                margin-bottom: 10px;
+            }
+            
+            .event-name {
+                font-size: 1.1em;
+            }
+            
+            .matches-container {
+                margin-top: 10px;
+            }
         }
         
         .version-footer {
@@ -761,7 +812,7 @@
     <div class="container">
         <div class="app-header">
             <h1>CheckIn App</h1>
-            <div class="version-info">Version 2.10.1 - PHP Edition</div>
+            <div class="version-info">Version <span id="app-version"></span> - PHP Edition</div>
             <div class="view-only-badge">👀 View Only Mode</div>
         </div>
         
@@ -816,8 +867,13 @@
         </div>
     </div>
     
-    <div class="version-footer">v2.10.1 - View Only</div>
+    <div class="version-footer">v<span id="footer-version"></span> - View Only</div>
     
-    <script src="view-app.js?v=2.10.1"></script>
+    <script src="view-app.js?v=2.10.3"></script>
+    <script>
+        // Set version numbers from JavaScript constant
+        document.getElementById('app-version').textContent = APP_VERSION;
+        document.getElementById('footer-version').textContent = APP_VERSION;
+    </script>
 </body>
 </html>
