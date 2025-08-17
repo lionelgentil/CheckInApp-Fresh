@@ -5,7 +5,26 @@
  */
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '2.10.3';
+const APP_VERSION = '2.11.0';
+
+// Default photos - simple SVG avatars
+function getDefaultPhoto($gender) {
+    if ($gender === 'female') {
+        $svg = '<svg width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="50" cy="50" r="50" fill="#FF69B4"/>
+            <circle cx="50" cy="35" r="18" fill="white"/>
+            <ellipse cx="50" cy="75" rx="25" ry="20" fill="white"/>
+        </svg>';
+    } else {
+        $svg = '<svg width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+            <circle cx="50" cy="50" r="50" fill="#4F80FF"/>
+            <circle cx="50" cy="35" r="18" fill="white"/>
+            <ellipse cx="50" cy="75" rx="25" ry="20" fill="white"/>
+        </svg>';
+    }
+    
+    return 'data:image/svg+xml;base64,' . base64_encode($svg);
+}
 
 header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
@@ -170,12 +189,15 @@ function getTeams($db) {
         
         $members = [];
         while ($member = $memberStmt->fetch(PDO::FETCH_ASSOC)) {
+            // Use custom photo if available, otherwise use default based on gender
+            $photo = $member['photo'] ?: getDefaultPhoto($member['gender']);
+            
             $members[] = [
                 'id' => $member['id'],
                 'name' => $member['name'],
                 'jerseyNumber' => $member['jersey_number'] ? (int)$member['jersey_number'] : null,
                 'gender' => $member['gender'],
-                'photo' => $member['photo']
+                'photo' => $photo
             ];
         }
         

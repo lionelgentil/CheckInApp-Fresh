@@ -649,9 +649,31 @@
             }
             
             .match-teams {
-                flex-direction: column;
-                text-align: center;
+                flex-direction: row;
+                justify-content: space-between;
+                align-items: flex-start;
                 gap: 8px;
+                margin-bottom: 8px;
+            }
+            
+            .team-info-match {
+                flex: 1;
+                align-items: flex-start;
+                text-align: left;
+            }
+            
+            .vs-text {
+                flex-shrink: 0;
+                padding: 0 8px;
+                align-self: center;
+            }
+            
+            .match-field,
+            .match-time,
+            .match-referee {
+                display: inline-block;
+                margin-right: 15px;
+                margin-bottom: 5px;
             }
             
             .modal-content {
@@ -869,7 +891,7 @@
     
     <div class="version-footer">v<span id="footer-version"></span> - View Only</div>
     
-    <script src="view-app.js?v=2.10.3"></script>
+    <script src="view-app.js?v=2.11.0"></script>
     <script>
         // Set version numbers from JavaScript constant
         document.getElementById('app-version').textContent = APP_VERSION;
