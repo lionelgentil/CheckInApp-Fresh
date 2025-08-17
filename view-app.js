@@ -1,5 +1,5 @@
 /**
- * CheckIn App v2.9.9 - View Only Mode
+ * CheckIn App v2.10.0 - View Only Mode
  * Read-only version for public viewing
  */
 
@@ -405,8 +405,23 @@ class CheckInViewApp {
                 ${match.notes ? `<p><strong>Notes:</strong> ${match.notes}</p>` : ''}
             </div>
             
+            <div style="margin-bottom: 20px;">
+                <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                    <input type="radio" name="team-toggle" value="both" checked onchange="app.toggleTeamView('both')">
+                    <span>Show Both Teams</span>
+                </label>
+                <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; margin-top: 8px;">
+                    <input type="radio" name="team-toggle" value="home" onchange="app.toggleTeamView('home')">
+                    <span>Show ${homeTeam.name} Only</span>
+                </label>
+                <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; margin-top: 8px;">
+                    <input type="radio" name="team-toggle" value="away" onchange="app.toggleTeamView('away')">
+                    <span>Show ${awayTeam.name} Only</span>
+                </label>
+            </div>
+            
             <div style="display: flex; flex-direction: column; gap: 20px;">
-                <div>
+                <div id="home-team-section">
                     <div style="background: ${homeTeam.colorData}; color: white; padding: 12px; border-radius: 8px; margin-bottom: 15px;">
                         <h3 style="margin: 0; text-shadow: 1px 1px 2px rgba(0,0,0,0.3);">${homeTeam.name} (Home)</h3>
                     </div>
@@ -436,7 +451,7 @@ class CheckInViewApp {
                     </div>
                 </div>
                 
-                <div>
+                <div id="away-team-section">
                     <div style="background: ${awayTeam.colorData}; color: white; padding: 12px; border-radius: 8px; margin-bottom: 15px;">
                         <h3 style="margin: 0; text-shadow: 1px 1px 2px rgba(0,0,0,0.3);">${awayTeam.name} (Away)</h3>
                     </div>
@@ -473,6 +488,29 @@ class CheckInViewApp {
         `);
         
         document.body.appendChild(modal);
+    }
+    
+    toggleTeamView(viewType) {
+        const homeSection = document.getElementById('home-team-section');
+        const awaySection = document.getElementById('away-team-section');
+        
+        if (!homeSection || !awaySection) return;
+        
+        switch (viewType) {
+            case 'home':
+                homeSection.style.display = 'block';
+                awaySection.style.display = 'none';
+                break;
+            case 'away':
+                homeSection.style.display = 'none';
+                awaySection.style.display = 'block';
+                break;
+            case 'both':
+            default:
+                homeSection.style.display = 'block';
+                awaySection.style.display = 'block';
+                break;
+        }
     }
     
     // Save Events (for attendance updates)
