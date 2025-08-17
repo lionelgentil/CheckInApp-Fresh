@@ -1,5 +1,5 @@
 /**
- * CheckIn App v2.9.8 - View Only Mode
+ * CheckIn App v2.9.9 - View Only Mode
  * Read-only version for public viewing
  */
 
@@ -91,6 +91,112 @@ class CheckInViewApp {
         document.getElementById(sectionName + '-section').classList.add('active');
     }
     
+    // Save Teams (for jersey number and photo updates)
+    async saveTeams() {
+        try {
+            const response = await fetch('/api/teams', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(this.teams)
+            });
+            
+            if (!response.ok) {
+                const errorText = await response.text();
+                console.error('Server response:', errorText);
+                throw new Error(`Failed to save teams: ${response.status} ${response.statusText}`);
+            }
+            
+            return await response.json();
+        } catch (error) {
+            console.error('Error saving teams:', error);
+            throw error;
+        }
+    }
+    
+    // Limited member editing (jersey number and photo only)
+    editMemberLimited(teamId, memberId) {
+        const team = this.teams.find(t => t.id === teamId);
+        const member = team.members.find(m => m.id === memberId);
+        if (!member) return;
+        
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+        const photoLabel = isMobile ? 'Take Photo' : 'Photo';
+        
+        const modal = this.createModal('Update Player Info', `
+            <div class="form-group">
+                <label class="form-label">Player Name</label>
+                <input type="text" class="form-input disabled" value="${member.name}" readonly style="background: #f8f9fa; cursor: not-allowed;">
+                <small style="color: #666; font-size: 0.85em;">Name cannot be changed in view mode</small>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Jersey Number</label>
+                <input type="number" class="form-input" id="member-jersey" value="${member.jerseyNumber || ''}" min="1" max="99">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Gender</label>
+                <select class="form-select disabled" disabled style="background: #f8f9fa; cursor: not-allowed;">
+                    <option value="${member.gender || ''}">${member.gender || 'Not set'}</option>
+                </select>
+                <small style="color: #666; font-size: 0.85em;">Gender cannot be changed in view mode</small>
+            </div>
+            <div class="form-group">
+                <label class="form-label">${photoLabel}</label>
+                <input type="file" class="form-input file-input" id="member-photo" accept="image/*" ${isMobile ? 'capture="environment"' : ''}>
+                ${member.photo ? `<img src="${member.photo}" alt="Current photo" class="preview-image" style="max-width: 100px; max-height: 100px; border-radius: 8px; margin-top: 10px;">` : ''}
+                ${isMobile ? '<small style="color: #666; font-size: 0.85em; display: block; margin-top: 5px;">📸 This will open your camera</small>' : ''}
+            </div>
+            <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                <button class="btn btn-secondary" onclick="app.closeModal()">Cancel</button>
+                <button class="btn" onclick="app.saveMemberLimited('${teamId}', '${memberId}')">Update Player</button>
+            </div>
+        `);
+        
+        document.body.appendChild(modal);
+    }
+    
+    async saveMemberLimited(teamId, memberId) {
+        const jerseyNumber = document.getElementById('member-jersey').value;
+        const photoFile = document.getElementById('member-photo').files[0];
+        
+        const team = this.teams.find(t => t.id === teamId);
+        const member = team.members.find(m => m.id === memberId);
+        if (!member) return;
+        
+        let photo = member.photo; // Keep existing photo if no new one
+        
+        if (photoFile) {
+            try {
+                photo = await this.convertFileToBase64(photoFile);
+            } catch (error) {
+                console.error('Error converting photo:', error);
+            }
+        }
+        
+        // Update only jersey number and photo
+        member.jerseyNumber = jerseyNumber ? parseInt(jerseyNumber) : null;
+        if (photo) member.photo = photo;
+        
+        try {
+            await this.saveTeams();
+            this.renderTeams();
+            this.closeModal();
+        } catch (error) {
+            alert('Failed to update player. Please try again.');
+        }
+    }
+    
+    // Utility method for file conversion
+    async convertFileToBase64(file) {
+        return new Promise((resolve, reject) => {
+            const reader = new FileReader();
+            reader.onload = () => resolve(reader.result);
+            reader.onerror = reject;
+            reader.readAsDataURL(file);
+        });
+    }
+    
     renderTeams() {
         const container = document.getElementById('teams-container');
         
@@ -155,6 +261,9 @@ class CheckInViewApp {
                                         ${member.gender ? ` • ${member.gender}` : ''}
                                     </div>
                                 </div>
+                            </div>
+                            <div class="member-actions">
+                                <button class="btn btn-small btn-secondary" onclick="app.editMemberLimited('${team.id}', '${member.id}')" title="Edit Jersey & Photo">✏️</button>
                             </div>
                         </div>
                     `).join('')}
