@@ -1,10 +1,10 @@
 /**
- * CheckIn App v2.10.3 - View Only Mode
+ * CheckIn App v2.12.3 - View Only Mode
  * Read-only version for public viewing
  */
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '2.12.2';
+const APP_VERSION = '2.12.3';
 
 class CheckInViewApp {
     constructor() {
@@ -736,8 +736,8 @@ class CheckInViewApp {
         
         // Update match data
         match.matchStatus = matchStatus;
-        match.homeScore = homeScore ? parseInt(homeScore) : null;
-        match.awayScore = awayScore ? parseInt(awayScore) : null;
+        match.homeScore = homeScore !== '' ? parseInt(homeScore) : null;
+        match.awayScore = awayScore !== '' ? parseInt(awayScore) : null;
         
         // Collect cards data
         const cardItems = document.querySelectorAll('.card-item');

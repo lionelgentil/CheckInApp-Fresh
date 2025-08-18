@@ -1,10 +1,10 @@
 /**
- * CheckIn App v2.10.3 - JavaScript Frontend
+ * CheckIn App v2.12.3 - JavaScript Frontend
  * Works with PHP/SQLite backend
  */
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '2.12.2';
+const APP_VERSION = '2.12.3';
 
 class CheckInApp {
     constructor() {
@@ -1214,8 +1214,8 @@ class CheckInApp {
         
         // Update match data
         match.matchStatus = matchStatus;
-        match.homeScore = homeScore ? parseInt(homeScore) : null;
-        match.awayScore = awayScore ? parseInt(awayScore) : null;
+        match.homeScore = homeScore !== '' ? parseInt(homeScore) : null;
+        match.awayScore = awayScore !== '' ? parseInt(awayScore) : null;
         
         // Collect cards data
         const cardItems = document.querySelectorAll('.card-item');
