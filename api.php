@@ -5,7 +5,7 @@
  */
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '2.12.3';
+const APP_VERSION = '2.12.4';
 
 // Default photos - simple SVG avatars
 function getDefaultPhoto($gender) {
@@ -338,8 +338,8 @@ function getEvents($db) {
                 'mainRefereeId' => $match['main_referee_id'],
                 'assistantRefereeId' => $match['assistant_referee_id'],
                 'notes' => $match['notes'],
-                'homeScore' => $match['home_score'] ? (int)$match['home_score'] : null,
-                'awayScore' => $match['away_score'] ? (int)$match['away_score'] : null,
+                'homeScore' => $match['home_score'] !== null ? (int)$match['home_score'] : null,
+                'awayScore' => $match['away_score'] !== null ? (int)$match['away_score'] : null,
                 'matchStatus' => $match['match_status'] ?? 'scheduled',
                 'homeTeamAttendees' => $homeAttendees,
                 'awayTeamAttendees' => $awayAttendees,
