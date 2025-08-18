@@ -1,10 +1,10 @@
 /**
- * CheckIn App v2.14.1 - JavaScript Frontend
+ * CheckIn App v2.14.2 - JavaScript Frontend
  * Works with PHP/SQLite backend
  */
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '2.14.1';
+const APP_VERSION = '2.14.2';
 
 class CheckInApp {
     constructor() {
