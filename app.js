@@ -1,10 +1,10 @@
 /**
- * CheckIn App v2.14.4 - JavaScript Frontend
+ * CheckIn App v2.14.5 - JavaScript Frontend
  * Works with PHP/SQLite backend
  */
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '2.14.4';
+const APP_VERSION = '2.14.5';
 
 class CheckInApp {
     constructor() {
@@ -228,6 +228,13 @@ class CheckInApp {
         
         container.innerHTML = teamsToShow.map(team => {
             const captain = team.captainId ? team.members.find(m => m.id === team.captainId) : null;
+            
+            // Calculate roster statistics
+            const totalPlayers = team.members.length;
+            const maleCount = team.members.filter(m => m.gender === 'male').length;
+            const femaleCount = team.members.filter(m => m.gender === 'female').length;
+            const unknownCount = totalPlayers - maleCount - femaleCount;
+            
             return `
             <div class="team-card" style="border-left-color: ${team.colorData}">
                 <div class="team-header">
@@ -244,6 +251,16 @@ class CheckInApp {
                     </div>
                 </div>
                 <div class="team-description">${team.description || ''}</div>
+                ${totalPlayers > 0 ? `
+                    <div class="roster-stats" style="margin: 12px 0; padding: 10px; background: #f8f9fa; border-radius: 6px; font-size: 0.9em; color: #666;">
+                        <strong>👥 ${totalPlayers} player${totalPlayers !== 1 ? 's' : ''}</strong>
+                        ${maleCount > 0 || femaleCount > 0 ? `
+                            • 👨 ${maleCount} male${maleCount !== 1 ? 's' : ''} 
+                            • 👩 ${femaleCount} female${femaleCount !== 1 ? 's' : ''}
+                            ${unknownCount > 0 ? `• ❓ ${unknownCount} unspecified` : ''}
+                        ` : ''}
+                    </div>
+                ` : ''}
                 <div class="members-list">
                     ${team.members.map(member => `
                         <div class="member-item">

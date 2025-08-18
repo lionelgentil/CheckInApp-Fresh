@@ -5,7 +5,7 @@
  */
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '2.14.4';
+const APP_VERSION = '2.14.5';
 
 // Default photos - simple SVG avatars
 function getDefaultPhoto($gender) {
