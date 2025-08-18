@@ -5,7 +5,7 @@
  */
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '2.12.4';
+const APP_VERSION = '2.13.0';
 
 // Default photos - simple SVG avatars
 function getDefaultPhoto($gender) {
@@ -325,6 +325,7 @@ function getEvents($db) {
                     'teamType' => $card['team_type'],
                     'cardType' => $card['card_type'],
                     'reason' => $card['reason'],
+                    'notes' => $card['notes'],
                     'minute' => $card['minute'] ? (int)$card['minute'] : null
                 ];
             }
@@ -473,8 +474,8 @@ function saveEvents($db) {
                         foreach ($match['cards'] as $card) {
                             try {
                                 $stmt = $db->prepare('
-                                    INSERT INTO match_cards (match_id, member_id, team_type, card_type, reason, minute)
-                                    VALUES (?, ?, ?, ?, ?, ?)
+                                    INSERT INTO match_cards (match_id, member_id, team_type, card_type, reason, notes, minute)
+                                    VALUES (?, ?, ?, ?, ?, ?, ?)
                                 ');
                                 $stmt->execute([
                                     $match['id'],
@@ -482,6 +483,7 @@ function saveEvents($db) {
                                     $card['teamType'],
                                     $card['cardType'],
                                     $card['reason'] ?? null,
+                                    $card['notes'] ?? null,
                                     $card['minute'] ?? null
                                 ]);
                             } catch (Exception $e) {
@@ -657,6 +659,7 @@ function initializeDatabase($db) {
             team_type TEXT NOT NULL CHECK(team_type IN (\'home\', \'away\')),
             card_type TEXT NOT NULL CHECK(card_type IN (\'yellow\', \'red\')),
             reason TEXT,
+            notes TEXT,
             minute INTEGER,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (match_id) REFERENCES matches(id) ON DELETE CASCADE
@@ -709,6 +712,9 @@ function initializeDatabase($db) {
         $db->exec('ALTER TABLE matches ADD COLUMN IF NOT EXISTS home_score INTEGER DEFAULT NULL');
         $db->exec('ALTER TABLE matches ADD COLUMN IF NOT EXISTS away_score INTEGER DEFAULT NULL');
         $db->exec('ALTER TABLE matches ADD COLUMN IF NOT EXISTS match_status TEXT DEFAULT \'scheduled\'');
+        
+        // Add notes column to match_cards
+        $db->exec('ALTER TABLE match_cards ADD COLUMN IF NOT EXISTS notes TEXT');
         
         // Add indexes for new tables
         $db->exec('CREATE INDEX IF NOT EXISTS idx_match_cards_match_id ON match_cards(match_id)');

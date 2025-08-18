@@ -1,10 +1,10 @@
 /**
- * CheckIn App v2.12.4 - View Only Mode
+ * CheckIn App v2.13.0 - View Only Mode
  * Read-only version for public viewing
  */
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '2.12.4';
+const APP_VERSION = '2.13.0';
 
 class CheckInViewApp {
     constructor() {
@@ -495,6 +495,7 @@ class CheckInViewApp {
                                     <strong>${member ? member.name : 'Unknown Player'}</strong> (${teamName})
                                     ${card.minute ? `<span style="color: #666;"> - ${card.minute}'</span>` : ''}
                                     ${card.reason ? `<div style="font-size: 0.9em; color: #666; margin-top: 2px;">${card.reason}</div>` : ''}
+                                    ${card.notes ? `<div style="font-size: 0.85em; color: #888; margin-top: 2px; font-style: italic;">Notes: ${card.notes}</div>` : ''}
                                 </div>
                             </div>
                         `;
@@ -638,19 +639,37 @@ class CheckInViewApp {
                 <div id="cards-container">
                     ${match.cards && match.cards.length > 0 ? match.cards.map((card, index) => {
                         return `
-                            <div class="card-item" style="display: flex; gap: 10px; align-items: center; margin-bottom: 10px; padding: 10px; background: #f8f9fa; border-radius: 8px;">
-                                <select class="form-select" style="flex: 1;" data-card-index="${index}" data-field="memberId">
-                                    <option value="">Select Player</option>
-                                    ${homeTeam.members.map(m => `<option value="${m.id}" ${card.memberId === m.id ? 'selected' : ''}>${m.name} (${homeTeam.name})</option>`).join('')}
-                                    ${awayTeam.members.map(m => `<option value="${m.id}" ${card.memberId === m.id ? 'selected' : ''}>${m.name} (${awayTeam.name})</option>`).join('')}
-                                </select>
-                                <select class="form-select" style="width: 120px;" data-card-index="${index}" data-field="cardType">
-                                    <option value="yellow" ${card.cardType === 'yellow' ? 'selected' : ''}>🟨 Yellow</option>
-                                    <option value="red" ${card.cardType === 'red' ? 'selected' : ''}>🟥 Red</option>
-                                </select>
-                                <input type="number" class="form-input" style="width: 80px;" placeholder="Min" data-card-index="${index}" data-field="minute" value="${card.minute || ''}" min="1" max="120">
-                                <input type="text" class="form-input" style="flex: 1;" placeholder="Reason" data-card-index="${index}" data-field="reason" value="${card.reason || ''}">
-                                <button class="btn btn-small btn-danger" onclick="app.removeCard(${index})">🗑️</button>
+                            <div class="card-item" style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 10px; padding: 15px; background: #f8f9fa; border-radius: 8px;">
+                                <div style="display: flex; gap: 10px; align-items: center;">
+                                    <select class="form-select" style="flex: 1;" data-card-index="${index}" data-field="memberId">
+                                        <option value="">Select Player</option>
+                                        ${homeTeam.members.map(m => `<option value="${m.id}" ${card.memberId === m.id ? 'selected' : ''}>${m.name} (${homeTeam.name})</option>`).join('')}
+                                        ${awayTeam.members.map(m => `<option value="${m.id}" ${card.memberId === m.id ? 'selected' : ''}>${m.name} (${awayTeam.name})</option>`).join('')}
+                                    </select>
+                                    <select class="form-select" style="width: 120px;" data-card-index="${index}" data-field="cardType">
+                                        <option value="yellow" ${card.cardType === 'yellow' ? 'selected' : ''}>🟨 Yellow</option>
+                                        <option value="red" ${card.cardType === 'red' ? 'selected' : ''}>🟥 Red</option>
+                                    </select>
+                                    <input type="number" class="form-input" style="width: 80px;" placeholder="Min" data-card-index="${index}" data-field="minute" value="${card.minute || ''}" min="1" max="120">
+                                    <button class="btn btn-small btn-danger" onclick="app.removeCard(${index})">🗑️</button>
+                                </div>
+                                <div style="display: flex; gap: 10px;">
+                                    <select class="form-select" style="flex: 1;" data-card-index="${index}" data-field="reason">
+                                        <option value="">Select Reason</option>
+                                        <option value="Unsporting behavior" ${card.reason === 'Unsporting behavior' ? 'selected' : ''}>Unsporting behavior</option>
+                                        <option value="Dissent by word or action" ${card.reason === 'Dissent by word or action' ? 'selected' : ''}>Dissent by word or action</option>
+                                        <option value="Persistent infringement" ${card.reason === 'Persistent infringement' ? 'selected' : ''}>Persistent infringement</option>
+                                        <option value="Delaying the restart of play" ${card.reason === 'Delaying the restart of play' ? 'selected' : ''}>Delaying the restart of play</option>
+                                        <option value="Failure to respect distance" ${card.reason === 'Failure to respect distance' ? 'selected' : ''}>Failure to respect distance</option>
+                                        <option value="Entering/leaving without permission" ${card.reason === 'Entering/leaving without permission' ? 'selected' : ''}>Entering/leaving without permission</option>
+                                        <option value="Serious foul play" ${card.reason === 'Serious foul play' ? 'selected' : ''}>Serious foul play</option>
+                                        <option value="Violent conduct" ${card.reason === 'Violent conduct' ? 'selected' : ''}>Violent conduct</option>
+                                        <option value="Spitting" ${card.reason === 'Spitting' ? 'selected' : ''}>Spitting</option>
+                                        <option value="Offensive/insulting language" ${card.reason === 'Offensive/insulting language' ? 'selected' : ''}>Offensive/insulting language</option>
+                                        <option value="Second yellow card" ${card.reason === 'Second yellow card' ? 'selected' : ''}>Second yellow card</option>
+                                    </select>
+                                    <input type="text" class="form-input" style="flex: 1;" placeholder="Additional Notes (optional)" data-card-index="${index}" data-field="notes" value="${card.notes || ''}">
+                                </div>
                             </div>
                         `;
                     }).join('') : '<p style="text-align: center; color: #666; font-style: italic;">No cards issued</p>'}
@@ -680,19 +699,37 @@ class CheckInViewApp {
         const awayTeam = this.teams.find(t => t.id === this.currentMatch?.awayTeamId);
         
         const cardHtml = `
-            <div class="card-item" style="display: flex; gap: 10px; align-items: center; margin-bottom: 10px; padding: 10px; background: #f8f9fa; border-radius: 8px;">
-                <select class="form-select" style="flex: 1;" data-card-index="${newIndex}" data-field="memberId">
-                    <option value="">Select Player</option>
-                    ${homeTeam?.members.map(m => `<option value="${m.id}">${m.name} (${homeTeam.name})</option>`).join('') || ''}
-                    ${awayTeam?.members.map(m => `<option value="${m.id}">${m.name} (${awayTeam.name})</option>`).join('') || ''}
-                </select>
-                <select class="form-select" style="width: 120px;" data-card-index="${newIndex}" data-field="cardType">
-                    <option value="yellow">🟨 Yellow</option>
-                    <option value="red">🟥 Red</option>
-                </select>
-                <input type="number" class="form-input" style="width: 80px;" placeholder="Min" data-card-index="${newIndex}" data-field="minute" min="1" max="120">
-                <input type="text" class="form-input" style="flex: 1;" placeholder="Reason" data-card-index="${newIndex}" data-field="reason">
-                <button class="btn btn-small btn-danger" onclick="app.removeCard(${newIndex})">🗑️</button>
+            <div class="card-item" style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 10px; padding: 15px; background: #f8f9fa; border-radius: 8px;">
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <select class="form-select" style="flex: 1;" data-card-index="${newIndex}" data-field="memberId">
+                        <option value="">Select Player</option>
+                        ${homeTeam?.members.map(m => `<option value="${m.id}">${m.name} (${homeTeam.name})</option>`).join('') || ''}
+                        ${awayTeam?.members.map(m => `<option value="${m.id}">${m.name} (${awayTeam.name})</option>`).join('') || ''}
+                    </select>
+                    <select class="form-select" style="width: 120px;" data-card-index="${newIndex}" data-field="cardType">
+                        <option value="yellow">🟨 Yellow</option>
+                        <option value="red">🟥 Red</option>
+                    </select>
+                    <input type="number" class="form-input" style="width: 80px;" placeholder="Min" data-card-index="${newIndex}" data-field="minute" min="1" max="120">
+                    <button class="btn btn-small btn-danger" onclick="app.removeCard(${newIndex})">🗑️</button>
+                </div>
+                <div style="display: flex; gap: 10px;">
+                    <select class="form-select" style="flex: 1;" data-card-index="${newIndex}" data-field="reason">
+                        <option value="">Select Reason</option>
+                        <option value="Unsporting behavior">Unsporting behavior</option>
+                        <option value="Dissent by word or action">Dissent by word or action</option>
+                        <option value="Persistent infringement">Persistent infringement</option>
+                        <option value="Delaying the restart of play">Delaying the restart of play</option>
+                        <option value="Failure to respect distance">Failure to respect distance</option>
+                        <option value="Entering/leaving without permission">Entering/leaving without permission</option>
+                        <option value="Serious foul play">Serious foul play</option>
+                        <option value="Violent conduct">Violent conduct</option>
+                        <option value="Spitting">Spitting</option>
+                        <option value="Offensive/insulting language">Offensive/insulting language</option>
+                        <option value="Second yellow card">Second yellow card</option>
+                    </select>
+                    <input type="text" class="form-input" style="flex: 1;" placeholder="Additional Notes (optional)" data-card-index="${newIndex}" data-field="notes">
+                </div>
             </div>
         `;
         
@@ -750,6 +787,7 @@ class CheckInViewApp {
             const cardType = cardItem.querySelector('[data-field="cardType"]').value;
             const minute = cardItem.querySelector('[data-field="minute"]').value;
             const reason = cardItem.querySelector('[data-field="reason"]').value;
+            const notes = cardItem.querySelector('[data-field="notes"]').value;
             
             if (memberId && cardType) {
                 // Determine team type
@@ -761,7 +799,8 @@ class CheckInViewApp {
                     teamType: teamType,
                     cardType: cardType,
                     minute: minute ? parseInt(minute) : null,
-                    reason: reason || null
+                    reason: reason || null,
+                    notes: notes || null
                 });
             }
         });
