@@ -1,10 +1,10 @@
 /**
- * CheckIn App v2.14.0 - JavaScript Frontend
+ * CheckIn App v2.14.1 - JavaScript Frontend
  * Works with PHP/SQLite backend
  */
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '2.14.0';
+const APP_VERSION = '2.14.1';
 
 class CheckInApp {
     constructor() {
@@ -780,57 +780,57 @@ class CheckInApp {
         playerCards.sort((a, b) => new Date(b.eventDate) - new Date(a.eventDate));
         
         const modal = this.createModal(`Player Profile: ${member.name}`, `
-            <div style="margin-bottom: 25px; padding: 20px; background: #f8f9fa; border-radius: 12px; text-align: center;">
-                <div style="margin-bottom: 15px;">
+            <div style="margin-bottom: 20px; padding: 15px; background: #f8f9fa; border-radius: 12px; text-align: center;">
+                <div style="margin-bottom: 12px;">
                     ${member.photo ? 
-                        `<img src="${member.photo}" alt="${member.name}" style="width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 3px solid #2196F3;">` :
-                        `<div style="width: 80px; height: 80px; border-radius: 50%; background: #e9ecef; margin: 0 auto; display: flex; align-items: center; justify-content: center; font-size: 2em; color: #6c757d;">👤</div>`
+                        `<img src="${member.photo}" alt="${member.name}" style="width: 60px; height: 60px; border-radius: 50%; object-fit: cover; border: 3px solid #2196F3;">` :
+                        `<div style="width: 60px; height: 60px; border-radius: 50%; background: #e9ecef; margin: 0 auto; display: flex; align-items: center; justify-content: center; font-size: 1.5em; color: #6c757d;">👤</div>`
                     }
                 </div>
-                <h3 style="margin: 0 0 5px 0; color: #333;">${member.name}</h3>
-                <p style="margin: 0; color: #666; font-size: 0.9em;">
+                <h3 style="margin: 0 0 4px 0; color: #333; font-size: 1.1em;">${member.name}</h3>
+                <p style="margin: 0; color: #666; font-size: 0.85em;">
                     ${team.name}${member.jerseyNumber ? ` • #${member.jerseyNumber}` : ''}${member.gender ? ` • ${member.gender}` : ''}
                     ${member.id === team.captainId ? ' • 👑 Captain' : ''}
                 </p>
             </div>
             
-            <div style="margin-bottom: 20px;">
-                <h4 style="margin: 0 0 15px 0; color: #333; display: flex; align-items: center; gap: 8px;">
+            <div style="margin-bottom: 15px;">
+                <h4 style="margin: 0 0 12px 0; color: #333; display: flex; align-items: center; gap: 8px; font-size: 1em;">
                     📋 Disciplinary Record 
-                    <span style="background: ${playerCards.length > 0 ? '#dc3545' : '#28a745'}; color: white; padding: 2px 8px; border-radius: 12px; font-size: 0.8em; font-weight: normal;">
+                    <span style="background: ${playerCards.length > 0 ? '#dc3545' : '#28a745'}; color: white; padding: 2px 6px; border-radius: 10px; font-size: 0.75em; font-weight: normal;">
                         ${playerCards.length} card${playerCards.length !== 1 ? 's' : ''}
                     </span>
                 </h4>
                 
                 ${playerCards.length > 0 ? `
-                    <div style="max-height: 300px; overflow-y: auto; border: 1px solid #e9ecef; border-radius: 8px;">
+                    <div style="max-height: 200px; overflow-y: auto; border: 1px solid #e9ecef; border-radius: 8px;">
                         ${playerCards.map(card => {
                             const cardIcon = card.cardType === 'yellow' ? '🟨' : '🟥';
                             const cardColor = card.cardType === 'yellow' ? '#ffc107' : '#dc3545';
                             
                             return `
-                                <div style="padding: 15px; border-bottom: 1px solid #f8f9fa; background: white;">
-                                    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
-                                        <span style="font-size: 1.2em;">${cardIcon}</span>
+                                <div style="padding: 12px; border-bottom: 1px solid #f8f9fa; background: white;">
+                                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+                                        <span style="font-size: 1.1em;">${cardIcon}</span>
                                         <div style="flex: 1;">
-                                            <strong style="color: ${cardColor}; text-transform: capitalize;">${card.cardType} Card</strong>
-                                            ${card.minute ? `<span style="color: #666;"> - ${card.minute}'</span>` : ''}
+                                            <strong style="color: ${cardColor}; text-transform: capitalize; font-size: 0.9em;">${card.cardType} Card</strong>
+                                            ${card.minute ? `<span style="color: #666; font-size: 0.8em;"> - ${card.minute}'</span>` : ''}
                                         </div>
-                                        <small style="color: #666;">${new Date(card.eventDate).toLocaleDateString()}</small>
+                                        <small style="color: #666; font-size: 0.75em;">${new Date(card.eventDate).toLocaleDateString()}</small>
                                     </div>
-                                    <div style="font-size: 0.9em; color: #666; margin-bottom: 5px;">
+                                    <div style="font-size: 0.8em; color: #666; margin-bottom: 3px;">
                                         <strong>Event:</strong> ${card.eventName}
                                     </div>
-                                    <div style="font-size: 0.9em; color: #666; margin-bottom: 5px;">
+                                    <div style="font-size: 0.8em; color: #666; margin-bottom: 3px;">
                                         <strong>Match:</strong> ${card.matchInfo}
                                     </div>
                                     ${card.reason ? `
-                                        <div style="font-size: 0.9em; color: #666; margin-bottom: 5px;">
+                                        <div style="font-size: 0.8em; color: #666; margin-bottom: 3px;">
                                             <strong>Reason:</strong> ${card.reason}
                                         </div>
                                     ` : ''}
                                     ${card.notes ? `
-                                        <div style="font-size: 0.85em; color: #888; font-style: italic;">
+                                        <div style="font-size: 0.75em; color: #888; font-style: italic;">
                                             <strong>Notes:</strong> ${card.notes}
                                         </div>
                                     ` : ''}
@@ -839,9 +839,9 @@ class CheckInApp {
                         }).join('')}
                     </div>
                 ` : `
-                    <div style="text-align: center; padding: 40px; color: #666; background: #f8f9fa; border-radius: 8px;">
-                        <div style="font-size: 3em; margin-bottom: 10px;">✅</div>
-                        <p style="margin: 0; font-style: italic;">Clean record - No disciplinary actions</p>
+                    <div style="text-align: center; padding: 30px; color: #666; background: #f8f9fa; border-radius: 8px;">
+                        <div style="font-size: 2em; margin-bottom: 8px;">✅</div>
+                        <p style="margin: 0; font-style: italic; font-size: 0.9em;">Clean record - No disciplinary actions</p>
                     </div>
                 `}
             </div>
@@ -1214,11 +1214,11 @@ class CheckInApp {
             <div style="display: flex; gap: 15px;">
                 <div class="form-group" style="flex: 1;">
                     <label class="form-label">${homeTeam.name} Score</label>
-                    <input type="number" class="form-input" id="home-score" value="${match.homeScore || ''}" min="0">
+                    <input type="number" class="form-input" id="home-score" value="${match.homeScore !== null ? match.homeScore : ''}" min="0">
                 </div>
                 <div class="form-group" style="flex: 1;">
                     <label class="form-label">${awayTeam.name} Score</label>
-                    <input type="number" class="form-input" id="away-score" value="${match.awayScore || ''}" min="0">
+                    <input type="number" class="form-input" id="away-score" value="${match.awayScore !== null ? match.awayScore : ''}" min="0">
                 </div>
             </div>
             
