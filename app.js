@@ -1,10 +1,10 @@
 /**
- * CheckIn App v2.13.0 - JavaScript Frontend
+ * CheckIn App v2.14.0 - JavaScript Frontend
  * Works with PHP/SQLite backend
  */
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '2.13.0';
+const APP_VERSION = '2.14.0';
 
 class CheckInApp {
     constructor() {
@@ -261,6 +261,7 @@ class CheckInApp {
                                 </div>
                             </div>
                             <div class="member-actions">
+                                <button class="btn btn-small" onclick="app.viewPlayerProfile('${team.id}', '${member.id}')" title="View Profile">👤</button>
                                 <button class="btn btn-small btn-secondary" onclick="app.editMember('${team.id}', '${member.id}')" title="Edit Member">✏️</button>
                                 <button class="btn btn-small btn-danger" onclick="app.deleteMember('${team.id}', '${member.id}')" title="Delete Member">🗑️</button>
                             </div>
@@ -741,6 +742,116 @@ class CheckInApp {
         } catch (error) {
             alert('Failed to delete member. Please try again.');
         }
+    }
+    
+    // Player Profile Management
+    viewPlayerProfile(teamId, memberId) {
+        const team = this.teams.find(t => t.id === teamId);
+        const member = team?.members.find(m => m.id === memberId);
+        
+        if (!team || !member) return;
+        
+        // Get all cards for this player across all events
+        const playerCards = [];
+        this.events.forEach(event => {
+            event.matches.forEach(match => {
+                if (match.cards) {
+                    match.cards.forEach(card => {
+                        if (card.memberId === memberId) {
+                            const homeTeam = this.teams.find(t => t.id === match.homeTeamId);
+                            const awayTeam = this.teams.find(t => t.id === match.awayTeamId);
+                            
+                            playerCards.push({
+                                eventName: event.name,
+                                eventDate: event.date,
+                                matchInfo: `${homeTeam?.name || 'Unknown'} vs ${awayTeam?.name || 'Unknown'}`,
+                                cardType: card.cardType,
+                                reason: card.reason,
+                                notes: card.notes,
+                                minute: card.minute
+                            });
+                        }
+                    });
+                }
+            });
+        });
+        
+        // Sort cards by date (most recent first)
+        playerCards.sort((a, b) => new Date(b.eventDate) - new Date(a.eventDate));
+        
+        const modal = this.createModal(`Player Profile: ${member.name}`, `
+            <div style="margin-bottom: 25px; padding: 20px; background: #f8f9fa; border-radius: 12px; text-align: center;">
+                <div style="margin-bottom: 15px;">
+                    ${member.photo ? 
+                        `<img src="${member.photo}" alt="${member.name}" style="width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 3px solid #2196F3;">` :
+                        `<div style="width: 80px; height: 80px; border-radius: 50%; background: #e9ecef; margin: 0 auto; display: flex; align-items: center; justify-content: center; font-size: 2em; color: #6c757d;">👤</div>`
+                    }
+                </div>
+                <h3 style="margin: 0 0 5px 0; color: #333;">${member.name}</h3>
+                <p style="margin: 0; color: #666; font-size: 0.9em;">
+                    ${team.name}${member.jerseyNumber ? ` • #${member.jerseyNumber}` : ''}${member.gender ? ` • ${member.gender}` : ''}
+                    ${member.id === team.captainId ? ' • 👑 Captain' : ''}
+                </p>
+            </div>
+            
+            <div style="margin-bottom: 20px;">
+                <h4 style="margin: 0 0 15px 0; color: #333; display: flex; align-items: center; gap: 8px;">
+                    📋 Disciplinary Record 
+                    <span style="background: ${playerCards.length > 0 ? '#dc3545' : '#28a745'}; color: white; padding: 2px 8px; border-radius: 12px; font-size: 0.8em; font-weight: normal;">
+                        ${playerCards.length} card${playerCards.length !== 1 ? 's' : ''}
+                    </span>
+                </h4>
+                
+                ${playerCards.length > 0 ? `
+                    <div style="max-height: 300px; overflow-y: auto; border: 1px solid #e9ecef; border-radius: 8px;">
+                        ${playerCards.map(card => {
+                            const cardIcon = card.cardType === 'yellow' ? '🟨' : '🟥';
+                            const cardColor = card.cardType === 'yellow' ? '#ffc107' : '#dc3545';
+                            
+                            return `
+                                <div style="padding: 15px; border-bottom: 1px solid #f8f9fa; background: white;">
+                                    <div style="display: flex; align-items: center; gap: 10px; margin-bottom: 8px;">
+                                        <span style="font-size: 1.2em;">${cardIcon}</span>
+                                        <div style="flex: 1;">
+                                            <strong style="color: ${cardColor}; text-transform: capitalize;">${card.cardType} Card</strong>
+                                            ${card.minute ? `<span style="color: #666;"> - ${card.minute}'</span>` : ''}
+                                        </div>
+                                        <small style="color: #666;">${new Date(card.eventDate).toLocaleDateString()}</small>
+                                    </div>
+                                    <div style="font-size: 0.9em; color: #666; margin-bottom: 5px;">
+                                        <strong>Event:</strong> ${card.eventName}
+                                    </div>
+                                    <div style="font-size: 0.9em; color: #666; margin-bottom: 5px;">
+                                        <strong>Match:</strong> ${card.matchInfo}
+                                    </div>
+                                    ${card.reason ? `
+                                        <div style="font-size: 0.9em; color: #666; margin-bottom: 5px;">
+                                            <strong>Reason:</strong> ${card.reason}
+                                        </div>
+                                    ` : ''}
+                                    ${card.notes ? `
+                                        <div style="font-size: 0.85em; color: #888; font-style: italic;">
+                                            <strong>Notes:</strong> ${card.notes}
+                                        </div>
+                                    ` : ''}
+                                </div>
+                            `;
+                        }).join('')}
+                    </div>
+                ` : `
+                    <div style="text-align: center; padding: 40px; color: #666; background: #f8f9fa; border-radius: 8px;">
+                        <div style="font-size: 3em; margin-bottom: 10px;">✅</div>
+                        <p style="margin: 0; font-style: italic;">Clean record - No disciplinary actions</p>
+                    </div>
+                `}
+            </div>
+            
+            <div style="text-align: center;">
+                <button class="btn btn-secondary" onclick="app.closeModal()">Close</button>
+            </div>
+        `);
+        
+        document.body.appendChild(modal);
     }
     
     // Event Management
