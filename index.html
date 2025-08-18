@@ -421,6 +421,13 @@
             font-weight: 500;
         }
         
+        .match-cards {
+            color: #666;
+            font-size: 0.9em;
+            margin-bottom: 5px;
+            font-weight: 500;
+        }
+        
         .referee-contact {
             color: #666;
             font-size: 0.85em;
@@ -986,7 +993,15 @@
         <div id="events-section" class="content-section active">
             <div class="section-header">
                 <h2 class="section-title">Events Management</h2>
-                <button class="btn" onclick="app.showAddEventModal()" title="Add Event">+ Add Event</button>
+                <div class="header-controls">
+                    <div class="filter-toggle">
+                        <label class="toggle-label">
+                            <input type="checkbox" id="show-past-events" onchange="app.renderEvents()">
+                            <span>Show Past Events</span>
+                        </label>
+                    </div>
+                    <button class="btn" onclick="app.showAddEventModal()" title="Add Event">+ Add Event</button>
+                </div>
             </div>
             
             <div id="events-container" class="events-list">
@@ -1009,7 +1024,7 @@
     
     <div class="version-footer">v<span id="footer-version"></span></div>
     
-    <script src="app.js?v=2.11.0"></script>
+    <script src="app.js?v=2.12.0"></script>
     <script>
         // Set version numbers from JavaScript constant
         document.getElementById('app-version').textContent = APP_VERSION;

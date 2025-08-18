@@ -4,7 +4,7 @@
  */
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '2.11.0';
+const APP_VERSION = '2.12.0';
 
 class CheckInApp {
     constructor() {
@@ -274,6 +274,7 @@ class CheckInApp {
     
     renderEvents() {
         const container = document.getElementById('events-container');
+        const showPastEvents = document.getElementById('show-past-events')?.checked || false;
         
         if (this.events.length === 0) {
             container.innerHTML = `
@@ -285,7 +286,41 @@ class CheckInApp {
             return;
         }
         
-        container.innerHTML = this.events.map(event => `
+        // Filter events based on date and toggle
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        let eventsToShow = this.events.filter(event => {
+            const eventDate = new Date(event.date);
+            eventDate.setHours(0, 0, 0, 0);
+            
+            if (showPastEvents) {
+                return eventDate < today; // Show only past events
+            } else {
+                return eventDate >= today; // Show only future events
+            }
+        });
+        
+        // Sort chronologically (future events ascending, past events descending)
+        eventsToShow.sort((a, b) => {
+            const dateA = new Date(a.date);
+            const dateB = new Date(b.date);
+            return showPastEvents ? dateB - dateA : dateA - dateB;
+        });
+        
+        if (eventsToShow.length === 0) {
+            const message = showPastEvents ? 'No past events' : 'No upcoming events';
+            const subtext = showPastEvents ? 'Past events will appear here' : 'Upcoming events will appear here';
+            container.innerHTML = `
+                <div class="empty-state">
+                    <h3>${message}</h3>
+                    <p>${subtext}</p>
+                </div>
+            `;
+            return;
+        }
+        
+        container.innerHTML = eventsToShow.map(event => `
             <div class="event-card">
                 <div class="event-header">
                     <div>
@@ -335,6 +370,24 @@ class CheckInApp {
                         const homeTotalPlayers = homeTeam ? homeTeam.members.length : 0;
                         const awayTotalPlayers = awayTeam ? awayTeam.members.length : 0;
                         
+                        // Match status and score display
+                        const hasScore = match.homeScore !== null && match.awayScore !== null;
+                        const scoreDisplay = hasScore ? `${match.homeScore} - ${match.awayScore}` : '';
+                        const statusDisplay = match.matchStatus === 'completed' ? '✅' : 
+                                            match.matchStatus === 'in_progress' ? '⏱️' : 
+                                            match.matchStatus === 'cancelled' ? '❌' : '';
+                        
+                        // Cards count
+                        const cardCounts = match.cards ? match.cards.reduce((acc, card) => {
+                            acc[card.cardType] = (acc[card.cardType] || 0) + 1;
+                            return acc;
+                        }, {}) : {};
+                        
+                        const cardsDisplay = [
+                            cardCounts.yellow ? `🟨${cardCounts.yellow}` : '',
+                            cardCounts.red ? `🟥${cardCounts.red}` : ''
+                        ].filter(Boolean).join(' ');
+                        
                         return `
                             <div class="match-item">
                                 <div class="match-teams">
@@ -343,7 +396,10 @@ class CheckInApp {
                                         ${homeTeam && homeTeam.category ? `<div class="team-category-small">${homeTeam.category}</div>` : ''}
                                         <div class="attendance-count">👥 ${homeAttendanceCount}/${homeTotalPlayers}</div>
                                     </div>
-                                    <span class="vs-text">VS</span>
+                                    <div class="vs-text">
+                                        ${hasScore ? scoreDisplay : 'VS'}
+                                        ${statusDisplay ? `<div style="font-size: 0.8em;">${statusDisplay}</div>` : ''}
+                                    </div>
                                     <div class="team-info-match">
                                         <span class="team-name-match">${awayTeam ? awayTeam.name : 'Unknown Team'}</span>
                                         ${awayTeam && awayTeam.category ? `<div class="team-category-small">${awayTeam.category}</div>` : ''}
@@ -353,8 +409,10 @@ class CheckInApp {
                                 ${match.field ? `<div class="match-field">Field: ${match.field}</div>` : ''}
                                 ${match.time ? `<div class="match-time">Time: ${match.time.substring(0, 5)}</div>` : ''}
                                 ${mainReferee ? `<div class="match-referee">Referee: ${mainReferee.name}${assistantReferee ? `, ${assistantReferee.name}` : ''}</div>` : ''}
+                                ${cardsDisplay ? `<div class="match-cards">Cards: ${cardsDisplay}</div>` : ''}
                                 <div class="match-actions">
                                     <button class="btn btn-small" onclick="app.viewMatch('${event.id}', '${match.id}')" title="View Match">👁️</button>
+                                    <button class="btn btn-small btn-secondary" onclick="app.editMatchResult('${event.id}', '${match.id}')" title="Edit Result">🏆</button>
                                     <button class="btn btn-small btn-danger" onclick="app.deleteMatch('${event.id}', '${match.id}')" title="Delete Match">🗑️</button>
                                 </div>
                             </div>
@@ -984,8 +1042,12 @@ class CheckInApp {
             mainRefereeId: mainRefereeId || null,
             assistantRefereeId: assistantRefereeId || null,
             notes: notes,
+            homeScore: null,
+            awayScore: null,
+            matchStatus: 'scheduled',
             homeTeamAttendees: [],
-            awayTeamAttendees: []
+            awayTeamAttendees: [],
+            cards: []
         };
         
         event.matches.push(newMatch);
@@ -1014,6 +1076,182 @@ class CheckInApp {
             this.renderEvents();
         } catch (error) {
             alert('Failed to delete match. Please try again.');
+        }
+    }
+    
+    editMatchResult(eventId, matchId) {
+        const event = this.events.find(e => e.id === eventId);
+        const match = event.matches.find(m => m.id === matchId);
+        const homeTeam = this.teams.find(t => t.id === match.homeTeamId);
+        const awayTeam = this.teams.find(t => t.id === match.awayTeamId);
+        
+        if (!match) return;
+        
+        // Store current match for addCard function
+        this.currentMatch = match;
+        
+        const modal = this.createModal(`Match Result: ${homeTeam.name} vs ${awayTeam.name}`, `
+            <div class="form-group">
+                <label class="form-label">Match Status</label>
+                <select class="form-select" id="match-status">
+                    <option value="scheduled" ${match.matchStatus === 'scheduled' ? 'selected' : ''}>Scheduled</option>
+                    <option value="in_progress" ${match.matchStatus === 'in_progress' ? 'selected' : ''}>In Progress</option>
+                    <option value="completed" ${match.matchStatus === 'completed' ? 'selected' : ''}>Completed</option>
+                    <option value="cancelled" ${match.matchStatus === 'cancelled' ? 'selected' : ''}>Cancelled</option>
+                </select>
+            </div>
+            <div style="display: flex; gap: 15px;">
+                <div class="form-group" style="flex: 1;">
+                    <label class="form-label">${homeTeam.name} Score</label>
+                    <input type="number" class="form-input" id="home-score" value="${match.homeScore || ''}" min="0">
+                </div>
+                <div class="form-group" style="flex: 1;">
+                    <label class="form-label">${awayTeam.name} Score</label>
+                    <input type="number" class="form-input" id="away-score" value="${match.awayScore || ''}" min="0">
+                </div>
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Cards & Disciplinary Actions</label>
+                <div id="cards-container">
+                    ${match.cards && match.cards.length > 0 ? match.cards.map((card, index) => {
+                        return `
+                            <div class="card-item" style="display: flex; gap: 10px; align-items: center; margin-bottom: 10px; padding: 10px; background: #f8f9fa; border-radius: 8px;">
+                                <select class="form-select" style="flex: 1;" data-card-index="${index}" data-field="memberId">
+                                    <option value="">Select Player</option>
+                                    ${homeTeam.members.map(m => `<option value="${m.id}" ${card.memberId === m.id ? 'selected' : ''}>${m.name} (${homeTeam.name})</option>`).join('')}
+                                    ${awayTeam.members.map(m => `<option value="${m.id}" ${card.memberId === m.id ? 'selected' : ''}>${m.name} (${awayTeam.name})</option>`).join('')}
+                                </select>
+                                <select class="form-select" style="width: 120px;" data-card-index="${index}" data-field="cardType">
+                                    <option value="yellow" ${card.cardType === 'yellow' ? 'selected' : ''}>🟨 Yellow</option>
+                                    <option value="red" ${card.cardType === 'red' ? 'selected' : ''}>🟥 Red</option>
+                                </select>
+                                <input type="number" class="form-input" style="width: 80px;" placeholder="Min" data-card-index="${index}" data-field="minute" value="${card.minute || ''}" min="1" max="120">
+                                <input type="text" class="form-input" style="flex: 1;" placeholder="Reason" data-card-index="${index}" data-field="reason" value="${card.reason || ''}">
+                                <button class="btn btn-small btn-danger" onclick="app.removeCard(${index})">🗑️</button>
+                            </div>
+                        `;
+                    }).join('') : '<p style="text-align: center; color: #666; font-style: italic;">No cards issued</p>'}
+                </div>
+                <button class="btn btn-secondary" onclick="app.addCard()" style="margin-top: 10px;">+ Add Card</button>
+            </div>
+            
+            <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px;">
+                <button class="btn btn-secondary" onclick="app.closeModal()">Cancel</button>
+                <button class="btn" onclick="app.saveMatchResult('${eventId}', '${matchId}')">Save Result</button>
+            </div>
+        `);
+        
+        document.body.appendChild(modal);
+    }
+    
+    addCard() {
+        const container = document.getElementById('cards-container');
+        const existingCards = container.querySelectorAll('.card-item');
+        const newIndex = existingCards.length;
+        
+        // Remove "no cards" message if it exists
+        const noCardsMsg = container.querySelector('p');
+        if (noCardsMsg) noCardsMsg.remove();
+        
+        const homeTeam = this.teams.find(t => t.id === this.currentMatch?.homeTeamId);
+        const awayTeam = this.teams.find(t => t.id === this.currentMatch?.awayTeamId);
+        
+        const cardHtml = `
+            <div class="card-item" style="display: flex; gap: 10px; align-items: center; margin-bottom: 10px; padding: 10px; background: #f8f9fa; border-radius: 8px;">
+                <select class="form-select" style="flex: 1;" data-card-index="${newIndex}" data-field="memberId">
+                    <option value="">Select Player</option>
+                    ${homeTeam?.members.map(m => `<option value="${m.id}">${m.name} (${homeTeam.name})</option>`).join('') || ''}
+                    ${awayTeam?.members.map(m => `<option value="${m.id}">${m.name} (${awayTeam.name})</option>`).join('') || ''}
+                </select>
+                <select class="form-select" style="width: 120px;" data-card-index="${newIndex}" data-field="cardType">
+                    <option value="yellow">🟨 Yellow</option>
+                    <option value="red">🟥 Red</option>
+                </select>
+                <input type="number" class="form-input" style="width: 80px;" placeholder="Min" data-card-index="${newIndex}" data-field="minute" min="1" max="120">
+                <input type="text" class="form-input" style="flex: 1;" placeholder="Reason" data-card-index="${newIndex}" data-field="reason">
+                <button class="btn btn-small btn-danger" onclick="app.removeCard(${newIndex})">🗑️</button>
+            </div>
+        `;
+        
+        container.insertAdjacentHTML('beforeend', cardHtml);
+    }
+    
+    removeCard(index) {
+        const cardItems = document.querySelectorAll('.card-item');
+        if (cardItems[index]) {
+            cardItems[index].remove();
+            
+            // Re-index remaining cards
+            const remainingCards = document.querySelectorAll('.card-item');
+            remainingCards.forEach((card, newIndex) => {
+                card.querySelectorAll('[data-card-index]').forEach(element => {
+                    element.setAttribute('data-card-index', newIndex);
+                });
+                const deleteBtn = card.querySelector('.btn-danger');
+                if (deleteBtn) {
+                    deleteBtn.setAttribute('onclick', `app.removeCard(${newIndex})`);
+                }
+            });
+            
+            // Add "no cards" message if no cards remain
+            if (remainingCards.length === 0) {
+                document.getElementById('cards-container').innerHTML = '<p style="text-align: center; color: #666; font-style: italic;">No cards issued</p>';
+            }
+        }
+    }
+    
+    async saveMatchResult(eventId, matchId) {
+        const event = this.events.find(e => e.id === eventId);
+        const match = event.matches.find(m => m.id === matchId);
+        
+        if (!match) return;
+        
+        // Get form values
+        const matchStatus = document.getElementById('match-status').value;
+        const homeScore = document.getElementById('home-score').value;
+        const awayScore = document.getElementById('away-score').value;
+        
+        // Update match data
+        match.matchStatus = matchStatus;
+        match.homeScore = homeScore ? parseInt(homeScore) : null;
+        match.awayScore = awayScore ? parseInt(awayScore) : null;
+        
+        // Collect cards data
+        const cardItems = document.querySelectorAll('.card-item');
+        const cards = [];
+        const homeTeam = this.teams.find(t => t.id === match.homeTeamId);
+        const awayTeam = this.teams.find(t => t.id === match.awayTeamId);
+        
+        cardItems.forEach((cardItem, index) => {
+            const memberId = cardItem.querySelector('[data-field="memberId"]').value;
+            const cardType = cardItem.querySelector('[data-field="cardType"]').value;
+            const minute = cardItem.querySelector('[data-field="minute"]').value;
+            const reason = cardItem.querySelector('[data-field="reason"]').value;
+            
+            if (memberId && cardType) {
+                // Determine team type
+                const isHomePlayer = homeTeam.members.some(m => m.id === memberId);
+                const teamType = isHomePlayer ? 'home' : 'away';
+                
+                cards.push({
+                    memberId: memberId,
+                    teamType: teamType,
+                    cardType: cardType,
+                    minute: minute ? parseInt(minute) : null,
+                    reason: reason || null
+                });
+            }
+        });
+        
+        match.cards = cards;
+        
+        try {
+            await this.saveEvents();
+            this.renderEvents();
+            this.closeModal();
+        } catch (error) {
+            alert('Failed to save match result. Please try again.');
         }
     }
     

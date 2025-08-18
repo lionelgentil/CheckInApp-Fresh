@@ -4,7 +4,7 @@
  */
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '2.11.0';
+const APP_VERSION = '2.12.0';
 
 class CheckInViewApp {
     constructor() {
@@ -278,6 +278,7 @@ class CheckInViewApp {
     
     renderEvents() {
         const container = document.getElementById('events-container');
+        const showPastEvents = document.getElementById('show-past-events')?.checked || false;
         
         if (this.events.length === 0) {
             container.innerHTML = `
@@ -289,7 +290,41 @@ class CheckInViewApp {
             return;
         }
         
-        container.innerHTML = this.events.map(event => `
+        // Filter events based on date and toggle
+        const today = new Date();
+        today.setHours(0, 0, 0, 0);
+        
+        let eventsToShow = this.events.filter(event => {
+            const eventDate = new Date(event.date);
+            eventDate.setHours(0, 0, 0, 0);
+            
+            if (showPastEvents) {
+                return eventDate < today; // Show only past events
+            } else {
+                return eventDate >= today; // Show only future events
+            }
+        });
+        
+        // Sort chronologically (future events ascending, past events descending)
+        eventsToShow.sort((a, b) => {
+            const dateA = new Date(a.date);
+            const dateB = new Date(b.date);
+            return showPastEvents ? dateB - dateA : dateA - dateB;
+        });
+        
+        if (eventsToShow.length === 0) {
+            const message = showPastEvents ? 'No past events' : 'No upcoming events';
+            const subtext = showPastEvents ? 'Past events will appear here' : 'Upcoming events will appear here';
+            container.innerHTML = `
+                <div class="empty-state">
+                    <h3>${message}</h3>
+                    <p>${subtext}</p>
+                </div>
+            `;
+            return;
+        }
+        
+        container.innerHTML = eventsToShow.map(event => `
             <div class="event-card">
                 <div class="event-header">
                     <div>
@@ -334,6 +369,24 @@ class CheckInViewApp {
                         const homeTotalPlayers = homeTeam ? homeTeam.members.length : 0;
                         const awayTotalPlayers = awayTeam ? awayTeam.members.length : 0;
                         
+                        // Match status and score display
+                        const hasScore = match.homeScore !== null && match.awayScore !== null;
+                        const scoreDisplay = hasScore ? `${match.homeScore} - ${match.awayScore}` : '';
+                        const statusDisplay = match.matchStatus === 'completed' ? '✅' : 
+                                            match.matchStatus === 'in_progress' ? '⏱️' : 
+                                            match.matchStatus === 'cancelled' ? '❌' : '';
+                        
+                        // Cards count
+                        const cardCounts = match.cards ? match.cards.reduce((acc, card) => {
+                            acc[card.cardType] = (acc[card.cardType] || 0) + 1;
+                            return acc;
+                        }, {}) : {};
+                        
+                        const cardsDisplay = [
+                            cardCounts.yellow ? `🟨${cardCounts.yellow}` : '',
+                            cardCounts.red ? `🟥${cardCounts.red}` : ''
+                        ].filter(Boolean).join(' ');
+                        
                         return `
                             <div class="match-item">
                                 <div class="match-teams">
@@ -342,7 +395,10 @@ class CheckInViewApp {
                                         ${homeTeam && homeTeam.category ? `<div class="team-category-small">${homeTeam.category}</div>` : ''}
                                         <div class="attendance-count">👥 ${homeAttendanceCount}/${homeTotalPlayers}</div>
                                     </div>
-                                    <span class="vs-text">VS</span>
+                                    <div class="vs-text">
+                                        ${hasScore ? scoreDisplay : 'VS'}
+                                        ${statusDisplay ? `<div style="font-size: 0.8em;">${statusDisplay}</div>` : ''}
+                                    </div>
                                     <div class="team-info-match">
                                         <span class="team-name-match">${awayTeam ? awayTeam.name : 'Unknown Team'}</span>
                                         ${awayTeam && awayTeam.category ? `<div class="team-category-small">${awayTeam.category}</div>` : ''}
@@ -352,6 +408,7 @@ class CheckInViewApp {
                                 ${match.field ? `<div class="match-field">Field: ${match.field}</div>` : ''}
                                 ${match.time ? `<div class="match-time">Time: ${match.time.substring(0, 5)}</div>` : ''}
                                 ${mainReferee ? `<div class="match-referee">Referee: ${mainReferee.name}${assistantReferee ? `, ${assistantReferee.name}` : ''}</div>` : ''}
+                                ${cardsDisplay ? `<div class="match-cards">Cards: ${cardsDisplay}</div>` : ''}
                                 <div class="match-actions">
                                     <button class="btn btn-small" onclick="app.viewMatch('${event.id}', '${match.id}')" title="View Match">👁️</button>
                                 </div>

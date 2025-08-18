@@ -5,7 +5,7 @@
  */
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '2.11.0';
+const APP_VERSION = '2.12.0';
 
 // Default photos - simple SVG avatars
 function getDefaultPhoto($gender) {
@@ -306,6 +306,29 @@ function getEvents($db) {
                 }
             }
             
+            // Get cards for this match
+            $cardsStmt = $db->prepare('
+                SELECT mc.*, tm.name as member_name
+                FROM match_cards mc
+                JOIN team_members tm ON mc.member_id = tm.id
+                WHERE mc.match_id = ?
+                ORDER BY mc.minute ASC
+            ');
+            $cardsStmt->execute([$match['id']]);
+            
+            $cards = [];
+            while ($card = $cardsStmt->fetch(PDO::FETCH_ASSOC)) {
+                $cards[] = [
+                    'id' => $card['id'],
+                    'memberId' => $card['member_id'],
+                    'memberName' => $card['member_name'],
+                    'teamType' => $card['team_type'],
+                    'cardType' => $card['card_type'],
+                    'reason' => $card['reason'],
+                    'minute' => $card['minute'] ? (int)$card['minute'] : null
+                ];
+            }
+            
             $matches[] = [
                 'id' => $match['id'],
                 'homeTeamId' => $match['home_team_id'],
@@ -315,8 +338,12 @@ function getEvents($db) {
                 'mainRefereeId' => $match['main_referee_id'],
                 'assistantRefereeId' => $match['assistant_referee_id'],
                 'notes' => $match['notes'],
+                'homeScore' => $match['home_score'] ? (int)$match['home_score'] : null,
+                'awayScore' => $match['away_score'] ? (int)$match['away_score'] : null,
+                'matchStatus' => $match['match_status'] ?? 'scheduled',
                 'homeTeamAttendees' => $homeAttendees,
-                'awayTeamAttendees' => $awayAttendees
+                'awayTeamAttendees' => $awayAttendees,
+                'cards' => $cards
             ];
         }
         
@@ -359,6 +386,7 @@ function saveEvents($db) {
     $db->beginTransaction();
     
     try {
+        $db->exec('DELETE FROM match_cards');
         $db->exec('DELETE FROM general_attendees');
         $db->exec('DELETE FROM match_attendees');
         $db->exec('DELETE FROM matches');
@@ -379,8 +407,8 @@ function saveEvents($db) {
             if (isset($event['matches']) && is_array($event['matches'])) {
                 foreach ($event['matches'] as $match) {
                     $stmt = $db->prepare('
-                        INSERT INTO matches (id, event_id, home_team_id, away_team_id, field, match_time, main_referee_id, assistant_referee_id, notes)
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        INSERT INTO matches (id, event_id, home_team_id, away_team_id, field, match_time, main_referee_id, assistant_referee_id, notes, home_score, away_score, match_status)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     ');
                     $stmt->execute([
                         $match['id'],
@@ -391,7 +419,10 @@ function saveEvents($db) {
                         $match['time'] ?? null,
                         $match['mainRefereeId'] ?? null,
                         $match['assistantRefereeId'] ?? null,
-                        $match['notes'] ?? null
+                        $match['notes'] ?? null,
+                        $match['homeScore'] ?? null,
+                        $match['awayScore'] ?? null,
+                        $match['matchStatus'] ?? 'scheduled'
                     ]);
                     
                     // Save attendees
@@ -432,6 +463,30 @@ function saveEvents($db) {
                             } catch (Exception $e) {
                                 error_log("Error saving away attendee: " . $e->getMessage());
                                 error_log("Match ID: " . $match['id'] . ", Member ID: " . $attendee['memberId']);
+                                throw $e;
+                            }
+                        }
+                    }
+                    
+                    // Save cards
+                    if (isset($match['cards']) && is_array($match['cards'])) {
+                        foreach ($match['cards'] as $card) {
+                            try {
+                                $stmt = $db->prepare('
+                                    INSERT INTO match_cards (match_id, member_id, team_type, card_type, reason, minute)
+                                    VALUES (?, ?, ?, ?, ?, ?)
+                                ');
+                                $stmt->execute([
+                                    $match['id'],
+                                    $card['memberId'],
+                                    $card['teamType'],
+                                    $card['cardType'],
+                                    $card['reason'] ?? null,
+                                    $card['minute'] ?? null
+                                ]);
+                            } catch (Exception $e) {
+                                error_log("Error saving card: " . $e->getMessage());
+                                error_log("Match ID: " . $match['id'] . ", Member ID: " . $card['memberId']);
                                 throw $e;
                             }
                         }
@@ -586,8 +641,25 @@ function initializeDatabase($db) {
             main_referee_id TEXT,
             assistant_referee_id TEXT,
             notes TEXT,
+            home_score INTEGER DEFAULT NULL,
+            away_score INTEGER DEFAULT NULL,
+            match_status TEXT DEFAULT \'scheduled\' CHECK(match_status IN (\'scheduled\', \'in_progress\', \'completed\', \'cancelled\')),
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (event_id) REFERENCES events(id) ON DELETE CASCADE
+        )
+    ');
+    
+    $db->exec('
+        CREATE TABLE IF NOT EXISTS match_cards (
+            id SERIAL PRIMARY KEY,
+            match_id TEXT NOT NULL,
+            member_id TEXT NOT NULL,
+            team_type TEXT NOT NULL CHECK(team_type IN (\'home\', \'away\')),
+            card_type TEXT NOT NULL CHECK(card_type IN (\'yellow\', \'red\')),
+            reason TEXT,
+            minute INTEGER,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (match_id) REFERENCES matches(id) ON DELETE CASCADE
         )
     ');
     
@@ -632,6 +704,14 @@ function initializeDatabase($db) {
         $db->exec('ALTER TABLE matches ADD COLUMN IF NOT EXISTS main_referee_id TEXT');
         $db->exec('ALTER TABLE matches ADD COLUMN IF NOT EXISTS assistant_referee_id TEXT');
         $db->exec('ALTER TABLE teams ADD COLUMN IF NOT EXISTS captain_id TEXT');
+        
+        // Add match results columns
+        $db->exec('ALTER TABLE matches ADD COLUMN IF NOT EXISTS home_score INTEGER DEFAULT NULL');
+        $db->exec('ALTER TABLE matches ADD COLUMN IF NOT EXISTS away_score INTEGER DEFAULT NULL');
+        $db->exec('ALTER TABLE matches ADD COLUMN IF NOT EXISTS match_status TEXT DEFAULT \'scheduled\'');
+        
+        // Add indexes for new tables
+        $db->exec('CREATE INDEX IF NOT EXISTS idx_match_cards_match_id ON match_cards(match_id)');
     } catch (Exception $e) {
         // Columns might already exist, ignore errors
     }
