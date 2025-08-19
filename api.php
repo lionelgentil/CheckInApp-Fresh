@@ -5,7 +5,7 @@
  */
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '2.14.8';
+const APP_VERSION = '2.14.9';
 
 // Default photos - simple SVG avatars
 function getDefaultPhoto($gender) {
@@ -713,6 +713,7 @@ function getDisciplinaryRecords($db) {
             'eventDescription' => $record['event_description'],
             'suspensionMatches' => $record['suspension_matches'] ? (int)$record['suspension_matches'] : null,
             'suspensionServed' => $record['suspension_served'] ? true : false,
+            'suspensionServedDate' => $record['suspension_served_date'],
             'createdAt' => $record['created_at']
         ];
     }
@@ -760,6 +761,8 @@ function saveDisciplinaryRecords($db) {
         foreach ($input['records'] as $record) {
             // Ensure boolean values are properly handled
             $suspensionServed = false;
+            $suspensionServedDate = null;
+            
             if (isset($record['suspensionServed'])) {
                 if (is_bool($record['suspensionServed'])) {
                     $suspensionServed = $record['suspensionServed'];
@@ -768,6 +771,11 @@ function saveDisciplinaryRecords($db) {
                 } else {
                     $suspensionServed = (bool)$record['suspensionServed'];
                 }
+            }
+            
+            // Only set served date if suspension is actually served
+            if ($suspensionServed && isset($record['suspensionServedDate']) && !empty($record['suspensionServedDate'])) {
+                $suspensionServedDate = $record['suspensionServedDate'];
             }
             
             // Debug logging
@@ -789,8 +797,8 @@ function saveDisciplinaryRecords($db) {
             error_log("SQL Parameters: " . json_encode($params));
             
             $stmt = $db->prepare('
-                INSERT INTO player_disciplinary_records (member_id, card_type, reason, notes, incident_date, event_description, suspension_matches, suspension_served)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+                INSERT INTO player_disciplinary_records (member_id, card_type, reason, notes, incident_date, event_description, suspension_matches, suspension_served, suspension_served_date)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
             ');
             
             // Bind parameters explicitly with correct types
@@ -802,6 +810,7 @@ function saveDisciplinaryRecords($db) {
             $stmt->bindValue(6, $record['eventDescription'] ?? null, PDO::PARAM_STR);
             $stmt->bindValue(7, $record['suspensionMatches'] ?? null, PDO::PARAM_INT);
             $stmt->bindValue(8, $suspensionServed, PDO::PARAM_BOOL);
+            $stmt->bindValue(9, $suspensionServedDate, PDO::PARAM_STR);
             
             $stmt->execute();
         }
@@ -935,6 +944,7 @@ function initializeDatabase($db) {
             event_description TEXT,
             suspension_matches INTEGER DEFAULT NULL,
             suspension_served BOOLEAN DEFAULT FALSE,
+            suspension_served_date DATE DEFAULT NULL,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (member_id) REFERENCES team_members(id) ON DELETE CASCADE
         )
@@ -968,6 +978,7 @@ function initializeDatabase($db) {
         // Add suspension tracking columns to player_disciplinary_records
         $db->exec('ALTER TABLE player_disciplinary_records ADD COLUMN IF NOT EXISTS suspension_matches INTEGER DEFAULT NULL');
         $db->exec('ALTER TABLE player_disciplinary_records ADD COLUMN IF NOT EXISTS suspension_served BOOLEAN DEFAULT FALSE');
+        $db->exec('ALTER TABLE player_disciplinary_records ADD COLUMN IF NOT EXISTS suspension_served_date DATE DEFAULT NULL');
         
         // Add indexes for new tables
         $db->exec('CREATE INDEX IF NOT EXISTS idx_match_cards_match_id ON match_cards(match_id)');

@@ -4,7 +4,7 @@
  */
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '2.14.8';
+const APP_VERSION = '2.14.9';
 
 class CheckInApp {
     constructor() {
@@ -838,13 +838,17 @@ class CheckInApp {
                             </div>
                             <textarea class="form-input" placeholder="Additional Notes (optional)" data-record-index="${index}" data-field="notes" rows="2">${record.notes || ''}</textarea>
                             ${record.cardType === 'red' || (record.suspensionMatches !== null && record.suspensionMatches !== undefined) ? `
-                                <div style="display: flex; gap: 10px; align-items: center; margin-top: 8px; padding: 8px; background: #fff3cd; border-radius: 4px;">
+                                <div style="display: flex; gap: 10px; align-items: center; margin-top: 8px; padding: 8px; background: #fff3cd; border-radius: 4px; flex-wrap: wrap;">
                                     <label style="font-size: 0.85em; color: #856404; margin: 0;">Suspension:</label>
                                     <input type="number" class="form-input" style="width: 80px;" placeholder="Matches" data-record-index="${index}" data-field="suspensionMatches" value="${record.suspensionMatches || ''}" min="0" max="99">
                                     <label style="display: flex; align-items: center; gap: 4px; font-size: 0.85em; color: #856404; margin: 0;">
-                                        <input type="checkbox" data-record-index="${index}" data-field="suspensionServed" ${record.suspensionServed ? 'checked' : ''}>
+                                        <input type="checkbox" data-record-index="${index}" data-field="suspensionServed" ${record.suspensionServed ? 'checked' : ''} onchange="app.toggleSuspensionServedDate(${index})">
                                         Served
                                     </label>
+                                    <div id="served-date-section-${index}" style="display: ${record.suspensionServed ? 'flex' : 'none'}; align-items: center; gap: 4px;">
+                                        <label style="font-size: 0.85em; color: #856404; margin: 0;">on:</label>
+                                        <input type="date" class="form-input" style="width: 140px; padding: 4px 6px; font-size: 0.8em;" data-record-index="${index}" data-field="suspensionServedDate" value="${record.suspensionServedDate || ''}">
+                                    </div>
                                 </div>
                             ` : ''}
                         </div>
@@ -902,13 +906,17 @@ class CheckInApp {
                 </div>
                 <textarea class="form-input" placeholder="Additional Notes (optional)" data-record-index="${newIndex}" data-field="notes" rows="2"></textarea>
                 <div id="suspension-section-${newIndex}" style="display: none; margin-top: 8px; padding: 8px; background: #fff3cd; border-radius: 4px;">
-                    <div style="display: flex; gap: 10px; align-items: center;">
+                    <div style="display: flex; gap: 10px; align-items: center; flex-wrap: wrap;">
                         <label style="font-size: 0.85em; color: #856404; margin: 0;">Suspension:</label>
                         <input type="number" class="form-input" style="width: 80px;" placeholder="Matches" data-record-index="${newIndex}" data-field="suspensionMatches" min="0" max="99">
                         <label style="display: flex; align-items: center; gap: 4px; font-size: 0.85em; color: #856404; margin: 0;">
-                            <input type="checkbox" data-record-index="${newIndex}" data-field="suspensionServed">
+                            <input type="checkbox" data-record-index="${newIndex}" data-field="suspensionServed" onchange="app.toggleSuspensionServedDate(${newIndex})">
                             Served
                         </label>
+                        <div id="served-date-section-${newIndex}" style="display: none; align-items: center; gap: 4px;">
+                            <label style="font-size: 0.85em; color: #856404; margin: 0;">on:</label>
+                            <input type="date" class="form-input" style="width: 140px; padding: 4px 6px; font-size: 0.8em;" data-record-index="${newIndex}" data-field="suspensionServedDate">
+                        </div>
                     </div>
                 </div>
             </div>
@@ -933,8 +941,31 @@ class CheckInApp {
                 // Clear suspension fields when hiding
                 suspensionSection.querySelector('[data-field="suspensionMatches"]').value = '';
                 suspensionSection.querySelector('[data-field="suspensionServed"]').checked = false;
+                suspensionSection.querySelector('[data-field="suspensionServedDate"]').value = '';
+                // Hide served date section
+                const servedDateSection = suspensionSection.querySelector(`[id^="served-date-section-"]`);
+                if (servedDateSection) servedDateSection.style.display = 'none';
             }
         });
+    }
+    
+    toggleSuspensionServedDate(index) {
+        const checkbox = document.querySelector(`[data-record-index="${index}"][data-field="suspensionServed"]`);
+        const servedDateSection = document.getElementById(`served-date-section-${index}`);
+        const dateField = document.querySelector(`[data-record-index="${index}"][data-field="suspensionServedDate"]`);
+        
+        if (checkbox && servedDateSection) {
+            if (checkbox.checked) {
+                servedDateSection.style.display = 'flex';
+                // Set today's date as default if no date is set
+                if (!dateField.value) {
+                    dateField.value = new Date().toISOString().split('T')[0];
+                }
+            } else {
+                servedDateSection.style.display = 'none';
+                dateField.value = '';
+            }
+        }
     }
     
     removeDisciplinaryRecord(index) {
@@ -1003,11 +1034,13 @@ class CheckInApp {
             
             let suspensionMatches = null;
             let suspensionServed = false;
+            let suspensionServedDate = null;
             
             // Only collect suspension data for red cards
             if (cardType === 'red') {
                 const suspensionMatchesField = item.querySelector('[data-field="suspensionMatches"]');
                 const suspensionServedField = item.querySelector('[data-field="suspensionServed"]');
+                const suspensionServedDateField = item.querySelector('[data-field="suspensionServedDate"]');
                 
                 if (suspensionMatchesField && suspensionMatchesField.value) {
                     suspensionMatches = parseInt(suspensionMatchesField.value);
@@ -1015,6 +1048,11 @@ class CheckInApp {
                 
                 if (suspensionServedField) {
                     suspensionServed = suspensionServedField.checked;
+                }
+                
+                // Only collect served date if suspension is marked as served
+                if (suspensionServed && suspensionServedDateField && suspensionServedDateField.value) {
+                    suspensionServedDate = suspensionServedDateField.value;
                 }
             }
             
@@ -1026,7 +1064,8 @@ class CheckInApp {
                     eventDescription: eventDescription || null,
                     notes: notes || null,
                     suspensionMatches: suspensionMatches,
-                    suspensionServed: suspensionServed
+                    suspensionServed: suspensionServed,
+                    suspensionServedDate: suspensionServedDate
                 });
             }
         });
@@ -1116,7 +1155,8 @@ class CheckInApp {
                     notes: record.notes,
                     minute: null,
                     suspensionMatches: record.suspensionMatches,
-                    suspensionServed: record.suspensionServed
+                    suspensionServed: record.suspensionServed,
+                    suspensionServedDate: record.suspensionServedDate
                 }));
             } else {
                 const errorText = await response.text();
@@ -1200,7 +1240,11 @@ class CheckInApp {
                                     ` : ''}
                                     ${card.suspensionMatches ? `
                                         <div style="font-size: 0.75em; color: #856404; margin-top: 5px; padding: 4px 6px; background: #fff3cd; border-radius: 3px; display: inline-block;">
-                                            ⚖️ ${card.suspensionMatches} match suspension ${card.suspensionServed ? '(✅ Served)' : '(⏳ Pending)'}
+                                            ⚖️ ${card.suspensionMatches} match suspension ${
+                                                card.suspensionServed 
+                                                    ? `(✅ Served${card.suspensionServedDate ? ` on ${new Date(card.suspensionServedDate).toLocaleDateString()}` : ''})` 
+                                                    : '(⏳ Pending)'
+                                            }
                                         </div>
                                     ` : ''}
                                 </div>

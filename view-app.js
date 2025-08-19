@@ -4,7 +4,7 @@
  */
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '2.14.8';
+const APP_VERSION = '2.14.9';
 
 class CheckInViewApp {
     constructor() {
@@ -249,7 +249,8 @@ class CheckInViewApp {
                     notes: record.notes,
                     minute: null,
                     suspensionMatches: record.suspensionMatches,
-                    suspensionServed: record.suspensionServed
+                    suspensionServed: record.suspensionServed,
+                    suspensionServedDate: record.suspensionServedDate
                 }));
             }
         } catch (error) {
@@ -330,7 +331,11 @@ class CheckInViewApp {
                                     ` : ''}
                                     ${card.suspensionMatches ? `
                                         <div style="font-size: 0.75em; color: #856404; margin-top: 5px; padding: 4px 6px; background: #fff3cd; border-radius: 3px; display: inline-block;">
-                                            ⚖️ ${card.suspensionMatches} match suspension ${card.suspensionServed ? '(✅ Served)' : '(⏳ Pending)'}
+                                            ⚖️ ${card.suspensionMatches} match suspension ${
+                                                card.suspensionServed 
+                                                    ? `(✅ Served${card.suspensionServedDate ? ` on ${new Date(card.suspensionServedDate).toLocaleDateString()}` : ''})` 
+                                                    : '(⏳ Pending)'
+                                            }
                                         </div>
                                     ` : ''}
                                 </div>
