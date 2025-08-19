@@ -605,9 +605,13 @@ function generateUUID() {
 
 function cleanupDisciplinaryRecords($db) {
     try {
-        // Get count before cleanup for confirmation
+        // Get count and sample data before cleanup for confirmation
         $stmt = $db->query('SELECT COUNT(*) as total FROM player_disciplinary_records');
         $recordsBeforeCleanup = $stmt->fetch(PDO::FETCH_ASSOC)['total'];
+        
+        // Get sample of existing records to show what's being deleted
+        $stmt = $db->query('SELECT card_type, incident_date, suspension_matches, suspension_served, suspension_served_date FROM player_disciplinary_records ORDER BY created_at DESC LIMIT 5');
+        $sampleRecords = $stmt->fetchAll(PDO::FETCH_ASSOC);
         
         // Clear all disciplinary records
         $db->exec('DELETE FROM player_disciplinary_records');
@@ -617,8 +621,10 @@ function cleanupDisciplinaryRecords($db) {
         
         echo json_encode([
             'success' => true,
-            'message' => 'Disciplinary records cleaned up successfully',
+            'message' => 'Disciplinary records cleaned up successfully for v2.14.9',
             'records_deleted' => $recordsBeforeCleanup,
+            'sample_deleted_records' => $sampleRecords,
+            'note' => 'Fresh start with suspension served date support',
             'timestamp' => date('c')
         ]);
         
