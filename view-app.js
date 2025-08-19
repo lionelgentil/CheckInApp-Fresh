@@ -1,10 +1,10 @@
 /**
- * CheckIn App v2.14.6 - View Only Mode
+ * CheckIn App v2.14.7 - View Only Mode
  * Read-only version for public viewing
  */
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '2.14.6';
+const APP_VERSION = '2.14.7';
 
 class CheckInViewApp {
     constructor() {
@@ -247,7 +247,9 @@ class CheckInViewApp {
                     cardType: record.cardType,
                     reason: record.reason,
                     notes: record.notes,
-                    minute: null
+                    minute: null,
+                    suspensionMatches: record.suspensionMatches,
+                    suspensionServed: record.suspensionServed
                 }));
             }
         } catch (error) {
@@ -324,6 +326,11 @@ class CheckInViewApp {
                                     ${card.notes ? `
                                         <div style="font-size: 0.75em; color: #888; font-style: italic;">
                                             <strong>Notes:</strong> ${card.notes}
+                                        </div>
+                                    ` : ''}
+                                    ${card.suspensionMatches ? `
+                                        <div style="font-size: 0.75em; color: #856404; margin-top: 5px; padding: 4px 6px; background: #fff3cd; border-radius: 3px; display: inline-block;">
+                                            ⚖️ ${card.suspensionMatches} match suspension ${card.suspensionServed ? '(✅ Served)' : '(⏳ Pending)'}
                                         </div>
                                     ` : ''}
                                 </div>

@@ -5,7 +5,7 @@
  */
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '2.14.6';
+const APP_VERSION = '2.14.7';
 
 // Default photos - simple SVG avatars
 function getDefaultPhoto($gender) {
@@ -628,6 +628,8 @@ function getDisciplinaryRecords($db) {
             'notes' => $record['notes'],
             'incidentDate' => $record['incident_date'],
             'eventDescription' => $record['event_description'],
+            'suspensionMatches' => $record['suspension_matches'] ? (int)$record['suspension_matches'] : null,
+            'suspensionServed' => $record['suspension_served'] ? true : false,
             'createdAt' => $record['created_at']
         ];
     }
@@ -674,8 +676,8 @@ function saveDisciplinaryRecords($db) {
         // Insert new records
         foreach ($input['records'] as $record) {
             $stmt = $db->prepare('
-                INSERT INTO player_disciplinary_records (member_id, card_type, reason, notes, incident_date, event_description)
-                VALUES (?, ?, ?, ?, ?, ?)
+                INSERT INTO player_disciplinary_records (member_id, card_type, reason, notes, incident_date, event_description, suspension_matches, suspension_served)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             ');
             $stmt->execute([
                 $memberId,
@@ -683,7 +685,9 @@ function saveDisciplinaryRecords($db) {
                 $record['reason'] ?? null,
                 $record['notes'] ?? null,
                 $record['incidentDate'] ?? null,
-                $record['eventDescription'] ?? null
+                $record['eventDescription'] ?? null,
+                $record['suspensionMatches'] ?? null,
+                isset($record['suspensionServed']) ? ($record['suspensionServed'] ? true : false) : false
             ]);
         }
         
@@ -814,6 +818,8 @@ function initializeDatabase($db) {
             notes TEXT,
             incident_date DATE,
             event_description TEXT,
+            suspension_matches INTEGER DEFAULT NULL,
+            suspension_served BOOLEAN DEFAULT FALSE,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (member_id) REFERENCES team_members(id) ON DELETE CASCADE
         )
@@ -843,6 +849,10 @@ function initializeDatabase($db) {
         
         // Add notes column to match_cards
         $db->exec('ALTER TABLE match_cards ADD COLUMN IF NOT EXISTS notes TEXT');
+        
+        // Add suspension tracking columns to player_disciplinary_records
+        $db->exec('ALTER TABLE player_disciplinary_records ADD COLUMN IF NOT EXISTS suspension_matches INTEGER DEFAULT NULL');
+        $db->exec('ALTER TABLE player_disciplinary_records ADD COLUMN IF NOT EXISTS suspension_served BOOLEAN DEFAULT FALSE');
         
         // Add indexes for new tables
         $db->exec('CREATE INDEX IF NOT EXISTS idx_match_cards_match_id ON match_cards(match_id)');

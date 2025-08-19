@@ -1,10 +1,10 @@
 /**
- * CheckIn App v2.14.6 - JavaScript Frontend
+ * CheckIn App v2.14.7 - JavaScript Frontend
  * Works with PHP/SQLite backend
  */
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '2.14.6';
+const APP_VERSION = '2.14.7';
 
 class CheckInApp {
     constructor() {
@@ -823,6 +823,7 @@ class CheckInApp {
                                     <option value="Delaying the restart of play" ${record.reason === 'Delaying the restart of play' ? 'selected' : ''}>Delaying the restart of play</option>
                                     <option value="Failure to respect distance" ${record.reason === 'Failure to respect distance' ? 'selected' : ''}>Failure to respect distance</option>
                                     <option value="Entering/leaving without permission" ${record.reason === 'Entering/leaving without permission' ? 'selected' : ''}>Entering/leaving without permission</option>
+                                    <option value="Sliding" ${record.reason === 'Sliding' ? 'selected' : ''}>Sliding</option>
                                     <option value="Serious foul play" ${record.reason === 'Serious foul play' ? 'selected' : ''}>Serious foul play</option>
                                     <option value="Violent conduct" ${record.reason === 'Violent conduct' ? 'selected' : ''}>Violent conduct</option>
                                     <option value="Spitting" ${record.reason === 'Spitting' ? 'selected' : ''}>Spitting</option>
@@ -832,6 +833,16 @@ class CheckInApp {
                                 <input type="text" class="form-input" style="flex: 1;" placeholder="Event/Competition" data-record-index="${index}" data-field="eventDescription" value="${record.eventDescription || ''}">
                             </div>
                             <textarea class="form-input" placeholder="Additional Notes (optional)" data-record-index="${index}" data-field="notes" rows="2">${record.notes || ''}</textarea>
+                            ${record.cardType === 'red' || (record.suspensionMatches !== null && record.suspensionMatches !== undefined) ? `
+                                <div style="display: flex; gap: 10px; align-items: center; margin-top: 8px; padding: 8px; background: #fff3cd; border-radius: 4px;">
+                                    <label style="font-size: 0.85em; color: #856404; margin: 0;">Suspension:</label>
+                                    <input type="number" class="form-input" style="width: 80px;" placeholder="Matches" data-record-index="${index}" data-field="suspensionMatches" value="${record.suspensionMatches || ''}" min="0" max="99">
+                                    <label style="display: flex; align-items: center; gap: 4px; font-size: 0.85em; color: #856404; margin: 0;">
+                                        <input type="checkbox" data-record-index="${index}" data-field="suspensionServed" ${record.suspensionServed ? 'checked' : ''}>
+                                        Served
+                                    </label>
+                                </div>
+                            ` : ''}
                         </div>
                     `).join('')}
                     ${disciplinaryRecords.length === 0 ? '<p style="text-align: center; color: #666; font-style: italic; margin: 20px 0;">No prior disciplinary records</p>' : ''}
@@ -876,6 +887,7 @@ class CheckInApp {
                         <option value="Delaying the restart of play">Delaying the restart of play</option>
                         <option value="Failure to respect distance">Failure to respect distance</option>
                         <option value="Entering/leaving without permission">Entering/leaving without permission</option>
+                        <option value="Sliding">Sliding</option>
                         <option value="Serious foul play">Serious foul play</option>
                         <option value="Violent conduct">Violent conduct</option>
                         <option value="Spitting">Spitting</option>
@@ -885,17 +897,39 @@ class CheckInApp {
                     <input type="text" class="form-input" style="flex: 1;" placeholder="Event/Competition" data-record-index="${newIndex}" data-field="eventDescription">
                 </div>
                 <textarea class="form-input" placeholder="Additional Notes (optional)" data-record-index="${newIndex}" data-field="notes" rows="2"></textarea>
+                <div id="suspension-section-${newIndex}" style="display: none; margin-top: 8px; padding: 8px; background: #fff3cd; border-radius: 4px;">
+                    <div style="display: flex; gap: 10px; align-items: center;">
+                        <label style="font-size: 0.85em; color: #856404; margin: 0;">Suspension:</label>
+                        <input type="number" class="form-input" style="width: 80px;" placeholder="Matches" data-record-index="${newIndex}" data-field="suspensionMatches" min="0" max="99">
+                        <label style="display: flex; align-items: center; gap: 4px; font-size: 0.85em; color: #856404; margin: 0;">
+                            <input type="checkbox" data-record-index="${newIndex}" data-field="suspensionServed">
+                            Served
+                        </label>
+                    </div>
+                </div>
             </div>
         `;
         
         container.insertAdjacentHTML('beforeend', recordHtml);
         
-        // Update border color based on card type
+        // Update border color based on card type and show/hide suspension section
         const newRecord = container.lastElementChild;
         const cardTypeSelect = newRecord.querySelector('[data-field="cardType"]');
+        const suspensionSection = newRecord.querySelector(`#suspension-section-${newIndex}`);
+        
         cardTypeSelect.addEventListener('change', function() {
             const borderColor = this.value === 'yellow' ? '#ffc107' : '#dc3545';
             newRecord.style.borderLeftColor = borderColor;
+            
+            // Show suspension section for red cards
+            if (this.value === 'red') {
+                suspensionSection.style.display = 'block';
+            } else {
+                suspensionSection.style.display = 'none';
+                // Clear suspension fields when hiding
+                suspensionSection.querySelector('[data-field="suspensionMatches"]').value = '';
+                suspensionSection.querySelector('[data-field="suspensionServed"]').checked = false;
+            }
         });
     }
     
@@ -962,6 +996,8 @@ class CheckInApp {
             const reason = item.querySelector('[data-field="reason"]').value;
             const eventDescription = item.querySelector('[data-field="eventDescription"]').value;
             const notes = item.querySelector('[data-field="notes"]').value;
+            const suspensionMatches = item.querySelector('[data-field="suspensionMatches"]')?.value;
+            const suspensionServed = item.querySelector('[data-field="suspensionServed"]')?.checked;
             
             if (cardType) {
                 disciplinaryRecords.push({
@@ -969,7 +1005,9 @@ class CheckInApp {
                     incidentDate: incidentDate || null,
                     reason: reason || null,
                     eventDescription: eventDescription || null,
-                    notes: notes || null
+                    notes: notes || null,
+                    suspensionMatches: suspensionMatches ? parseInt(suspensionMatches) : null,
+                    suspensionServed: suspensionServed || false
                 });
             }
         });
@@ -1044,7 +1082,9 @@ class CheckInApp {
                     cardType: record.cardType,
                     reason: record.reason,
                     notes: record.notes,
-                    minute: null
+                    minute: null,
+                    suspensionMatches: record.suspensionMatches,
+                    suspensionServed: record.suspensionServed
                 }));
             }
         } catch (error) {
@@ -1121,6 +1161,11 @@ class CheckInApp {
                                     ${card.notes ? `
                                         <div style="font-size: 0.75em; color: #888; font-style: italic;">
                                             <strong>Notes:</strong> ${card.notes}
+                                        </div>
+                                    ` : ''}
+                                    ${card.suspensionMatches ? `
+                                        <div style="font-size: 0.75em; color: #856404; margin-top: 5px; padding: 4px 6px; background: #fff3cd; border-radius: 3px; display: inline-block;">
+                                            ⚖️ ${card.suspensionMatches} match suspension ${card.suspensionServed ? '(✅ Served)' : '(⏳ Pending)'}
                                         </div>
                                     ` : ''}
                                 </div>
@@ -1599,6 +1644,7 @@ class CheckInApp {
                         <option value="Delaying the restart of play">Delaying the restart of play</option>
                         <option value="Failure to respect distance">Failure to respect distance</option>
                         <option value="Entering/leaving without permission">Entering/leaving without permission</option>
+                        <option value="Sliding">Sliding</option>
                         <option value="Serious foul play">Serious foul play</option>
                         <option value="Violent conduct">Violent conduct</option>
                         <option value="Spitting">Spitting</option>
