@@ -172,6 +172,18 @@ try {
             }
             break;
             
+        case 'debug-disciplinary':
+            if ($method === 'GET') {
+                debugDisciplinaryRecords($db);
+            }
+            break;
+            
+        case 'cleanup-disciplinary':
+            if ($method === 'POST') {
+                cleanupDisciplinaryRecords($db);
+            }
+            break;
+            
         default:
             http_response_code(404);
             echo json_encode(['error' => 'Endpoint not found']);
@@ -589,6 +601,77 @@ function generateUUID() {
         mt_rand(0, 0x3fff) | 0x8000,
         mt_rand(0, 0xffff), mt_rand(0, 0xffff), mt_rand(0, 0xffff)
     );
+}
+
+function cleanupDisciplinaryRecords($db) {
+    try {
+        // Get count before cleanup for confirmation
+        $stmt = $db->query('SELECT COUNT(*) as total FROM player_disciplinary_records');
+        $recordsBeforeCleanup = $stmt->fetch(PDO::FETCH_ASSOC)['total'];
+        
+        // Clear all disciplinary records
+        $db->exec('DELETE FROM player_disciplinary_records');
+        
+        // Reset the auto-increment counter
+        $db->exec('ALTER SEQUENCE player_disciplinary_records_id_seq RESTART WITH 1');
+        
+        echo json_encode([
+            'success' => true,
+            'message' => 'Disciplinary records cleaned up successfully',
+            'records_deleted' => $recordsBeforeCleanup,
+            'timestamp' => date('c')
+        ]);
+        
+    } catch (Exception $e) {
+        http_response_code(500);
+        echo json_encode([
+            'error' => 'Failed to cleanup disciplinary records: ' . $e->getMessage(),
+            'timestamp' => date('c')
+        ]);
+    }
+}
+
+function debugDisciplinaryRecords($db) {
+    try {
+        // Check if table exists and has records
+        $stmt = $db->query('SELECT COUNT(*) as total FROM player_disciplinary_records');
+        $totalRecords = $stmt->fetch(PDO::FETCH_ASSOC)['total'];
+        
+        // Get all raw records without joins
+        $stmt = $db->query('SELECT * FROM player_disciplinary_records ORDER BY created_at DESC LIMIT 10');
+        $rawRecords = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        // Check for orphaned records (records with member_id that don't exist in team_members)
+        $stmt = $db->query('
+            SELECT pdr.id, pdr.member_id, pdr.card_type, pdr.created_at
+            FROM player_disciplinary_records pdr
+            LEFT JOIN team_members tm ON pdr.member_id = tm.id
+            WHERE tm.id IS NULL
+            ORDER BY pdr.created_at DESC
+        ');
+        $orphanedRecords = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        // Check table structure
+        $stmt = $db->query("SELECT column_name, data_type, is_nullable, column_default 
+                           FROM information_schema.columns 
+                           WHERE table_name = 'player_disciplinary_records' 
+                           ORDER BY ordinal_position");
+        $tableStructure = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        echo json_encode([
+            'total_records' => $totalRecords,
+            'raw_records' => $rawRecords,
+            'orphaned_records' => $orphanedRecords,
+            'table_structure' => $tableStructure,
+            'debug_timestamp' => date('c')
+        ]);
+        
+    } catch (Exception $e) {
+        echo json_encode([
+            'error' => $e->getMessage(),
+            'debug_timestamp' => date('c')
+        ]);
+    }
 }
 
 function getDisciplinaryRecords($db) {
