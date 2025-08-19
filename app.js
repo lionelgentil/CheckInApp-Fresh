@@ -1001,7 +1001,8 @@ class CheckInApp {
             const eventDescription = item.querySelector('[data-field="eventDescription"]').value;
             const notes = item.querySelector('[data-field="notes"]').value;
             const suspensionMatches = item.querySelector('[data-field="suspensionMatches"]')?.value;
-            const suspensionServed = item.querySelector('[data-field="suspensionServed"]')?.checked;
+            const suspensionServedCheckbox = item.querySelector('[data-field="suspensionServed"]');
+            const suspensionServed = suspensionServedCheckbox ? suspensionServedCheckbox.checked : false;
             
             if (cardType) {
                 disciplinaryRecords.push({
@@ -1011,7 +1012,7 @@ class CheckInApp {
                     eventDescription: eventDescription || null,
                     notes: notes || null,
                     suspensionMatches: suspensionMatches ? parseInt(suspensionMatches) : null,
-                    suspensionServed: suspensionServed || false
+                    suspensionServed: suspensionServed
                 });
             }
         });

@@ -758,6 +758,18 @@ function saveDisciplinaryRecords($db) {
         
         // Insert new records
         foreach ($input['records'] as $record) {
+            // Ensure boolean values are properly handled
+            $suspensionServed = false;
+            if (isset($record['suspensionServed'])) {
+                if (is_bool($record['suspensionServed'])) {
+                    $suspensionServed = $record['suspensionServed'];
+                } elseif (is_string($record['suspensionServed'])) {
+                    $suspensionServed = in_array(strtolower($record['suspensionServed']), ['true', '1', 'yes', 'on']);
+                } else {
+                    $suspensionServed = (bool)$record['suspensionServed'];
+                }
+            }
+            
             $stmt = $db->prepare('
                 INSERT INTO player_disciplinary_records (member_id, card_type, reason, notes, incident_date, event_description, suspension_matches, suspension_served)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)
@@ -770,7 +782,7 @@ function saveDisciplinaryRecords($db) {
                 $record['incidentDate'] ?? null,
                 $record['eventDescription'] ?? null,
                 $record['suspensionMatches'] ?? null,
-                isset($record['suspensionServed']) ? ($record['suspensionServed'] ? true : false) : false
+                $suspensionServed
             ]);
         }
         
