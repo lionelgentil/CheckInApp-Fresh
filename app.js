@@ -771,6 +771,10 @@ class CheckInApp {
             const response = await fetch(`/api/disciplinary-records?member_id=${member.id}`);
             if (response.ok) {
                 disciplinaryRecords = await response.json();
+                console.log('Loaded disciplinary records for member:', member.name, disciplinaryRecords);
+            } else {
+                const errorText = await response.text();
+                console.error('Failed to load disciplinary records:', response.status, errorText);
             }
         } catch (error) {
             console.error('Error loading disciplinary records:', error);
@@ -1017,7 +1021,7 @@ class CheckInApp {
             await this.saveTeams();
             
             // Save disciplinary records
-            await fetch('/api/disciplinary-records', {
+            const disciplinaryResponse = await fetch('/api/disciplinary-records', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -1028,9 +1032,19 @@ class CheckInApp {
                 })
             });
             
+            if (!disciplinaryResponse.ok) {
+                const errorText = await disciplinaryResponse.text();
+                console.error('Failed to save disciplinary records:', errorText);
+                throw new Error(`Disciplinary records save failed: ${disciplinaryResponse.status}`);
+            }
+            
+            const disciplinaryResult = await disciplinaryResponse.json();
+            console.log('Disciplinary records saved successfully:', disciplinaryResult);
+            
             this.renderTeams();
             this.closeModal();
         } catch (error) {
+            console.error('Error in saveDetailedMember:', error);
             alert('Failed to save player information. Please try again.');
         }
     }
@@ -1074,6 +1088,7 @@ class CheckInApp {
             const response = await fetch(`/api/disciplinary-records?member_id=${memberId}`);
             if (response.ok) {
                 const records = await response.json();
+                console.log('Loaded disciplinary records for profile view:', member.name, records);
                 disciplinaryRecords = records.map(record => ({
                     type: 'prior',
                     eventName: record.eventDescription || 'Prior Record',
@@ -1086,9 +1101,12 @@ class CheckInApp {
                     suspensionMatches: record.suspensionMatches,
                     suspensionServed: record.suspensionServed
                 }));
+            } else {
+                const errorText = await response.text();
+                console.error('Failed to load disciplinary records for profile:', response.status, errorText);
             }
         } catch (error) {
-            console.error('Error loading disciplinary records:', error);
+            console.error('Error loading disciplinary records for profile:', error);
         }
         
         // Combine all cards and sort by date (most recent first)
