@@ -828,6 +828,7 @@ class CheckInApp {
                                     <option value="Failure to respect distance" ${record.reason === 'Failure to respect distance' ? 'selected' : ''}>Failure to respect distance</option>
                                     <option value="Entering/leaving without permission" ${record.reason === 'Entering/leaving without permission' ? 'selected' : ''}>Entering/leaving without permission</option>
                                     <option value="Sliding" ${record.reason === 'Sliding' ? 'selected' : ''}>Sliding</option>
+                                    <option value="Reckless/aggressive challenge" ${record.reason === 'Reckless/aggressive challenge' ? 'selected' : ''}>Reckless/aggressive challenge</option>
                                     <option value="Serious foul play" ${record.reason === 'Serious foul play' ? 'selected' : ''}>Serious foul play</option>
                                     <option value="Violent conduct" ${record.reason === 'Violent conduct' ? 'selected' : ''}>Violent conduct</option>
                                     <option value="Spitting" ${record.reason === 'Spitting' ? 'selected' : ''}>Spitting</option>
@@ -896,6 +897,7 @@ class CheckInApp {
                         <option value="Failure to respect distance">Failure to respect distance</option>
                         <option value="Entering/leaving without permission">Entering/leaving without permission</option>
                         <option value="Sliding">Sliding</option>
+                        <option value="Reckless/aggressive challenge">Reckless/aggressive challenge</option>
                         <option value="Serious foul play">Serious foul play</option>
                         <option value="Violent conduct">Violent conduct</option>
                         <option value="Spitting">Spitting</option>
@@ -1724,6 +1726,7 @@ class CheckInApp {
                         <option value="Failure to respect distance">Failure to respect distance</option>
                         <option value="Entering/leaving without permission">Entering/leaving without permission</option>
                         <option value="Sliding">Sliding</option>
+                        <option value="Reckless/aggressive challenge">Reckless/aggressive challenge</option>
                         <option value="Serious foul play">Serious foul play</option>
                         <option value="Violent conduct">Violent conduct</option>
                         <option value="Spitting">Spitting</option>

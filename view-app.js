@@ -843,6 +843,8 @@ class CheckInViewApp {
                                         <option value="Spitting" ${card.reason === 'Spitting' ? 'selected' : ''}>Spitting</option>
                                         <option value="Offensive/insulting language" ${card.reason === 'Offensive/insulting language' ? 'selected' : ''}>Offensive/insulting language</option>
                                         <option value="Second yellow card" ${card.reason === 'Second yellow card' ? 'selected' : ''}>Second yellow card</option>
+                                        <option value="Sliding" ${card.reason === 'Sliding' ? 'selected' : ''}>Sliding</option>
+                                        <option value="Reckless/aggressive challenge" ${card.reason === 'Reckless/aggressive challenge' ? 'selected' : ''}>Reckless/aggressive challenge</option>
                                     </select>
                                     <input type="text" class="form-input" style="flex: 1;" placeholder="Additional Notes (optional)" data-card-index="${index}" data-field="notes" value="${card.notes || ''}">
                                 </div>
@@ -903,6 +905,8 @@ class CheckInViewApp {
                         <option value="Spitting">Spitting</option>
                         <option value="Offensive/insulting language">Offensive/insulting language</option>
                         <option value="Second yellow card">Second yellow card</option>
+                        <option value="Sliding">Sliding</option>
+                        <option value="Reckless/aggressive challenge">Reckless/aggressive challenge</option>
                     </select>
                     <input type="text" class="form-input" style="flex: 1;" placeholder="Additional Notes (optional)" data-card-index="${newIndex}" data-field="notes">
                 </div>
