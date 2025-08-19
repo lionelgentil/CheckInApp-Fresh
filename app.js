@@ -1,10 +1,10 @@
 /**
- * CheckIn App v2.14.5 - JavaScript Frontend
+ * CheckIn App v2.14.6 - JavaScript Frontend
  * Works with PHP/SQLite backend
  */
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '2.14.5';
+const APP_VERSION = '2.14.6';
 
 class CheckInApp {
     constructor() {
@@ -644,7 +644,7 @@ class CheckInApp {
     editMember(teamId, memberId) {
         const team = this.teams.find(t => t.id === teamId);
         this.currentEditingMember = team.members.find(m => m.id === memberId);
-        this.showMemberModal(teamId, this.currentEditingMember);
+        this.showDetailedMemberModal(teamId, this.currentEditingMember);
     }
     
     showMemberModal(teamId, member = null) {
@@ -761,15 +761,251 @@ class CheckInApp {
         }
     }
     
+    async showDetailedMemberModal(teamId, member) {
+        const isMobile = this.isMobileDevice();
+        const photoLabel = isMobile ? 'Take Photo' : 'Photo';
+        
+        // Load disciplinary records for this member
+        let disciplinaryRecords = [];
+        try {
+            const response = await fetch(`/api/disciplinary-records?member_id=${member.id}`);
+            if (response.ok) {
+                disciplinaryRecords = await response.json();
+            }
+        } catch (error) {
+            console.error('Error loading disciplinary records:', error);
+        }
+        
+        const modal = this.createModal(`Edit Player: ${member.name}`, `
+            <div class="form-group">
+                <label class="form-label">Player Name *</label>
+                <input type="text" class="form-input" id="detailed-member-name" value="${member.name}" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Jersey Number</label>
+                <input type="number" class="form-input" id="detailed-member-jersey" value="${member.jerseyNumber || ''}" min="1" max="99">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Gender</label>
+                <select class="form-select" id="detailed-member-gender">
+                    <option value="">Select gender</option>
+                    <option value="male" ${member.gender === 'male' ? 'selected' : ''}>Male</option>
+                    <option value="female" ${member.gender === 'female' ? 'selected' : ''}>Female</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">${photoLabel}</label>
+                <input type="file" class="form-input file-input" id="detailed-member-photo" accept="image/*" ${isMobile ? 'capture="environment"' : ''}>
+                ${member.photo ? `<img src="${member.photo}" alt="Current photo" class="preview-image">` : ''}
+                ${isMobile ? '<small style="color: #666; font-size: 0.85em; display: block; margin-top: 5px;">📸 This will open your camera</small>' : ''}
+            </div>
+            
+            <div class="form-group">
+                <label class="form-label">Prior Disciplinary Records</label>
+                <small style="color: #666; display: block; margin-bottom: 10px;">Add cards received outside of this system (previous seasons, other competitions, etc.)</small>
+                <div id="disciplinary-records-container">
+                    ${disciplinaryRecords.map((record, index) => `
+                        <div class="disciplinary-record-item" style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 15px; padding: 15px; background: #f8f9fa; border-radius: 8px; border-left: 4px solid ${record.cardType === 'yellow' ? '#ffc107' : '#dc3545'};">
+                            <div style="display: flex; gap: 10px; align-items: center;">
+                                <select class="form-select" style="width: 120px;" data-record-index="${index}" data-field="cardType">
+                                    <option value="yellow" ${record.cardType === 'yellow' ? 'selected' : ''}>🟨 Yellow</option>
+                                    <option value="red" ${record.cardType === 'red' ? 'selected' : ''}>🟥 Red</option>
+                                </select>
+                                <input type="date" class="form-input" style="flex: 1;" placeholder="Date" data-record-index="${index}" data-field="incidentDate" value="${record.incidentDate || ''}">
+                                <button class="btn btn-small btn-danger" onclick="app.removeDisciplinaryRecord(${index})">🗑️</button>
+                            </div>
+                            <div style="display: flex; gap: 10px;">
+                                <select class="form-select" style="flex: 1;" data-record-index="${index}" data-field="reason">
+                                    <option value="">Select Reason</option>
+                                    <option value="Unsporting behavior" ${record.reason === 'Unsporting behavior' ? 'selected' : ''}>Unsporting behavior</option>
+                                    <option value="Dissent by word or action" ${record.reason === 'Dissent by word or action' ? 'selected' : ''}>Dissent by word or action</option>
+                                    <option value="Persistent infringement" ${record.reason === 'Persistent infringement' ? 'selected' : ''}>Persistent infringement</option>
+                                    <option value="Delaying the restart of play" ${record.reason === 'Delaying the restart of play' ? 'selected' : ''}>Delaying the restart of play</option>
+                                    <option value="Failure to respect distance" ${record.reason === 'Failure to respect distance' ? 'selected' : ''}>Failure to respect distance</option>
+                                    <option value="Entering/leaving without permission" ${record.reason === 'Entering/leaving without permission' ? 'selected' : ''}>Entering/leaving without permission</option>
+                                    <option value="Serious foul play" ${record.reason === 'Serious foul play' ? 'selected' : ''}>Serious foul play</option>
+                                    <option value="Violent conduct" ${record.reason === 'Violent conduct' ? 'selected' : ''}>Violent conduct</option>
+                                    <option value="Spitting" ${record.reason === 'Spitting' ? 'selected' : ''}>Spitting</option>
+                                    <option value="Offensive/insulting language" ${record.reason === 'Offensive/insulting language' ? 'selected' : ''}>Offensive/insulting language</option>
+                                    <option value="Second yellow card" ${record.reason === 'Second yellow card' ? 'selected' : ''}>Second yellow card</option>
+                                </select>
+                                <input type="text" class="form-input" style="flex: 1;" placeholder="Event/Competition" data-record-index="${index}" data-field="eventDescription" value="${record.eventDescription || ''}">
+                            </div>
+                            <textarea class="form-input" placeholder="Additional Notes (optional)" data-record-index="${index}" data-field="notes" rows="2">${record.notes || ''}</textarea>
+                        </div>
+                    `).join('')}
+                    ${disciplinaryRecords.length === 0 ? '<p style="text-align: center; color: #666; font-style: italic; margin: 20px 0;">No prior disciplinary records</p>' : ''}
+                </div>
+                <button class="btn btn-secondary" onclick="app.addDisciplinaryRecord()" style="margin-top: 10px;">+ Add Prior Record</button>
+            </div>
+            
+            <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px;">
+                <button class="btn btn-secondary" onclick="app.closeModal()">Cancel</button>
+                <button class="btn" onclick="app.saveDetailedMember('${teamId}', '${member.id}')">Update Player</button>
+            </div>
+        `);
+        
+        document.body.appendChild(modal);
+    }
+    
+    addDisciplinaryRecord() {
+        const container = document.getElementById('disciplinary-records-container');
+        const existingRecords = container.querySelectorAll('.disciplinary-record-item');
+        const newIndex = existingRecords.length;
+        
+        // Remove "no records" message if it exists
+        const noRecordsMsg = container.querySelector('p');
+        if (noRecordsMsg) noRecordsMsg.remove();
+        
+        const recordHtml = `
+            <div class="disciplinary-record-item" style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 15px; padding: 15px; background: #f8f9fa; border-radius: 8px; border-left: 4px solid #ffc107;">
+                <div style="display: flex; gap: 10px; align-items: center;">
+                    <select class="form-select" style="width: 120px;" data-record-index="${newIndex}" data-field="cardType">
+                        <option value="yellow">🟨 Yellow</option>
+                        <option value="red">🟥 Red</option>
+                    </select>
+                    <input type="date" class="form-input" style="flex: 1;" placeholder="Date" data-record-index="${newIndex}" data-field="incidentDate">
+                    <button class="btn btn-small btn-danger" onclick="app.removeDisciplinaryRecord(${newIndex})">🗑️</button>
+                </div>
+                <div style="display: flex; gap: 10px;">
+                    <select class="form-select" style="flex: 1;" data-record-index="${newIndex}" data-field="reason">
+                        <option value="">Select Reason</option>
+                        <option value="Unsporting behavior">Unsporting behavior</option>
+                        <option value="Dissent by word or action">Dissent by word or action</option>
+                        <option value="Persistent infringement">Persistent infringement</option>
+                        <option value="Delaying the restart of play">Delaying the restart of play</option>
+                        <option value="Failure to respect distance">Failure to respect distance</option>
+                        <option value="Entering/leaving without permission">Entering/leaving without permission</option>
+                        <option value="Serious foul play">Serious foul play</option>
+                        <option value="Violent conduct">Violent conduct</option>
+                        <option value="Spitting">Spitting</option>
+                        <option value="Offensive/insulting language">Offensive/insulting language</option>
+                        <option value="Second yellow card">Second yellow card</option>
+                    </select>
+                    <input type="text" class="form-input" style="flex: 1;" placeholder="Event/Competition" data-record-index="${newIndex}" data-field="eventDescription">
+                </div>
+                <textarea class="form-input" placeholder="Additional Notes (optional)" data-record-index="${newIndex}" data-field="notes" rows="2"></textarea>
+            </div>
+        `;
+        
+        container.insertAdjacentHTML('beforeend', recordHtml);
+        
+        // Update border color based on card type
+        const newRecord = container.lastElementChild;
+        const cardTypeSelect = newRecord.querySelector('[data-field="cardType"]');
+        cardTypeSelect.addEventListener('change', function() {
+            const borderColor = this.value === 'yellow' ? '#ffc107' : '#dc3545';
+            newRecord.style.borderLeftColor = borderColor;
+        });
+    }
+    
+    removeDisciplinaryRecord(index) {
+        const recordItems = document.querySelectorAll('.disciplinary-record-item');
+        if (recordItems[index]) {
+            recordItems[index].remove();
+            
+            // Re-index remaining records
+            const remainingRecords = document.querySelectorAll('.disciplinary-record-item');
+            remainingRecords.forEach((record, newIndex) => {
+                record.querySelectorAll('[data-record-index]').forEach(element => {
+                    element.setAttribute('data-record-index', newIndex);
+                });
+                const deleteBtn = record.querySelector('.btn-danger');
+                if (deleteBtn) {
+                    deleteBtn.setAttribute('onclick', `app.removeDisciplinaryRecord(${newIndex})`);
+                }
+            });
+            
+            // Add "no records" message if no records remain
+            if (remainingRecords.length === 0) {
+                document.getElementById('disciplinary-records-container').innerHTML = '<p style="text-align: center; color: #666; font-style: italic; margin: 20px 0;">No prior disciplinary records</p>';
+            }
+        }
+    }
+    
+    async saveDetailedMember(teamId, memberId) {
+        const name = document.getElementById('detailed-member-name').value.trim();
+        const jerseyNumber = document.getElementById('detailed-member-jersey').value;
+        const gender = document.getElementById('detailed-member-gender').value;
+        const photoFile = document.getElementById('detailed-member-photo').files[0];
+        
+        if (!name) {
+            alert('Please enter a player name');
+            return;
+        }
+        
+        const team = this.teams.find(t => t.id === teamId);
+        const member = team.members.find(m => m.id === memberId);
+        if (!team || !member) return;
+        
+        let photo = member.photo;
+        if (photoFile) {
+            try {
+                photo = await this.convertFileToBase64(photoFile);
+            } catch (error) {
+                console.error('Error converting photo:', error);
+            }
+        }
+        
+        // Update member data
+        member.name = name;
+        member.jerseyNumber = jerseyNumber ? parseInt(jerseyNumber) : null;
+        member.gender = gender || null;
+        if (photo) member.photo = photo;
+        
+        // Collect disciplinary records
+        const recordItems = document.querySelectorAll('.disciplinary-record-item');
+        const disciplinaryRecords = [];
+        recordItems.forEach((item) => {
+            const cardType = item.querySelector('[data-field="cardType"]').value;
+            const incidentDate = item.querySelector('[data-field="incidentDate"]').value;
+            const reason = item.querySelector('[data-field="reason"]').value;
+            const eventDescription = item.querySelector('[data-field="eventDescription"]').value;
+            const notes = item.querySelector('[data-field="notes"]').value;
+            
+            if (cardType) {
+                disciplinaryRecords.push({
+                    cardType: cardType,
+                    incidentDate: incidentDate || null,
+                    reason: reason || null,
+                    eventDescription: eventDescription || null,
+                    notes: notes || null
+                });
+            }
+        });
+        
+        try {
+            // Save member info
+            await this.saveTeams();
+            
+            // Save disciplinary records
+            await fetch('/api/disciplinary-records', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    member_id: memberId,
+                    records: disciplinaryRecords
+                })
+            });
+            
+            this.renderTeams();
+            this.closeModal();
+        } catch (error) {
+            alert('Failed to save player information. Please try again.');
+        }
+    }
+    
     // Player Profile Management
-    viewPlayerProfile(teamId, memberId) {
+    async viewPlayerProfile(teamId, memberId) {
         const team = this.teams.find(t => t.id === teamId);
         const member = team?.members.find(m => m.id === memberId);
         
         if (!team || !member) return;
         
-        // Get all cards for this player across all events
-        const playerCards = [];
+        // Get all match cards for this player across all events
+        const matchCards = [];
         this.events.forEach(event => {
             event.matches.forEach(match => {
                 if (match.cards) {
@@ -778,7 +1014,8 @@ class CheckInApp {
                             const homeTeam = this.teams.find(t => t.id === match.homeTeamId);
                             const awayTeam = this.teams.find(t => t.id === match.awayTeamId);
                             
-                            playerCards.push({
+                            matchCards.push({
+                                type: 'match',
                                 eventName: event.name,
                                 eventDate: event.date,
                                 matchInfo: `${homeTeam?.name || 'Unknown'} vs ${awayTeam?.name || 'Unknown'}`,
@@ -793,8 +1030,34 @@ class CheckInApp {
             });
         });
         
-        // Sort cards by date (most recent first)
-        playerCards.sort((a, b) => new Date(b.eventDate) - new Date(a.eventDate));
+        // Get disciplinary records from database
+        let disciplinaryRecords = [];
+        try {
+            const response = await fetch(`/api/disciplinary-records?member_id=${memberId}`);
+            if (response.ok) {
+                const records = await response.json();
+                disciplinaryRecords = records.map(record => ({
+                    type: 'prior',
+                    eventName: record.eventDescription || 'Prior Record',
+                    eventDate: record.incidentDate || record.createdAt,
+                    matchInfo: record.eventDescription || 'External competition',
+                    cardType: record.cardType,
+                    reason: record.reason,
+                    notes: record.notes,
+                    minute: null
+                }));
+            }
+        } catch (error) {
+            console.error('Error loading disciplinary records:', error);
+        }
+        
+        // Combine all cards and sort by date (most recent first)
+        const allCards = [...matchCards, ...disciplinaryRecords];
+        allCards.sort((a, b) => new Date(b.eventDate) - new Date(a.eventDate));
+        
+        const totalCards = allCards.length;
+        const matchCardCount = matchCards.length;
+        const priorCardCount = disciplinaryRecords.length;
         
         const modal = this.createModal(`Player Profile: ${member.name}`, `
             <div style="margin-bottom: 20px; padding: 15px; background: #f8f9fa; border-radius: 12px; text-align: center;">
@@ -813,17 +1076,23 @@ class CheckInApp {
             
             <div style="margin-bottom: 15px;">
                 <h4 style="margin: 0 0 12px 0; color: #333; display: flex; align-items: center; gap: 8px; font-size: 1em;">
-                    📋 Disciplinary Record 
-                    <span style="background: ${playerCards.length > 0 ? '#dc3545' : '#28a745'}; color: white; padding: 2px 6px; border-radius: 10px; font-size: 0.75em; font-weight: normal;">
-                        ${playerCards.length} card${playerCards.length !== 1 ? 's' : ''}
+                    📋 Complete Disciplinary Record 
+                    <span style="background: ${totalCards > 0 ? '#dc3545' : '#28a745'}; color: white; padding: 2px 6px; border-radius: 10px; font-size: 0.75em; font-weight: normal;">
+                        ${totalCards} total card${totalCards !== 1 ? 's' : ''}
                     </span>
                 </h4>
                 
-                ${playerCards.length > 0 ? `
-                    <div style="max-height: 200px; overflow-y: auto; border: 1px solid #e9ecef; border-radius: 8px;">
-                        ${playerCards.map(card => {
+                ${totalCards > 0 ? `
+                    <div style="margin-bottom: 10px; font-size: 0.85em; color: #666;">
+                        <span style="margin-right: 15px;">🏟️ ${matchCardCount} match card${matchCardCount !== 1 ? 's' : ''}</span>
+                        <span>📚 ${priorCardCount} prior record${priorCardCount !== 1 ? 's' : ''}</span>
+                    </div>
+                    <div style="max-height: 250px; overflow-y: auto; border: 1px solid #e9ecef; border-radius: 8px;">
+                        ${allCards.map(card => {
                             const cardIcon = card.cardType === 'yellow' ? '🟨' : '🟥';
                             const cardColor = card.cardType === 'yellow' ? '#ffc107' : '#dc3545';
+                            const typeIcon = card.type === 'match' ? '🏟️' : '📚';
+                            const typeLabel = card.type === 'match' ? 'Match' : 'Prior';
                             
                             return `
                                 <div style="padding: 12px; border-bottom: 1px solid #f8f9fa; background: white;">
@@ -832,15 +1101,18 @@ class CheckInApp {
                                         <div style="flex: 1;">
                                             <strong style="color: ${cardColor}; text-transform: capitalize; font-size: 0.9em;">${card.cardType} Card</strong>
                                             ${card.minute ? `<span style="color: #666; font-size: 0.8em;"> - ${card.minute}'</span>` : ''}
+                                            <span style="margin-left: 8px; background: ${card.type === 'match' ? '#e3f2fd' : '#fff3e0'}; color: #666; padding: 1px 4px; border-radius: 3px; font-size: 0.7em;">${typeIcon} ${typeLabel}</span>
                                         </div>
                                         <small style="color: #666; font-size: 0.75em;">${new Date(card.eventDate).toLocaleDateString()}</small>
                                     </div>
                                     <div style="font-size: 0.8em; color: #666; margin-bottom: 3px;">
-                                        <strong>Event:</strong> ${card.eventName}
+                                        <strong>${card.type === 'match' ? 'Event:' : 'Competition:'}</strong> ${card.eventName}
                                     </div>
-                                    <div style="font-size: 0.8em; color: #666; margin-bottom: 3px;">
-                                        <strong>Match:</strong> ${card.matchInfo}
-                                    </div>
+                                    ${card.type === 'match' ? `
+                                        <div style="font-size: 0.8em; color: #666; margin-bottom: 3px;">
+                                            <strong>Match:</strong> ${card.matchInfo}
+                                        </div>
+                                    ` : ''}
                                     ${card.reason ? `
                                         <div style="font-size: 0.8em; color: #666; margin-bottom: 3px;">
                                             <strong>Reason:</strong> ${card.reason}

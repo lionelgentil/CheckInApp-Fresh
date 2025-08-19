@@ -5,7 +5,7 @@
  */
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '2.14.5';
+const APP_VERSION = '2.14.6';
 
 // Default photos - simple SVG avatars
 function getDefaultPhoto($gender) {
@@ -161,6 +161,14 @@ try {
                 getReferees($db);
             } elseif ($method === 'POST') {
                 saveReferees($db);
+            }
+            break;
+            
+        case 'disciplinary-records':
+            if ($method === 'GET') {
+                getDisciplinaryRecords($db);
+            } elseif ($method === 'POST') {
+                saveDisciplinaryRecords($db);
             }
             break;
             
@@ -583,6 +591,111 @@ function generateUUID() {
     );
 }
 
+function getDisciplinaryRecords($db) {
+    $memberId = $_GET['member_id'] ?? null;
+    
+    if ($memberId) {
+        // Get records for specific member
+        $stmt = $db->prepare('
+            SELECT pdr.*, tm.name as member_name, t.name as team_name
+            FROM player_disciplinary_records pdr
+            JOIN team_members tm ON pdr.member_id = tm.id
+            JOIN teams t ON tm.team_id = t.id
+            WHERE pdr.member_id = ?
+            ORDER BY pdr.incident_date DESC, pdr.created_at DESC
+        ');
+        $stmt->execute([$memberId]);
+    } else {
+        // Get all records
+        $stmt = $db->query('
+            SELECT pdr.*, tm.name as member_name, t.name as team_name
+            FROM player_disciplinary_records pdr
+            JOIN team_members tm ON pdr.member_id = tm.id
+            JOIN teams t ON tm.team_id = t.id
+            ORDER BY pdr.incident_date DESC, pdr.created_at DESC
+        ');
+    }
+    
+    $records = [];
+    while ($record = $stmt->fetch(PDO::FETCH_ASSOC)) {
+        $records[] = [
+            'id' => $record['id'],
+            'memberId' => $record['member_id'],
+            'memberName' => $record['member_name'],
+            'teamName' => $record['team_name'],
+            'cardType' => $record['card_type'],
+            'reason' => $record['reason'],
+            'notes' => $record['notes'],
+            'incidentDate' => $record['incident_date'],
+            'eventDescription' => $record['event_description'],
+            'createdAt' => $record['created_at']
+        ];
+    }
+    
+    echo json_encode($records);
+}
+
+function saveDisciplinaryRecords($db) {
+    $input = json_decode(file_get_contents('php://input'), true);
+    if (!$input) {
+        http_response_code(400);
+        echo json_encode(['error' => 'Invalid JSON data']);
+        return;
+    }
+    
+    $action = $input['action'] ?? 'save';
+    $memberId = $input['member_id'] ?? null;
+    
+    if ($action === 'delete' && isset($input['record_id'])) {
+        // Delete specific record
+        try {
+            $stmt = $db->prepare('DELETE FROM player_disciplinary_records WHERE id = ?');
+            $stmt->execute([$input['record_id']]);
+            echo json_encode(['success' => true]);
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode(['error' => 'Failed to delete record']);
+        }
+        return;
+    }
+    
+    if (!$memberId || !isset($input['records'])) {
+        http_response_code(400);
+        echo json_encode(['error' => 'Missing required fields']);
+        return;
+    }
+    
+    $db->beginTransaction();
+    
+    try {
+        // Delete existing records for this member
+        $db->prepare('DELETE FROM player_disciplinary_records WHERE member_id = ?')->execute([$memberId]);
+        
+        // Insert new records
+        foreach ($input['records'] as $record) {
+            $stmt = $db->prepare('
+                INSERT INTO player_disciplinary_records (member_id, card_type, reason, notes, incident_date, event_description)
+                VALUES (?, ?, ?, ?, ?, ?)
+            ');
+            $stmt->execute([
+                $memberId,
+                $record['cardType'],
+                $record['reason'] ?? null,
+                $record['notes'] ?? null,
+                $record['incidentDate'] ?? null,
+                $record['eventDescription'] ?? null
+            ]);
+        }
+        
+        $db->commit();
+        echo json_encode(['success' => true]);
+        
+    } catch (Exception $e) {
+        $db->rollBack();
+        throw $e;
+    }
+}
+
 function initializeDatabase($db) {
     // PostgreSQL schema only
     $db->exec('
@@ -692,12 +805,27 @@ function initializeDatabase($db) {
         )
     ');
     
+    $db->exec('
+        CREATE TABLE IF NOT EXISTS player_disciplinary_records (
+            id SERIAL PRIMARY KEY,
+            member_id TEXT NOT NULL,
+            card_type TEXT NOT NULL CHECK(card_type IN (\'yellow\', \'red\')),
+            reason TEXT,
+            notes TEXT,
+            incident_date DATE,
+            event_description TEXT,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (member_id) REFERENCES team_members(id) ON DELETE CASCADE
+        )
+    ');
+    
     // Create indexes
     try {
         $db->exec('CREATE INDEX IF NOT EXISTS idx_team_members_team_id ON team_members(team_id)');
         $db->exec('CREATE INDEX IF NOT EXISTS idx_matches_event_id ON matches(event_id)');
         $db->exec('CREATE INDEX IF NOT EXISTS idx_match_attendees_match_id ON match_attendees(match_id)');
         $db->exec('CREATE INDEX IF NOT EXISTS idx_general_attendees_event_id ON general_attendees(event_id)');
+        $db->exec('CREATE INDEX IF NOT EXISTS idx_player_disciplinary_records_member_id ON player_disciplinary_records(member_id)');
     } catch (Exception $e) {
         // Indexes might already exist, ignore errors
     }
