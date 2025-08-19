@@ -770,11 +770,11 @@ function saveDisciplinaryRecords($db) {
                 }
             }
             
-            $stmt = $db->prepare('
-                INSERT INTO player_disciplinary_records (member_id, card_type, reason, notes, incident_date, event_description, suspension_matches, suspension_served)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
-            ');
-            $stmt->execute([
+            // Debug logging
+            error_log("Record data: " . json_encode($record));
+            error_log("Suspension served processed: " . ($suspensionServed ? 'true' : 'false'));
+            
+            $params = [
                 $memberId,
                 $record['cardType'],
                 $record['reason'] ?? null,
@@ -783,7 +783,16 @@ function saveDisciplinaryRecords($db) {
                 $record['eventDescription'] ?? null,
                 $record['suspensionMatches'] ?? null,
                 $suspensionServed
-            ]);
+            ];
+            
+            // Debug logging for parameters
+            error_log("SQL Parameters: " . json_encode($params));
+            
+            $stmt = $db->prepare('
+                INSERT INTO player_disciplinary_records (member_id, card_type, reason, notes, incident_date, event_description, suspension_matches, suspension_served)
+                VALUES (?, ?, ?, ?, ?, ?, ?, ?)
+            ');
+            $stmt->execute($params);
         }
         
         $db->commit();

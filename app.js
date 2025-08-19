@@ -1000,9 +1000,23 @@ class CheckInApp {
             const reason = item.querySelector('[data-field="reason"]').value;
             const eventDescription = item.querySelector('[data-field="eventDescription"]').value;
             const notes = item.querySelector('[data-field="notes"]').value;
-            const suspensionMatches = item.querySelector('[data-field="suspensionMatches"]')?.value;
-            const suspensionServedCheckbox = item.querySelector('[data-field="suspensionServed"]');
-            const suspensionServed = suspensionServedCheckbox ? suspensionServedCheckbox.checked : false;
+            
+            let suspensionMatches = null;
+            let suspensionServed = false;
+            
+            // Only collect suspension data for red cards
+            if (cardType === 'red') {
+                const suspensionMatchesField = item.querySelector('[data-field="suspensionMatches"]');
+                const suspensionServedField = item.querySelector('[data-field="suspensionServed"]');
+                
+                if (suspensionMatchesField && suspensionMatchesField.value) {
+                    suspensionMatches = parseInt(suspensionMatchesField.value);
+                }
+                
+                if (suspensionServedField) {
+                    suspensionServed = suspensionServedField.checked;
+                }
+            }
             
             if (cardType) {
                 disciplinaryRecords.push({
@@ -1011,11 +1025,13 @@ class CheckInApp {
                     reason: reason || null,
                     eventDescription: eventDescription || null,
                     notes: notes || null,
-                    suspensionMatches: suspensionMatches ? parseInt(suspensionMatches) : null,
+                    suspensionMatches: suspensionMatches,
                     suspensionServed: suspensionServed
                 });
             }
         });
+        
+        console.log('Disciplinary records to save:', disciplinaryRecords);
         
         try {
             // Save member info
