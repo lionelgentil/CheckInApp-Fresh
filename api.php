@@ -792,7 +792,18 @@ function saveDisciplinaryRecords($db) {
                 INSERT INTO player_disciplinary_records (member_id, card_type, reason, notes, incident_date, event_description, suspension_matches, suspension_served)
                 VALUES (?, ?, ?, ?, ?, ?, ?, ?)
             ');
-            $stmt->execute($params);
+            
+            // Bind parameters explicitly with correct types
+            $stmt->bindValue(1, $memberId, PDO::PARAM_STR);
+            $stmt->bindValue(2, $record['cardType'], PDO::PARAM_STR);
+            $stmt->bindValue(3, $record['reason'] ?? null, PDO::PARAM_STR);
+            $stmt->bindValue(4, $record['notes'] ?? null, PDO::PARAM_STR);
+            $stmt->bindValue(5, $record['incidentDate'] ?? null, PDO::PARAM_STR);
+            $stmt->bindValue(6, $record['eventDescription'] ?? null, PDO::PARAM_STR);
+            $stmt->bindValue(7, $record['suspensionMatches'] ?? null, PDO::PARAM_INT);
+            $stmt->bindValue(8, $suspensionServed, PDO::PARAM_BOOL);
+            
+            $stmt->execute();
         }
         
         $db->commit();
