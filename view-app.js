@@ -4,7 +4,7 @@
  */
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '2.14.10';
+const APP_VERSION = '2.14.11';
 
 class CheckInViewApp {
     constructor() {
@@ -845,6 +845,8 @@ class CheckInViewApp {
                                         <option value="Second yellow card" ${card.reason === 'Second yellow card' ? 'selected' : ''}>Second yellow card</option>
                                         <option value="Sliding" ${card.reason === 'Sliding' ? 'selected' : ''}>Sliding</option>
                                         <option value="Reckless/aggressive challenge" ${card.reason === 'Reckless/aggressive challenge' ? 'selected' : ''}>Reckless/aggressive challenge</option>
+                                        <option value="Denial of a goal scoring opportunity" ${card.reason === 'Denial of a goal scoring opportunity' ? 'selected' : ''}>Denial of a goal scoring opportunity</option>
+                                        <option value="Stopping a promising attack" ${card.reason === 'Stopping a promising attack' ? 'selected' : ''}>Stopping a promising attack</option>
                                     </select>
                                     <input type="text" class="form-input" style="flex: 1;" placeholder="Additional Notes (optional)" data-card-index="${index}" data-field="notes" value="${card.notes || ''}">
                                 </div>
@@ -907,6 +909,8 @@ class CheckInViewApp {
                         <option value="Second yellow card">Second yellow card</option>
                         <option value="Sliding">Sliding</option>
                         <option value="Reckless/aggressive challenge">Reckless/aggressive challenge</option>
+                        <option value="Denial of a goal scoring opportunity">Denial of a goal scoring opportunity</option>
+                        <option value="Stopping a promising attack">Stopping a promising attack</option>
                     </select>
                     <input type="text" class="form-input" style="flex: 1;" placeholder="Additional Notes (optional)" data-card-index="${newIndex}" data-field="notes">
                 </div>

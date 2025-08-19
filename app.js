@@ -4,7 +4,7 @@
  */
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '2.14.10';
+const APP_VERSION = '2.14.11';
 
 class CheckInApp {
     constructor() {
@@ -829,6 +829,8 @@ class CheckInApp {
                                     <option value="Entering/leaving without permission" ${record.reason === 'Entering/leaving without permission' ? 'selected' : ''}>Entering/leaving without permission</option>
                                     <option value="Sliding" ${record.reason === 'Sliding' ? 'selected' : ''}>Sliding</option>
                                     <option value="Reckless/aggressive challenge" ${record.reason === 'Reckless/aggressive challenge' ? 'selected' : ''}>Reckless/aggressive challenge</option>
+                                    <option value="Denial of a goal scoring opportunity" ${record.reason === 'Denial of a goal scoring opportunity' ? 'selected' : ''}>Denial of a goal scoring opportunity</option>
+                                    <option value="Stopping a promising attack" ${record.reason === 'Stopping a promising attack' ? 'selected' : ''}>Stopping a promising attack</option>
                                     <option value="Serious foul play" ${record.reason === 'Serious foul play' ? 'selected' : ''}>Serious foul play</option>
                                     <option value="Violent conduct" ${record.reason === 'Violent conduct' ? 'selected' : ''}>Violent conduct</option>
                                     <option value="Spitting" ${record.reason === 'Spitting' ? 'selected' : ''}>Spitting</option>
@@ -898,6 +900,8 @@ class CheckInApp {
                         <option value="Entering/leaving without permission">Entering/leaving without permission</option>
                         <option value="Sliding">Sliding</option>
                         <option value="Reckless/aggressive challenge">Reckless/aggressive challenge</option>
+                        <option value="Denial of a goal scoring opportunity">Denial of a goal scoring opportunity</option>
+                        <option value="Stopping a promising attack">Stopping a promising attack</option>
                         <option value="Serious foul play">Serious foul play</option>
                         <option value="Violent conduct">Violent conduct</option>
                         <option value="Spitting">Spitting</option>
@@ -1727,6 +1731,8 @@ class CheckInApp {
                         <option value="Entering/leaving without permission">Entering/leaving without permission</option>
                         <option value="Sliding">Sliding</option>
                         <option value="Reckless/aggressive challenge">Reckless/aggressive challenge</option>
+                        <option value="Denial of a goal scoring opportunity">Denial of a goal scoring opportunity</option>
+                        <option value="Stopping a promising attack">Stopping a promising attack</option>
                         <option value="Serious foul play">Serious foul play</option>
                         <option value="Violent conduct">Violent conduct</option>
                         <option value="Spitting">Spitting</option>
