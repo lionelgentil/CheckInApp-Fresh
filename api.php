@@ -7,10 +7,10 @@
 // Version constant - update this single location to change version everywhere
 const APP_VERSION = '2.15.1';
 
-// Default photos - direct file serving for performance
+// Default photos - fallback to API serving for SVG compatibility
 function getDefaultPhoto($gender) {
-    // Return direct URL to default photo files
-    return '/photos/defaults/' . ($gender === 'female' ? 'female.svg' : 'male.svg');
+    // Use API serving for SVG files to ensure proper MIME type in all browsers
+    return '/api/photos?filename=default&gender=' . ($gender === 'female' ? 'female' : 'male');
 }
 
 header('Content-Type: application/json');
