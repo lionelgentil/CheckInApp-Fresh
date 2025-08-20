@@ -1,6 +1,6 @@
 <?php
 /**
- * CheckIn App - PHP API
+ * CheckIn App for BUSC PASS - PHP API
  * RESTful API for team and event management
  */
 
