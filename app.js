@@ -4,7 +4,7 @@
  */
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '2.16.2';
+const APP_VERSION = '2.16.3';
 
 class CheckInApp {
     constructor() {
@@ -188,6 +188,37 @@ class CheckInApp {
         }
         
         return result.url; // Return the photo URL
+    }
+    
+    // Debug helper function - can be called from browser console
+    debugPhotos() {
+        console.log('=== PHOTO DEBUG INFO ===');
+        this.teams.forEach(team => {
+            console.log(`Team: ${team.name}`);
+            team.members.forEach(member => {
+                console.log(`  Member: ${member.name}`);
+                console.log(`    ID: ${member.id}`);
+                console.log(`    Photo: ${member.photo || 'NO PHOTO'}`);
+                console.log(`    Photo exists: ${!!member.photo}`);
+            });
+        });
+        console.log('=========================');
+    }
+    
+    // Test if a photo URL works
+    async testPhotoUrl(url) {
+        console.log('Testing photo URL:', url);
+        try {
+            const response = await fetch(url);
+            console.log('Photo URL response:', response.status, response.ok);
+            if (response.ok) {
+                console.log('✅ Photo URL is accessible');
+            } else {
+                console.log('❌ Photo URL returned error:', response.status);
+            }
+        } catch (error) {
+            console.log('❌ Photo URL test failed:', error.message);
+        }
     }
     
     // UI Methods
@@ -761,8 +792,25 @@ class CheckInApp {
                 try {
                     console.log('Uploading photo for existing member:', this.currentEditingMember.id);
                     photoUrl = await this.uploadPhoto(photoFile, this.currentEditingMember.id);
+                    
+                    // Update photo in BOTH the editing reference AND the teams array
                     this.currentEditingMember.photo = photoUrl;
+                    
+                    // Also find and update in teams array to be absolutely sure
+                    const team = this.teams.find(t => t.id === teamId);
+                    const memberInArray = team.members.find(m => m.id === this.currentEditingMember.id);
+                    if (memberInArray) {
+                        memberInArray.photo = photoUrl;
+                        console.log('Photo updated in teams array as well');
+                    }
+                    
                     console.log('Photo uploaded successfully:', photoUrl);
+                    console.log('Updated member object:', this.currentEditingMember);
+                    
+                    // Force immediate UI refresh to show new photo
+                    console.log('saveMember: Forcing UI refresh after photo upload...');
+                    this.renderTeams();
+                    console.log('saveMember: UI refreshed');
                 } catch (error) {
                     console.error('Error uploading photo:', error);
                     alert('Photo upload failed: ' + error.message);
@@ -1133,6 +1181,20 @@ class CheckInApp {
         if (photo) {
             member.photo = photo;
             console.log('saveDetailedMember: Updated member photo to:', photo);
+            console.log('saveDetailedMember: Member object after update:', member);
+            
+            // Double-check: also update in teams array (member should already be the reference, but be safe)
+            const teamRef = this.teams.find(t => t.id === teamId);
+            const memberRef = teamRef.members.find(m => m.id === memberId);
+            if (memberRef && memberRef !== member) {
+                memberRef.photo = photo;
+                console.log('saveDetailedMember: Also updated photo in teams array reference');
+            }
+            
+            // Force immediate UI refresh to show new photo
+            console.log('saveDetailedMember: Forcing UI refresh...');
+            this.renderTeams();
+            console.log('saveDetailedMember: UI refreshed');
         }
         
         // Collect disciplinary records
