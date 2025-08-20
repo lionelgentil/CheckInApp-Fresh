@@ -718,68 +718,78 @@ class CheckInApp {
         const team = this.teams.find(t => t.id === teamId);
         if (!team) return;
         
-        let photo = this.currentEditingMember ? this.currentEditingMember.photo : null;
+        let photoUrl = null;
+        let needsTeamsSave = false;
         
-        // Handle photo upload first if there's a new photo
-        if (photoFile) {
-            try {
-                // First save/update the member to get an ID, then upload photo
-                let memberId;
-                
-                if (this.currentEditingMember) {
-                    // Edit existing member
-                    memberId = this.currentEditingMember.id;
-                    this.currentEditingMember.name = name;
-                    this.currentEditingMember.jerseyNumber = jerseyNumber ? parseInt(jerseyNumber) : null;
-                    this.currentEditingMember.gender = gender || null;
-                } else {
-                    // Add new member first
-                    const newMember = {
-                        id: this.generateUUID(),
-                        name: name,
-                        jerseyNumber: jerseyNumber ? parseInt(jerseyNumber) : null,
-                        gender: gender || null,
-                        photo: null // Will be set after upload
-                    };
-                    team.members.push(newMember);
-                    this.currentEditingMember = newMember;
-                    memberId = newMember.id;
+        // Handle member creation/update
+        if (this.currentEditingMember) {
+            // Edit existing member - update local data only
+            this.currentEditingMember.name = name;
+            this.currentEditingMember.jerseyNumber = jerseyNumber ? parseInt(jerseyNumber) : null;
+            this.currentEditingMember.gender = gender || null;
+            
+            // For existing members, we only need saveTeams if basic info changed
+            needsTeamsSave = true;
+            
+            // Upload photo if provided - this will update database directly
+            if (photoFile) {
+                try {
+                    photoUrl = await this.uploadPhoto(photoFile, this.currentEditingMember.id);
+                    this.currentEditingMember.photo = photoUrl;
+                    // Photo upload already updated database, but we still need to save basic member info
+                } catch (error) {
+                    console.error('Error uploading photo:', error);
+                    alert('Photo upload failed: ' + error.message);
+                    return;
                 }
-                
-                // Save teams first to ensure member exists in database
-                await this.saveTeams();
-                
-                // Now upload the photo
-                const photoUrl = await this.uploadPhoto(photoFile, memberId);
-                this.currentEditingMember.photo = photoUrl;
-                
-            } catch (error) {
-                console.error('Error uploading photo:', error);
-                alert('Photo upload failed: ' + error.message);
             }
         } else {
-            // No photo upload, just update member data
-            if (this.currentEditingMember) {
-                // Edit existing member
-                this.currentEditingMember.name = name;
-                this.currentEditingMember.jerseyNumber = jerseyNumber ? parseInt(jerseyNumber) : null;
-                this.currentEditingMember.gender = gender || null;
-            } else {
-                // Add new member
-                const newMember = {
-                    id: this.generateUUID(),
-                    name: name,
-                    jerseyNumber: jerseyNumber ? parseInt(jerseyNumber) : null,
-                    gender: gender || null,
-                    photo: null
-                };
-                team.members.push(newMember);
+            // Add new member - create locally first
+            const newMember = {
+                id: this.generateUUID(),
+                name: name,
+                jerseyNumber: jerseyNumber ? parseInt(jerseyNumber) : null,
+                gender: gender || null,
+                photo: null
+            };
+            team.members.push(newMember);
+            
+            try {
+                // Create the member in database first
+                await this.saveTeams();
+                
+                // Now upload photo if provided - this updates database directly
+                if (photoFile) {
+                    photoUrl = await this.uploadPhoto(photoFile, newMember.id);
+                    newMember.photo = photoUrl;
+                    // Photo is now saved, no need for another saveTeams call
+                    needsTeamsSave = false;
+                } else {
+                    // No photo, member already saved above
+                    needsTeamsSave = false;
+                }
+            } catch (error) {
+                console.error('Error creating member or uploading photo:', error);
+                alert('Failed to create member: ' + error.message);
+                // Remove the member we just added since creation failed
+                const index = team.members.findIndex(m => m.id === newMember.id);
+                if (index !== -1) {
+                    team.members.splice(index, 1);
+                }
+                return;
             }
         }
         
         try {
-            await this.saveTeams();
+            // Only save teams if needed (avoid redundant 102KB POST requests)
+            if (needsTeamsSave) {
+                await this.saveTeams();
+            }
+            
+            // Update UI
             this.renderTeams();
+            
+            // Handle modal state
             if (!this.currentEditingMember) {
                 // Keep modal open for adding more members
                 document.getElementById('member-name').value = '';
@@ -1129,8 +1139,11 @@ class CheckInApp {
         console.log('Disciplinary records to save:', disciplinaryRecords);
         
         try {
-            // Save member info
-            await this.saveTeams();
+            // Save member info only if photo wasn't uploaded (if photo was uploaded, database was already updated)
+            if (!photoFile) {
+                await this.saveTeams();
+            }
+            // If photo was uploaded, the uploadPhoto() function already updated the database
             
             // Save disciplinary records
             const disciplinaryResponse = await fetch('/api/disciplinary-records', {

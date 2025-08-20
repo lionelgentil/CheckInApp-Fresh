@@ -5,7 +5,7 @@
  */
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '2.15.9';
+const APP_VERSION = '2.16.0';
 
 // Default photos - fallback to API serving for SVG compatibility
 function getDefaultPhoto($gender) {
@@ -374,11 +374,39 @@ function getTeams($db) {
         if ($row['member_id']) {
             // Generate photo URL - API serving for consistency  
             if ($row['photo']) {
-                // Clean up photo value if it contains full path (migration issue)
+                // Clean up photo value to ensure we only store/use filenames
                 $photoValue = $row['photo'];
+                
+                // Handle different photo storage formats
                 if (strpos($photoValue, '/photos/members/') === 0) {
+                    // Full path format: /photos/members/filename.ext
                     $photoValue = basename($photoValue);
+                } elseif (strpos($photoValue, '/api/photos') === 0) {
+                    // Already a URL format: /api/photos?filename=xyz - extract filename
+                    $parsedUrl = parse_url($photoValue);
+                    if ($parsedUrl && isset($parsedUrl['query'])) {
+                        parse_str($parsedUrl['query'], $query);
+                        if (isset($query['filename'])) {
+                            $photoValue = $query['filename'];
+                            // Clean recursively in case of nested URLs
+                            while (strpos($photoValue, '/api/photos') === 0) {
+                                $nestedUrl = parse_url($photoValue);
+                                if ($nestedUrl && isset($nestedUrl['query'])) {
+                                    parse_str($nestedUrl['query'], $nestedQuery);
+                                    if (isset($nestedQuery['filename'])) {
+                                        $photoValue = $nestedQuery['filename'];
+                                    } else {
+                                        break;
+                                    }
+                                } else {
+                                    break;
+                                }
+                            }
+                        }
+                    }
                 }
+                // If it's already just a filename (preferred), use as-is
+                
                 $photo = '/api/photos?filename=' . urlencode($photoValue);
             } else {
                 $photo = getDefaultPhoto($row['gender']);
@@ -483,6 +511,24 @@ function saveTeams($db) {
             
             if (isset($team['members']) && is_array($team['members'])) {
                 foreach ($team['members'] as $member) {
+                    // Clean photo value before storing - only store filenames, not URLs
+                    $photoValue = $member['photo'] ?? null;
+                    if ($photoValue) {
+                        // Extract filename from various formats
+                        if (strpos($photoValue, '/photos/members/') === 0) {
+                            $photoValue = basename($photoValue);
+                        } elseif (strpos($photoValue, '/api/photos') === 0) {
+                            $parsedUrl = parse_url($photoValue);
+                            if ($parsedUrl && isset($parsedUrl['query'])) {
+                                parse_str($parsedUrl['query'], $query);
+                                if (isset($query['filename'])) {
+                                    $photoValue = $query['filename'];
+                                }
+                            }
+                        }
+                        // If it's already just a filename, use as-is
+                    }
+                    
                     // Use INSERT ON CONFLICT (UPSERT) to preserve existing members and their disciplinary records
                     $stmt = $db->prepare('
                         INSERT INTO team_members (id, team_id, name, jersey_number, gender, photo)
@@ -500,7 +546,7 @@ function saveTeams($db) {
                         $member['name'],
                         $member['jerseyNumber'] ?? null,
                         $member['gender'] ?? null,
-                        $member['photo'] ?? null
+                        $photoValue
                     ]);
                 }
             }
