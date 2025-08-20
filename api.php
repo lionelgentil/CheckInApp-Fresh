@@ -5,7 +5,7 @@
  */
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '2.14.16';
+const APP_VERSION = '2.14.17';
 
 // Default photos - simple SVG avatars
 function getDefaultPhoto($gender) {
@@ -991,26 +991,29 @@ function saveDisciplinaryRecords($db) {
     $db->beginTransaction();
     
     try {
-        // Delete existing records for this member
-        $stmt = $db->prepare('SELECT COUNT(*) as count FROM player_disciplinary_records WHERE member_id = ?');
-        $stmt->execute([$memberId]);
-        $existingCount = $stmt->fetch(PDO::FETCH_ASSOC)['count'];
+        // SIMPLIFIED FIX: Just append new records, don't delete existing ones
+        // unless explicitly requested via 'replace_all' action
         
-        if ($existingCount > 0) {
-            error_log("Disciplinary: Replacing {$existingCount} existing records for member {$memberId}");
+        if ($action === 'replace_all') {
+            // Only for full replacement (like editing all records in modal)
+            $stmt = $db->prepare('SELECT COUNT(*) as count FROM player_disciplinary_records WHERE member_id = ?');
+            $stmt->execute([$memberId]);
+            $existingCount = $stmt->fetch(PDO::FETCH_ASSOC)['count'];
+            
+            if ($existingCount > 0) {
+                error_log("Disciplinary: Replacing {$existingCount} existing records for member {$memberId}");
+            }
+            
+            $db->prepare('DELETE FROM player_disciplinary_records WHERE member_id = ?')->execute([$memberId]);
         }
         
-        $db->prepare('DELETE FROM player_disciplinary_records WHERE member_id = ?')->execute([$memberId]);
-        
-        // Prepare statement once for better performance with multiple inserts
+        // Insert new records (append mode by default)
         $stmt = $db->prepare('
             INSERT INTO player_disciplinary_records (member_id, card_type, reason, notes, incident_date, event_description, suspension_matches, suspension_served, suspension_served_date)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
         ');
         
-        // Insert new records efficiently
         foreach ($input['records'] as $record) {
-            // Ensure boolean values are properly handled
             $suspensionServed = false;
             $suspensionServedDate = null;
             
