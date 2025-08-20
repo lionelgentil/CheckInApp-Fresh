@@ -4,7 +4,7 @@
  */
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '2.14.23';
+const APP_VERSION = '2.14.24';
 
 class CheckInApp {
     constructor() {
@@ -837,7 +837,6 @@ class CheckInApp {
                                     <option value="Offensive/insulting language" ${record.reason === 'Offensive/insulting language' ? 'selected' : ''}>Offensive/insulting language</option>
                                     <option value="Second yellow card" ${record.reason === 'Second yellow card' ? 'selected' : ''}>Second yellow card</option>
                                 </select>
-                                <input type="text" class="form-input" style="flex: 1;" placeholder="Event/Competition" data-record-index="${index}" data-field="eventDescription" value="${record.eventDescription || ''}">
                             </div>
                             <textarea class="form-input" placeholder="Additional Notes (optional)" data-record-index="${index}" data-field="notes" rows="2">${record.notes || ''}</textarea>
                             ${record.cardType === 'red' || (record.suspensionMatches !== null && record.suspensionMatches !== undefined) ? `
@@ -908,7 +907,6 @@ class CheckInApp {
                         <option value="Offensive/insulting language">Offensive/insulting language</option>
                         <option value="Second yellow card">Second yellow card</option>
                     </select>
-                    <input type="text" class="form-input" style="flex: 1;" placeholder="Event/Competition" data-record-index="${newIndex}" data-field="eventDescription">
                 </div>
                 <textarea class="form-input" placeholder="Additional Notes (optional)" data-record-index="${newIndex}" data-field="notes" rows="2"></textarea>
                 <div id="suspension-section-${newIndex}" style="display: none; margin-top: 8px; padding: 8px; background: #fff3cd; border-radius: 4px;">
@@ -1035,7 +1033,6 @@ class CheckInApp {
             const cardType = item.querySelector('[data-field="cardType"]').value;
             const incidentDate = item.querySelector('[data-field="incidentDate"]').value;
             const reason = item.querySelector('[data-field="reason"]').value;
-            const eventDescription = item.querySelector('[data-field="eventDescription"]').value;
             const notes = item.querySelector('[data-field="notes"]').value;
             
             let suspensionMatches = null;
@@ -1067,7 +1064,6 @@ class CheckInApp {
                     cardType: cardType,
                     incidentDate: incidentDate || null,
                     reason: reason || null,
-                    eventDescription: eventDescription || null,
                     notes: notes || null,
                     suspensionMatches: suspensionMatches,
                     suspensionServed: suspensionServed,
@@ -1153,9 +1149,9 @@ class CheckInApp {
                 console.log('Loaded disciplinary records for profile view:', member.name, records);
                 disciplinaryRecords = records.map(record => ({
                     type: 'prior',
-                    eventName: record.eventDescription || 'Prior Record',
+                    eventName: 'Prior Record',
                     eventDate: record.incidentDate || record.createdAt,
-                    matchInfo: record.eventDescription || 'External competition',
+                    matchInfo: 'External incident',
                     cardType: record.cardType,
                     reason: record.reason,
                     notes: record.notes,

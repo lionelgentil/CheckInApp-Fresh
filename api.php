@@ -5,7 +5,7 @@
  */
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '2.14.23';
+const APP_VERSION = '2.14.24';
 
 // Default photos - simple SVG avatars
 function getDefaultPhoto($gender) {
@@ -1028,7 +1028,6 @@ function getDisciplinaryRecords($db) {
             'reason' => $record['reason'],
             'notes' => $record['notes'],
             'incidentDate' => $record['incident_date'],
-            'eventDescription' => $record['event_description'],
             'suspensionMatches' => $record['suspension_matches'] ? (int)$record['suspension_matches'] : null,
             'suspensionServed' => $record['suspension_served'] ? true : false,
             'suspensionServedDate' => $record['suspension_served_date'],
@@ -1112,8 +1111,8 @@ function saveDisciplinaryRecords($db) {
         
         // Insert records
         $stmt = $db->prepare('
-            INSERT INTO player_disciplinary_records (member_id, card_type, reason, notes, incident_date, event_description, suspension_matches, suspension_served, suspension_served_date)
-            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+            INSERT INTO player_disciplinary_records (member_id, card_type, reason, notes, incident_date, suspension_matches, suspension_served, suspension_served_date)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         ');
         
         foreach ($input['records'] as $record) {
@@ -1144,10 +1143,9 @@ function saveDisciplinaryRecords($db) {
             $stmt->bindValue(3, $record['reason'] ?? null, PDO::PARAM_STR);
             $stmt->bindValue(4, $record['notes'] ?? null, PDO::PARAM_STR);
             $stmt->bindValue(5, $record['incidentDate'] ?? null, PDO::PARAM_STR);
-            $stmt->bindValue(6, $record['eventDescription'] ?? null, PDO::PARAM_STR);
-            $stmt->bindValue(7, $record['suspensionMatches'] ?? null, PDO::PARAM_INT);
-            $stmt->bindValue(8, $suspensionServed, PDO::PARAM_BOOL);
-            $stmt->bindValue(9, $suspensionServedDate, PDO::PARAM_STR);
+            $stmt->bindValue(6, $record['suspensionMatches'] ?? null, PDO::PARAM_INT);
+            $stmt->bindValue(7, $suspensionServed, PDO::PARAM_BOOL);
+            $stmt->bindValue(8, $suspensionServedDate, PDO::PARAM_STR);
             
             $stmt->execute();
         }
@@ -1278,7 +1276,6 @@ function initializeDatabase($db) {
             reason TEXT,
             notes TEXT,
             incident_date DATE,
-            event_description TEXT,
             suspension_matches INTEGER DEFAULT NULL,
             suspension_served BOOLEAN DEFAULT FALSE,
             suspension_served_date DATE DEFAULT NULL,

@@ -4,7 +4,7 @@
  */
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '2.14.23';
+const APP_VERSION = '2.14.24';
 
 class CheckInViewApp {
     constructor() {
@@ -241,9 +241,9 @@ class CheckInViewApp {
                 const records = await response.json();
                 disciplinaryRecords = records.map(record => ({
                     type: 'prior',
-                    eventName: record.eventDescription || 'Prior Record',
+                    eventName: 'Prior Record',
                     eventDate: record.incidentDate || record.createdAt,
-                    matchInfo: record.eventDescription || 'External competition',
+                    matchInfo: 'External incident',
                     cardType: record.cardType,
                     reason: record.reason,
                     notes: record.notes,
