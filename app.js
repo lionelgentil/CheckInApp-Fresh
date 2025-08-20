@@ -1,10 +1,10 @@
 /**
- * CheckIn App v2.16.1 - JavaScript Frontend
+ * CheckIn App v2.16.2 - JavaScript Frontend
  * Works with PHP/SQLite backend
  */
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '2.16.1';
+const APP_VERSION = '2.16.2';
 
 class CheckInApp {
     constructor() {
@@ -744,6 +744,13 @@ class CheckInApp {
                 (originalGender || null) !== (gender || null)
             );
             
+            console.log('Basic info change detection:', {
+                originalName, name, nameChanged: originalName !== name,
+                originalJerseyNumber, jerseyNumber: jerseyNumber ? parseInt(jerseyNumber) : null, jerseyChanged: (originalJerseyNumber || null) !== (jerseyNumber ? parseInt(jerseyNumber) : null),
+                originalGender, gender: gender || null, genderChanged: (originalGender || null) !== (gender || null),
+                basicInfoChanged
+            });
+            
             // Update local data
             this.currentEditingMember.name = name;
             this.currentEditingMember.jerseyNumber = jerseyNumber ? parseInt(jerseyNumber) : null;
@@ -1108,9 +1115,11 @@ class CheckInApp {
         let photo = member.photo;
         if (photoFile) {
             try {
+                console.log('saveDetailedMember: Uploading photo for member:', memberId);
                 // Upload the new photo
                 const photoUrl = await this.uploadPhoto(photoFile, memberId);
                 photo = photoUrl;
+                console.log('saveDetailedMember: Photo uploaded successfully:', photoUrl);
             } catch (error) {
                 console.error('Error uploading photo:', error);
                 alert('Photo upload failed: ' + error.message);
@@ -1121,7 +1130,10 @@ class CheckInApp {
         member.name = name;
         member.jerseyNumber = jerseyNumber ? parseInt(jerseyNumber) : null;
         member.gender = gender || null;
-        if (photo) member.photo = photo;
+        if (photo) {
+            member.photo = photo;
+            console.log('saveDetailedMember: Updated member photo to:', photo);
+        }
         
         // Collect disciplinary records
         const recordItems = document.querySelectorAll('.disciplinary-record-item');
@@ -1174,7 +1186,10 @@ class CheckInApp {
         try {
             // Save member info only if photo wasn't uploaded (if photo was uploaded, database was already updated)
             if (!photoFile) {
+                console.log('saveDetailedMember: No photo uploaded, calling saveTeams() for basic member info');
                 await this.saveTeams();
+            } else {
+                console.log('✅ saveDetailedMember: Photo uploaded, skipping saveTeams() - uploadPhoto already updated database');
             }
             // If photo was uploaded, the uploadPhoto() function already updated the database
             

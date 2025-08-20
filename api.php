@@ -5,7 +5,7 @@
  */
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '2.16.1';
+const APP_VERSION = '2.16.2';
 
 // Default photos - fallback to API serving for SVG compatibility
 function getDefaultPhoto($gender) {
@@ -1328,6 +1328,8 @@ function servePhoto($db) {
         }
         
         $photoPath = __DIR__ . '/photos/members/' . $filename;
+        error_log("servePhoto: Constructed photo path: " . $photoPath);
+        error_log("servePhoto: File exists check: " . (file_exists($photoPath) ? 'YES' : 'NO'));
         
         // If member photo doesn't exist, fall back to gender-appropriate default
         if (!file_exists($photoPath)) {
