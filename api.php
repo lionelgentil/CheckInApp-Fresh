@@ -5,12 +5,12 @@
  */
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '2.15.0';
+const APP_VERSION = '2.15.1';
 
-// Default photos - URL-based system
+// Default photos - direct file serving for performance
 function getDefaultPhoto($gender) {
-    // Return URL to default photo instead of base64
-    return '/api/photos?filename=default&gender=' . ($gender === 'female' ? 'female' : 'male');
+    // Return direct URL to default photo files
+    return '/photos/defaults/' . ($gender === 'female' ? 'female.svg' : 'male.svg');
 }
 
 header('Content-Type: application/json');
@@ -329,9 +329,9 @@ function getTeams($db) {
         
         // Add member to current team (if member exists)
         if ($row['member_id']) {
-            // Generate photo URL - either custom photo or default
+            // Generate photo URL - direct file serving for performance
             if ($row['photo']) {
-                $photo = '/api/photos?filename=' . urlencode($row['photo']);
+                $photo = '/photos/members/' . urlencode($row['photo']);
             } else {
                 $photo = getDefaultPhoto($row['gender']);
             }
@@ -1334,7 +1334,7 @@ function uploadPhoto($db) {
         echo json_encode([
             'success' => true,
             'filename' => $filename,
-            'url' => '/api/photos?filename=' . $filename
+            'url' => '/photos/members/' . $filename
         ]);
     } catch (Exception $e) {
         // Clean up file if database update fails
