@@ -5,9 +5,15 @@ RewriteEngine On
 RewriteCond %{REQUEST_URI} ^/api/
 RewriteRule ^api/(.*)$ api.php?path=$1 [QSA,L]
 
+# Photos directory - allow direct access, don't route to SPA
+RewriteCond %{REQUEST_URI} ^/photos/
+RewriteRule ^photos/(.*)$ photos/$1 [L]
+
 # Frontend routing - serve index.html for non-existing files (SPA support)
+# BUT exclude photos directory from SPA routing
 RewriteCond %{REQUEST_FILENAME} !-f
 RewriteCond %{REQUEST_FILENAME} !-d
+RewriteCond %{REQUEST_URI} !^/photos/
 RewriteRule ^(.*)$ index.html [QSA,L]
 
 # Security headers

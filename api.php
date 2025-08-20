@@ -5,7 +5,7 @@
  */
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '2.15.1';
+const APP_VERSION = '2.15.3';
 
 // Default photos - fallback to API serving for SVG compatibility
 function getDefaultPhoto($gender) {
@@ -329,9 +329,9 @@ function getTeams($db) {
         
         // Add member to current team (if member exists)
         if ($row['member_id']) {
-            // Generate photo URL - direct file serving for performance
+            // Generate photo URL - API serving for consistency  
             if ($row['photo']) {
-                $photo = '/photos/members/' . urlencode($row['photo']);
+                $photo = '/api/photos?filename=' . urlencode($row['photo']);
             } else {
                 $photo = getDefaultPhoto($row['gender']);
             }
@@ -1311,18 +1311,35 @@ function uploadPhoto($db) {
     }
     
     $filename = $memberId . '.' . $extension;
-    $photoPath = __DIR__ . '/photos/members/' . $filename;
+    
+    // Ensure photos directory exists
+    $photosDir = __DIR__ . '/photos/members';
+    if (!is_dir($photosDir)) {
+        if (!mkdir($photosDir, 0755, true)) {
+            http_response_code(500);
+            echo json_encode(['error' => 'Failed to create photos directory']);
+            return;
+        }
+    }
+    
+    $photoPath = $photosDir . '/' . $filename;
     
     // Remove any existing photo for this member
-    $existingFiles = glob(__DIR__ . '/photos/members/' . $memberId . '.*');
+    $existingFiles = glob($photosDir . '/' . $memberId . '.*');
     foreach ($existingFiles as $existingFile) {
         unlink($existingFile);
     }
     
-    // Move uploaded file
+    // Move uploaded file with better error handling
     if (!move_uploaded_file($file['tmp_name'], $photoPath)) {
+        $error = error_get_last();
         http_response_code(500);
-        echo json_encode(['error' => 'Failed to save photo']);
+        echo json_encode([
+            'error' => 'Failed to save photo',
+            'details' => $error ? $error['message'] : 'Unknown error',
+            'target_path' => $photoPath,
+            'source_path' => $file['tmp_name']
+        ]);
         return;
     }
     
@@ -1334,7 +1351,7 @@ function uploadPhoto($db) {
         echo json_encode([
             'success' => true,
             'filename' => $filename,
-            'url' => '/photos/members/' . $filename
+            'url' => '/api/photos?filename=' . $filename
         ]);
     } catch (Exception $e) {
         // Clean up file if database update fails
