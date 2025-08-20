@@ -5,7 +5,7 @@
  */
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '2.15.7';
+const APP_VERSION = '2.15.8';
 
 // Default photos - fallback to API serving for SVG compatibility
 function getDefaultPhoto($gender) {
@@ -1326,6 +1326,8 @@ function uploadPhoto($db) {
     // Check if member_id is provided
     $memberId = $_POST['member_id'] ?? '';
     
+    error_log("uploadPhoto: Starting upload for member ID: " . $memberId);
+    
     if (empty($memberId)) {
         http_response_code(400);
         echo json_encode(['error' => 'Member ID required']);
@@ -1333,22 +1335,29 @@ function uploadPhoto($db) {
     }
     
     // Verify member exists
-    $stmt = $db->prepare('SELECT id FROM team_members WHERE id = ?');
+    $stmt = $db->prepare('SELECT id, name FROM team_members WHERE id = ?');
     $stmt->execute([$memberId]);
-    if (!$stmt->fetch()) {
+    $member = $stmt->fetch(PDO::FETCH_ASSOC);
+    if (!$member) {
+        error_log("uploadPhoto: Member not found: " . $memberId);
         http_response_code(404);
         echo json_encode(['error' => 'Member not found']);
         return;
     }
     
+    error_log("uploadPhoto: Found member: " . $member['name']);
+    
     // Check if file was uploaded
     if (!isset($_FILES['photo']) || $_FILES['photo']['error'] !== UPLOAD_ERR_OK) {
+        $errorMsg = isset($_FILES['photo']) ? 'Upload error: ' . $_FILES['photo']['error'] : 'No file uploaded';
+        error_log("uploadPhoto: " . $errorMsg);
         http_response_code(400);
-        echo json_encode(['error' => 'No valid file uploaded']);
+        echo json_encode(['error' => 'No valid file uploaded', 'details' => $errorMsg]);
         return;
     }
     
     $file = $_FILES['photo'];
+    error_log("uploadPhoto: File received - name: " . $file['name'] . ", size: " . $file['size'] . " bytes");
     
     // Validate file size (2MB max)
     if ($file['size'] > 2 * 1024 * 1024) {
@@ -1419,15 +1428,34 @@ function uploadPhoto($db) {
     
     // Update database
     try {
+        error_log("uploadPhoto: Updating database - filename: " . $filename . " for member: " . $memberId);
         $stmt = $db->prepare('UPDATE team_members SET photo = ? WHERE id = ?');
-        $stmt->execute([$filename, $memberId]);
+        $result = $stmt->execute([$filename, $memberId]);
         
-        echo json_encode([
+        if ($result) {
+            $rowsAffected = $stmt->rowCount();
+            error_log("uploadPhoto: Database updated successfully. Rows affected: " . $rowsAffected);
+            
+            // Verify the update worked
+            $verifyStmt = $db->prepare('SELECT photo FROM team_members WHERE id = ?');
+            $verifyStmt->execute([$memberId]);
+            $updatedPhoto = $verifyStmt->fetchColumn();
+            error_log("uploadPhoto: Verified photo in DB: " . $updatedPhoto);
+        }
+        
+        $responseData = [
             'success' => true,
             'filename' => $filename,
-            'url' => '/api/photos?filename=' . $filename
-        ]);
+            'url' => '/api/photos?filename=' . $filename,
+            'member_id' => $memberId,
+            'file_path' => $photoPath
+        ];
+        
+        error_log("uploadPhoto: Success response: " . json_encode($responseData));
+        echo json_encode($responseData);
+        
     } catch (Exception $e) {
+        error_log("uploadPhoto: Database error: " . $e->getMessage());
         // Clean up file if database update fails
         unlink($photoPath);
         throw $e;

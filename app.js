@@ -4,7 +4,7 @@
  */
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '2.15.7';
+const APP_VERSION = '2.15.8';
 
 class CheckInApp {
     constructor() {
@@ -720,30 +720,61 @@ class CheckInApp {
         
         let photo = this.currentEditingMember ? this.currentEditingMember.photo : null;
         
+        // Handle photo upload first if there's a new photo
         if (photoFile) {
             try {
-                photo = await this.convertFileToBase64(photoFile);
+                // First save/update the member to get an ID, then upload photo
+                let memberId;
+                
+                if (this.currentEditingMember) {
+                    // Edit existing member
+                    memberId = this.currentEditingMember.id;
+                    this.currentEditingMember.name = name;
+                    this.currentEditingMember.jerseyNumber = jerseyNumber ? parseInt(jerseyNumber) : null;
+                    this.currentEditingMember.gender = gender || null;
+                } else {
+                    // Add new member first
+                    const newMember = {
+                        id: this.generateUUID(),
+                        name: name,
+                        jerseyNumber: jerseyNumber ? parseInt(jerseyNumber) : null,
+                        gender: gender || null,
+                        photo: null // Will be set after upload
+                    };
+                    team.members.push(newMember);
+                    this.currentEditingMember = newMember;
+                    memberId = newMember.id;
+                }
+                
+                // Save teams first to ensure member exists in database
+                await this.saveTeams();
+                
+                // Now upload the photo
+                const photoUrl = await this.uploadPhoto(photoFile, memberId);
+                this.currentEditingMember.photo = photoUrl;
+                
             } catch (error) {
-                console.error('Error converting photo:', error);
+                console.error('Error uploading photo:', error);
+                alert('Photo upload failed: ' + error.message);
             }
-        }
-        
-        if (this.currentEditingMember) {
-            // Edit existing member
-            this.currentEditingMember.name = name;
-            this.currentEditingMember.jerseyNumber = jerseyNumber ? parseInt(jerseyNumber) : null;
-            this.currentEditingMember.gender = gender || null;
-            if (photo) this.currentEditingMember.photo = photo;
         } else {
-            // Add new member
-            const newMember = {
-                id: this.generateUUID(),
-                name: name,
-                jerseyNumber: jerseyNumber ? parseInt(jerseyNumber) : null,
-                gender: gender || null,
-                photo: photo
-            };
-            team.members.push(newMember);
+            // No photo upload, just update member data
+            if (this.currentEditingMember) {
+                // Edit existing member
+                this.currentEditingMember.name = name;
+                this.currentEditingMember.jerseyNumber = jerseyNumber ? parseInt(jerseyNumber) : null;
+                this.currentEditingMember.gender = gender || null;
+            } else {
+                // Add new member
+                const newMember = {
+                    id: this.generateUUID(),
+                    name: name,
+                    jerseyNumber: jerseyNumber ? parseInt(jerseyNumber) : null,
+                    gender: gender || null,
+                    photo: null
+                };
+                team.members.push(newMember);
+            }
         }
         
         try {
@@ -1034,9 +1065,12 @@ class CheckInApp {
         let photo = member.photo;
         if (photoFile) {
             try {
-                photo = await this.convertFileToBase64(photoFile);
+                // Upload the new photo
+                const photoUrl = await this.uploadPhoto(photoFile, memberId);
+                photo = photoUrl;
             } catch (error) {
-                console.error('Error converting photo:', error);
+                console.error('Error uploading photo:', error);
+                alert('Photo upload failed: ' + error.message);
             }
         }
         
