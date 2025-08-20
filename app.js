@@ -4,7 +4,7 @@
  */
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '2.14.24';
+const APP_VERSION = '2.14.25';
 
 class CheckInApp {
     constructor() {
@@ -1149,7 +1149,6 @@ class CheckInApp {
                 console.log('Loaded disciplinary records for profile view:', member.name, records);
                 disciplinaryRecords = records.map(record => ({
                     type: 'prior',
-                    eventName: 'Prior Record',
                     eventDate: record.incidentDate || record.createdAt,
                     matchInfo: 'External incident',
                     cardType: record.cardType,
@@ -1221,9 +1220,6 @@ class CheckInApp {
                                             <span style="margin-left: 8px; background: ${card.type === 'match' ? '#e3f2fd' : '#fff3e0'}; color: #666; padding: 1px 4px; border-radius: 3px; font-size: 0.7em;">${typeIcon} ${typeLabel}</span>
                                         </div>
                                         <small style="color: #666; font-size: 0.75em;">${new Date(card.eventDate).toLocaleDateString()}</small>
-                                    </div>
-                                    <div style="font-size: 0.8em; color: #666; margin-bottom: 3px;">
-                                        <strong>${card.type === 'match' ? 'Event:' : 'Competition:'}</strong> ${card.eventName}
                                     </div>
                                     ${card.type === 'match' ? `
                                         <div style="font-size: 0.8em; color: #666; margin-bottom: 3px;">
