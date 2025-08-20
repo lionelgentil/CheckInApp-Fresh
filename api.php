@@ -5,7 +5,7 @@
  */
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '2.14.17';
+const APP_VERSION = '2.14.18';
 
 // Default photos - simple SVG avatars
 function getDefaultPhoto($gender) {
@@ -311,8 +311,24 @@ function saveTeams($db) {
             $stmt = $db->prepare("DELETE FROM team_members WHERE id NOT IN ({$placeholders})");
             $stmt->execute($incomingMemberIds);
         } else {
-            // If no members in incoming data, delete all members
-            $db->exec('DELETE FROM team_members');
+            // CRITICAL FIX: Only delete all members if we're sure this is intentional
+            // Check if any teams in the input are supposed to have members
+            $hasAnyMembersData = false;
+            foreach ($input as $team) {
+                if (isset($team['members']) && is_array($team['members'])) {
+                    $hasAnyMembersData = true;
+                    break;
+                }
+            }
+            
+            // Only delete all members if teams explicitly have empty members arrays
+            // Don't delete if members key is missing entirely (could be partial update)
+            if ($hasAnyMembersData) {
+                error_log("WARNING: Deleting all team members due to empty members data");
+                $db->exec('DELETE FROM team_members');
+            } else {
+                error_log("SKIPPING: Team save without members data - preserving existing members");
+            }
         }
         
         // Delete all teams (safe since no foreign keys reference teams)
