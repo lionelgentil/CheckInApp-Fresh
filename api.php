@@ -5,7 +5,7 @@
  */
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '2.14.21-FINAL-FIX';
+const APP_VERSION = '2.14.22';
 
 // Default photos - simple SVG avatars
 function getDefaultPhoto($gender) {
@@ -1052,13 +1052,18 @@ function saveDisciplinaryRecords($db) {
     
     if ($action === 'delete' && isset($input['record_id'])) {
         // Delete specific record
+        error_log("Disciplinary DELETE: Attempting to delete record ID " . $input['record_id']);
         try {
             $stmt = $db->prepare('DELETE FROM player_disciplinary_records WHERE id = ?');
-            $stmt->execute([$input['record_id']]);
-            echo json_encode(['success' => true]);
+            $result = $stmt->execute([$input['record_id']]);
+            $deletedRows = $stmt->rowCount();
+            
+            error_log("Disciplinary DELETE: Deleted {$deletedRows} rows for record ID " . $input['record_id']);
+            echo json_encode(['success' => true, 'deleted_rows' => $deletedRows]);
         } catch (Exception $e) {
+            error_log("Disciplinary DELETE ERROR: " . $e->getMessage());
             http_response_code(500);
-            echo json_encode(['error' => 'Failed to delete record']);
+            echo json_encode(['error' => 'Failed to delete record: ' . $e->getMessage()]);
         }
         return;
     }
@@ -1072,23 +1077,33 @@ function saveDisciplinaryRecords($db) {
     $db->beginTransaction();
     
     try {
-        // SIMPLIFIED FIX: Just append new records, don't delete existing ones
-        // unless explicitly requested via 'replace_all' action
+        // SMART MODE: Determine if this is adding new records or editing existing ones
         
-        if ($action === 'replace_all') {
-            // Only for full replacement (like editing all records in modal)
-            $stmt = $db->prepare('SELECT COUNT(*) as count FROM player_disciplinary_records WHERE member_id = ?');
-            $stmt->execute([$memberId]);
-            $existingCount = $stmt->fetch(PDO::FETCH_ASSOC)['count'];
-            
-            if ($existingCount > 0) {
-                error_log("Disciplinary: Replacing {$existingCount} existing records for member {$memberId}");
+        // Check if any records already exist for this member
+        $stmt = $db->prepare('SELECT COUNT(*) as count FROM player_disciplinary_records WHERE member_id = ?');
+        $stmt->execute([$memberId]);
+        $existingCount = $stmt->fetch(PDO::FETCH_ASSOC)['count'];
+        
+        // Check if this looks like a full edit (frontend sends existing records with IDs)
+        $hasExistingRecordIds = false;
+        foreach ($input['records'] as $record) {
+            if (isset($record['id']) && !empty($record['id'])) {
+                $hasExistingRecordIds = true;
+                break;
             }
-            
-            $db->prepare('DELETE FROM player_disciplinary_records WHERE member_id = ?')->execute([$memberId]);
         }
         
-        // Insert new records (append mode by default)
+        // Determine mode based on context
+        if ($action === 'replace_all' || ($existingCount > 0 && $hasExistingRecordIds)) {
+            // EDIT MODE: Replace all records for this member (safe now that team saves don't cascade)
+            error_log("Disciplinary EDIT MODE: Replacing {$existingCount} records for member {$memberId}");
+            $db->prepare('DELETE FROM player_disciplinary_records WHERE member_id = ?')->execute([$memberId]);
+        } else {
+            // ADD MODE: Just append new records
+            error_log("Disciplinary ADD MODE: Appending " . count($input['records']) . " new records for member {$memberId}");
+        }
+        
+        // Insert records
         $stmt = $db->prepare('
             INSERT INTO player_disciplinary_records (member_id, card_type, reason, notes, incident_date, event_description, suspension_matches, suspension_served, suspension_served_date)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
