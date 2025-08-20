@@ -5,7 +5,7 @@
  */
 
 // Security check - you can add a simple password or remove this file after use
-$password = $_GET['password'] ?? '';
+$password = isset($_GET['password']) ? $_GET['password'] : '';
 if ($password !== 'migrate2024') {
     http_response_code(401);
     echo '<h1>❌ Access Denied</h1>';

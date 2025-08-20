@@ -82,7 +82,7 @@ try {
     $parsedUrl = parse_url($databaseUrl);
     
     $host = $parsedUrl['host'];
-    $port = $parsedUrl['port'] ?? 5432;
+    $port = isset($parsedUrl['port']) ? $parsedUrl['port'] : 5432;
     $dbname = ltrim($parsedUrl['path'], '/');
     $user = $parsedUrl['user'];
     $password = $parsedUrl['pass'];
@@ -115,7 +115,7 @@ try {
 }
 
 // Get request path
-$path = $_GET['path'] ?? '';
+$path = isset($_GET['path']) ? $_GET['path'] : '';
 $method = $_SERVER['REQUEST_METHOD'];
 
 // Route requests
@@ -256,7 +256,7 @@ try {
         case 'migrate-photos':
             // TEMPORARY: Migration endpoint - remove after use
             if ($method === 'POST') {
-                $password = $_POST['password'] ?? '';
+                $password = isset($_POST['password']) ? $_POST['password'] : '';
                 if ($password !== 'migrate2024') {
                     http_response_code(401);
                     echo json_encode(['error' => 'Invalid password']);
@@ -1400,13 +1400,13 @@ function migratePhotos($db) {
     $errors = array();
 
     if ($totalMembers === 0) {
-        echo json_encode([
+        echo json_encode(array(
             'success' => true,
             'message' => 'No base64 photos found. Migration already complete.',
             'converted' => 0,
             'errors' => 0,
             'total' => 0
-        ]);
+        ));
         return;
     }
 
@@ -1461,21 +1461,21 @@ function migratePhotos($db) {
         
         $db->commit();
         
-        echo json_encode([
+        echo json_encode(array(
             'success' => true,
             'message' => 'Photo migration completed successfully!',
             'converted' => $convertedCount,
             'errors' => $errorCount,
             'total' => $totalMembers,
             'error_details' => $errors
-        ]);
+        ));
         
     } catch (Exception $e) {
         $db->rollBack();
-        echo json_encode([
+        echo json_encode(array(
             'success' => false,
             'error' => 'Migration failed: ' . $e->getMessage()
-        ]);
+        ));
     }
 }
 
@@ -1500,7 +1500,7 @@ function initializeDatabase($db) {
             name TEXT NOT NULL,
             jersey_number INTEGER,
             gender TEXT CHECK(gender IN (\'male\', \'female\')),
-            photo TEXT, -- Stores filename (e.g., 'member-id.jpg') or NULL for default
+            photo TEXT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (team_id) REFERENCES teams(id) ON DELETE CASCADE
         )
