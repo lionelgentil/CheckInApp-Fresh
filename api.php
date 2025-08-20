@@ -5,7 +5,7 @@
  */
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '2.15.3';
+const APP_VERSION = '2.15.4';
 
 // Default photos - fallback to API serving for SVG compatibility
 function getDefaultPhoto($gender) {
@@ -253,6 +253,22 @@ try {
             }
             break;
             
+        case 'cleanup-photo-paths':
+            // Cleanup endpoint to fix photo paths in database
+            if ($method === 'POST') {
+                $password = isset($_POST['password']) ? $_POST['password'] : '';
+                if ($password !== 'cleanup2024') {
+                    http_response_code(401);
+                    echo json_encode(['error' => 'Invalid password']);
+                    break;
+                }
+                cleanupPhotoPaths($db);
+            } else {
+                http_response_code(405);
+                echo json_encode(['error' => 'POST method required']);
+            }
+            break;
+            
         case 'migrate-photos':
             // TEMPORARY: Migration endpoint - remove after use
             if ($method === 'POST') {
@@ -331,7 +347,12 @@ function getTeams($db) {
         if ($row['member_id']) {
             // Generate photo URL - API serving for consistency  
             if ($row['photo']) {
-                $photo = '/api/photos?filename=' . urlencode($row['photo']);
+                // Clean up photo value if it contains full path (migration issue)
+                $photoValue = $row['photo'];
+                if (strpos($photoValue, '/photos/members/') === 0) {
+                    $photoValue = basename($photoValue);
+                }
+                $photo = '/api/photos?filename=' . urlencode($photoValue);
             } else {
                 $photo = getDefaultPhoto($row['gender']);
             }
@@ -1181,10 +1202,19 @@ function saveDisciplinaryRecords($db) {
 function servePhoto() {
     $filename = $_GET['filename'] ?? '';
     
+    // Debug logging for troubleshooting
+    error_log("servePhoto called with filename: " . $filename);
+    
     if (empty($filename)) {
         http_response_code(400);
         echo json_encode(['error' => 'Filename required']);
         return;
+    }
+    
+    // Clean up filename if it has a full path (fix double-path issue)
+    if (strpos($filename, '/photos/members/') === 0) {
+        $filename = basename($filename);
+        error_log("Cleaned filename to: " . $filename);
     }
     
     // Handle special "default" filename for default avatars
@@ -1195,7 +1225,7 @@ function servePhoto() {
         // Sanitize filename - only allow alphanumeric, dashes, dots
         if (!preg_match('/^[a-zA-Z0-9\-_.]+$/', $filename)) {
             http_response_code(400);
-            echo json_encode(['error' => 'Invalid filename']);
+            echo json_encode(['error' => 'Invalid filename: ' . $filename]);
             return;
         }
         
@@ -1205,6 +1235,7 @@ function servePhoto() {
         if (!file_exists($photoPath)) {
             $gender = $_GET['gender'] ?? 'male';
             $photoPath = __DIR__ . '/photos/defaults/' . ($gender === 'female' ? 'female.svg' : 'male.svg');
+            error_log("Photo not found, falling back to default: " . $photoPath);
         }
     }
     
@@ -1660,6 +1691,65 @@ function initializeDatabase($db) {
         $db->exec('CREATE INDEX IF NOT EXISTS idx_match_cards_match_id ON match_cards(match_id)');
     } catch (Exception $e) {
         // Columns might already exist, ignore errors
+    }
+}
+
+function cleanupPhotoPaths($db) {
+    try {
+        // Find all members with photo paths that need cleaning
+        $stmt = $db->query("
+            SELECT id, name, photo 
+            FROM team_members 
+            WHERE photo IS NOT NULL 
+            AND photo LIKE '/photos/members/%'
+        ");
+        
+        $members = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $cleanedCount = 0;
+        
+        if (empty($members)) {
+            echo json_encode([
+                'success' => true,
+                'message' => 'No photo paths need cleaning',
+                'cleaned' => 0
+            ]);
+            return;
+        }
+        
+        $db->beginTransaction();
+        
+        foreach ($members as $member) {
+            $oldPath = $member['photo'];
+            $newPath = basename($oldPath);
+            
+            $stmt = $db->prepare("UPDATE team_members SET photo = ? WHERE id = ?");
+            $stmt->execute([$newPath, $member['id']]);
+            
+            $cleanedCount++;
+            error_log("Cleaned photo path for {$member['name']}: {$oldPath} -> {$newPath}");
+        }
+        
+        $db->commit();
+        
+        echo json_encode([
+            'success' => true,
+            'message' => 'Photo paths cleaned successfully',
+            'cleaned' => $cleanedCount,
+            'members' => array_map(function($m) { 
+                return [
+                    'name' => $m['name'],
+                    'old_path' => $m['photo'],
+                    'new_path' => basename($m['photo'])
+                ];
+            }, $members)
+        ]);
+        
+    } catch (Exception $e) {
+        $db->rollBack();
+        echo json_encode([
+            'success' => false,
+            'error' => 'Cleanup failed: ' . $e->getMessage()
+        ]);
     }
 }
 ?>
