@@ -4,7 +4,7 @@
  */
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '2.14.26';
+const APP_VERSION = '2.15.0';
 
 class CheckInApp {
     constructor() {
@@ -160,13 +160,27 @@ class CheckInApp {
         });
     }
     
-    async convertFileToBase64(file) {
-        return new Promise((resolve, reject) => {
-            const reader = new FileReader();
-            reader.onload = () => resolve(reader.result);
-            reader.onerror = reject;
-            reader.readAsDataURL(file);
+    async uploadPhoto(file, memberId) {
+        if (!file || !memberId) {
+            throw new Error('File and member ID are required');
+        }
+        
+        const formData = new FormData();
+        formData.append('photo', file);
+        formData.append('member_id', memberId);
+        
+        const response = await fetch('/api/photos', {
+            method: 'POST',
+            body: formData
         });
+        
+        const result = await response.json();
+        
+        if (!response.ok) {
+            throw new Error(result.error || 'Photo upload failed');
+        }
+        
+        return result.url; // Return the photo URL
     }
     
     // UI Methods

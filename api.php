@@ -5,25 +5,12 @@
  */
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '2.14.26';
+const APP_VERSION = '2.15.0';
 
-// Default photos - simple SVG avatars
+// Default photos - URL-based system
 function getDefaultPhoto($gender) {
-    if ($gender === 'female') {
-        $svg = '<svg width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-            <circle cx="50" cy="50" r="50" fill="#FF69B4"/>
-            <circle cx="50" cy="35" r="18" fill="white"/>
-            <ellipse cx="50" cy="75" rx="25" ry="20" fill="white"/>
-        </svg>';
-    } else {
-        $svg = '<svg width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-            <circle cx="50" cy="50" r="50" fill="#4F80FF"/>
-            <circle cx="50" cy="35" r="18" fill="white"/>
-            <ellipse cx="50" cy="75" rx="25" ry="20" fill="white"/>
-        </svg>';
-    }
-    
-    return 'data:image/svg+xml;base64,' . base64_encode($svg);
+    // Return URL to default photo instead of base64
+    return '/api/photos?filename=default&gender=' . ($gender === 'female' ? 'female' : 'male');
 }
 
 header('Content-Type: application/json');
@@ -255,6 +242,33 @@ try {
             }
             break;
             
+        case 'photos':
+            // Photo serving and upload endpoints
+            if ($method === 'GET') {
+                servePhoto();
+            } elseif ($method === 'POST') {
+                uploadPhoto($db);
+            } elseif ($method === 'DELETE') {
+                deletePhoto($db);
+            }
+            break;
+            
+        case 'migrate-photos':
+            // TEMPORARY: Migration endpoint - remove after use
+            if ($method === 'POST') {
+                $password = $_POST['password'] ?? '';
+                if ($password !== 'migrate2024') {
+                    http_response_code(401);
+                    echo json_encode(['error' => 'Invalid password']);
+                    break;
+                }
+                migratePhotos($db);
+            } else {
+                http_response_code(405);
+                echo json_encode(['error' => 'POST method required']);
+            }
+            break;
+            
         default:
             http_response_code(404);
             echo json_encode(['error' => 'Endpoint not found']);
@@ -315,7 +329,12 @@ function getTeams($db) {
         
         // Add member to current team (if member exists)
         if ($row['member_id']) {
-            $photo = $row['photo'] ?: getDefaultPhoto($row['gender']);
+            // Generate photo URL - either custom photo or default
+            if ($row['photo']) {
+                $photo = '/api/photos?filename=' . urlencode($row['photo']);
+            } else {
+                $photo = getDefaultPhoto($row['gender']);
+            }
             
             $currentTeam['members'][] = [
                 'id' => $row['member_id'],
@@ -1159,6 +1178,307 @@ function saveDisciplinaryRecords($db) {
     }
 }
 
+function servePhoto() {
+    $filename = $_GET['filename'] ?? '';
+    
+    if (empty($filename)) {
+        http_response_code(400);
+        echo json_encode(['error' => 'Filename required']);
+        return;
+    }
+    
+    // Handle special "default" filename for default avatars
+    if ($filename === 'default') {
+        $gender = $_GET['gender'] ?? 'male';
+        $photoPath = __DIR__ . '/photos/defaults/' . ($gender === 'female' ? 'female.svg' : 'male.svg');
+    } else {
+        // Sanitize filename - only allow alphanumeric, dashes, dots
+        if (!preg_match('/^[a-zA-Z0-9\-_.]+$/', $filename)) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Invalid filename']);
+            return;
+        }
+        
+        $photoPath = __DIR__ . '/photos/members/' . $filename;
+        
+        // If member photo doesn't exist, fall back to default
+        if (!file_exists($photoPath)) {
+            $gender = $_GET['gender'] ?? 'male';
+            $photoPath = __DIR__ . '/photos/defaults/' . ($gender === 'female' ? 'female.svg' : 'male.svg');
+        }
+    }
+    
+    if (!file_exists($photoPath)) {
+        http_response_code(404);
+        echo json_encode(['error' => 'Photo not found']);
+        return;
+    }
+    
+    // Get file info
+    $fileInfo = pathinfo($photoPath);
+    $extension = strtolower($fileInfo['extension']);
+    
+    // Set appropriate content type
+    $contentTypes = [
+        'jpg' => 'image/jpeg',
+        'jpeg' => 'image/jpeg',
+        'png' => 'image/png',
+        'webp' => 'image/webp',
+        'svg' => 'image/svg+xml'
+    ];
+    
+    $contentType = $contentTypes[$extension] ?? 'application/octet-stream';
+    
+    // Set headers for caching and content type
+    header('Content-Type: ' . $contentType);
+    header('Content-Length: ' . filesize($photoPath));
+    header('Cache-Control: public, max-age=31536000'); // Cache for 1 year
+    header('ETag: "' . md5_file($photoPath) . '"');
+    
+    // Check if client has cached version
+    $clientETag = $_SERVER['HTTP_IF_NONE_MATCH'] ?? '';
+    $serverETag = '"' . md5_file($photoPath) . '"';
+    
+    if ($clientETag === $serverETag) {
+        http_response_code(304); // Not Modified
+        return;
+    }
+    
+    // Output the file
+    readfile($photoPath);
+}
+
+function uploadPhoto($db) {
+    // Check if member_id is provided
+    $memberId = $_POST['member_id'] ?? '';
+    
+    if (empty($memberId)) {
+        http_response_code(400);
+        echo json_encode(['error' => 'Member ID required']);
+        return;
+    }
+    
+    // Verify member exists
+    $stmt = $db->prepare('SELECT id FROM team_members WHERE id = ?');
+    $stmt->execute([$memberId]);
+    if (!$stmt->fetch()) {
+        http_response_code(404);
+        echo json_encode(['error' => 'Member not found']);
+        return;
+    }
+    
+    // Check if file was uploaded
+    if (!isset($_FILES['photo']) || $_FILES['photo']['error'] !== UPLOAD_ERR_OK) {
+        http_response_code(400);
+        echo json_encode(['error' => 'No valid file uploaded']);
+        return;
+    }
+    
+    $file = $_FILES['photo'];
+    
+    // Validate file size (2MB max)
+    if ($file['size'] > 2 * 1024 * 1024) {
+        http_response_code(400);
+        echo json_encode(['error' => 'File too large (max 2MB)']);
+        return;
+    }
+    
+    // Validate file type
+    $allowedTypes = ['image/jpeg', 'image/png', 'image/webp'];
+    $finfo = finfo_open(FILEINFO_MIME_TYPE);
+    $mimeType = finfo_file($finfo, $file['tmp_name']);
+    finfo_close($finfo);
+    
+    if (!in_array($mimeType, $allowedTypes)) {
+        http_response_code(400);
+        echo json_encode(['error' => 'Invalid file type. Only JPEG, PNG, and WebP allowed']);
+        return;
+    }
+    
+    // Generate filename
+    switch($mimeType) {
+        case 'image/jpeg':
+            $extension = 'jpg';
+            break;
+        case 'image/png':
+            $extension = 'png';
+            break;
+        case 'image/webp':
+            $extension = 'webp';
+            break;
+        default:
+            $extension = 'jpg';
+    }
+    
+    $filename = $memberId . '.' . $extension;
+    $photoPath = __DIR__ . '/photos/members/' . $filename;
+    
+    // Remove any existing photo for this member
+    $existingFiles = glob(__DIR__ . '/photos/members/' . $memberId . '.*');
+    foreach ($existingFiles as $existingFile) {
+        unlink($existingFile);
+    }
+    
+    // Move uploaded file
+    if (!move_uploaded_file($file['tmp_name'], $photoPath)) {
+        http_response_code(500);
+        echo json_encode(['error' => 'Failed to save photo']);
+        return;
+    }
+    
+    // Update database
+    try {
+        $stmt = $db->prepare('UPDATE team_members SET photo = ? WHERE id = ?');
+        $stmt->execute([$filename, $memberId]);
+        
+        echo json_encode([
+            'success' => true,
+            'filename' => $filename,
+            'url' => '/api/photos?filename=' . $filename
+        ]);
+    } catch (Exception $e) {
+        // Clean up file if database update fails
+        unlink($photoPath);
+        throw $e;
+    }
+}
+
+function deletePhoto($db) {
+    $memberId = $_GET['member_id'] ?? '';
+    
+    if (empty($memberId)) {
+        http_response_code(400);
+        echo json_encode(['error' => 'Member ID required']);
+        return;
+    }
+    
+    // Get current photo filename
+    $stmt = $db->prepare('SELECT photo FROM team_members WHERE id = ?');
+    $stmt->execute([$memberId]);
+    $member = $stmt->fetch(PDO::FETCH_ASSOC);
+    
+    if (!$member) {
+        http_response_code(404);
+        echo json_encode(['error' => 'Member not found']);
+        return;
+    }
+    
+    // Remove photo file if exists
+    if ($member['photo']) {
+        $photoPath = __DIR__ . '/photos/members/' . $member['photo'];
+        if (file_exists($photoPath)) {
+            unlink($photoPath);
+        }
+    }
+    
+    // Update database to remove photo reference
+    $stmt = $db->prepare('UPDATE team_members SET photo = NULL WHERE id = ?');
+    $stmt->execute([$memberId]);
+    
+    echo json_encode(['success' => true]);
+}
+
+function migratePhotos($db) {
+    // Create photos directories if they don't exist
+    $photosDir = __DIR__ . '/photos/members';
+    if (!is_dir($photosDir)) {
+        mkdir($photosDir, 0755, true);
+    }
+
+    // Get all members with base64 photos
+    $stmt = $db->query("
+        SELECT id, name, gender, photo 
+        FROM team_members 
+        WHERE photo IS NOT NULL 
+        AND photo LIKE 'data:image/%'
+    ");
+
+    $members = $stmt->fetchAll(PDO::FETCH_ASSOC);
+    $totalMembers = count($members);
+    $convertedCount = 0;
+    $errorCount = 0;
+    $errors = array();
+
+    if ($totalMembers === 0) {
+        echo json_encode([
+            'success' => true,
+            'message' => 'No base64 photos found. Migration already complete.',
+            'converted' => 0,
+            'errors' => 0,
+            'total' => 0
+        ]);
+        return;
+    }
+
+    $db->beginTransaction();
+
+    try {
+        foreach ($members as $member) {
+            $base64Photo = $member['photo'];
+            
+            // Extract image data from base64
+            if (!preg_match('/^data:image\/(\w+);base64,(.+)$/', $base64Photo, $matches)) {
+                $errors[] = "Invalid base64 format for {$member['name']}";
+                $errorCount++;
+                continue;
+            }
+            
+            $imageType = strtolower($matches[1]);
+            $imageData = base64_decode($matches[2]);
+            
+            if ($imageData === false) {
+                $errors[] = "Failed to decode base64 for {$member['name']}";
+                $errorCount++;
+                continue;
+            }
+            
+            // Map image types to file extensions
+            $extensions = array(
+                'jpeg' => 'jpg',
+                'jpg' => 'jpg', 
+                'png' => 'png',
+                'webp' => 'webp',
+                'svg+xml' => 'svg'
+            );
+            
+            $extension = isset($extensions[$imageType]) ? $extensions[$imageType] : 'jpg';
+            $filename = $member['id'] . '.' . $extension;
+            $filePath = $photosDir . '/' . $filename;
+            
+            // Save image file
+            if (file_put_contents($filePath, $imageData) === false) {
+                $errors[] = "Failed to save file for {$member['name']}";
+                $errorCount++;
+                continue;
+            }
+            
+            // Update database record
+            $updateStmt = $db->prepare("UPDATE team_members SET photo = ? WHERE id = ?");
+            $updateStmt->execute(array($filename, $member['id']));
+            
+            $convertedCount++;
+        }
+        
+        $db->commit();
+        
+        echo json_encode([
+            'success' => true,
+            'message' => 'Photo migration completed successfully!',
+            'converted' => $convertedCount,
+            'errors' => $errorCount,
+            'total' => $totalMembers,
+            'error_details' => $errors
+        ]);
+        
+    } catch (Exception $e) {
+        $db->rollBack();
+        echo json_encode([
+            'success' => false,
+            'error' => 'Migration failed: ' . $e->getMessage()
+        ]);
+    }
+}
+
 function initializeDatabase($db) {
     // PostgreSQL schema only
     $db->exec('
@@ -1180,7 +1500,7 @@ function initializeDatabase($db) {
             name TEXT NOT NULL,
             jersey_number INTEGER,
             gender TEXT CHECK(gender IN (\'male\', \'female\')),
-            photo TEXT,
+            photo TEXT, -- Stores filename (e.g., 'member-id.jpg') or NULL for default
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (team_id) REFERENCES teams(id) ON DELETE CASCADE
         )

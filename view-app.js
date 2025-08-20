@@ -4,7 +4,7 @@
  */
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '2.14.26';
+const APP_VERSION = '2.15.0';
 
 class CheckInViewApp {
     constructor() {
