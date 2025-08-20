@@ -5,7 +5,7 @@
  */
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '2.14.11';
+const APP_VERSION = '2.14.12';
 
 // Default photos - simple SVG avatars
 function getDefaultPhoto($gender) {
@@ -911,7 +911,13 @@ function saveDisciplinaryRecords($db) {
         // Delete existing records for this member
         $db->prepare('DELETE FROM player_disciplinary_records WHERE member_id = ?')->execute([$memberId]);
         
-        // Insert new records
+        // Prepare statement once for better performance with multiple inserts
+        $stmt = $db->prepare('
+            INSERT INTO player_disciplinary_records (member_id, card_type, reason, notes, incident_date, event_description, suspension_matches, suspension_served, suspension_served_date)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ');
+        
+        // Insert new records efficiently
         foreach ($input['records'] as $record) {
             // Ensure boolean values are properly handled
             $suspensionServed = false;
@@ -932,11 +938,8 @@ function saveDisciplinaryRecords($db) {
                 $suspensionServedDate = $record['suspensionServedDate'];
             }
             
-            // Debug logging
-            error_log("Record data: " . json_encode($record));
-            error_log("Suspension served processed: " . ($suspensionServed ? 'true' : 'false'));
-            
-            $params = [
+            // Optimized execution with direct parameter array (reusing prepared statement)
+            $stmt->execute([
                 $memberId,
                 $record['cardType'],
                 $record['reason'] ?? null,
@@ -944,29 +947,9 @@ function saveDisciplinaryRecords($db) {
                 $record['incidentDate'] ?? null,
                 $record['eventDescription'] ?? null,
                 $record['suspensionMatches'] ?? null,
-                $suspensionServed
-            ];
-            
-            // Debug logging for parameters
-            error_log("SQL Parameters: " . json_encode($params));
-            
-            $stmt = $db->prepare('
-                INSERT INTO player_disciplinary_records (member_id, card_type, reason, notes, incident_date, event_description, suspension_matches, suspension_served, suspension_served_date)
-                VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?)
-            ');
-            
-            // Bind parameters explicitly with correct types
-            $stmt->bindValue(1, $memberId, PDO::PARAM_STR);
-            $stmt->bindValue(2, $record['cardType'], PDO::PARAM_STR);
-            $stmt->bindValue(3, $record['reason'] ?? null, PDO::PARAM_STR);
-            $stmt->bindValue(4, $record['notes'] ?? null, PDO::PARAM_STR);
-            $stmt->bindValue(5, $record['incidentDate'] ?? null, PDO::PARAM_STR);
-            $stmt->bindValue(6, $record['eventDescription'] ?? null, PDO::PARAM_STR);
-            $stmt->bindValue(7, $record['suspensionMatches'] ?? null, PDO::PARAM_INT);
-            $stmt->bindValue(8, $suspensionServed, PDO::PARAM_BOOL);
-            $stmt->bindValue(9, $suspensionServedDate, PDO::PARAM_STR);
-            
-            $stmt->execute();
+                $suspensionServed,
+                $suspensionServedDate
+            ]);
         }
         
         $db->commit();
