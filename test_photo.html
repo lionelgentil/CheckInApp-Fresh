@@ -1,0 +1,132 @@
+<!DOCTYPE html>
+<html>
+<head>
+    <title>Photo Upload Test</title>
+</head>
+<body>
+    <h1>Photo Upload Test</h1>
+    
+    <div>
+        <h3>1. First create a member</h3>
+        <input type="text" id="member-name" placeholder="Member name" value="Test Player">
+        <input type="text" id="member-jersey" placeholder="Jersey number" value="10">
+        <select id="member-gender">
+            <option value="">Select gender</option>
+            <option value="male">Male</option>
+            <option value="female">Female</option>
+        </select>
+        <button onclick="createMember()">Create Member</button>
+    </div>
+    
+    <div id="member-info" style="margin: 20px 0; display: none;">
+        <h3>2. Now upload a photo for the member</h3>
+        <input type="file" id="photo-file" accept="image/*">
+        <button onclick="uploadPhoto()">Upload Photo Only</button>
+        <div id="result"></div>
+    </div>
+    
+    <script>
+        let testMemberId = null;
+        let teams = [];
+        
+        async function createMember() {
+            const name = document.getElementById('member-name').value;
+            const jersey = document.getElementById('member-jersey').value;
+            const gender = document.getElementById('member-gender').value;
+            
+            if (!name) {
+                alert('Please enter a name');
+                return;
+            }
+            
+            // Generate UUID
+            testMemberId = 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
+                const r = Math.random() * 16 | 0;
+                const v = c == 'x' ? r : (r & 0x3 | 0x8);
+                return v.toString(16);
+            });
+            
+            // Create a test team with the member
+            teams = [{
+                id: 'test-team-id',
+                name: 'Test Team',
+                category: 'Over 30',
+                colorData: '#2196F3',
+                description: 'Test team',
+                captainId: null,
+                members: [{
+                    id: testMemberId,
+                    name: name,
+                    jerseyNumber: jersey ? parseInt(jersey) : null,
+                    gender: gender || null,
+                    photo: null
+                }]
+            }];
+            
+            // Save to backend
+            try {
+                console.log('Creating member with saveTeams...');
+                const response = await fetch('/api/teams', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify(teams)
+                });
+                
+                if (response.ok) {
+                    document.getElementById('member-info').style.display = 'block';
+                    document.getElementById('result').innerHTML = `<p style="color: green;">✅ Member created with ID: ${testMemberId}</p>`;
+                } else {
+                    throw new Error('Failed to create member');
+                }
+            } catch (error) {
+                document.getElementById('result').innerHTML = `<p style="color: red;">❌ Error: ${error.message}</p>`;
+            }
+        }
+        
+        async function uploadPhoto() {
+            if (!testMemberId) {
+                alert('Please create a member first');
+                return;
+            }
+            
+            const fileInput = document.getElementById('photo-file');
+            const file = fileInput.files[0];
+            
+            if (!file) {
+                alert('Please select a photo');
+                return;
+            }
+            
+            try {
+                console.log('Uploading photo for member:', testMemberId);
+                
+                const formData = new FormData();
+                formData.append('photo', file);
+                formData.append('member_id', testMemberId);
+                
+                console.log('Sending POST to /api/photos with FormData...');
+                
+                const response = await fetch('/api/photos', {
+                    method: 'POST',
+                    body: formData
+                });
+                
+                console.log('Response status:', response.status);
+                const result = await response.json();
+                console.log('Response result:', result);
+                
+                if (response.ok) {
+                    document.getElementById('result').innerHTML += `<p style="color: green;">✅ Photo uploaded: ${result.url}</p>`;
+                } else {
+                    document.getElementById('result').innerHTML += `<p style="color: red;">❌ Photo upload failed: ${result.error}</p>`;
+                }
+            } catch (error) {
+                console.error('Upload error:', error);
+                document.getElementById('result').innerHTML += `<p style="color: red;">❌ Error: ${error.message}</p>`;
+            }
+        }
+    </script>
+</body>
+</html>

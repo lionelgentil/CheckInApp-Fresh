@@ -5,7 +5,7 @@
  */
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '2.16.0';
+const APP_VERSION = '2.16.1';
 
 // Default photos - fallback to API serving for SVG compatibility
 function getDefaultPhoto($gender) {

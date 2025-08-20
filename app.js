@@ -1,10 +1,10 @@
 /**
- * CheckIn App v2.14.7 - JavaScript Frontend
+ * CheckIn App v2.16.1 - JavaScript Frontend
  * Works with PHP/SQLite backend
  */
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '2.15.8';
+const APP_VERSION = '2.16.1';
 
 class CheckInApp {
     constructor() {
@@ -46,7 +46,10 @@ class CheckInApp {
     }
     
     async saveTeams() {
-        console.log('saveTeams called with teams:', this.teams);
+        const dataSize = JSON.stringify(this.teams).length;
+        console.log('🚨 saveTeams called with data size:', dataSize, 'bytes');
+        console.trace('saveTeams call stack:');
+        
         try {
             const response = await fetch('/api/teams', {
                 method: 'POST',
@@ -158,6 +161,8 @@ class CheckInApp {
     }
     
     async uploadPhoto(file, memberId) {
+        console.log('uploadPhoto called with:', { fileName: file.name, fileSize: file.size, memberId });
+        
         if (!file || !memberId) {
             throw new Error('File and member ID are required');
         }
@@ -166,12 +171,17 @@ class CheckInApp {
         formData.append('photo', file);
         formData.append('member_id', memberId);
         
+        console.log('Sending photo upload request to /api/photos');
+        
         const response = await fetch('/api/photos', {
             method: 'POST',
             body: formData
         });
         
+        console.log('Photo upload response status:', response.status, response.ok);
+        
         const result = await response.json();
+        console.log('Photo upload result:', result);
         
         if (!response.ok) {
             throw new Error(result.error || 'Photo upload failed');
@@ -723,25 +733,44 @@ class CheckInApp {
         
         // Handle member creation/update
         if (this.currentEditingMember) {
-            // Edit existing member - update local data only
+            // Edit existing member - check what actually changed BEFORE updating values
+            const originalName = this.currentEditingMember.name;
+            const originalJerseyNumber = this.currentEditingMember.jerseyNumber;
+            const originalGender = this.currentEditingMember.gender;
+            
+            const basicInfoChanged = (
+                originalName !== name ||
+                (originalJerseyNumber || null) !== (jerseyNumber ? parseInt(jerseyNumber) : null) ||
+                (originalGender || null) !== (gender || null)
+            );
+            
+            // Update local data
             this.currentEditingMember.name = name;
             this.currentEditingMember.jerseyNumber = jerseyNumber ? parseInt(jerseyNumber) : null;
             this.currentEditingMember.gender = gender || null;
             
-            // For existing members, we only need saveTeams if basic info changed
-            needsTeamsSave = true;
-            
-            // Upload photo if provided - this will update database directly
+            // Upload photo FIRST if provided - this will update database directly
             if (photoFile) {
                 try {
+                    console.log('Uploading photo for existing member:', this.currentEditingMember.id);
                     photoUrl = await this.uploadPhoto(photoFile, this.currentEditingMember.id);
                     this.currentEditingMember.photo = photoUrl;
-                    // Photo upload already updated database, but we still need to save basic member info
+                    console.log('Photo uploaded successfully:', photoUrl);
                 } catch (error) {
                     console.error('Error uploading photo:', error);
                     alert('Photo upload failed: ' + error.message);
                     return;
                 }
+            }
+            
+            // Only save teams if basic member info actually changed
+            // If only photo changed, uploadPhoto already updated the database
+            needsTeamsSave = basicInfoChanged;
+            
+            if (basicInfoChanged) {
+                console.log('Basic member info changed, will call saveTeams()');
+            } else {
+                console.log('Only photo changed, skipping saveTeams() - uploadPhoto already updated database');
             }
         } else {
             // Add new member - create locally first
@@ -782,8 +811,12 @@ class CheckInApp {
         
         try {
             // Only save teams if needed (avoid redundant 102KB POST requests)
+            console.log('saveMember: needsTeamsSave =', needsTeamsSave);
             if (needsTeamsSave) {
+                console.log('🚨 About to call saveTeams() - this will send 102KB of data!');
                 await this.saveTeams();
+            } else {
+                console.log('✅ Skipping saveTeams() - photo upload already updated database directly');
             }
             
             // Update UI

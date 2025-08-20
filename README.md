@@ -1,4 +1,4 @@
-# CheckIn App v2.14.11
+# CheckIn App v2.16.1
 
 A comprehensive team and event management application with advanced disciplinary tracking, built with PHP 8 and PostgreSQL for professional sports organizations and leagues.
 
@@ -162,7 +162,7 @@ A comprehensive team and event management application with advanced disciplinary
 CheckInApp-Fresh/
 ├── index.html          # Main application interface
 ├── view.html           # View-only public interface
-├── app.js             # Main application logic (v2.14.11)
+├── app.js             # Main application logic (v2.16.1)
 ├── view-app.js        # View-only application logic
 ├── api.php            # PHP REST API with PostgreSQL
 ├── manifest.json      # PWA manifest
@@ -208,6 +208,7 @@ CheckInApp-Fresh/
 
 ## Version History
 
+- **v2.16.1**: 🚀 **Photo Upload Architecture Fix** - Eliminated massive 102KB teams POST requests during photo uploads. Photos now upload directly via `/api/photos` endpoint without triggering full teams data sync. Major performance improvement for photo operations.
 - **v2.14.11**: Added tactical foul card reasons (denial of opportunity, stopping attacks)
 - **v2.14.10**: Added reckless/aggressive challenge card reason
 - **v2.14.9**: Suspension served date tracking
