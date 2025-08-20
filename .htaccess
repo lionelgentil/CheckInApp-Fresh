@@ -6,13 +6,7 @@ RewriteCond %{REQUEST_URI} ^/api/
 RewriteRule ^api/(.*)$ api.php?path=$1 [QSA,L]
 
 # Photos directory - serve directly if files exist
-<Directory "photos">
-    Options -Indexes
-    AllowOverride None
-    Require all granted
-</Directory>
-
-# Handle photos directory requests
+# Only rewrite photos requests if the file actually exists
 RewriteCond %{REQUEST_URI} ^/photos/
 RewriteCond %{REQUEST_FILENAME} -f
 RewriteRule ^photos/(.*)$ photos/$1 [L]
@@ -36,3 +30,6 @@ Header always set X-XSS-Protection "1; mode=block"
     ExpiresDefault "access plus 1 month"
     Header set Cache-Control "public, max-age=2592000"
 </FilesMatch>
+
+# Prevent directory browsing
+Options -Indexes
