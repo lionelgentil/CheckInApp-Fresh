@@ -5,7 +5,7 @@
  */
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '2.14.12';
+const APP_VERSION = '2.14.14';
 
 // Default photos - simple SVG avatars
 function getDefaultPhoto($gender) {
@@ -30,6 +30,11 @@ header('Content-Type: application/json');
 header('Access-Control-Allow-Origin: *');
 header('Access-Control-Allow-Methods: GET, POST, PUT, DELETE, OPTIONS');
 header('Access-Control-Allow-Headers: Content-Type, Authorization');
+
+// Enable gzip compression for faster responses
+if (extension_loaded('zlib') && !ini_get('zlib.output_compression')) {
+    ini_set('zlib.output_compression', 1);
+}
 
 if ($_SERVER['REQUEST_METHOD'] === 'OPTIONS') {
     http_response_code(200);
@@ -212,36 +217,65 @@ try {
 }
 
 function getTeams($db) {
-    $stmt = $db->query('SELECT * FROM teams ORDER BY name');
-    $teams = [];
+    // Optimized single query with JOIN to get all teams and members at once
+    $stmt = $db->query('
+        SELECT 
+            t.id as team_id,
+            t.name as team_name,
+            t.category as team_category,
+            t.color as team_color,
+            t.description as team_description,
+            t.captain_id as team_captain_id,
+            tm.id as member_id,
+            tm.name as member_name,
+            tm.jersey_number,
+            tm.gender,
+            tm.photo
+        FROM teams t
+        LEFT JOIN team_members tm ON t.id = tm.team_id
+        ORDER BY t.name, tm.name
+    ');
     
-    while ($team = $stmt->fetch(PDO::FETCH_ASSOC)) {
-        $memberStmt = $db->prepare('SELECT * FROM team_members WHERE team_id = ? ORDER BY name');
-        $memberStmt->execute([$team['id']]);
-        
-        $members = [];
-        while ($member = $memberStmt->fetch(PDO::FETCH_ASSOC)) {
-            // Use custom photo if available, otherwise use default based on gender
-            $photo = $member['photo'] ?: getDefaultPhoto($member['gender']);
+    $teams = [];
+    $currentTeam = null;
+    
+    while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+        // Start new team or continue existing team
+        if (!$currentTeam || $currentTeam['id'] !== $row['team_id']) {
+            // Save previous team if exists
+            if ($currentTeam) {
+                $teams[] = $currentTeam;
+            }
             
-            $members[] = [
-                'id' => $member['id'],
-                'name' => $member['name'],
-                'jerseyNumber' => $member['jersey_number'] ? (int)$member['jersey_number'] : null,
-                'gender' => $member['gender'],
-                'photo' => $photo
+            // Start new team
+            $currentTeam = [
+                'id' => $row['team_id'],
+                'name' => $row['team_name'],
+                'category' => $row['team_category'],
+                'colorData' => $row['team_color'],
+                'description' => $row['team_description'],
+                'captainId' => $row['team_captain_id'],
+                'members' => []
             ];
         }
         
-        $teams[] = [
-            'id' => $team['id'],
-            'name' => $team['name'],
-            'category' => $team['category'],
-            'colorData' => $team['color'],
-            'description' => $team['description'],
-            'captainId' => $team['captain_id'],
-            'members' => $members
-        ];
+        // Add member to current team (if member exists)
+        if ($row['member_id']) {
+            $photo = $row['photo'] ?: getDefaultPhoto($row['gender']);
+            
+            $currentTeam['members'][] = [
+                'id' => $row['member_id'],
+                'name' => $row['member_name'],
+                'jerseyNumber' => $row['jersey_number'] ? (int)$row['jersey_number'] : null,
+                'gender' => $row['gender'],
+                'photo' => $photo
+            ];
+        }
+    }
+    
+    // Don't forget the last team
+    if ($currentTeam) {
+        $teams[] = $currentTeam;
     }
     
     echo json_encode($teams);
@@ -303,109 +337,126 @@ function saveTeams($db) {
 }
 
 function getEvents($db) {
+    // Step 1: Get all events
     $stmt = $db->query('SELECT * FROM events ORDER BY date');
     $events = [];
+    $eventIds = [];
     
     while ($event = $stmt->fetch(PDO::FETCH_ASSOC)) {
-        $matchStmt = $db->prepare('SELECT * FROM matches WHERE event_id = ?');
-        $matchStmt->execute([$event['id']]);
-        
-        $matches = [];
-        while ($match = $matchStmt->fetch(PDO::FETCH_ASSOC)) {
-            // Get attendees
-            $attendeesStmt = $db->prepare('
-                SELECT ma.*, tm.name as member_name
-                FROM match_attendees ma
-                JOIN team_members tm ON ma.member_id = tm.id
-                WHERE ma.match_id = ?
-            ');
-            $attendeesStmt->execute([$match['id']]);
-            
-            $homeAttendees = [];
-            $awayAttendees = [];
-            
-            while ($attendee = $attendeesStmt->fetch(PDO::FETCH_ASSOC)) {
-                $attendeeData = [
-                    'memberId' => $attendee['member_id'],
-                    'name' => $attendee['member_name'],
-                    'checkedInAt' => $attendee['checked_in_at']
-                ];
-                
-                if ($attendee['team_type'] === 'home') {
-                    $homeAttendees[] = $attendeeData;
-                } else {
-                    $awayAttendees[] = $attendeeData;
-                }
-            }
-            
-            // Get cards for this match
-            $cardsStmt = $db->prepare('
-                SELECT mc.*, tm.name as member_name
-                FROM match_cards mc
-                JOIN team_members tm ON mc.member_id = tm.id
-                WHERE mc.match_id = ?
-                ORDER BY mc.minute ASC
-            ');
-            $cardsStmt->execute([$match['id']]);
-            
-            $cards = [];
-            while ($card = $cardsStmt->fetch(PDO::FETCH_ASSOC)) {
-                $cards[] = [
-                    'id' => $card['id'],
-                    'memberId' => $card['member_id'],
-                    'memberName' => $card['member_name'],
-                    'teamType' => $card['team_type'],
-                    'cardType' => $card['card_type'],
-                    'reason' => $card['reason'],
-                    'notes' => $card['notes'],
-                    'minute' => $card['minute'] ? (int)$card['minute'] : null
-                ];
-            }
-            
-            $matches[] = [
-                'id' => $match['id'],
-                'homeTeamId' => $match['home_team_id'],
-                'awayTeamId' => $match['away_team_id'],
-                'field' => $match['field'],
-                'time' => $match['match_time'],
-                'mainRefereeId' => $match['main_referee_id'],
-                'assistantRefereeId' => $match['assistant_referee_id'],
-                'notes' => $match['notes'],
-                'homeScore' => $match['home_score'] !== null ? (int)$match['home_score'] : null,
-                'awayScore' => $match['away_score'] !== null ? (int)$match['away_score'] : null,
-                'matchStatus' => $match['match_status'] ?? 'scheduled',
-                'homeTeamAttendees' => $homeAttendees,
-                'awayTeamAttendees' => $awayAttendees,
-                'cards' => $cards
-            ];
-        }
-        
-        // Get general attendees
-        $generalStmt = $db->prepare('SELECT * FROM general_attendees WHERE event_id = ?');
-        $generalStmt->execute([$event['id']]);
-        
-        $attendees = [];
-        while ($attendee = $generalStmt->fetch(PDO::FETCH_ASSOC)) {
-            $attendees[] = [
-                'memberId' => $attendee['member_id'],
-                'name' => $attendee['name'],
-                'team' => $attendee['team_name'],
-                'status' => $attendee['status'],
-                'checkedInAt' => $attendee['checked_in_at']
-            ];
-        }
-        
-        $events[] = [
+        $events[$event['id']] = [
             'id' => $event['id'],
             'name' => $event['name'],
             'date' => $event['date'],
             'description' => $event['description'],
-            'matches' => $matches,
-            'attendees' => $attendees
+            'matches' => [],
+            'attendees' => []
+        ];
+        $eventIds[] = $event['id'];
+    }
+    
+    if (empty($eventIds)) {
+        echo json_encode([]);
+        return;
+    }
+    
+    // Step 2: Get all matches for all events in one query
+    $eventIdsPlaceholder = str_repeat('?,', count($eventIds) - 1) . '?';
+    $stmt = $db->prepare("SELECT * FROM matches WHERE event_id IN ({$eventIdsPlaceholder}) ORDER BY event_id, match_time");
+    $stmt->execute($eventIds);
+    
+    $matches = [];
+    $matchIds = [];
+    while ($match = $stmt->fetch(PDO::FETCH_ASSOC)) {
+        $matches[$match['id']] = [
+            'id' => $match['id'],
+            'eventId' => $match['event_id'],
+            'homeTeamId' => $match['home_team_id'],
+            'awayTeamId' => $match['away_team_id'],
+            'field' => $match['field'],
+            'time' => $match['match_time'],
+            'mainRefereeId' => $match['main_referee_id'],
+            'assistantRefereeId' => $match['assistant_referee_id'],
+            'notes' => $match['notes'],
+            'homeScore' => $match['home_score'] !== null ? (int)$match['home_score'] : null,
+            'awayScore' => $match['away_score'] !== null ? (int)$match['away_score'] : null,
+            'matchStatus' => $match['match_status'] ?? 'scheduled',
+            'homeTeamAttendees' => [],
+            'awayTeamAttendees' => [],
+            'cards' => []
+        ];
+        $matchIds[] = $match['id'];
+    }
+    
+    if (!empty($matchIds)) {
+        // Step 3: Get all attendees for all matches in one query
+        $matchIdsPlaceholder = str_repeat('?,', count($matchIds) - 1) . '?';
+        $stmt = $db->prepare("
+            SELECT ma.*, tm.name as member_name
+            FROM match_attendees ma
+            JOIN team_members tm ON ma.member_id = tm.id
+            WHERE ma.match_id IN ({$matchIdsPlaceholder})
+        ");
+        $stmt->execute($matchIds);
+        
+        while ($attendee = $stmt->fetch(PDO::FETCH_ASSOC)) {
+            $attendeeData = [
+                'memberId' => $attendee['member_id'],
+                'name' => $attendee['member_name'],
+                'checkedInAt' => $attendee['checked_in_at']
+            ];
+            
+            if ($attendee['team_type'] === 'home') {
+                $matches[$attendee['match_id']]['homeTeamAttendees'][] = $attendeeData;
+            } else {
+                $matches[$attendee['match_id']]['awayTeamAttendees'][] = $attendeeData;
+            }
+        }
+        
+        // Step 4: Get all cards for all matches in one query
+        $stmt = $db->prepare("
+            SELECT mc.*, tm.name as member_name
+            FROM match_cards mc
+            JOIN team_members tm ON mc.member_id = tm.id
+            WHERE mc.match_id IN ({$matchIdsPlaceholder})
+            ORDER BY mc.match_id, mc.minute ASC
+        ");
+        $stmt->execute($matchIds);
+        
+        while ($card = $stmt->fetch(PDO::FETCH_ASSOC)) {
+            $matches[$card['match_id']]['cards'][] = [
+                'id' => $card['id'],
+                'memberId' => $card['member_id'],
+                'memberName' => $card['member_name'],
+                'teamType' => $card['team_type'],
+                'cardType' => $card['card_type'],
+                'reason' => $card['reason'],
+                'notes' => $card['notes'],
+                'minute' => $card['minute'] ? (int)$card['minute'] : null
+            ];
+        }
+    }
+    
+    // Step 5: Get all general attendees for all events in one query
+    $stmt = $db->prepare("SELECT * FROM general_attendees WHERE event_id IN ({$eventIdsPlaceholder})");
+    $stmt->execute($eventIds);
+    
+    while ($attendee = $stmt->fetch(PDO::FETCH_ASSOC)) {
+        $events[$attendee['event_id']]['attendees'][] = [
+            'memberId' => $attendee['member_id'],
+            'name' => $attendee['name'],
+            'team' => $attendee['team_name'],
+            'status' => $attendee['status'],
+            'checkedInAt' => $attendee['checked_in_at']
         ];
     }
     
-    echo json_encode($events);
+    // Step 6: Assemble matches into events
+    foreach ($matches as $match) {
+        $events[$match['eventId']]['matches'][] = $match;
+    }
+    
+    // Convert to array and return
+    echo json_encode(array_values($events));
 }
 
 function saveEvents($db) {
@@ -933,23 +984,26 @@ function saveDisciplinaryRecords($db) {
                 }
             }
             
+            // Ensure we never pass empty string for boolean - PostgreSQL strict requirement
+            $suspensionServed = (bool)$suspensionServed;
+            
             // Only set served date if suspension is actually served
             if ($suspensionServed && isset($record['suspensionServedDate']) && !empty($record['suspensionServedDate'])) {
                 $suspensionServedDate = $record['suspensionServedDate'];
             }
             
-            // Optimized execution with direct parameter array (reusing prepared statement)
-            $stmt->execute([
-                $memberId,
-                $record['cardType'],
-                $record['reason'] ?? null,
-                $record['notes'] ?? null,
-                $record['incidentDate'] ?? null,
-                $record['eventDescription'] ?? null,
-                $record['suspensionMatches'] ?? null,
-                $suspensionServed,
-                $suspensionServedDate
-            ]);
+            // Optimized execution with explicit boolean handling for PostgreSQL
+            $stmt->bindValue(1, $memberId, PDO::PARAM_STR);
+            $stmt->bindValue(2, $record['cardType'], PDO::PARAM_STR);
+            $stmt->bindValue(3, $record['reason'] ?? null, PDO::PARAM_STR);
+            $stmt->bindValue(4, $record['notes'] ?? null, PDO::PARAM_STR);
+            $stmt->bindValue(5, $record['incidentDate'] ?? null, PDO::PARAM_STR);
+            $stmt->bindValue(6, $record['eventDescription'] ?? null, PDO::PARAM_STR);
+            $stmt->bindValue(7, $record['suspensionMatches'] ?? null, PDO::PARAM_INT);
+            $stmt->bindValue(8, $suspensionServed, PDO::PARAM_BOOL);
+            $stmt->bindValue(9, $suspensionServedDate, PDO::PARAM_STR);
+            
+            $stmt->execute();
         }
         
         $db->commit();
@@ -1094,6 +1148,11 @@ function initializeDatabase($db) {
         $db->exec('CREATE INDEX IF NOT EXISTS idx_match_attendees_match_id ON match_attendees(match_id)');
         $db->exec('CREATE INDEX IF NOT EXISTS idx_general_attendees_event_id ON general_attendees(event_id)');
         $db->exec('CREATE INDEX IF NOT EXISTS idx_player_disciplinary_records_member_id ON player_disciplinary_records(member_id)');
+        
+        // Additional performance indexes for optimized queries
+        $db->exec('CREATE INDEX IF NOT EXISTS idx_match_cards_match_id ON match_cards(match_id)');
+        $db->exec('CREATE INDEX IF NOT EXISTS idx_matches_event_time ON matches(event_id, match_time)');
+        $db->exec('CREATE INDEX IF NOT EXISTS idx_team_members_name ON team_members(team_id, name)');
     } catch (Exception $e) {
         // Indexes might already exist, ignore errors
     }
