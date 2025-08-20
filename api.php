@@ -5,7 +5,7 @@
  */
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '2.15.5';
+const APP_VERSION = '2.15.6';
 
 // Default photos - fallback to API serving for SVG compatibility
 function getDefaultPhoto($gender) {
@@ -245,7 +245,7 @@ try {
         case 'photos':
             // Photo serving and upload endpoints
             if ($method === 'GET') {
-                servePhoto();
+                servePhoto($db);
             } elseif ($method === 'POST') {
                 uploadPhoto($db);
             } elseif ($method === 'DELETE') {
@@ -1199,7 +1199,7 @@ function saveDisciplinaryRecords($db) {
     }
 }
 
-function servePhoto() {
+function servePhoto($db) {
     $filename = $_GET['filename'] ?? '';
     
     // Debug logging for troubleshooting
@@ -1231,11 +1231,18 @@ function servePhoto() {
         
         $photoPath = __DIR__ . '/photos/members/' . $filename;
         
-        // If member photo doesn't exist, fall back to default
+        // If member photo doesn't exist, fall back to gender-appropriate default
         if (!file_exists($photoPath)) {
-            $gender = $_GET['gender'] ?? 'male';
+            // Look up member's gender from database
+            $memberId = pathinfo($filename, PATHINFO_FILENAME); // Extract UUID from filename
+            
+            $stmt = $db->prepare('SELECT gender FROM team_members WHERE id = ?');
+            $stmt->execute([$memberId]);
+            $member = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            $gender = ($member && $member['gender'] === 'female') ? 'female' : 'male';
             $photoPath = __DIR__ . '/photos/defaults/' . ($gender === 'female' ? 'female.svg' : 'male.svg');
-            error_log("Photo not found, falling back to default: " . $photoPath);
+            error_log("Photo not found for member {$memberId}, falling back to {$gender} default: " . $photoPath);
         }
     }
     
