@@ -5,7 +5,7 @@
  */
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '2.14.22';
+const APP_VERSION = '2.14.23';
 
 // Default photos - simple SVG avatars
 function getDefaultPhoto($gender) {
@@ -1077,15 +1077,17 @@ function saveDisciplinaryRecords($db) {
     $db->beginTransaction();
     
     try {
-        // SMART MODE: Determine if this is adding new records or editing existing ones
+        // IMPROVED SMART MODE: Better detection of ADD vs EDIT operations
         
         // Check if any records already exist for this member
         $stmt = $db->prepare('SELECT COUNT(*) as count FROM player_disciplinary_records WHERE member_id = ?');
         $stmt->execute([$memberId]);
         $existingCount = $stmt->fetch(PDO::FETCH_ASSOC)['count'];
         
-        // Check if this looks like a full edit (frontend sends existing records with IDs)
+        // Check if this looks like a full edit session
         $hasExistingRecordIds = false;
+        $totalRecordsInRequest = count($input['records']);
+        
         foreach ($input['records'] as $record) {
             if (isset($record['id']) && !empty($record['id'])) {
                 $hasExistingRecordIds = true;
@@ -1093,14 +1095,19 @@ function saveDisciplinaryRecords($db) {
             }
         }
         
-        // Determine mode based on context
-        if ($action === 'replace_all' || ($existingCount > 0 && $hasExistingRecordIds)) {
-            // EDIT MODE: Replace all records for this member (safe now that team saves don't cascade)
-            error_log("Disciplinary EDIT MODE: Replacing {$existingCount} records for member {$memberId}");
+        // IMPROVED LOGIC: If player already has records and we're sending multiple records, 
+        // it's probably an edit session (even without IDs)
+        $isEditMode = ($action === 'replace_all') || 
+                     ($existingCount > 0 && $totalRecordsInRequest > 1) ||
+                     ($existingCount > 0 && $hasExistingRecordIds);
+        
+        if ($isEditMode) {
+            // EDIT MODE: Replace all records for this member
+            error_log("Disciplinary EDIT MODE: Replacing {$existingCount} records with {$totalRecordsInRequest} records for member {$memberId}");
             $db->prepare('DELETE FROM player_disciplinary_records WHERE member_id = ?')->execute([$memberId]);
         } else {
             // ADD MODE: Just append new records
-            error_log("Disciplinary ADD MODE: Appending " . count($input['records']) . " new records for member {$memberId}");
+            error_log("Disciplinary ADD MODE: Appending {$totalRecordsInRequest} new records for member {$memberId} (existing: {$existingCount})");
         }
         
         // Insert records
