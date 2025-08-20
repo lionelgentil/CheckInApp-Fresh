@@ -5,7 +5,7 @@
  */
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '2.14.25';
+const APP_VERSION = '2.14.26';
 
 // Default photos - simple SVG avatars
 function getDefaultPhoto($gender) {
@@ -1094,11 +1094,11 @@ function saveDisciplinaryRecords($db) {
             }
         }
         
-        // IMPROVED LOGIC: If player already has records and we're sending multiple records, 
-        // it's probably an edit session (even without IDs)
-        $isEditMode = ($action === 'replace_all') || 
-                     ($existingCount > 0 && $totalRecordsInRequest > 1) ||
-                     ($existingCount > 0 && $hasExistingRecordIds);
+        // SIMPLIFIED LOGIC: Much clearer ADD vs EDIT detection
+        // - If player has NO existing records → ADD MODE (append new records)
+        // - If player has existing records → EDIT MODE (replace all records)
+        // - Explicit 'replace_all' action always forces EDIT MODE
+        $isEditMode = ($action === 'replace_all') || ($existingCount > 0);
         
         if ($isEditMode) {
             // EDIT MODE: Replace all records for this member
