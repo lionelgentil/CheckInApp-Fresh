@@ -5,7 +5,7 @@
  */
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '2.15.8';
+const APP_VERSION = '2.15.9';
 
 // Default photos - fallback to API serving for SVG compatibility
 function getDefaultPhoto($gender) {
@@ -267,13 +267,15 @@ try {
                            END as photo_type
                     FROM team_members 
                     WHERE photo IS NOT NULL 
-                    LIMIT 10
+                    ORDER BY photo_type, id
+                    LIMIT 20
                 ");
                 $members = $stmt->fetchAll(PDO::FETCH_ASSOC);
                 echo json_encode([
                     'success' => true,
                     'members' => $members,
-                    'timestamp' => date('c')
+                    'timestamp' => date('c'),
+                    'note' => 'Check photo_type: FILENAME is correct, API_URL/FULL_PATH are wrong'
                 ]);
             }
             break;
@@ -1236,21 +1238,35 @@ function servePhoto($db) {
         return;
     }
     
-    // Clean up filename if it has a full path or URL (fix double-encoding issue)
-    if (strpos($filename, '/photos/members/') === 0) {
-        $filename = basename($filename);
-        error_log("Cleaned filename to: " . $filename);
-    } elseif (strpos($filename, '/api/photos') === 0) {
-        // Handle case where full API URL was passed as filename
-        parse_str(parse_url($filename, PHP_URL_QUERY), $query);
-        if (isset($query['filename'])) {
-            $filename = $query['filename'];
-            error_log("Extracted filename from nested URL: " . $filename);
+    // Clean up filename if it has a full path or nested URLs (fix multiple encoding issues)
+    $originalFilename = $filename;
+    $maxDepth = 5; // Prevent infinite loops
+    
+    for ($i = 0; $i < $maxDepth; $i++) {
+        if (strpos($filename, '/photos/members/') === 0) {
+            $filename = basename($filename);
+            error_log("servePhoto: Cleaned path to filename: " . $filename);
+        } elseif (strpos($filename, '/api/photos') === 0) {
+            // Handle case where full API URL was passed as filename
+            $parsedUrl = parse_url($filename);
+            if ($parsedUrl && isset($parsedUrl['query'])) {
+                parse_str($parsedUrl['query'], $query);
+                if (isset($query['filename'])) {
+                    $filename = $query['filename'];
+                    error_log("servePhoto: Extracted filename from nested URL: " . $filename);
+                    continue; // Check if we need to clean further
+                }
+            }
+            // If we can't parse it properly, break
+            break;
         } else {
-            http_response_code(400);
-            echo json_encode(['error' => 'Invalid nested URL format: ' . $filename]);
-            return;
+            // No more cleaning needed
+            break;
         }
+    }
+    
+    if ($originalFilename !== $filename) {
+        error_log("servePhoto: Cleaned filename from '{$originalFilename}' to '{$filename}'");
     }
     
     // Handle special "default" filename for default avatars
@@ -1772,7 +1788,7 @@ function cleanupPhotoPaths($db) {
             SELECT id, name, photo 
             FROM team_members 
             WHERE photo IS NOT NULL 
-            AND photo LIKE '/photos/members/%'
+            AND (photo LIKE '/photos/members/%' OR photo LIKE '/api/photos%')
         ");
         
         $members = $stmt->fetchAll(PDO::FETCH_ASSOC);
@@ -1791,13 +1807,35 @@ function cleanupPhotoPaths($db) {
         
         foreach ($members as $member) {
             $oldPath = $member['photo'];
-            $newPath = basename($oldPath);
+            $newPath = $oldPath;
             
-            $stmt = $db->prepare("UPDATE team_members SET photo = ? WHERE id = ?");
-            $stmt->execute([$newPath, $member['id']]);
+            // Clean nested API URLs
+            $maxDepth = 5;
+            for ($i = 0; $i < $maxDepth; $i++) {
+                if (strpos($newPath, '/photos/members/') === 0) {
+                    $newPath = basename($newPath);
+                    break;
+                } elseif (strpos($newPath, '/api/photos') === 0) {
+                    $parsedUrl = parse_url($newPath);
+                    if ($parsedUrl && isset($parsedUrl['query'])) {
+                        parse_str($parsedUrl['query'], $query);
+                        if (isset($query['filename'])) {
+                            $newPath = $query['filename'];
+                            continue; // Check if we need to clean further
+                        }
+                    }
+                    break;
+                } else {
+                    break;
+                }
+            }
             
-            $cleanedCount++;
-            error_log("Cleaned photo path for {$member['name']}: {$oldPath} -> {$newPath}");
+            if ($oldPath !== $newPath) {
+                $stmt = $db->prepare("UPDATE team_members SET photo = ? WHERE id = ?");
+                $stmt->execute([$newPath, $member['id']]);
+                $cleanedCount++;
+                error_log("Cleaned photo path for {$member['name']}: {$oldPath} -> {$newPath}");
+            }
         }
         
         $db->commit();
@@ -1806,11 +1844,35 @@ function cleanupPhotoPaths($db) {
             'success' => true,
             'message' => 'Photo paths cleaned successfully',
             'cleaned' => $cleanedCount,
-            'members' => array_map(function($m) { 
+            'members' => array_map(function($m) use ($members) { 
+                $oldPath = $m['photo'];
+                $newPath = $oldPath;
+                
+                // Apply same cleaning logic for reporting
+                $maxDepth = 5;
+                for ($i = 0; $i < $maxDepth; $i++) {
+                    if (strpos($newPath, '/photos/members/') === 0) {
+                        $newPath = basename($newPath);
+                        break;
+                    } elseif (strpos($newPath, '/api/photos') === 0) {
+                        $parsedUrl = parse_url($newPath);
+                        if ($parsedUrl && isset($parsedUrl['query'])) {
+                            parse_str($parsedUrl['query'], $query);
+                            if (isset($query['filename'])) {
+                                $newPath = $query['filename'];
+                                continue;
+                            }
+                        }
+                        break;
+                    } else {
+                        break;
+                    }
+                }
+                
                 return [
                     'name' => $m['name'],
-                    'old_path' => $m['photo'],
-                    'new_path' => basename($m['photo'])
+                    'old_path' => $oldPath,
+                    'new_path' => $newPath
                 ];
             }, $members)
         ]);
