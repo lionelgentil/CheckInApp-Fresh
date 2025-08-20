@@ -4,7 +4,7 @@
  */
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '2.15.0';
+const APP_VERSION = '2.15.7';
 
 class CheckInViewApp {
     constructor() {
@@ -17,12 +17,9 @@ class CheckInViewApp {
     }
     
     async init() {
-        await this.loadTeams();
+        // Only load events by default (lazy load other sections)
         await this.loadEvents();
-        await this.loadReferees();
-        this.renderTeams();
         this.renderEvents();
-        this.renderReferees();
         
         // Ensure Events section is shown by default
         this.showSection('events');
@@ -75,7 +72,7 @@ class CheckInViewApp {
     }
     
     // UI Methods
-    showSection(sectionName) {
+    async showSection(sectionName) {
         // Update nav buttons
         document.querySelectorAll('.nav-btn').forEach(btn => {
             btn.classList.remove('active');
@@ -85,6 +82,15 @@ class CheckInViewApp {
         const clickedBtn = event?.target || document.querySelector(`[onclick*="${sectionName}"]`);
         if (clickedBtn) {
             clickedBtn.classList.add('active');
+        }
+        
+        // Lazy load data for the section if not already loaded
+        if (sectionName === 'teams' && this.teams.length === 0) {
+            await this.loadTeams();
+            this.renderTeams();
+        } else if (sectionName === 'referees' && this.referees.length === 0) {
+            await this.loadReferees();
+            this.renderReferees();
         }
         
         // Show section
@@ -1171,8 +1177,8 @@ class CheckInViewApp {
 }
 
 // Global functions for onclick handlers
-function showSection(sectionName) {
-    app.showSection(sectionName);
+async function showSection(sectionName) {
+    await app.showSection(sectionName);
 }
 
 // Initialize app
