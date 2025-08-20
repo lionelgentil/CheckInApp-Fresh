@@ -184,6 +184,18 @@ try {
             }
             break;
             
+        case 'db-schema':
+            if ($method === 'GET') {
+                getDatabaseSchema($db);
+            }
+            break;
+            
+        case 'db-data':
+            if ($method === 'GET') {
+                getDatabaseData($db);
+            }
+            break;
+            
         default:
             http_response_code(404);
             echo json_encode(['error' => 'Endpoint not found']);
@@ -632,6 +644,142 @@ function cleanupDisciplinaryRecords($db) {
         http_response_code(500);
         echo json_encode([
             'error' => 'Failed to cleanup disciplinary records: ' . $e->getMessage(),
+            'timestamp' => date('c')
+        ]);
+    }
+}
+
+function getDatabaseSchema($db) {
+    try {
+        // Get all tables in the database
+        $stmt = $db->query("
+            SELECT table_name 
+            FROM information_schema.tables 
+            WHERE table_schema = 'public' 
+            AND table_type = 'BASE TABLE'
+            ORDER BY table_name
+        ");
+        $tables = $stmt->fetchAll(PDO::FETCH_COLUMN);
+        
+        $schema = [];
+        
+        foreach ($tables as $tableName) {
+            // Get column information for each table
+            $stmt = $db->prepare("
+                SELECT 
+                    column_name,
+                    data_type,
+                    is_nullable,
+                    column_default,
+                    character_maximum_length,
+                    numeric_precision,
+                    numeric_scale
+                FROM information_schema.columns 
+                WHERE table_name = ? 
+                AND table_schema = 'public'
+                ORDER BY ordinal_position
+            ");
+            $stmt->execute([$tableName]);
+            $columns = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            // Get constraints (primary keys, foreign keys, etc.)
+            $stmt = $db->prepare("
+                SELECT 
+                    tc.constraint_name,
+                    tc.constraint_type,
+                    kcu.column_name,
+                    ccu.table_name AS foreign_table_name,
+                    ccu.column_name AS foreign_column_name
+                FROM information_schema.table_constraints AS tc 
+                JOIN information_schema.key_column_usage AS kcu
+                    ON tc.constraint_name = kcu.constraint_name
+                    AND tc.table_schema = kcu.table_schema
+                LEFT JOIN information_schema.constraint_column_usage AS ccu
+                    ON ccu.constraint_name = tc.constraint_name
+                    AND ccu.table_schema = tc.table_schema
+                WHERE tc.table_name = ? 
+                AND tc.table_schema = 'public'
+                ORDER BY tc.constraint_type, kcu.ordinal_position
+            ");
+            $stmt->execute([$tableName]);
+            $constraints = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            // Get row count
+            $stmt = $db->prepare("SELECT COUNT(*) as row_count FROM {$tableName}");
+            $stmt->execute();
+            $rowCount = $stmt->fetch(PDO::FETCH_ASSOC)['row_count'];
+            
+            $schema[$tableName] = [
+                'columns' => $columns,
+                'constraints' => $constraints,
+                'row_count' => $rowCount
+            ];
+        }
+        
+        echo json_encode([
+            'success' => true,
+            'schema' => $schema,
+            'table_count' => count($tables),
+            'timestamp' => date('c')
+        ]);
+        
+    } catch (Exception $e) {
+        http_response_code(500);
+        echo json_encode([
+            'error' => 'Failed to get database schema: ' . $e->getMessage(),
+            'timestamp' => date('c')
+        ]);
+    }
+}
+
+function getDatabaseData($db) {
+    try {
+        // Get all tables
+        $stmt = $db->query("
+            SELECT table_name 
+            FROM information_schema.tables 
+            WHERE table_schema = 'public' 
+            AND table_type = 'BASE TABLE'
+            ORDER BY table_name
+        ");
+        $tables = $stmt->fetchAll(PDO::FETCH_COLUMN);
+        
+        $data = [];
+        $totalRows = 0;
+        
+        foreach ($tables as $tableName) {
+            // Get all data from each table (limit to prevent huge responses)
+            $stmt = $db->prepare("SELECT * FROM {$tableName} ORDER BY 1 LIMIT 100");
+            $stmt->execute();
+            $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            // Get total count
+            $stmt = $db->prepare("SELECT COUNT(*) as total FROM {$tableName}");
+            $stmt->execute();
+            $count = $stmt->fetch(PDO::FETCH_ASSOC)['total'];
+            
+            $data[$tableName] = [
+                'rows' => $rows,
+                'count' => $count,
+                'showing' => count($rows),
+                'truncated' => $count > 100
+            ];
+            
+            $totalRows += $count;
+        }
+        
+        echo json_encode([
+            'success' => true,
+            'data' => $data,
+            'total_tables' => count($tables),
+            'total_rows' => $totalRows,
+            'timestamp' => date('c')
+        ]);
+        
+    } catch (Exception $e) {
+        http_response_code(500);
+        echo json_encode([
+            'error' => 'Failed to get database data: ' . $e->getMessage(),
             'timestamp' => date('c')
         ]);
     }
