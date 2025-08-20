@@ -5,7 +5,7 @@
  */
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '2.14.20-EMERGENCY';
+const APP_VERSION = '2.14.21-FINAL-FIX';
 
 // Default photos - simple SVG avatars
 function getDefaultPhoto($gender) {
@@ -388,14 +388,22 @@ function saveTeams($db) {
             // }
         }
         
-        // Delete all teams (safe since no foreign keys reference teams)
-        $db->exec('DELETE FROM teams');
+        // EMERGENCY FIX: Don't delete teams either as it cascades to members and then to disciplinary records!
+        // Delete all teams (safe since no foreign keys reference teams) ← THIS WAS WRONG!
+        error_log("SKIPPING: Team deletion also disabled to prevent cascade to disciplinary records");
+        // $db->exec('DELETE FROM teams');
         
         foreach ($input as $team) {
-            // Insert/Update team
+            // Use UPSERT for teams too to avoid deletion cascades
             $stmt = $db->prepare('
                 INSERT INTO teams (id, name, category, color, description, captain_id)
                 VALUES (?, ?, ?, ?, ?, ?)
+                ON CONFLICT (id) DO UPDATE SET
+                    name = EXCLUDED.name,
+                    category = EXCLUDED.category,
+                    color = EXCLUDED.color,
+                    description = EXCLUDED.description,
+                    captain_id = EXCLUDED.captain_id
             ');
             $stmt->execute([
                 $team['id'],
