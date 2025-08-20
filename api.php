@@ -5,7 +5,7 @@
  */
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '2.14.14';
+const APP_VERSION = '2.14.16';
 
 // Default photos - simple SVG avatars
 function getDefaultPhoto($gender) {
@@ -184,9 +184,9 @@ try {
             break;
             
         case 'cleanup-disciplinary':
-            if ($method === 'POST') {
-                cleanupDisciplinaryRecords($db);
-            }
+            // DISABLED: Cleanup endpoint removed to prevent accidental data loss
+            http_response_code(404);
+            echo json_encode(['error' => 'Cleanup endpoint disabled for data protection']);
             break;
             
         case 'db-schema':
@@ -292,10 +292,34 @@ function saveTeams($db) {
     $db->beginTransaction();
     
     try {
-        $db->exec('DELETE FROM team_members');
+        // IMPORTANT: Instead of DELETE FROM team_members (which cascades to disciplinary records),
+        // we'll use UPSERT approach to preserve member IDs and disciplinary data
+        
+        // First, collect all incoming member IDs
+        $incomingMemberIds = [];
+        foreach ($input as $team) {
+            if (isset($team['members']) && is_array($team['members'])) {
+                foreach ($team['members'] as $member) {
+                    $incomingMemberIds[] = $member['id'];
+                }
+            }
+        }
+        
+        // Delete orphaned members (not in incoming data) - this will cascade delete their disciplinary records
+        if (!empty($incomingMemberIds)) {
+            $placeholders = str_repeat('?,', count($incomingMemberIds) - 1) . '?';
+            $stmt = $db->prepare("DELETE FROM team_members WHERE id NOT IN ({$placeholders})");
+            $stmt->execute($incomingMemberIds);
+        } else {
+            // If no members in incoming data, delete all members
+            $db->exec('DELETE FROM team_members');
+        }
+        
+        // Delete all teams (safe since no foreign keys reference teams)
         $db->exec('DELETE FROM teams');
         
         foreach ($input as $team) {
+            // Insert/Update team
             $stmt = $db->prepare('
                 INSERT INTO teams (id, name, category, color, description, captain_id)
                 VALUES (?, ?, ?, ?, ?, ?)
@@ -311,9 +335,16 @@ function saveTeams($db) {
             
             if (isset($team['members']) && is_array($team['members'])) {
                 foreach ($team['members'] as $member) {
+                    // Use INSERT ON CONFLICT (UPSERT) to preserve existing members and their disciplinary records
                     $stmt = $db->prepare('
                         INSERT INTO team_members (id, team_id, name, jersey_number, gender, photo)
                         VALUES (?, ?, ?, ?, ?, ?)
+                        ON CONFLICT (id) DO UPDATE SET
+                            team_id = EXCLUDED.team_id,
+                            name = EXCLUDED.name,
+                            jersey_number = EXCLUDED.jersey_number,
+                            gender = EXCLUDED.gender,
+                            photo = EXCLUDED.photo
                     ');
                     $stmt->execute([
                         $member['id'],
@@ -667,6 +698,7 @@ function generateUUID() {
 }
 
 function cleanupDisciplinaryRecords($db) {
+    error_log("WARNING: cleanupDisciplinaryRecords function was called! This should not happen.");
     try {
         // Get count and sample data before cleanup for confirmation
         $stmt = $db->query('SELECT COUNT(*) as total FROM player_disciplinary_records');
@@ -960,6 +992,14 @@ function saveDisciplinaryRecords($db) {
     
     try {
         // Delete existing records for this member
+        $stmt = $db->prepare('SELECT COUNT(*) as count FROM player_disciplinary_records WHERE member_id = ?');
+        $stmt->execute([$memberId]);
+        $existingCount = $stmt->fetch(PDO::FETCH_ASSOC)['count'];
+        
+        if ($existingCount > 0) {
+            error_log("Disciplinary: Replacing {$existingCount} existing records for member {$memberId}");
+        }
+        
         $db->prepare('DELETE FROM player_disciplinary_records WHERE member_id = ?')->execute([$memberId]);
         
         // Prepare statement once for better performance with multiple inserts
