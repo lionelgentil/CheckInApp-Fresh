@@ -5,7 +5,7 @@
  */
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '2.14.19-DEBUG';
+const APP_VERSION = '2.14.20-EMERGENCY';
 
 // Default photos - simple SVG avatars
 function getDefaultPhoto($gender) {
@@ -152,6 +152,7 @@ try {
                 // Log team saves to detect if they're causing the issue
                 error_log("=== TEAM SAVE TRIGGERED ===");
                 error_log("Team save request detected - this might delete disciplinary records!");
+                error_log("Team save data: " . file_get_contents('php://input'));
                 
                 // Count disciplinary records before team save
                 $stmt = $db->query('SELECT COUNT(*) as total FROM player_disciplinary_records');
@@ -358,30 +359,33 @@ function saveTeams($db) {
             }
         }
         
+        // EMERGENCY FIX: Completely disable member deletion to preserve disciplinary records
         // Delete orphaned members (not in incoming data) - this will cascade delete their disciplinary records
         if (!empty($incomingMemberIds)) {
-            $placeholders = str_repeat('?,', count($incomingMemberIds) - 1) . '?';
-            $stmt = $db->prepare("DELETE FROM team_members WHERE id NOT IN ({$placeholders})");
-            $stmt->execute($incomingMemberIds);
+            error_log("SKIPPING: Member cleanup disabled to preserve disciplinary records");
+            // $placeholders = str_repeat('?,', count($incomingMemberIds) - 1) . '?';
+            // $stmt = $db->prepare("DELETE FROM team_members WHERE id NOT IN ({$placeholders})");
+            // $stmt->execute($incomingMemberIds);
         } else {
-            // CRITICAL FIX: Only delete all members if we're sure this is intentional
-            // Check if any teams in the input are supposed to have members
-            $hasAnyMembersData = false;
-            foreach ($input as $team) {
-                if (isset($team['members']) && is_array($team['members'])) {
-                    $hasAnyMembersData = true;
-                    break;
-                }
-            }
-            
-            // Only delete all members if teams explicitly have empty members arrays
-            // Don't delete if members key is missing entirely (could be partial update)
-            if ($hasAnyMembersData) {
-                error_log("WARNING: Deleting all team members due to empty members data");
-                $db->exec('DELETE FROM team_members');
-            } else {
-                error_log("SKIPPING: Team save without members data - preserving existing members");
-            }
+            error_log("SKIPPING: All member deletion disabled to preserve disciplinary records");
+            // // CRITICAL FIX: Only delete all members if we're sure this is intentional
+            // // Check if any teams in the input are supposed to have members
+            // $hasAnyMembersData = false;
+            // foreach ($input as $team) {
+            //     if (isset($team['members']) && is_array($team['members'])) {
+            //         $hasAnyMembersData = true;
+            //         break;
+            //     }
+            // }
+            // 
+            // // Only delete all members if teams explicitly have empty members arrays
+            // // Don't delete if members key is missing entirely (could be partial update)
+            // if ($hasAnyMembersData) {
+            //     error_log("WARNING: Deleting all team members due to empty members data");
+            //     $db->exec('DELETE FROM team_members');
+            // } else {
+            //     error_log("SKIPPING: Team save without members data - preserving existing members");
+            // }
         }
         
         // Delete all teams (safe since no foreign keys reference teams)
