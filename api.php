@@ -5,7 +5,7 @@
  */
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '2.15.6';
+const APP_VERSION = '2.15.7';
 
 // Default photos - fallback to API serving for SVG compatibility
 function getDefaultPhoto($gender) {
@@ -250,6 +250,31 @@ try {
                 uploadPhoto($db);
             } elseif ($method === 'DELETE') {
                 deletePhoto($db);
+            }
+            break;
+            
+        case 'debug-photos':
+            // Debug endpoint to check photo data in database
+            if ($method === 'GET') {
+                $stmt = $db->query("
+                    SELECT id, name, gender, photo, 
+                           LENGTH(photo) as photo_length,
+                           CASE 
+                               WHEN photo LIKE '/api/photos%' THEN 'API_URL'
+                               WHEN photo LIKE '/photos/members%' THEN 'FULL_PATH'  
+                               WHEN photo LIKE '%.svg' OR photo LIKE '%.jpg' OR photo LIKE '%.png' THEN 'FILENAME'
+                               ELSE 'OTHER'
+                           END as photo_type
+                    FROM team_members 
+                    WHERE photo IS NOT NULL 
+                    LIMIT 10
+                ");
+                $members = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                echo json_encode([
+                    'success' => true,
+                    'members' => $members,
+                    'timestamp' => date('c')
+                ]);
             }
             break;
             
@@ -1211,10 +1236,21 @@ function servePhoto($db) {
         return;
     }
     
-    // Clean up filename if it has a full path (fix double-path issue)
+    // Clean up filename if it has a full path or URL (fix double-encoding issue)
     if (strpos($filename, '/photos/members/') === 0) {
         $filename = basename($filename);
         error_log("Cleaned filename to: " . $filename);
+    } elseif (strpos($filename, '/api/photos') === 0) {
+        // Handle case where full API URL was passed as filename
+        parse_str(parse_url($filename, PHP_URL_QUERY), $query);
+        if (isset($query['filename'])) {
+            $filename = $query['filename'];
+            error_log("Extracted filename from nested URL: " . $filename);
+        } else {
+            http_response_code(400);
+            echo json_encode(['error' => 'Invalid nested URL format: ' . $filename]);
+            return;
+        }
     }
     
     // Handle special "default" filename for default avatars
