@@ -5,7 +5,7 @@
  */
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '2.14.18';
+const APP_VERSION = '2.14.19-DEBUG';
 
 // Default photos - simple SVG avatars
 function getDefaultPhoto($gender) {
@@ -149,7 +149,26 @@ try {
             if ($method === 'GET') {
                 getTeams($db);
             } elseif ($method === 'POST') {
+                // Log team saves to detect if they're causing the issue
+                error_log("=== TEAM SAVE TRIGGERED ===");
+                error_log("Team save request detected - this might delete disciplinary records!");
+                
+                // Count disciplinary records before team save
+                $stmt = $db->query('SELECT COUNT(*) as total FROM player_disciplinary_records');
+                $recordsBeforeTeamSave = $stmt->fetch(PDO::FETCH_ASSOC)['total'];
+                error_log("Disciplinary records before team save: " . $recordsBeforeTeamSave);
+                
                 saveTeams($db);
+                
+                // Count disciplinary records after team save
+                $stmt = $db->query('SELECT COUNT(*) as total FROM player_disciplinary_records');
+                $recordsAfterTeamSave = $stmt->fetch(PDO::FETCH_ASSOC)['total'];
+                error_log("Disciplinary records after team save: " . $recordsAfterTeamSave);
+                
+                if ($recordsAfterTeamSave < $recordsBeforeTeamSave) {
+                    error_log("ALERT: Team save deleted " . ($recordsBeforeTeamSave - $recordsAfterTeamSave) . " disciplinary records!");
+                }
+                error_log("=== TEAM SAVE COMPLETE ===");
             }
             break;
             
@@ -157,7 +176,25 @@ try {
             if ($method === 'GET') {
                 getEvents($db);
             } elseif ($method === 'POST') {
+                // Log events saves to detect if they're causing the issue
+                error_log("=== EVENT SAVE TRIGGERED ===");
+                
+                // Count disciplinary records before event save
+                $stmt = $db->query('SELECT COUNT(*) as total FROM player_disciplinary_records');
+                $recordsBeforeEventSave = $stmt->fetch(PDO::FETCH_ASSOC)['total'];
+                error_log("Disciplinary records before event save: " . $recordsBeforeEventSave);
+                
                 saveEvents($db);
+                
+                // Count disciplinary records after event save
+                $stmt = $db->query('SELECT COUNT(*) as total FROM player_disciplinary_records');
+                $recordsAfterEventSave = $stmt->fetch(PDO::FETCH_ASSOC)['total'];
+                error_log("Disciplinary records after event save: " . $recordsAfterEventSave);
+                
+                if ($recordsAfterEventSave < $recordsBeforeEventSave) {
+                    error_log("ALERT: Event save deleted " . ($recordsBeforeEventSave - $recordsAfterEventSave) . " disciplinary records!");
+                }
+                error_log("=== EVENT SAVE COMPLETE ===");
             }
             break;
             
@@ -173,7 +210,23 @@ try {
             if ($method === 'GET') {
                 getDisciplinaryRecords($db);
             } elseif ($method === 'POST') {
+                // Add comprehensive logging to track the deletion issue
+                error_log("=== DISCIPLINARY SAVE START ===");
+                error_log("Request method: " . $method);
+                error_log("Request data: " . file_get_contents('php://input'));
+                
+                // Count records before save
+                $stmt = $db->query('SELECT COUNT(*) as total FROM player_disciplinary_records');
+                $recordsBefore = $stmt->fetch(PDO::FETCH_ASSOC)['total'];
+                error_log("Records before save: " . $recordsBefore);
+                
                 saveDisciplinaryRecords($db);
+                
+                // Count records after save
+                $stmt = $db->query('SELECT COUNT(*) as total FROM player_disciplinary_records');
+                $recordsAfter = $stmt->fetch(PDO::FETCH_ASSOC)['total'];
+                error_log("Records after save: " . $recordsAfter);
+                error_log("=== DISCIPLINARY SAVE END ===");
             }
             break;
             
