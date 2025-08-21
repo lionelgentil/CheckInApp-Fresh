@@ -1,10 +1,10 @@
 /**
- * CheckIn App v2.16.7 - JavaScript Frontend
+ * CheckIn App v2.16.8 - JavaScript Frontend
  * Works with PHP/SQLite backend
  */
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '2.16.7';
+const APP_VERSION = '2.16.8';
 
 class CheckInApp {
     constructor() {
@@ -1838,13 +1838,27 @@ class CheckInApp {
         
         if (!match) return;
         
-        // Load referees if not already loaded
+        // Load referees if not already loaded (wait for it to complete)
         if (this.referees.length === 0) {
-            this.loadReferees();
+            this.loadReferees().then(() => {
+                this.showEditMatchModal(event, match);
+            });
+        } else {
+            this.showEditMatchModal(event, match);
         }
-        
+    }
+    
+    showEditMatchModal(event, match) {
         const homeTeam = this.teams.find(t => t.id === match.homeTeamId);
         const awayTeam = this.teams.find(t => t.id === match.awayTeamId);
+        
+        // Debug current match values
+        console.log('Current match data:', {
+            field: match.field,
+            time: match.time,
+            mainRefereeId: match.mainRefereeId,
+            assistantRefereeId: match.assistantRefereeId
+        });
         
         const modal = this.createModal(`Edit Match: ${homeTeam.name} vs ${awayTeam.name}`, `
             <div class="form-group">
@@ -1880,6 +1894,7 @@ class CheckInApp {
                     <option value="11:00" ${match.time === '11:00' ? 'selected' : ''}>11:00 AM</option>
                     <option value="13:00" ${match.time === '13:00' ? 'selected' : ''}>1:00 PM</option>
                 </select>
+                <small style="color: #666; font-size: 0.85em;">Current time: ${match.time || 'Not set'}</small>
             </div>
             <div class="form-group">
                 <label class="form-label">Main Referee</label>
@@ -1887,6 +1902,7 @@ class CheckInApp {
                     <option value="">Select main referee</option>
                     ${this.referees.map(referee => `<option value="${referee.id}" ${match.mainRefereeId === referee.id ? 'selected' : ''}>${referee.name}</option>`).join('')}
                 </select>
+                <small style="color: #666; font-size: 0.85em;">Current: ${match.mainRefereeId ? this.referees.find(r => r.id === match.mainRefereeId)?.name || 'Unknown' : 'Not assigned'}</small>
             </div>
             <div class="form-group">
                 <label class="form-label">Assistant Referee</label>
@@ -1894,6 +1910,7 @@ class CheckInApp {
                     <option value="">Select assistant referee (optional)</option>
                     ${this.referees.map(referee => `<option value="${referee.id}" ${match.assistantRefereeId === referee.id ? 'selected' : ''}>${referee.name}</option>`).join('')}
                 </select>
+                <small style="color: #666; font-size: 0.85em;">Current: ${match.assistantRefereeId ? this.referees.find(r => r.id === match.assistantRefereeId)?.name || 'Unknown' : 'Not assigned'}</small>
             </div>
             <div class="form-group">
                 <label class="form-label">Notes</label>
@@ -1901,7 +1918,7 @@ class CheckInApp {
             </div>
             <div style="display: flex; gap: 10px; justify-content: flex-end;">
                 <button class="btn btn-secondary" onclick="app.closeModal()">Cancel</button>
-                <button class="btn" onclick="app.saveEditedMatch('${eventId}', '${matchId}')">Update Match</button>
+                <button class="btn" onclick="app.saveEditedMatch('${event.id}', '${match.id}')">Update Match</button>
             </div>
         `);
         
