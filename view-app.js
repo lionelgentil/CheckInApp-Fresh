@@ -17,8 +17,11 @@ class CheckInViewApp {
     }
     
     async init() {
-        // Only load events by default (lazy load other sections)
-        await this.loadEvents();
+        // Load both events and teams on initialization since events display requires team names
+        await Promise.all([
+            this.loadEvents(),
+            this.loadTeams()
+        ]);
         this.renderEvents();
         
         // Ensure Events section is shown by default
