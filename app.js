@@ -1,10 +1,10 @@
 /**
- * CheckIn App v2.16.6 - JavaScript Frontend
+ * CheckIn App v2.16.7 - JavaScript Frontend
  * Works with PHP/SQLite backend
  */
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '2.16.6';
+const APP_VERSION = '2.16.7';
 
 class CheckInApp {
     constructor() {
@@ -508,6 +508,7 @@ class CheckInApp {
                                 ${cardsDisplay ? `<div class="match-cards">Cards: ${cardsDisplay}</div>` : ''}
                                 <div class="match-actions">
                                     <button class="btn btn-small" onclick="app.viewMatch('${event.id}', '${match.id}')" title="View Match">👁️</button>
+                                    <button class="btn btn-small" onclick="app.editMatch('${event.id}', '${match.id}')" title="Edit Match">✏️</button>
                                     <button class="btn btn-small btn-secondary" onclick="app.editMatchResult('${event.id}', '${match.id}')" title="Edit Result">🏆</button>
                                     <button class="btn btn-small btn-danger" onclick="app.deleteMatch('${event.id}', '${match.id}')" title="Delete Match">🗑️</button>
                                 </div>
@@ -1828,6 +1829,115 @@ class CheckInApp {
             this.renderEvents();
         } catch (error) {
             alert('Failed to delete match. Please try again.');
+        }
+    }
+    
+    editMatch(eventId, matchId) {
+        const event = this.events.find(e => e.id === eventId);
+        const match = event.matches.find(m => m.id === matchId);
+        
+        if (!match) return;
+        
+        // Load referees if not already loaded
+        if (this.referees.length === 0) {
+            this.loadReferees();
+        }
+        
+        const homeTeam = this.teams.find(t => t.id === match.homeTeamId);
+        const awayTeam = this.teams.find(t => t.id === match.awayTeamId);
+        
+        const modal = this.createModal(`Edit Match: ${homeTeam.name} vs ${awayTeam.name}`, `
+            <div class="form-group">
+                <label class="form-label">Home Team</label>
+                <select class="form-select" id="edit-home-team" disabled>
+                    <option value="${match.homeTeamId}">${homeTeam.name}</option>
+                </select>
+                <small style="color: #666; font-size: 0.85em;">Teams cannot be changed after match creation</small>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Away Team</label>
+                <select class="form-select" id="edit-away-team" disabled>
+                    <option value="${match.awayTeamId}">${awayTeam.name}</option>
+                </select>
+                <small style="color: #666; font-size: 0.85em;">Teams cannot be changed after match creation</small>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Field</label>
+                <select class="form-select" id="edit-match-field">
+                    <option value="">Select field</option>
+                    <option value="8" ${match.field === '8' ? 'selected' : ''}>Field 8</option>
+                    <option value="9" ${match.field === '9' ? 'selected' : ''}>Field 9</option>
+                    <option value="10" ${match.field === '10' ? 'selected' : ''}>Field 10</option>
+                    <option value="11" ${match.field === '11' ? 'selected' : ''}>Field 11</option>
+                    <option value="12" ${match.field === '12' ? 'selected' : ''}>Field 12</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Match Time</label>
+                <select class="form-select" id="edit-match-time">
+                    <option value="">Select time</option>
+                    <option value="09:00" ${match.time === '09:00' ? 'selected' : ''}>9:00 AM</option>
+                    <option value="11:00" ${match.time === '11:00' ? 'selected' : ''}>11:00 AM</option>
+                    <option value="13:00" ${match.time === '13:00' ? 'selected' : ''}>1:00 PM</option>
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Main Referee</label>
+                <select class="form-select" id="edit-main-referee">
+                    <option value="">Select main referee</option>
+                    ${this.referees.map(referee => `<option value="${referee.id}" ${match.mainRefereeId === referee.id ? 'selected' : ''}>${referee.name}</option>`).join('')}
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Assistant Referee</label>
+                <select class="form-select" id="edit-assistant-referee">
+                    <option value="">Select assistant referee (optional)</option>
+                    ${this.referees.map(referee => `<option value="${referee.id}" ${match.assistantRefereeId === referee.id ? 'selected' : ''}>${referee.name}</option>`).join('')}
+                </select>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Notes</label>
+                <textarea class="form-input" id="edit-match-notes" rows="3">${match.notes || ''}</textarea>
+            </div>
+            <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                <button class="btn btn-secondary" onclick="app.closeModal()">Cancel</button>
+                <button class="btn" onclick="app.saveEditedMatch('${eventId}', '${matchId}')">Update Match</button>
+            </div>
+        `);
+        
+        document.body.appendChild(modal);
+    }
+    
+    async saveEditedMatch(eventId, matchId) {
+        const field = document.getElementById('edit-match-field').value;
+        const time = document.getElementById('edit-match-time').value;
+        const mainRefereeId = document.getElementById('edit-main-referee').value;
+        const assistantRefereeId = document.getElementById('edit-assistant-referee').value;
+        const notes = document.getElementById('edit-match-notes').value.trim();
+        
+        if (mainRefereeId && assistantRefereeId && mainRefereeId === assistantRefereeId) {
+            alert('Main and assistant referees must be different');
+            return;
+        }
+        
+        const event = this.events.find(e => e.id === eventId);
+        const match = event.matches.find(m => m.id === matchId);
+        
+        if (!match) return;
+        
+        // Update match data
+        match.field = field || null;
+        match.time = time || null;
+        match.mainRefereeId = mainRefereeId || null;
+        match.assistantRefereeId = assistantRefereeId || null;
+        match.notes = notes;
+        
+        try {
+            await this.saveEvents();
+            this.renderEvents();
+            this.closeModal();
+        } catch (error) {
+            alert('Failed to update match. Please try again.');
         }
     }
     

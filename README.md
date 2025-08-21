@@ -1,4 +1,4 @@
-# CheckIn App v2.16.6
+# CheckIn App v2.16.7
 
 A comprehensive team and event management application with advanced disciplinary tracking, built with PHP 8 and PostgreSQL for professional sports organizations and leagues.
 
@@ -162,7 +162,7 @@ A comprehensive team and event management application with advanced disciplinary
 CheckInApp-Fresh/
 ├── index.html          # Main application interface
 ├── view.html           # View-only public interface
-├── app.js             # Main application logic (v2.16.6)
+├── app.js             # Main application logic (v2.16.7)
 ├── view-app.js        # View-only application logic
 ├── api.php            # PHP REST API with PostgreSQL
 ├── manifest.json      # PWA manifest
@@ -208,6 +208,7 @@ CheckInApp-Fresh/
 
 ## Version History
 
+- **v2.16.7**: ✨ **Edit Match Feature** - Added Edit Match button to Events Management allowing modification of match details including field, time, referee assignments, and notes. Teams cannot be changed after match creation for data integrity.
 - **v2.16.6**: 🐛 **Teams Loading Fix** - Fixed Teams section stuck on "Loading teams..." by ensuring renderTeams() is always called when switching to Teams section, regardless of whether teams data was already loaded during initialization.
 - **v2.16.5**: 🚀 **Performance Optimization** - Optimized player profile loading from 1.5 seconds to under 200ms (~87% improvement). Eliminated triple nested loops, implemented team lookup caching, and optimized DOM string building for faster modal rendering.
 - **v2.16.4**: 🐛 **Lazy Loading Fix** - Fixed "Unknown Team" issue on initial page load by ensuring teams data is loaded during app initialization. Added debugging for team lookup issues.
