@@ -1,10 +1,10 @@
 /**
- * CheckIn App v2.16.4 - View Only Mode
+ * CheckIn App v2.16.5 - View Only Mode
  * Read-only version for public viewing
  */
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '2.16.4';
+const APP_VERSION = '2.16.5';
 
 class CheckInViewApp {
     constructor() {
@@ -216,39 +216,56 @@ class CheckInViewApp {
         
         if (!team || !member) return;
         
-        // Get all match cards for this player across all events
-        const matchCards = [];
-        this.events.forEach(event => {
-            event.matches.forEach(match => {
-                if (match.cards) {
-                    match.cards.forEach(card => {
-                        if (card.memberId === memberId) {
-                            const homeTeam = this.teams.find(t => t.id === match.homeTeamId);
-                            const awayTeam = this.teams.find(t => t.id === match.awayTeamId);
-                            
-                            matchCards.push({
-                                type: 'match',
-                                eventName: event.name,
-                                eventDate: event.date,
-                                matchInfo: `${homeTeam?.name || 'Unknown'} vs ${awayTeam?.name || 'Unknown'}`,
-                                cardType: card.cardType,
-                                reason: card.reason,
-                                notes: card.notes,
-                                minute: card.minute
-                            });
-                        }
-                    });
-                }
-            });
-        });
+        // Create team lookup cache for faster access
+        const teamLookup = new Map();
+        this.teams.forEach(t => teamLookup.set(t.id, t));
         
-        // Get disciplinary records from database
-        let disciplinaryRecords = [];
+        // Get all match cards for this player across all events - optimized version
+        const matchCards = [];
+        for (const event of this.events) {
+            for (const match of event.matches) {
+                if (!match.cards) continue;
+                
+                // Find cards for this member in one pass
+                const memberCards = match.cards.filter(card => card.memberId === memberId);
+                if (memberCards.length === 0) continue;
+                
+                // Cache team lookups per match (not per card)
+                const homeTeam = teamLookup.get(match.homeTeamId);
+                const awayTeam = teamLookup.get(match.awayTeamId);
+                const matchInfo = `${homeTeam?.name || 'Unknown'} vs ${awayTeam?.name || 'Unknown'}`;
+                
+                // Process all cards for this member in this match
+                memberCards.forEach(card => {
+                    matchCards.push({
+                        type: 'match',
+                        eventName: event.name,
+                        eventDate: event.date,
+                        matchInfo,
+                        cardType: card.cardType,
+                        reason: card.reason,
+                        notes: card.notes,
+                        minute: card.minute
+                    });
+                });
+            }
+        }
+        
+        // Fetch disciplinary records in parallel with UI building
+        const disciplinaryPromise = this.fetchDisciplinaryRecords(memberId);
+        
+        // Wait for disciplinary records and display
+        const disciplinaryRecords = await disciplinaryPromise;
+        this.displayPlayerProfile(team, member, matchCards, disciplinaryRecords);
+    }
+    
+    // Optimized helper method for fetching disciplinary records
+    async fetchDisciplinaryRecords(memberId) {
         try {
             const response = await fetch(`/api/disciplinary-records?member_id=${memberId}`);
             if (response.ok) {
                 const records = await response.json();
-                disciplinaryRecords = records.map(record => ({
+                return records.map(record => ({
                     type: 'prior',
                     eventDate: record.incidentDate || record.createdAt,
                     matchInfo: 'External incident',
@@ -260,20 +277,19 @@ class CheckInViewApp {
                     suspensionServed: record.suspensionServed,
                     suspensionServedDate: record.suspensionServedDate
                 }));
+            } else {
+                console.error('Failed to load disciplinary records:', response.status);
+                return [];
             }
         } catch (error) {
             console.error('Error loading disciplinary records:', error);
+            return [];
         }
-        
-        // Combine all cards and sort by date (most recent first)
-        const allCards = [...matchCards, ...disciplinaryRecords];
-        allCards.sort((a, b) => new Date(b.eventDate) - new Date(a.eventDate));
-        
-        const totalCards = allCards.length;
-        const matchCardCount = matchCards.length;
-        const priorCardCount = disciplinaryRecords.length;
-        
-        const modal = this.createModal(`Player Profile: ${member.name}`, `
+    }
+    
+    // Optimized helper method for building profile base content
+    buildPlayerProfileBase(team, member) {
+        return `
             <div style="margin-bottom: 20px; padding: 15px; background: #f8f9fa; border-radius: 12px; text-align: center;">
                 <div style="margin-bottom: 12px;">
                     ${member.photo ? 
@@ -286,7 +302,69 @@ class CheckInViewApp {
                     ${team.name}${member.jerseyNumber ? ` • #${member.jerseyNumber}` : ''}${member.gender ? ` • ${member.gender}` : ''}
                     ${member.id === team.captainId ? ' • 👑 Captain' : ''}
                 </p>
-            </div>
+            </div>`;
+    }
+    
+    // Optimized method for rendering card items
+    renderCardItem(card) {
+        const cardIcon = card.cardType === 'yellow' ? '🟨' : '🟥';
+        const cardColor = card.cardType === 'yellow' ? '#ffc107' : '#dc3545';
+        const typeIcon = card.type === 'match' ? '🏟️' : '📚';
+        const typeLabel = card.type === 'match' ? 'Match' : 'Prior';
+        
+        return `
+            <div style="padding: 12px; border-bottom: 1px solid #f8f9fa; background: white;">
+                <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
+                    <span style="font-size: 1.1em;">${cardIcon}</span>
+                    <div style="flex: 1;">
+                        <strong style="color: ${cardColor}; text-transform: capitalize; font-size: 0.9em;">${card.cardType} Card</strong>
+                        ${card.minute ? `<span style="color: #666; font-size: 0.8em;"> - ${card.minute}'</span>` : ''}
+                        <span style="margin-left: 8px; background: ${card.type === 'match' ? '#e3f2fd' : '#fff3e0'}; color: #666; padding: 1px 4px; border-radius: 3px; font-size: 0.7em;">${typeIcon} ${typeLabel}</span>
+                    </div>
+                    <small style="color: #666; font-size: 0.75em;">${new Date(card.eventDate).toLocaleDateString()}</small>
+                </div>
+                ${card.type === 'match' ? `
+                    <div style="font-size: 0.8em; color: #666; margin-bottom: 3px;">
+                        <strong>Match:</strong> ${card.matchInfo}
+                    </div>
+                ` : ''}
+                ${card.reason ? `
+                    <div style="font-size: 0.8em; color: #666; margin-bottom: 3px;">
+                        <strong>Reason:</strong> ${card.reason}
+                    </div>
+                ` : ''}
+                ${card.notes ? `
+                    <div style="font-size: 0.75em; color: #888; font-style: italic;">
+                        <strong>Notes:</strong> ${card.notes}
+                    </div>
+                ` : ''}
+                ${card.suspensionMatches ? `
+                    <div style="font-size: 0.75em; color: #856404; margin-top: 5px; padding: 4px 6px; background: #fff3cd; border-radius: 3px; display: inline-block;">
+                        ⚖️ ${card.suspensionMatches} match suspension ${
+                            card.suspensionServed 
+                                ? `(✅ Served${card.suspensionServedDate ? ` on ${new Date(card.suspensionServedDate).toLocaleDateString()}` : ''})` 
+                                : '(⏳ Pending)'
+                        }
+                    </div>
+                ` : ''}
+            </div>`;
+    }
+    
+    // Final display method with optimized rendering
+    displayPlayerProfile(team, member, matchCards, disciplinaryRecords) {
+        // Combine all cards and sort by date (most recent first)
+        const allCards = [...matchCards, ...disciplinaryRecords];
+        allCards.sort((a, b) => new Date(b.eventDate) - new Date(a.eventDate));
+        
+        const totalCards = allCards.length;
+        const matchCardCount = matchCards.length;
+        const priorCardCount = disciplinaryRecords.length;
+        
+        // Pre-render card items for better performance
+        const cardItemsHtml = totalCards > 0 ? allCards.map(card => this.renderCardItem(card)).join('') : '';
+        
+        const modal = this.createModal(`Player Profile: ${member.name}`, `
+            ${this.buildPlayerProfileBase(team, member)}
             
             <div style="margin-bottom: 15px;">
                 <h4 style="margin: 0 0 12px 0; color: #333; display: flex; align-items: center; gap: 8px; font-size: 1em;">
@@ -302,50 +380,7 @@ class CheckInViewApp {
                         <span>📚 ${priorCardCount} prior record${priorCardCount !== 1 ? 's' : ''}</span>
                     </div>
                     <div style="max-height: 250px; overflow-y: auto; border: 1px solid #e9ecef; border-radius: 8px;">
-                        ${allCards.map(card => {
-                            const cardIcon = card.cardType === 'yellow' ? '🟨' : '🟥';
-                            const cardColor = card.cardType === 'yellow' ? '#ffc107' : '#dc3545';
-                            const typeIcon = card.type === 'match' ? '🏟️' : '📚';
-                            const typeLabel = card.type === 'match' ? 'Match' : 'Prior';
-                            
-                            return `
-                                <div style="padding: 12px; border-bottom: 1px solid #f8f9fa; background: white;">
-                                    <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
-                                        <span style="font-size: 1.1em;">${cardIcon}</span>
-                                        <div style="flex: 1;">
-                                            <strong style="color: ${cardColor}; text-transform: capitalize; font-size: 0.9em;">${card.cardType} Card</strong>
-                                            ${card.minute ? `<span style="color: #666; font-size: 0.8em;"> - ${card.minute}'</span>` : ''}
-                                            <span style="margin-left: 8px; background: ${card.type === 'match' ? '#e3f2fd' : '#fff3e0'}; color: #666; padding: 1px 4px; border-radius: 3px; font-size: 0.7em;">${typeIcon} ${typeLabel}</span>
-                                        </div>
-                                        <small style="color: #666; font-size: 0.75em;">${new Date(card.eventDate).toLocaleDateString()}</small>
-                                    </div>
-                                    ${card.type === 'match' ? `
-                                        <div style="font-size: 0.8em; color: #666; margin-bottom: 3px;">
-                                            <strong>Match:</strong> ${card.matchInfo}
-                                        </div>
-                                    ` : ''}
-                                    ${card.reason ? `
-                                        <div style="font-size: 0.8em; color: #666; margin-bottom: 3px;">
-                                            <strong>Reason:</strong> ${card.reason}
-                                        </div>
-                                    ` : ''}
-                                    ${card.notes ? `
-                                        <div style="font-size: 0.75em; color: #888; font-style: italic;">
-                                            <strong>Notes:</strong> ${card.notes}
-                                        </div>
-                                    ` : ''}
-                                    ${card.suspensionMatches ? `
-                                        <div style="font-size: 0.75em; color: #856404; margin-top: 5px; padding: 4px 6px; background: #fff3cd; border-radius: 3px; display: inline-block;">
-                                            ⚖️ ${card.suspensionMatches} match suspension ${
-                                                card.suspensionServed 
-                                                    ? `(✅ Served${card.suspensionServedDate ? ` on ${new Date(card.suspensionServedDate).toLocaleDateString()}` : ''})` 
-                                                    : '(⏳ Pending)'
-                                            }
-                                        </div>
-                                    ` : ''}
-                                </div>
-                            `;
-                        }).join('')}
+                        ${cardItemsHtml}
                     </div>
                 ` : `
                     <div style="text-align: center; padding: 30px; color: #666; background: #f8f9fa; border-radius: 8px;">
