@@ -1,10 +1,10 @@
 /**
- * CheckIn App v2.16.5 - View Only Mode
+ * CheckIn App v2.16.6 - View Only Mode
  * Read-only version for public viewing
  */
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '2.16.5';
+const APP_VERSION = '2.16.6';
 
 class CheckInViewApp {
     constructor() {
@@ -88,11 +88,15 @@ class CheckInViewApp {
         }
         
         // Lazy load data for the section if not already loaded
-        if (sectionName === 'teams' && this.teams.length === 0) {
-            await this.loadTeams();
+        if (sectionName === 'teams') {
+            if (this.teams.length === 0) {
+                await this.loadTeams();
+            }
             this.renderTeams();
-        } else if (sectionName === 'referees' && this.referees.length === 0) {
-            await this.loadReferees();
+        } else if (sectionName === 'referees') {
+            if (this.referees.length === 0) {
+                await this.loadReferees();
+            }
             this.renderReferees();
         }
         
