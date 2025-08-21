@@ -1,5 +1,5 @@
 /**
- * CheckIn App v2.16.2 - JavaScript Frontend
+ * CheckIn App v2.16.4 - JavaScript Frontend
  * Works with PHP/SQLite backend
  */
 

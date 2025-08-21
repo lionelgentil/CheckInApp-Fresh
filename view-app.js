@@ -1,5 +1,5 @@
 /**
- * CheckIn App v2.16.2 - View Only Mode
+ * CheckIn App v2.16.4 - View Only Mode
  * Read-only version for public viewing
  */
 
