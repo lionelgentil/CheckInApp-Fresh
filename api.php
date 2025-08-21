@@ -483,10 +483,21 @@ function saveTeams($db) {
             // }
         }
         
-        // EMERGENCY FIX: Don't delete teams either as it cascades to members and then to disciplinary records!
-        // Delete all teams (safe since no foreign keys reference teams) ← THIS WAS WRONG!
-        error_log("SKIPPING: Team deletion also disabled to prevent cascade to disciplinary records");
-        // $db->exec('DELETE FROM teams');
+        // Clean up teams that are no longer in the input data
+        // First collect all team IDs from input
+        $incomingTeamIds = [];
+        foreach ($input as $team) {
+            $incomingTeamIds[] = $team['id'];
+        }
+        
+        // Delete teams that are not in the incoming data
+        // This is safe because we use UPSERT for members, preserving disciplinary records
+        if (!empty($incomingTeamIds)) {
+            $placeholders = str_repeat('?,', count($incomingTeamIds) - 1) . '?';
+            $stmt = $db->prepare("DELETE FROM teams WHERE id NOT IN ({$placeholders})");
+            $stmt->execute($incomingTeamIds);
+            error_log("Cleaned up teams not in incoming data");
+        }
         
         foreach ($input as $team) {
             // Use UPSERT for teams too to avoid deletion cascades
