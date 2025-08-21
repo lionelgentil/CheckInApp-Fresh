@@ -4,7 +4,7 @@
  */
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '2.16.3';
+const APP_VERSION = '2.16.4';
 
 class CheckInApp {
     constructor() {
@@ -355,6 +355,7 @@ class CheckInApp {
     }
     
     renderEvents() {
+        console.log('🔍 renderEvents called - teams loaded:', this.teams.length, 'events loaded:', this.events.length);
         const container = document.getElementById('events-container');
         const showPastEvents = document.getElementById('show-past-events')?.checked || false;
         
@@ -444,6 +445,15 @@ class CheckInApp {
                         .map(match => {
                         const homeTeam = this.teams.find(t => t.id === match.homeTeamId);
                         const awayTeam = this.teams.find(t => t.id === match.awayTeamId);
+                        
+                        // Debug team lookups
+                        if (!homeTeam) {
+                            console.log('❌ Home team not found for ID:', match.homeTeamId, 'Available team IDs:', this.teams.map(t => t.id));
+                        }
+                        if (!awayTeam) {
+                            console.log('❌ Away team not found for ID:', match.awayTeamId, 'Available team IDs:', this.teams.map(t => t.id));
+                        }
+                        
                         const mainReferee = match.mainRefereeId ? this.referees.find(r => r.id === match.mainRefereeId) : null;
                         const assistantReferee = match.assistantRefereeId ? this.referees.find(r => r.id === match.assistantRefereeId) : null;
                         

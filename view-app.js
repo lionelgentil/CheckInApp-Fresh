@@ -4,7 +4,7 @@
  */
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '2.16.2';
+const APP_VERSION = '2.16.4';
 
 class CheckInViewApp {
     constructor() {
@@ -458,6 +458,7 @@ class CheckInViewApp {
     }
     
     renderEvents() {
+        console.log('🔍 renderEvents called - teams loaded:', this.teams.length, 'events loaded:', this.events.length);
         const container = document.getElementById('events-container');
         const showPastEvents = document.getElementById('show-past-events')?.checked || false;
         
