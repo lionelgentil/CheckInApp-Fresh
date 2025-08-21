@@ -5,7 +5,7 @@
  */
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '2.16.10';
+const APP_VERSION = '2.16.11';
 
 // Default photos - fallback to API serving for SVG compatibility
 function getDefaultPhoto($gender) {
@@ -198,23 +198,7 @@ try {
             if ($method === 'GET') {
                 getDisciplinaryRecords($db);
             } elseif ($method === 'POST') {
-                // Add comprehensive logging to track the deletion issue
-                error_log("=== DISCIPLINARY SAVE START ===");
-                error_log("Request method: " . $method);
-                error_log("Request data: " . file_get_contents('php://input'));
-                
-                // Count records before save
-                $stmt = $db->query('SELECT COUNT(*) as total FROM player_disciplinary_records');
-                $recordsBefore = $stmt->fetch(PDO::FETCH_ASSOC)['total'];
-                error_log("Records before save: " . $recordsBefore);
-                
                 saveDisciplinaryRecords($db);
-                
-                // Count records after save
-                $stmt = $db->query('SELECT COUNT(*) as total FROM player_disciplinary_records');
-                $recordsAfter = $stmt->fetch(PDO::FETCH_ASSOC)['total'];
-                error_log("Records after save: " . $recordsAfter);
-                error_log("=== DISCIPLINARY SAVE END ===");
             }
             break;
             
@@ -1175,16 +1159,12 @@ function saveDisciplinaryRecords($db) {
     
     if ($action === 'delete' && isset($input['record_id'])) {
         // Delete specific record
-        error_log("Disciplinary DELETE: Attempting to delete record ID " . $input['record_id']);
         try {
             $stmt = $db->prepare('DELETE FROM player_disciplinary_records WHERE id = ?');
             $result = $stmt->execute([$input['record_id']]);
             $deletedRows = $stmt->rowCount();
-            
-            error_log("Disciplinary DELETE: Deleted {$deletedRows} rows for record ID " . $input['record_id']);
             echo json_encode(['success' => true, 'deleted_rows' => $deletedRows]);
         } catch (Exception $e) {
-            error_log("Disciplinary DELETE ERROR: " . $e->getMessage());
             http_response_code(500);
             echo json_encode(['error' => 'Failed to delete record: ' . $e->getMessage()]);
         }
@@ -1200,78 +1180,31 @@ function saveDisciplinaryRecords($db) {
     $db->beginTransaction();
     
     try {
-        // IMPROVED SMART MODE: Better detection of ADD vs EDIT operations
+        // Simple approach: Always replace all records for this member
+        // This is faster and simpler than complex add/edit detection
+        $db->prepare('DELETE FROM player_disciplinary_records WHERE member_id = ?')->execute([$memberId]);
         
-        // Check if any records already exist for this member
-        $stmt = $db->prepare('SELECT COUNT(*) as count FROM player_disciplinary_records WHERE member_id = ?');
-        $stmt->execute([$memberId]);
-        $existingCount = $stmt->fetch(PDO::FETCH_ASSOC)['count'];
-        
-        // Check if this looks like a full edit session
-        $hasExistingRecordIds = false;
-        $totalRecordsInRequest = count($input['records']);
-        
-        foreach ($input['records'] as $record) {
-            if (isset($record['id']) && !empty($record['id'])) {
-                $hasExistingRecordIds = true;
-                break;
-            }
-        }
-        
-        // SIMPLIFIED LOGIC: Much clearer ADD vs EDIT detection
-        // - If player has NO existing records → ADD MODE (append new records)
-        // - If player has existing records → EDIT MODE (replace all records)
-        // - Explicit 'replace_all' action always forces EDIT MODE
-        $isEditMode = ($action === 'replace_all') || ($existingCount > 0);
-        
-        if ($isEditMode) {
-            // EDIT MODE: Replace all records for this member
-            error_log("Disciplinary EDIT MODE: Replacing {$existingCount} records with {$totalRecordsInRequest} records for member {$memberId}");
-            $db->prepare('DELETE FROM player_disciplinary_records WHERE member_id = ?')->execute([$memberId]);
-        } else {
-            // ADD MODE: Just append new records
-            error_log("Disciplinary ADD MODE: Appending {$totalRecordsInRequest} new records for member {$memberId} (existing: {$existingCount})");
-        }
-        
-        // Insert records
+        // Insert new records
         $stmt = $db->prepare('
             INSERT INTO player_disciplinary_records (member_id, card_type, reason, notes, incident_date, suspension_matches, suspension_served, suspension_served_date)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         ');
         
         foreach ($input['records'] as $record) {
-            $suspensionServed = false;
-            $suspensionServedDate = null;
+            // Simplified boolean handling
+            $suspensionServed = isset($record['suspensionServed']) && $record['suspensionServed'];
+            $suspensionServedDate = ($suspensionServed && !empty($record['suspensionServedDate'])) ? $record['suspensionServedDate'] : null;
             
-            if (isset($record['suspensionServed'])) {
-                if (is_bool($record['suspensionServed'])) {
-                    $suspensionServed = $record['suspensionServed'];
-                } elseif (is_string($record['suspensionServed'])) {
-                    $suspensionServed = in_array(strtolower($record['suspensionServed']), ['true', '1', 'yes', 'on']);
-                } else {
-                    $suspensionServed = (bool)$record['suspensionServed'];
-                }
-            }
-            
-            // Ensure we never pass empty string for boolean - PostgreSQL strict requirement
-            $suspensionServed = (bool)$suspensionServed;
-            
-            // Only set served date if suspension is actually served
-            if ($suspensionServed && isset($record['suspensionServedDate']) && !empty($record['suspensionServedDate'])) {
-                $suspensionServedDate = $record['suspensionServedDate'];
-            }
-            
-            // Optimized execution with explicit boolean handling for PostgreSQL
-            $stmt->bindValue(1, $memberId, PDO::PARAM_STR);
-            $stmt->bindValue(2, $record['cardType'], PDO::PARAM_STR);
-            $stmt->bindValue(3, $record['reason'] ?? null, PDO::PARAM_STR);
-            $stmt->bindValue(4, $record['notes'] ?? null, PDO::PARAM_STR);
-            $stmt->bindValue(5, $record['incidentDate'] ?? null, PDO::PARAM_STR);
-            $stmt->bindValue(6, $record['suspensionMatches'] ?? null, PDO::PARAM_INT);
-            $stmt->bindValue(7, $suspensionServed, PDO::PARAM_BOOL);
-            $stmt->bindValue(8, $suspensionServedDate, PDO::PARAM_STR);
-            
-            $stmt->execute();
+            $stmt->execute([
+                $memberId,
+                $record['cardType'],
+                $record['reason'] ?? null,
+                $record['notes'] ?? null,
+                $record['incidentDate'] ?? null,
+                $record['suspensionMatches'] ?? null,
+                $suspensionServed,
+                $suspensionServedDate
+            ]);
         }
         
         $db->commit();
@@ -1279,7 +1212,8 @@ function saveDisciplinaryRecords($db) {
         
     } catch (Exception $e) {
         $db->rollBack();
-        throw $e;
+        http_response_code(500);
+        echo json_encode(['error' => 'Failed to save records: ' . $e->getMessage()]);
     }
 }
 

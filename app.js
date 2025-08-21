@@ -1,10 +1,10 @@
 /**
- * CheckIn App v2.16.10 - JavaScript Frontend
+ * CheckIn App v2.16.11 - JavaScript Frontend
  * Works with PHP/SQLite backend
  */
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '2.16.10';
+const APP_VERSION = '2.16.11';
 
 class CheckInApp {
     constructor() {
@@ -1264,16 +1264,27 @@ class CheckInApp {
         console.log('Disciplinary records to save:', disciplinaryRecords);
         
         try {
-            // Save member info only if photo wasn't uploaded (if photo was uploaded, database was already updated)
-            if (!photoFile) {
-                console.log('saveDetailedMember: No photo uploaded, calling saveTeams() for basic member info');
+            // Check if basic member info actually changed
+            const originalName = this.currentEditingMember?.name;
+            const originalJerseyNumber = this.currentEditingMember?.jerseyNumber;
+            const originalGender = this.currentEditingMember?.gender;
+            
+            const basicInfoChanged = !photoFile && ( // Only check if no photo was uploaded
+                originalName !== name ||
+                (originalJerseyNumber || null) !== (jerseyNumber ? parseInt(jerseyNumber) : null) ||
+                (originalGender || null) !== (gender || null)
+            );
+            
+            // Only save teams if basic member info actually changed AND no photo was uploaded
+            if (basicInfoChanged) {
+                console.log('💾 saveDetailedMember: Basic member info changed, calling saveTeams()');
                 await this.saveTeams();
             } else {
-                console.log('✅ saveDetailedMember: Photo uploaded, skipping saveTeams() - uploadPhoto already updated database');
+                console.log('✅ saveDetailedMember: No basic info changes or photo uploaded, skipping expensive saveTeams() call');
             }
-            // If photo was uploaded, the uploadPhoto() function already updated the database
             
-            // Save disciplinary records
+            // Save disciplinary records (this should be fast)
+            console.log('💾 Saving disciplinary records...');
             const disciplinaryResponse = await fetch('/api/disciplinary-records', {
                 method: 'POST',
                 headers: {
@@ -1292,7 +1303,7 @@ class CheckInApp {
             }
             
             const disciplinaryResult = await disciplinaryResponse.json();
-            console.log('Disciplinary records saved successfully:', disciplinaryResult);
+            console.log('✅ Disciplinary records saved successfully:', disciplinaryResult);
             
             this.renderTeams();
             this.closeModal();
