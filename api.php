@@ -5,7 +5,7 @@
  */
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '2.16.11';
+const APP_VERSION = '2.16.12';
 
 // Default photos - fallback to API serving for SVG compatibility
 function getDefaultPhoto($gender) {
@@ -1177,11 +1177,10 @@ function saveDisciplinaryRecords($db) {
         return;
     }
     
-    $db->beginTransaction();
-    
     try {
+        $db->beginTransaction();
+        
         // Simple approach: Always replace all records for this member
-        // This is faster and simpler than complex add/edit detection
         $db->prepare('DELETE FROM player_disciplinary_records WHERE member_id = ?')->execute([$memberId]);
         
         // Insert new records
@@ -1191,29 +1190,45 @@ function saveDisciplinaryRecords($db) {
         ');
         
         foreach ($input['records'] as $record) {
-            // Simplified boolean handling
-            $suspensionServed = isset($record['suspensionServed']) && $record['suspensionServed'];
+            // Enhanced boolean handling for PostgreSQL compatibility
+            $suspensionServed = false;
+            if (isset($record['suspensionServed'])) {
+                if (is_bool($record['suspensionServed'])) {
+                    $suspensionServed = $record['suspensionServed'];
+                } elseif (is_string($record['suspensionServed'])) {
+                    $suspensionServed = in_array(strtolower($record['suspensionServed']), ['true', '1', 'yes']);
+                } else {
+                    $suspensionServed = (bool)$record['suspensionServed'];
+                }
+            }
+            
             $suspensionServedDate = ($suspensionServed && !empty($record['suspensionServedDate'])) ? $record['suspensionServedDate'] : null;
+            
+            // Convert suspension matches to integer or null
+            $suspensionMatches = null;
+            if (isset($record['suspensionMatches']) && $record['suspensionMatches'] !== '' && $record['suspensionMatches'] !== null) {
+                $suspensionMatches = (int)$record['suspensionMatches'];
+            }
             
             $stmt->execute([
                 $memberId,
-                $record['cardType'],
+                $record['cardType'] ?? '',
                 $record['reason'] ?? null,
                 $record['notes'] ?? null,
                 $record['incidentDate'] ?? null,
-                $record['suspensionMatches'] ?? null,
-                $suspensionServed,
+                $suspensionMatches,
+                $suspensionServed ? 1 : 0, // Explicit 1/0 for PostgreSQL
                 $suspensionServedDate
             ]);
         }
         
         $db->commit();
-        echo json_encode(['success' => true]);
+        echo json_encode(['success' => true, 'saved_records' => count($input['records'])]);
         
     } catch (Exception $e) {
         $db->rollBack();
         http_response_code(500);
-        echo json_encode(['error' => 'Failed to save records: ' . $e->getMessage()]);
+        echo json_encode(['error' => 'Database error: ' . $e->getMessage(), 'trace' => $e->getTraceAsString()]);
     }
 }
 

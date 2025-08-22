@@ -1,10 +1,10 @@
 /**
- * CheckIn App v2.16.11 - JavaScript Frontend
+ * CheckIn App v2.16.12 - JavaScript Frontend
  * Works with PHP/SQLite backend
  */
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '2.16.11';
+const APP_VERSION = '2.16.12';
 
 class CheckInApp {
     constructor() {
@@ -1298,8 +1298,14 @@ class CheckInApp {
             
             if (!disciplinaryResponse.ok) {
                 const errorText = await disciplinaryResponse.text();
-                console.error('Failed to save disciplinary records:', errorText);
-                throw new Error(`Disciplinary records save failed: ${disciplinaryResponse.status}`);
+                console.error('Failed to save disciplinary records:', disciplinaryResponse.status, errorText);
+                
+                try {
+                    const errorJson = JSON.parse(errorText);
+                    throw new Error(`Disciplinary records save failed: ${errorJson.error || 'Unknown error'}`);
+                } catch {
+                    throw new Error(`Disciplinary records save failed: HTTP ${disciplinaryResponse.status} - ${errorText}`);
+                }
             }
             
             const disciplinaryResult = await disciplinaryResponse.json();
