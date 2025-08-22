@@ -1,10 +1,10 @@
 /**
- * CheckIn App v2.16.21 - JavaScript Frontend
+ * CheckIn App v2.16.22 - JavaScript Frontend
  * Works with PHP/SQLite backend
  */
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '2.16.21';
+const APP_VERSION = '2.16.22';
 
 class CheckInApp {
     constructor() {
@@ -35,7 +35,7 @@ class CheckInApp {
     // API Methods
     async loadTeams() {
         try {
-            const response = await fetch('/api/teams');
+            const response = await fetch(`/api/teams?_t=${Date.now()}`);
             if (response.ok) {
                 this.teams = await response.json();
             } else {
@@ -54,7 +54,7 @@ class CheckInApp {
         console.trace('saveTeams call stack:');
         
         try {
-            const response = await fetch('/api/teams', {
+            const response = await fetch(`/api/teams?_t=${Date.now()}`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -80,7 +80,7 @@ class CheckInApp {
     
     async loadEvents() {
         try {
-            const response = await fetch('/api/events');
+            const response = await fetch(`/api/events?_t=${Date.now()}`);
             if (response.ok) {
                 this.events = await response.json();
             } else {
@@ -95,7 +95,7 @@ class CheckInApp {
     
     async saveEvents() {
         try {
-            const response = await fetch('/api/events', {
+            const response = await fetch(`/api/events?_t=${Date.now()}`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -438,7 +438,7 @@ class CheckInApp {
                                                         ${member.jerseyNumber ? `#${member.jerseyNumber}` : ''}
                                                         ${member.gender ? ` • ${member.gender}` : ''}
                                                         ${currentCardsText}
-                                                        <span class="lifetime-cards" id="lifetime-cards-${member.id}"> • Loading...</span>
+                                                        <span class="lifetime-cards" id="lifetime-cards-${member.id}"> • Loading disciplinary records...</span>
                                                     </div>
                                                 </div>
                                             </div>
@@ -2621,7 +2621,7 @@ Please check the browser console (F12) for more details.`);
                                                 ${member.jerseyNumber ? `#${member.jerseyNumber}` : ''}
                                                 ${member.gender ? ` • ${member.gender}` : ''}
                                                 ${cardsDisplay.length > 0 ? ` • ${cardsDisplay.join(' | ')}` : ''}
-                                                <span class="lifetime-cards" id="match-lifetime-cards-${member.id}"> • Loading...</span>
+                                                <span class="lifetime-cards" id="match-lifetime-cards-${member.id}"> • Loading disciplinary records...</span>
                                             </div>
                                         </div>
                                     </div>
@@ -2679,7 +2679,7 @@ Please check the browser console (F12) for more details.`);
                                                 ${member.jerseyNumber ? `#${member.jerseyNumber}` : ''}
                                                 ${member.gender ? ` • ${member.gender}` : ''}
                                                 ${cardsDisplay.length > 0 ? ` • ${cardsDisplay.join(' | ')}` : ''}
-                                                <span class="lifetime-cards" id="match-lifetime-cards-away-${member.id}"> • Loading...</span>
+                                                <span class="lifetime-cards" id="match-lifetime-cards-away-${member.id}"> • Loading disciplinary records...</span>
                                             </div>
                                         </div>
                                     </div>

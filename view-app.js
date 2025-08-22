@@ -1,10 +1,10 @@
 /**
- * CheckIn App v2.16.21 - View Only Mode
+ * CheckIn App v2.16.22 - View Only Mode
  * Read-only version for public viewing
  */
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '2.16.21';
+const APP_VERSION = '2.16.22';
 
 class CheckInViewApp {
     constructor() {
@@ -84,7 +84,7 @@ class CheckInViewApp {
     // API Methods (read-only)
     async loadTeams() {
         try {
-            const response = await fetch('/api/teams');
+            const response = await fetch(`/api/teams?_t=${Date.now()}`);
             if (response.ok) {
                 this.teams = await response.json();
             } else {
@@ -99,7 +99,7 @@ class CheckInViewApp {
     
     async loadEvents() {
         try {
-            const response = await fetch('/api/events');
+            const response = await fetch(`/api/events?_t=${Date.now()}`);
             if (response.ok) {
                 this.events = await response.json();
             } else {
@@ -163,7 +163,7 @@ class CheckInViewApp {
     // Save Teams (for jersey number and photo updates)
     async saveTeams() {
         try {
-            const response = await fetch('/api/teams', {
+            const response = await fetch(`/api/teams?_t=${Date.now()}`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -579,7 +579,7 @@ class CheckInViewApp {
                                                         ${member.jerseyNumber ? `#${member.jerseyNumber}` : ''}
                                                         ${member.gender ? ` • ${member.gender}` : ''}
                                                         ${currentCardsText}
-                                                        <span class="lifetime-cards" id="lifetime-cards-${member.id}"> • Loading...</span>
+                                                        <span class="lifetime-cards" id="lifetime-cards-${member.id}"> • Loading disciplinary records...</span>
                                                     </div>
                                                 </div>
                                             </div>
@@ -1032,7 +1032,7 @@ class CheckInViewApp {
                                                 ${member.jerseyNumber ? `#${member.jerseyNumber}` : ''}
                                                 ${member.gender ? ` • ${member.gender}` : ''}
                                                 ${cardsDisplay.length > 0 ? ` • ${cardsDisplay.join(' | ')}` : ''}
-                                                <span class="lifetime-cards" id="match-lifetime-cards-${member.id}"> • Loading...</span>
+                                                <span class="lifetime-cards" id="match-lifetime-cards-${member.id}"> • Loading disciplinary records...</span>
                                             </div>
                                         </div>
                                     </div>
@@ -1100,7 +1100,7 @@ class CheckInViewApp {
                                                 ${member.jerseyNumber ? `#${member.jerseyNumber}` : ''}
                                                 ${member.gender ? ` • ${member.gender}` : ''}
                                                 ${cardsDisplay.length > 0 ? ` • ${cardsDisplay.join(' | ')}` : ''}
-                                                <span class="lifetime-cards" id="match-lifetime-cards-away-${member.id}"> • Loading...</span>
+                                                <span class="lifetime-cards" id="match-lifetime-cards-away-${member.id}"> • Loading disciplinary records...</span>
                                             </div>
                                         </div>
                                     </div>
@@ -1503,7 +1503,7 @@ class CheckInViewApp {
     // Save Events (for attendance updates)
     async saveEvents() {
         try {
-            const response = await fetch('/api/events', {
+            const response = await fetch(`/api/events?_t=${Date.now()}`, {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
