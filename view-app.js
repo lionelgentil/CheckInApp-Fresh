@@ -4,7 +4,7 @@
  */
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '2.16.8';
+const APP_VERSION = '2.16.9';
 
 class CheckInViewApp {
     constructor() {
@@ -406,51 +406,50 @@ class CheckInViewApp {
         const container = document.getElementById('teams-container');
         const selectedTeamId = document.getElementById('team-selector')?.value;
         
-        // Get current filter state
-        const filterValue = document.getElementById('category-filter')?.value || 'all';
-        
-        // Filter and sort teams for the dropdown
+        // Get all teams and sort alphabetically
         let teamsToShow = this.teams.slice(); // Create a copy
-        
-        if (filterValue !== 'all') {
-            teamsToShow = teamsToShow.filter(team => team.category === filterValue);
-        }
-        
-        // Sort alphabetically
         teamsToShow.sort((a, b) => a.name.localeCompare(b.name));
         
         if (teamsToShow.length === 0) {
-            let emptyMessage = 'No teams yet';
-            let emptySubtext = 'No teams available';
-            
-            if (filterValue === 'Over 30') {
-                emptyMessage = 'No Over 30 teams yet';
-                emptySubtext = 'No Over 30 teams available';
-            } else if (filterValue === 'Over 40') {
-                emptyMessage = 'No Over 40 teams yet';
-                emptySubtext = 'No Over 40 teams available';
-            }
-            
             container.innerHTML = `
                 <div class="empty-state">
-                    <h3>${emptyMessage}</h3>
-                    <p>${emptySubtext}</p>
+                    <h3>No teams yet</h3>
+                    <p>No teams available</p>
                 </div>
             `;
             return;
         }
         
-        // Create team selector dropdown
+        // Create team selector dropdown with categories
         let selectorHtml = `
             <div class="team-selector-container">
                 <label class="form-label">Select a team to view roster:</label>
                 <select id="team-selector" class="form-select" onchange="app.renderTeams()">
                     <option value="">Choose a team...</option>
-                    ${teamsToShow.map(team => `
-                        <option value="${team.id}" ${selectedTeamId === team.id ? 'selected' : ''}>
-                            ${team.name} ${team.category ? `(${team.category})` : ''} - ${team.members.length} players
-                        </option>
-                    `).join('')}
+                    ${(() => {
+                        const over30Teams = teamsToShow.filter(team => team.category === 'Over 30');
+                        const over40Teams = teamsToShow.filter(team => team.category === 'Over 40');
+                        
+                        let optionsHtml = '';
+                        
+                        if (over30Teams.length > 0) {
+                            optionsHtml += '<optgroup label="Over 30 Teams">';
+                            over30Teams.forEach(team => {
+                                optionsHtml += `<option value="${team.id}" ${selectedTeamId === team.id ? 'selected' : ''}>${team.name} - ${team.members.length} players</option>`;
+                            });
+                            optionsHtml += '</optgroup>';
+                        }
+                        
+                        if (over40Teams.length > 0) {
+                            optionsHtml += '<optgroup label="Over 40 Teams">';
+                            over40Teams.forEach(team => {
+                                optionsHtml += `<option value="${team.id}" ${selectedTeamId === team.id ? 'selected' : ''}>${team.name} - ${team.members.length} players</option>`;
+                            });
+                            optionsHtml += '</optgroup>';
+                        }
+                        
+                        return optionsHtml;
+                    })()}
                 </select>
             </div>
         `;
@@ -501,6 +500,27 @@ class CheckInViewApp {
                                                 <div class="member-meta">
                                                     ${member.jerseyNumber ? `#${member.jerseyNumber}` : ''}
                                                     ${member.gender ? ` • ${member.gender}` : ''}
+                                                    ${(() => {
+                                                        // Count all cards for this member across all matches
+                                                        let totalYellowCards = 0;
+                                                        let totalRedCards = 0;
+                                                        
+                                                        this.events.forEach(event => {
+                                                            event.matches.forEach(match => {
+                                                                if (match.cards) {
+                                                                    const memberCards = match.cards.filter(card => card.memberId === member.id);
+                                                                    totalYellowCards += memberCards.filter(card => card.cardType === 'yellow').length;
+                                                                    totalRedCards += memberCards.filter(card => card.cardType === 'red').length;
+                                                                }
+                                                            });
+                                                        });
+                                                        
+                                                        const cardsDisplay = [];
+                                                        if (totalYellowCards > 0) cardsDisplay.push(`🟨${totalYellowCards}`);
+                                                        if (totalRedCards > 0) cardsDisplay.push(`🟥${totalRedCards}`);
+                                                        
+                                                        return cardsDisplay.length > 0 ? ` • ${cardsDisplay.join(' ')}` : '';
+                                                    })()}
                                                 </div>
                                             </div>
                                         </div>
@@ -1226,7 +1246,9 @@ class CheckInViewApp {
                 }
             }
             
-            alert(`Failed to update attendance: ${error.message}\\n\\nChanges have been reverted.`);
+            alert(`Failed to update attendance: ${error.message}\
+\
+Changes have been reverted.`);
         }
     }
     
