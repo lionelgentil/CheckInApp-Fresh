@@ -1,10 +1,10 @@
 /**
- * CheckIn App v2.16.6 - View Only Mode
+ * CheckIn App v2.16.14 - View Only Mode
  * Read-only version for public viewing
  */
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '2.16.13';
+const APP_VERSION = '2.16.14';
 
 class CheckInViewApp {
     constructor() {
@@ -553,8 +553,77 @@ class CheckInViewApp {
         }
     }
     
-    // Load lifetime disciplinary cards for team members
+    // Load lifetime disciplinary cards for team members (optimized - single API call)
     async loadLifetimeCardsForTeam(team) {
+        if (!team.members || team.members.length === 0) return;
+        
+        try {
+            // Prepare all member IDs for batch request
+            const memberIds = team.members.map(member => member.id);
+            const memberIdsParam = memberIds.join(',');
+            
+            console.log(`🚀 Fetching lifetime cards for ${team.members.length} players in one request`);
+            
+            const response = await fetch(`/api/disciplinary-records?member_ids=${memberIdsParam}`);
+            if (response.ok) {
+                const allRecords = await response.json();
+                
+                console.log(`✅ Received ${allRecords.length} disciplinary records for team ${team.name}`);
+                
+                // Group records by member ID for efficient lookup
+                const recordsByMember = {};
+                allRecords.forEach(record => {
+                    if (!recordsByMember[record.memberId]) {
+                        recordsByMember[record.memberId] = [];
+                    }
+                    recordsByMember[record.memberId].push(record);
+                });
+                
+                // Update DOM for each member
+                team.members.forEach(member => {
+                    const memberRecords = recordsByMember[member.id] || [];
+                    
+                    // Count lifetime cards
+                    let lifetimeYellow = 0;
+                    let lifetimeRed = 0;
+                    
+                    memberRecords.forEach(record => {
+                        if (record.cardType === 'yellow') lifetimeYellow++;
+                        else if (record.cardType === 'red') lifetimeRed++;
+                    });
+                    
+                    // Update the DOM element for this member
+                    const lifetimeElement = document.getElementById(`lifetime-cards-${member.id}`);
+                    if (lifetimeElement) {
+                        if (lifetimeYellow > 0 || lifetimeRed > 0) {
+                            const lifetimeDisplay = [];
+                            if (lifetimeYellow > 0) lifetimeDisplay.push(`🟨${lifetimeYellow}`);
+                            if (lifetimeRed > 0) lifetimeDisplay.push(`🟥${lifetimeRed}`);
+                            lifetimeElement.textContent = ` • ${lifetimeDisplay.join(' ')} (lifetime)`;
+                        } else {
+                            lifetimeElement.textContent = '';
+                        }
+                    }
+                });
+                
+            } else {
+                console.warn(`❌ API failed with status ${response.status}. Falling back to individual requests.`);
+                
+                // **Fallback Strategy**: If batch API fails, fall back to individual requests
+                console.log('🔄 Fallback: Using individual API calls per player');
+                await this.loadLifetimeCardsForTeamFallback(team);
+            }
+        } catch (error) {
+            console.error('❌ Batch API request failed:', error);
+            
+            // **Fallback Strategy**: If batch request fails, use individual requests
+            console.log('🔄 Fallback: Using individual API calls per player');
+            await this.loadLifetimeCardsForTeamFallback(team);
+        }
+    }
+    
+    // Fallback method using individual API calls (original approach)
+    async loadLifetimeCardsForTeamFallback(team) {
         for (const member of team.members) {
             try {
                 const response = await fetch(`/api/disciplinary-records?member_id=${member.id}`);
@@ -1000,10 +1069,81 @@ class CheckInViewApp {
         this.loadLifetimeCardsForMatch(homeTeam, awayTeam);
     }
     
-    // Load lifetime disciplinary cards for match check-in
+    // Load lifetime disciplinary cards for match check-in (optimized - single API call)
     async loadLifetimeCardsForMatch(homeTeam, awayTeam) {
         const allPlayers = [...homeTeam.members, ...awayTeam.members];
         
+        if (allPlayers.length === 0) return;
+        
+        try {
+            // Prepare all member IDs for batch request
+            const memberIds = allPlayers.map(member => member.id);
+            const memberIdsParam = memberIds.join(',');
+            
+            console.log(`🚀 Fetching lifetime cards for ${allPlayers.length} players in match in one request`);
+            
+            const response = await fetch(`/api/disciplinary-records?member_ids=${memberIdsParam}`);
+            if (response.ok) {
+                const allRecords = await response.json();
+                
+                console.log(`✅ Received ${allRecords.length} disciplinary records for match players`);
+                
+                // Group records by member ID for efficient lookup
+                const recordsByMember = {};
+                allRecords.forEach(record => {
+                    if (!recordsByMember[record.memberId]) {
+                        recordsByMember[record.memberId] = [];
+                    }
+                    recordsByMember[record.memberId].push(record);
+                });
+                
+                // Update DOM for each member
+                allPlayers.forEach(member => {
+                    const memberRecords = recordsByMember[member.id] || [];
+                    
+                    // Count lifetime cards
+                    let lifetimeYellow = 0;
+                    let lifetimeRed = 0;
+                    
+                    memberRecords.forEach(record => {
+                        if (record.cardType === 'yellow') lifetimeYellow++;
+                        else if (record.cardType === 'red') lifetimeRed++;
+                    });
+                    
+                    // Update both possible DOM elements for this member (home and away)
+                    const homeElement = document.getElementById(`match-lifetime-cards-${member.id}`);
+                    const awayElement = document.getElementById(`match-lifetime-cards-away-${member.id}`);
+                    
+                    let lifetimeText = '';
+                    if (lifetimeYellow > 0 || lifetimeRed > 0) {
+                        const lifetimeDisplay = [];
+                        if (lifetimeYellow > 0) lifetimeDisplay.push(`🟨${lifetimeYellow}`);
+                        if (lifetimeRed > 0) lifetimeDisplay.push(`🟥${lifetimeRed}`);
+                        lifetimeText = ` | ${lifetimeDisplay.join(' ')} (lifetime)`;
+                    }
+                    
+                    if (homeElement) homeElement.textContent = lifetimeText;
+                    if (awayElement) awayElement.textContent = lifetimeText;
+                });
+                
+            } else {
+                console.warn(`❌ Batch API failed with status ${response.status}. Falling back to individual requests.`);
+                
+                // **Fallback Strategy**: If batch API fails, fall back to individual requests
+                console.log('🔄 Fallback: Using individual API calls per player');
+                await this.loadLifetimeCardsForMatchFallback(allPlayers);
+            }
+        } catch (error) {
+            console.error('❌ Batch API request failed:', error);
+            
+            // **Fallback Strategy**: If batch request fails, use individual requests
+            console.log('🔄 Fallback: Using individual API calls per player');
+            await this.loadLifetimeCardsForMatchFallback(allPlayers);
+        }
+    }
+    
+    // Fallback method for match check-in using individual API calls (original approach)
+    async loadLifetimeCardsForMatchFallback(allPlayers) {
         for (const member of allPlayers) {
             try {
                 const response = await fetch(`/api/disciplinary-records?member_id=${member.id}`);
