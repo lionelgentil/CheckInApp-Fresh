@@ -1,10 +1,10 @@
 /**
- * CheckIn App v2.16.15 - View Only Mode
+ * CheckIn App v2.16.21 - View Only Mode
  * Read-only version for public viewing
  */
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '2.16.15';
+const APP_VERSION = '2.16.21';
 
 class CheckInViewApp {
     constructor() {
@@ -26,6 +26,59 @@ class CheckInViewApp {
         
         // Ensure Events section is shown by default
         this.showSection('events');
+    }
+    
+    // Season Management
+    getCurrentSeason() {
+        const now = new Date();
+        const year = now.getFullYear();
+        const month = now.getMonth() + 1; // JavaScript months are 0-indexed
+        const day = now.getDate();
+        
+        // Spring season: Feb 15th to June 30th
+        if ((month === 2 && day >= 15) || (month >= 3 && month <= 6)) {
+            return {
+                type: 'Spring',
+                year: year,
+                startDate: new Date(year, 1, 15), // Feb 15
+                endDate: new Date(year, 5, 30)    // June 30
+            };
+        }
+        // Fall season: Aug 1st to Dec 31st
+        else if (month >= 8 && month <= 12) {
+            return {
+                type: 'Fall',
+                year: year,
+                startDate: new Date(year, 7, 1),  // Aug 1
+                endDate: new Date(year, 11, 31)  // Dec 31
+            };
+        }
+        // Between seasons - determine which season we're closer to
+        else {
+            if (month === 1 || (month === 2 && day < 15)) {
+                // January or early February - closer to upcoming Spring season
+                return {
+                    type: 'Spring',
+                    year: year,
+                    startDate: new Date(year, 1, 15), // Feb 15
+                    endDate: new Date(year, 5, 30)    // June 30
+                };
+            } else {
+                // July - closer to upcoming Fall season
+                return {
+                    type: 'Fall',
+                    year: year,
+                    startDate: new Date(year, 7, 1),  // Aug 1
+                    endDate: new Date(year, 11, 31)  // Dec 31
+                };
+            }
+        }
+    }
+    
+    isCurrentSeasonEvent(eventDate) {
+        const currentSeason = this.getCurrentSeason();
+        const event = new Date(eventDate);
+        return event >= currentSeason.startDate && event <= currentSeason.endDate;
     }
     
     // API Methods (read-only)
@@ -489,26 +542,29 @@ class CheckInViewApp {
                             ` : ''}
                             <div class="members-list-full">
                                 ${selectedTeam.members.map(member => {
-                                    // Count current season cards for this member across all matches
-                                    let currentYellowCards = 0;
-                                    let currentRedCards = 0;
+                                    // Count current season cards for this member across current season matches only
+                                    let currentSeasonYellowCards = 0;
+                                    let currentSeasonRedCards = 0;
                                     
                                     this.events.forEach(event => {
-                                        event.matches.forEach(match => {
-                                            if (match.cards) {
-                                                const memberCards = match.cards.filter(card => card.memberId === member.id);
-                                                currentYellowCards += memberCards.filter(card => card.cardType === 'yellow').length;
-                                                currentRedCards += memberCards.filter(card => card.cardType === 'red').length;
-                                            }
-                                        });
+                                        // Only count cards from current season events
+                                        if (this.isCurrentSeasonEvent(event.date)) {
+                                            event.matches.forEach(match => {
+                                                if (match.cards) {
+                                                    const memberCards = match.cards.filter(card => card.memberId === member.id);
+                                                    currentSeasonYellowCards += memberCards.filter(card => card.cardType === 'yellow').length;
+                                                    currentSeasonRedCards += memberCards.filter(card => card.cardType === 'red').length;
+                                                }
+                                            });
+                                        }
                                     });
                                     
                                     // Note: Lifetime cards will be fetched asynchronously and updated via DOM manipulation
                                     // This is a placeholder that will be updated once the disciplinary records are loaded
                                     const currentCardsDisplay = [];
-                                    if (currentYellowCards > 0) currentCardsDisplay.push(`🟨${currentYellowCards}`);
-                                    if (currentRedCards > 0) currentCardsDisplay.push(`🟥${currentRedCards}`);
-                                    const currentCardsText = currentCardsDisplay.length > 0 ? ` • ${currentCardsDisplay.join(' ')} (season)` : '';
+                                    if (currentSeasonYellowCards > 0) currentCardsDisplay.push(`🟨${currentSeasonYellowCards}`);
+                                    if (currentSeasonRedCards > 0) currentCardsDisplay.push(`🟥${currentSeasonRedCards}`);
+                                    const currentCardsText = currentCardsDisplay.length > 0 ? ` • ${currentCardsDisplay.join(' ')} (current season)` : '';
                                     
                                     return `
                                         <div class="member-item">
@@ -936,17 +992,20 @@ class CheckInViewApp {
                             const matchYellowCards = memberCards.filter(card => card.cardType === 'yellow').length;
                             const matchRedCards = memberCards.filter(card => card.cardType === 'red').length;
                             
-                            // Get current season card counts
+                            // Get current season card counts (only from current season events)
                             let seasonYellowCards = 0;
                             let seasonRedCards = 0;
                             this.events.forEach(event => {
-                                event.matches.forEach(m => {
-                                    if (m.cards) {
-                                        const cards = m.cards.filter(card => card.memberId === member.id);
-                                        seasonYellowCards += cards.filter(card => card.cardType === 'yellow').length;
-                                        seasonRedCards += cards.filter(card => card.cardType === 'red').length;
-                                    }
-                                });
+                                // Only count cards from current season events
+                                if (this.isCurrentSeasonEvent(event.date)) {
+                                    event.matches.forEach(m => {
+                                        if (m.cards) {
+                                            const cards = m.cards.filter(card => card.memberId === member.id);
+                                            seasonYellowCards += cards.filter(card => card.cardType === 'yellow').length;
+                                            seasonRedCards += cards.filter(card => card.cardType === 'red').length;
+                                        }
+                                    });
+                                }
                             });
                             
                             const cardsDisplay = [];
@@ -960,7 +1019,7 @@ class CheckInViewApp {
                                 const seasonCards = [];
                                 if (seasonYellowCards > 0) seasonCards.push(`🟨${seasonYellowCards}`);
                                 if (seasonRedCards > 0) seasonCards.push(`🟥${seasonRedCards}`);
-                                cardsDisplay.push(`${seasonCards.join(' ')} (season)`);
+                                cardsDisplay.push(`${seasonCards.join(' ')} (current season)`);
                             }
                             
                             return `
@@ -1001,17 +1060,20 @@ class CheckInViewApp {
                             const matchYellowCards = memberCards.filter(card => card.cardType === 'yellow').length;
                             const matchRedCards = memberCards.filter(card => card.cardType === 'red').length;
                             
-                            // Get current season card counts
+                            // Get current season card counts (only from current season events)
                             let seasonYellowCards = 0;
                             let seasonRedCards = 0;
                             this.events.forEach(event => {
-                                event.matches.forEach(m => {
-                                    if (m.cards) {
-                                        const cards = m.cards.filter(card => card.memberId === member.id);
-                                        seasonYellowCards += cards.filter(card => card.cardType === 'yellow').length;
-                                        seasonRedCards += cards.filter(card => card.cardType === 'red').length;
-                                    }
-                                });
+                                // Only count cards from current season events
+                                if (this.isCurrentSeasonEvent(event.date)) {
+                                    event.matches.forEach(m => {
+                                        if (m.cards) {
+                                            const cards = m.cards.filter(card => card.memberId === member.id);
+                                            seasonYellowCards += cards.filter(card => card.cardType === 'yellow').length;
+                                            seasonRedCards += cards.filter(card => card.cardType === 'red').length;
+                                        }
+                                    });
+                                }
                             });
                             
                             const cardsDisplay = [];
@@ -1025,7 +1087,7 @@ class CheckInViewApp {
                                 const seasonCards = [];
                                 if (seasonYellowCards > 0) seasonCards.push(`🟨${seasonYellowCards}`);
                                 if (seasonRedCards > 0) seasonCards.push(`🟥${seasonRedCards}`);
-                                cardsDisplay.push(`${seasonCards.join(' ')} (season)`);
+                                cardsDisplay.push(`${seasonCards.join(' ')} (current season)`);
                             }
                             
                             return `
