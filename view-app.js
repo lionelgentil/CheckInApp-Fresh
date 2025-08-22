@@ -4,7 +4,7 @@
  */
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '2.16.12';
+const APP_VERSION = '2.16.13';
 
 class CheckInViewApp {
     constructor() {
@@ -313,7 +313,7 @@ class CheckInViewApp {
     renderCardItem(card) {
         const cardIcon = card.cardType === 'yellow' ? '🟨' : '🟥';
         const cardColor = card.cardType === 'yellow' ? '#ffc107' : '#dc3545';
-        const typeIcon = card.type === 'match' ? '🏟️' : '📚';
+        const typeIcon = card.type === 'match' ? '🏟️' : '📜';
         const typeLabel = card.type === 'match' ? 'Match' : 'Prior';
         
         return `
@@ -381,7 +381,7 @@ class CheckInViewApp {
                 ${totalCards > 0 ? `
                     <div style="margin-bottom: 10px; font-size: 0.85em; color: #666;">
                         <span style="margin-right: 15px;">🏟️ ${matchCardCount} current season card${matchCardCount !== 1 ? 's' : ''}</span>
-                        <span>📚 ${priorCardCount} lifetime card${priorCardCount !== 1 ? 's' : ''}</span>
+                        <span>📜 ${priorCardCount} lifetime card${priorCardCount !== 1 ? 's' : ''}</span>
                     </div>
                     <div style="max-height: 250px; overflow-y: auto; border: 1px solid #e9ecef; border-radius: 8px;">
                         ${cardItemsHtml}

@@ -4,7 +4,7 @@
  */
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '2.16.17';
+const APP_VERSION = '2.16.18';
 
 class CheckInApp {
     constructor() {
@@ -1582,7 +1582,7 @@ Please check the browser console (F12) for more details.`);
     renderCardItem(card) {
         const cardIcon = card.cardType === 'yellow' ? '🟨' : '🟥';
         const cardColor = card.cardType === 'yellow' ? '#ffc107' : '#dc3545';
-        const typeIcon = card.type === 'match' ? '🏟️' : '📚';
+        const typeIcon = card.type === 'match' ? '🏟️' : '📜';
         const typeLabel = card.type === 'match' ? 'Match' : 'Prior';
         
         return `
@@ -1650,7 +1650,7 @@ Please check the browser console (F12) for more details.`);
                 ${totalCards > 0 ? `
                     <div style="margin-bottom: 10px; font-size: 0.85em; color: #666;">
                         <span style="margin-right: 15px;">🏟️ ${matchCardCount} current season card${matchCardCount !== 1 ? 's' : ''}</span>
-                        <span>📚 ${priorCardCount} lifetime card${priorCardCount !== 1 ? 's' : ''}</span>
+                        <span>📜 ${priorCardCount} lifetime card${priorCardCount !== 1 ? 's' : ''}</span>
                     </div>
                     <div style="max-height: 250px; overflow-y: auto; border: 1px solid #e9ecef; border-radius: 8px;">
                         ${cardItemsHtml}
