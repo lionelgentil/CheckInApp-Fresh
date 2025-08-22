@@ -597,8 +597,8 @@
         }
         
         .member-photo-small {
-            width: 35px;
-            height: 35px;
+            width: 60px;
+            height: 60px;
             border-radius: 50%;
             object-fit: cover;
             background: #e9ecef;
@@ -628,6 +628,27 @@
         .checkbox-area {
             flex-shrink: 0;
             margin-left: 15px;
+        }
+        
+        .team-selector-container {
+            margin-bottom: 30px;
+        }
+        
+        .selected-team-container {
+            margin-top: 20px;
+        }
+        
+        .team-card-full {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 20px;
+            border-left: 5px solid #2196F3;
+        }
+        
+        .members-list-full {
+            margin-top: 15px;
+            /* No max-height or overflow to show full roster */
+            padding-right: 5px;
         }
         
         .attendance-checkbox {
@@ -992,7 +1013,7 @@
                 </div>
             </div>
             
-            <div id="teams-container" class="teams-grid">
+            <div id="teams-container">
                 <div class="loading">Loading teams...</div>
             </div>
         </div>
@@ -1032,7 +1053,7 @@
     
     <div class="version-footer">v<span id="footer-version"></span></div>
     
-    <script src="app.js?v=2.16.12"></script>
+    <script src="app.js?v=2.16.13"></script>
     <script>
         // Set version numbers from JavaScript constant
         document.getElementById('app-version').textContent = APP_VERSION;

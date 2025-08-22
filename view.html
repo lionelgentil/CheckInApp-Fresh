@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CheckIn App v2.9.6 - View Only</title>
+    <title>CheckIn App v2.16.7 - View Only</title>
     <meta name="theme-color" content="#2196F3">
     <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/x-icon" href="favicon.ico">
@@ -520,8 +520,8 @@
         }
         
         .member-photo-small {
-            width: 35px;
-            height: 35px;
+            width: 60px;
+            height: 60px;
             border-radius: 50%;
             object-fit: cover;
             background: #e9ecef;
@@ -531,6 +531,27 @@
         .member-details-full {
             flex: 1;
             min-width: 0;
+        }
+        
+        .team-selector-container {
+            margin-bottom: 30px;
+        }
+        
+        .selected-team-container {
+            margin-top: 20px;
+        }
+        
+        .team-card-full {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 20px;
+            border-left: 5px solid #2196F3;
+        }
+        
+        .members-list-full {
+            margin-top: 15px;
+            /* No max-height or overflow to show full roster */
+            padding-right: 5px;
         }
         
         .member-name-full {
@@ -592,251 +613,11 @@
         }
         
         @media (max-width: 768px) {
-            body {
-                padding: 10px;
-                font-size: 16px;
-            }
-            
-            .app-header h1 {
-                font-size: 2em;
-            }
-            
-            .main-nav {
-                flex-direction: row;
-                justify-content: space-between;
-                gap: 5px;
-                margin-bottom: 20px;
-                flex-wrap: nowrap;
-            }
-            
-            .nav-btn {
-                flex: 1;
-                padding: 12px 8px;
-                font-size: 14px;
-                white-space: nowrap;
-                min-width: 0;
-            }
-            
-            .version-footer {
-                display: none;
-            }
-            
-            .content-section {
-                padding: 20px;
-                border-radius: 10px;
-            }
-            
-            .section-header {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 15px;
-            }
-            
-            .header-controls {
-                width: 100%;
-                justify-content: space-between;
-                gap: 15px;
-            }
-            
-            .teams-grid {
-                grid-template-columns: 1fr;
-                gap: 15px;
-            }
-            
-            .team-header {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 15px;
-            }
-            
-            .event-header {
-                flex-direction: column;
-                align-items: flex-start;
-                gap: 15px;
-            }
-            
-            .match-teams {
-                flex-direction: row;
-                justify-content: space-between;
-                align-items: flex-start;
-                gap: 8px;
-                margin-bottom: 8px;
-            }
-            
-            .team-info-match {
-                flex: 1;
-                align-items: flex-start;
-                text-align: left;
-            }
-            
-            .vs-text {
-                flex-shrink: 0;
-                padding: 0 8px;
-                align-self: center;
-            }
-            
-            .match-field,
-            .match-time,
-            .match-referee {
-                display: inline-block;
-                margin-right: 15px;
-                margin-bottom: 5px;
-            }
-            
-            .modal-content {
-                width: 95%;
-                max-width: none;
-                margin: 10px;
-                padding: 20px;
-                max-height: 90vh;
-            }
-            
-            .attendee-row {
-                padding: 15px 12px;
-            }
-            
-            .match-item {
-                padding: 10px;
-                margin-bottom: 8px;
-                border-radius: 6px;
-            }
-            
-            .match-teams {
-                margin-bottom: 8px;
-            }
-            
-            .team-name-match {
-                font-size: 14px;
-            }
-            
-            .team-category-small {
-                font-size: 0.7em;
-            }
-            
-            .attendance-count {
-                font-size: 0.65em;
-            }
-            
-            .match-field,
-            .match-time,
-            .match-referee {
-                font-size: 0.8em;
-                margin-bottom: 3px;
-                line-height: 1.2;
-            }
-            
-            .match-actions {
-                margin-top: 8px;
-                display: flex;
-                gap: 5px;
-            }
-            
-            .event-card {
-                padding: 15px;
-                margin-bottom: 12px;
-            }
-            
-            .event-header {
-                margin-bottom: 10px;
-            }
-            
-            .event-name {
-                font-size: 1.1em;
-            }
-            
-            .matches-container {
-                margin-top: 10px;
-            }
+        .member-photo-small {
+            width: 50px;
+            height: 50px;
         }
-        
-        .version-footer {
-            position: fixed;
-            bottom: 10px;
-            right: 10px;
-            background: rgba(255, 255, 255, 0.9);
-            padding: 5px 10px;
-            border-radius: 15px;
-            font-size: 0.8em;
-            color: #666;
-            box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
-            z-index: 1000;
-        }
-        
-        .disabled {
-            opacity: 0.5;
-            cursor: not-allowed;
-            pointer-events: none;
-        }
-        
-        .form-group {
-            margin-bottom: 20px;
-        }
-        
-        .form-label {
-            display: block;
-            margin-bottom: 8px;
-            font-weight: 600;
-            color: #333;
-        }
-        
-        .form-input {
-            width: 100%;
-            padding: 12px;
-            border: 2px solid #e9ecef;
-            border-radius: 8px;
-            font-size: 14px;
-            transition: border-color 0.3s ease;
-        }
-        
-        .form-input[type="color"] {
-            padding: 4px;
-            height: 45px;
-            cursor: pointer;
-        }
-        
-        .form-input:focus {
-            outline: none;
-            border-color: #2196F3;
-        }
-        
-        .form-select {
-            width: 100%;
-            padding: 12px;
-            border: 2px solid #e9ecef;
-            border-radius: 8px;
-            font-size: 14px;
-            background: white;
-        }
-        
-        .file-input {
-            margin-top: 8px;
-        }
-        
-        .file-input[accept*="image"] {
-            padding: 15px;
-            border: 2px dashed #e9ecef;
-            border-radius: 8px;
-            background: #f8f9fa;
-            cursor: pointer;
-            text-align: center;
-        }
-        
-        .file-input[accept*="image"]:hover {
-            border-color: #2196F3;
-            background: #f0f8ff;
-        }
-        
-        .preview-image {
-            max-width: 100px;
-            max-height: 100px;
-            border-radius: 8px;
-            margin-top: 10px;
-        }
-        
-        .member-actions {
-            display: flex;
-            gap: 5px;
-        }
+    }
     </style>
 </head>
 <body>
@@ -870,7 +651,7 @@
                 </div>
             </div>
             
-            <div id="teams-container" class="teams-grid">
+            <div id="teams-container">
                 <div class="loading">Loading teams...</div>
             </div>
         </div>
@@ -908,7 +689,7 @@
     
     <div class="version-footer">v<span id="footer-version"></span> - View Only</div>
     
-    <script src="view-app.js?v=2.16.6"></script>
+    <script src="view-app.js?v=2.16.7"></script>
     <script>
         // Set version numbers from JavaScript constant
         document.getElementById('app-version').textContent = APP_VERSION;

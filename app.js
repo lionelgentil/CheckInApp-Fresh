@@ -4,7 +4,7 @@
  */
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '2.16.12';
+const APP_VERSION = '2.16.13';
 
 class CheckInApp {
     constructor() {
@@ -259,11 +259,12 @@ class CheckInApp {
     
     renderTeams() {
         const container = document.getElementById('teams-container');
+        const selectedTeamId = document.getElementById('team-selector')?.value;
         
         // Get current filter state
         const filterValue = document.getElementById('category-filter')?.value || 'all';
         
-        // Filter and sort teams
+        // Filter and sort teams for the dropdown
         let teamsToShow = this.teams.slice(); // Create a copy
         
         if (filterValue !== 'all') {
@@ -294,68 +295,92 @@ class CheckInApp {
             return;
         }
         
-        container.innerHTML = teamsToShow.map(team => {
-            const captain = team.captainId ? team.members.find(m => m.id === team.captainId) : null;
-            
-            // Calculate roster statistics
-            const totalPlayers = team.members.length;
-            const maleCount = team.members.filter(m => m.gender === 'male').length;
-            const femaleCount = team.members.filter(m => m.gender === 'female').length;
-            const unknownCount = totalPlayers - maleCount - femaleCount;
-            
-            return `
-            <div class="team-card" style="border-left-color: ${team.colorData}">
-                <div class="team-header">
-                    <div>
-                        <div class="team-name">${team.name}</div>
-                        <div class="team-category">${team.category || ''}</div>
-                        ${captain ? `<div class="team-captain">👑 Captain: ${captain.name}</div>` : ''}
-                    </div>
-                    <div class="team-actions">
-                        <button class="btn btn-small" onclick="app.showAddMemberModal('${team.id}')" title="Add Member">+</button>
-                        ${team.members.length > 0 ? `<button class="btn btn-small btn-captain" onclick="app.showCaptainModal('${team.id}')" title="Set Captain">👑</button>` : ''}
-                        <button class="btn btn-small btn-secondary" onclick="app.editTeam('${team.id}')" title="Edit Team">✏️</button>
-                        <button class="btn btn-small btn-danger" onclick="app.deleteTeam('${team.id}')" title="Delete Team">🗑️</button>
-                    </div>
-                </div>
-                <div class="team-description">${team.description || ''}</div>
-                ${totalPlayers > 0 ? `
-                    <div class="roster-stats" style="margin: 12px 0; padding: 10px; background: #f8f9fa; border-radius: 6px; font-size: 0.9em; color: #666;">
-                        <strong>👥 ${totalPlayers} player${totalPlayers !== 1 ? 's' : ''}</strong>
-                        ${maleCount > 0 || femaleCount > 0 ? `
-                            • 👨 ${maleCount} male${maleCount !== 1 ? 's' : ''} 
-                            • 👩 ${femaleCount} female${femaleCount !== 1 ? 's' : ''}
-                            ${unknownCount > 0 ? `• ❓ ${unknownCount} unspecified` : ''}
-                        ` : ''}
-                    </div>
-                ` : ''}
-                <div class="members-list">
-                    ${team.members.map(member => `
-                        <div class="member-item">
-                            <div class="member-info">
-                                ${member.photo ? 
-                                    `<img src="${member.photo}" alt="${member.name}" class="member-photo">` :
-                                    `<div class="member-photo"></div>`
-                                }
-                                <div class="member-details">
-                                    <div class="member-name">${member.name}${member.id === team.captainId ? ' 👑' : ''}</div>
-                                    <div class="member-meta">
-                                        ${member.jerseyNumber ? `#${member.jerseyNumber}` : ''}
-                                        ${member.gender ? ` • ${member.gender}` : ''}
-                                    </div>
+        // Create team selector dropdown
+        let selectorHtml = `
+            <div class="team-selector-container">
+                <label class="form-label">Select a team to view roster:</label>
+                <select id="team-selector" class="form-select" onchange="app.renderTeams()">
+                    <option value="">Choose a team...</option>
+                    ${teamsToShow.map(team => `
+                        <option value="${team.id}" ${selectedTeamId === team.id ? 'selected' : ''}>
+                            ${team.name} ${team.category ? `(${team.category})` : ''} - ${team.members.length} players
+                        </option>
+                    `).join('')}
+                </select>
+            </div>
+        `;
+        
+        // Show selected team details
+        if (selectedTeamId) {
+            const selectedTeam = this.teams.find(team => team.id === selectedTeamId);
+            if (selectedTeam) {
+                const captain = selectedTeam.captainId ? selectedTeam.members.find(m => m.id === selectedTeam.captainId) : null;
+                
+                // Calculate roster statistics
+                const totalPlayers = selectedTeam.members.length;
+                const maleCount = selectedTeam.members.filter(m => m.gender === 'male').length;
+                const femaleCount = selectedTeam.members.filter(m => m.gender === 'female').length;
+                const unknownCount = totalPlayers - maleCount - femaleCount;
+                
+                selectorHtml += `
+                    <div class="selected-team-container">
+                        <div class="team-card-full" style="border-left-color: ${selectedTeam.colorData}">
+                            <div class="team-header">
+                                <div>
+                                    <div class="team-name">${selectedTeam.name}</div>
+                                    <div class="team-category">${selectedTeam.category || ''}</div>
+                                    ${captain ? `<div class="team-captain">👑 Captain: ${captain.name}</div>` : ''}
+                                </div>
+                                <div class="team-actions">
+                                    <button class="btn btn-small" onclick="app.showAddMemberModal('${selectedTeam.id}')" title="Add Member">+</button>
+                                    ${selectedTeam.members.length > 0 ? `<button class="btn btn-small btn-captain" onclick="app.showCaptainModal('${selectedTeam.id}')" title="Set Captain">👑</button>` : ''}
+                                    <button class="btn btn-small btn-secondary" onclick="app.editTeam('${selectedTeam.id}')" title="Edit Team">✏️</button>
+                                    <button class="btn btn-small btn-danger" onclick="app.deleteTeam('${selectedTeam.id}')" title="Delete Team">🗑️</button>
                                 </div>
                             </div>
-                            <div class="member-actions">
-                                <button class="btn btn-small" onclick="app.viewPlayerProfile('${team.id}', '${member.id}')" title="View Profile">👤</button>
-                                <button class="btn btn-small btn-secondary" onclick="app.editMember('${team.id}', '${member.id}')" title="Edit Member">✏️</button>
-                                <button class="btn btn-small btn-danger" onclick="app.deleteMember('${team.id}', '${member.id}')" title="Delete Member">🗑️</button>
+                            <div class="team-description">${selectedTeam.description || ''}</div>
+                            ${totalPlayers > 0 ? `
+                                <div class="roster-stats" style="margin: 12px 0; padding: 10px; background: #f8f9fa; border-radius: 6px; font-size: 0.9em; color: #666;">
+                                    <strong>👥 ${totalPlayers} player${totalPlayers !== 1 ? 's' : ''}</strong>
+                                    ${maleCount > 0 || femaleCount > 0 ? `
+                                        • 👨 ${maleCount} male${maleCount !== 1 ? 's' : ''} 
+                                        • 👩 ${femaleCount} female${femaleCount !== 1 ? 's' : ''}
+                                        ${unknownCount > 0 ? `• ❓ ${unknownCount} unspecified` : ''}
+                                    ` : ''}
+                                </div>
+                            ` : ''}
+                            <div class="members-list-full">
+                                ${selectedTeam.members.map(member => `
+                                    <div class="member-item">
+                                        <div class="member-info">
+                                            ${member.photo ? 
+                                                `<img src="${member.photo}" alt="${member.name}" class="member-photo">` :
+                                                `<div class="member-photo"></div>`
+                                            }
+                                            <div class="member-details">
+                                                <div class="member-name">${member.name}${member.id === selectedTeam.captainId ? ' 👑' : ''}</div>
+                                                <div class="member-meta">
+                                                    ${member.jerseyNumber ? `#${member.jerseyNumber}` : ''}
+                                                    ${member.gender ? ` • ${member.gender}` : ''}
+                                                </div>
+                                            </div>
+                                        </div>
+                                        <div class="member-actions">
+                                            <button class="btn btn-small" onclick="app.viewPlayerProfile('${selectedTeam.id}', '${member.id}')" title="View Profile">👤</button>
+                                            <button class="btn btn-small btn-secondary" onclick="app.editMember('${selectedTeam.id}', '${member.id}')" title="Edit Member">✏️</button>
+                                            <button class="btn btn-small btn-danger" onclick="app.deleteMember('${selectedTeam.id}', '${member.id}')" title="Delete Member">🗑️</button>
+                                        </div>
+                                    </div>
+                                `).join('')}
+                                ${selectedTeam.members.length === 0 ? '<div class="empty-state"><p>No members yet</p></div>' : ''}
                             </div>
                         </div>
-                    `).join('')}
-                    ${team.members.length === 0 ? '<div class="empty-state"><p>No members yet</p></div>' : ''}
-                </div>
-            </div>
-        `}).join('');
+                    </div>
+                `;
+            }
+        }
+        
+        container.innerHTML = selectorHtml;
     }
     
     renderEvents() {
