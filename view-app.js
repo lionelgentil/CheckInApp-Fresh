@@ -4,7 +4,7 @@
  */
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '2.16.7';
+const APP_VERSION = '2.16.8';
 
 class CheckInViewApp {
     constructor() {
@@ -224,7 +224,7 @@ class CheckInViewApp {
         const teamLookup = new Map();
         this.teams.forEach(t => teamLookup.set(t.id, t));
         
-        // Get all match cards for this player across all events - optimized version
+        // Get all current season cards for this player across all events - optimized version
         const matchCards = [];
         for (const event of this.events) {
             for (const match of event.matches) {
@@ -380,8 +380,8 @@ class CheckInViewApp {
                 
                 ${totalCards > 0 ? `
                     <div style="margin-bottom: 10px; font-size: 0.85em; color: #666;">
-                        <span style="margin-right: 15px;">🏟️ ${matchCardCount} match card${matchCardCount !== 1 ? 's' : ''}</span>
-                        <span>📚 ${priorCardCount} prior record${priorCardCount !== 1 ? 's' : ''}</span>
+                        <span style="margin-right: 15px;">🏟️ ${matchCardCount} current season card${matchCardCount !== 1 ? 's' : ''}</span>
+                        <span>📚 ${priorCardCount} lifetime card${priorCardCount !== 1 ? 's' : ''}</span>
                     </div>
                     <div style="max-height: 250px; overflow-y: auto; border: 1px solid #e9ecef; border-radius: 8px;">
                         ${cardItemsHtml}
@@ -786,6 +786,15 @@ class CheckInViewApp {
                     <div class="attendees-list">
                         ${homeTeam.members.map(member => {
                             const isCheckedIn = match.homeTeamAttendees.some(a => a.memberId === member.id);
+                            
+                            // Get card counts for this member in this match
+                            const memberCards = match.cards ? match.cards.filter(card => card.memberId === member.id) : [];
+                            const yellowCards = memberCards.filter(card => card.cardType === 'yellow').length;
+                            const redCards = memberCards.filter(card => card.cardType === 'red').length;
+                            const cardsDisplay = [];
+                            if (yellowCards > 0) cardsDisplay.push(`🟨${yellowCards}`);
+                            if (redCards > 0) cardsDisplay.push(`🟥${redCards}`);
+                            
                             return `
                                 <div class="attendee-row ${isCheckedIn ? 'checked-in' : ''}" onclick="app.toggleMatchAttendance('${eventId}', '${matchId}', '${member.id}', 'home')">
                                     <div class="member-info-full">
@@ -795,6 +804,7 @@ class CheckInViewApp {
                                             <div class="member-meta-full">
                                                 ${member.jerseyNumber ? `#${member.jerseyNumber}` : ''}
                                                 ${member.gender ? ` • ${member.gender}` : ''}
+                                                ${cardsDisplay.length > 0 ? ` • ${cardsDisplay.join(' ')}` : ''}
                                             </div>
                                         </div>
                                     </div>
@@ -816,6 +826,15 @@ class CheckInViewApp {
                     <div class="attendees-list">
                         ${awayTeam.members.map(member => {
                             const isCheckedIn = match.awayTeamAttendees.some(a => a.memberId === member.id);
+                            
+                            // Get card counts for this member in this match
+                            const memberCards = match.cards ? match.cards.filter(card => card.memberId === member.id) : [];
+                            const yellowCards = memberCards.filter(card => card.cardType === 'yellow').length;
+                            const redCards = memberCards.filter(card => card.cardType === 'red').length;
+                            const cardsDisplay = [];
+                            if (yellowCards > 0) cardsDisplay.push(`🟨${yellowCards}`);
+                            if (redCards > 0) cardsDisplay.push(`🟥${redCards}`);
+                            
                             return `
                                 <div class="attendee-row ${isCheckedIn ? 'checked-in' : ''}" onclick="app.toggleMatchAttendance('${eventId}', '${matchId}', '${member.id}', 'away')">
                                     <div class="member-info-full">
@@ -825,6 +844,7 @@ class CheckInViewApp {
                                             <div class="member-meta-full">
                                                 ${member.jerseyNumber ? `#${member.jerseyNumber}` : ''}
                                                 ${member.gender ? ` • ${member.gender}` : ''}
+                                                ${cardsDisplay.length > 0 ? ` • ${cardsDisplay.join(' ')}` : ''}
                                             </div>
                                         </div>
                                     </div>
