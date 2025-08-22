@@ -1,10 +1,10 @@
 /**
- * CheckIn App v2.16.22 - View Only Mode
+ * CheckIn App v2.16.23 - View Only Mode
  * Read-only version for public viewing
  */
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '2.16.22';
+const APP_VERSION = '2.16.23';
 
 class CheckInViewApp {
     constructor() {
@@ -519,6 +519,27 @@ class CheckInViewApp {
                 const femaleCount = selectedTeam.members.filter(m => m.gender === 'female').length;
                 const unknownCount = totalPlayers - maleCount - femaleCount;
                 
+                // Calculate team-wide card statistics
+                let teamCurrentSeasonYellow = 0;
+                let teamCurrentSeasonRed = 0;
+                let teamLifetimeYellow = 0; // Will be updated when lifetime cards load
+                let teamLifetimeRed = 0;     // Will be updated when lifetime cards load
+                
+                selectedTeam.members.forEach(member => {
+                    this.events.forEach(event => {
+                        // Only count cards from current season events
+                        if (this.isCurrentSeasonEvent(event.date)) {
+                            event.matches.forEach(match => {
+                                if (match.cards) {
+                                    const memberCards = match.cards.filter(card => card.memberId === member.id);
+                                    teamCurrentSeasonYellow += memberCards.filter(card => card.cardType === 'yellow').length;
+                                    teamCurrentSeasonRed += memberCards.filter(card => card.cardType === 'red').length;
+                                }
+                            });
+                        }
+                    });
+                });
+                
                 selectorHtml += `
                     <div class="selected-team-container">
                         <div class="team-card-full" style="border-left-color: ${selectedTeam.colorData}">
@@ -532,12 +553,15 @@ class CheckInViewApp {
                             <div class="team-description">${selectedTeam.description || ''}</div>
                             ${totalPlayers > 0 ? `
                                 <div class="roster-stats" style="margin: 12px 0; padding: 10px; background: #f8f9fa; border-radius: 6px; font-size: 0.9em; color: #666;">
-                                    <strong>👥 ${totalPlayers} player${totalPlayers !== 1 ? 's' : ''}</strong>
+                                    <div style="margin-bottom: 6px;"><strong>👥 ${totalPlayers} player${totalPlayers !== 1 ? 's' : ''}</strong></div>
                                     ${maleCount > 0 || femaleCount > 0 ? `
-                                        • 👨 ${maleCount} male${maleCount !== 1 ? 's' : ''} 
-                                        • 👩 ${femaleCount} female${femaleCount !== 1 ? 's' : ''}
-                                        ${unknownCount > 0 ? `• ❓ ${unknownCount} unspecified` : ''}
+                                        <div style="margin-bottom: 6px;">👨 ${maleCount} male${maleCount !== 1 ? 's' : ''} • 👩 ${femaleCount} female${femaleCount !== 1 ? 's' : ''} ${unknownCount > 0 ? `• ❓ ${unknownCount} unspecified` : ''}</div>
                                     ` : ''}
+                                    <div id="team-card-stats-${selectedTeam.id}" style="margin-bottom: 3px;">
+                                        <strong>📋 Team Cards:</strong> 
+                                        ${teamCurrentSeasonYellow + teamCurrentSeasonRed > 0 ? `🟨${teamCurrentSeasonYellow} 🟥${teamCurrentSeasonRed} (current season)` : 'No current season cards'}
+                                        <span id="team-lifetime-stats-${selectedTeam.id}"> • Loading lifetime stats...</span>
+                                    </div>
                                 </div>
                             ` : ''}
                             <div class="members-list-full">
@@ -624,12 +648,29 @@ class CheckInViewApp {
                 
                 // Group records by member ID for efficient lookup
                 const recordsByMember = {};
+                let totalLifetimeYellow = 0;
+                let totalLifetimeRed = 0;
+                
                 allRecords.forEach(record => {
                     if (!recordsByMember[record.memberId]) {
                         recordsByMember[record.memberId] = [];
                     }
                     recordsByMember[record.memberId].push(record);
+                    
+                    // Count team-wide lifetime cards
+                    if (record.cardType === 'yellow') totalLifetimeYellow++;
+                    else if (record.cardType === 'red') totalLifetimeRed++;
                 });
+                
+                // Update team-wide lifetime statistics
+                const teamLifetimeElement = document.getElementById(`team-lifetime-stats-${team.id}`);
+                if (teamLifetimeElement) {
+                    if (totalLifetimeYellow > 0 || totalLifetimeRed > 0) {
+                        teamLifetimeElement.textContent = ` • 🟨${totalLifetimeYellow} 🟥${totalLifetimeRed} (lifetime)`;
+                    } else {
+                        teamLifetimeElement.textContent = ' • No lifetime cards';
+                    }
+                }
                 
                 // Update DOM for each member
                 team.members.forEach(member => {
@@ -676,6 +717,9 @@ class CheckInViewApp {
     
     // Fallback method using individual API calls (original approach)
     async loadLifetimeCardsForTeamFallback(team) {
+        let totalLifetimeYellow = 0;
+        let totalLifetimeRed = 0;
+        
         for (const member of team.members) {
             try {
                 const response = await fetch(`/api/disciplinary-records?member_id=${member.id}`);
@@ -687,8 +731,13 @@ class CheckInViewApp {
                     let lifetimeRed = 0;
                     
                     records.forEach(record => {
-                        if (record.cardType === 'yellow') lifetimeYellow++;
-                        else if (record.cardType === 'red') lifetimeRed++;
+                        if (record.cardType === 'yellow') {
+                            lifetimeYellow++;
+                            totalLifetimeYellow++;
+                        } else if (record.cardType === 'red') {
+                            lifetimeRed++;
+                            totalLifetimeRed++;
+                        }
                     });
                     
                     // Update the DOM element for this member
@@ -717,6 +766,16 @@ class CheckInViewApp {
                 if (lifetimeElement) {
                     lifetimeElement.textContent = '';
                 }
+            }
+        }
+        
+        // Update team-wide lifetime statistics after processing all members
+        const teamLifetimeElement = document.getElementById(`team-lifetime-stats-${team.id}`);
+        if (teamLifetimeElement) {
+            if (totalLifetimeYellow > 0 || totalLifetimeRed > 0) {
+                teamLifetimeElement.textContent = ` • 🟨${totalLifetimeYellow} 🟥${totalLifetimeRed} (lifetime)`;
+            } else {
+                teamLifetimeElement.textContent = ' • No lifetime cards';
             }
         }
     }
