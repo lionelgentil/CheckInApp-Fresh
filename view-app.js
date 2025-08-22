@@ -1,10 +1,10 @@
 /**
- * CheckIn App v2.16.14 - View Only Mode
+ * CheckIn App v2.16.15 - View Only Mode
  * Read-only version for public viewing
  */
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '2.16.14';
+const APP_VERSION = '2.16.15';
 
 class CheckInViewApp {
     constructor() {
@@ -553,18 +553,14 @@ class CheckInViewApp {
         }
     }
     
-    // Load lifetime disciplinary cards for team members (optimized - single API call)
+    // Load lifetime disciplinary cards for team members (optimized - single API call per team)
     async loadLifetimeCardsForTeam(team) {
         if (!team.members || team.members.length === 0) return;
         
         try {
-            // Prepare all member IDs for batch request
-            const memberIds = team.members.map(member => member.id);
-            const memberIdsParam = memberIds.join(',');
+            console.log(`🚀 Fetching lifetime cards for team "${team.name}" (${team.members.length} players)`);
             
-            console.log(`🚀 Fetching lifetime cards for ${team.members.length} players in one request`);
-            
-            const response = await fetch(`/api/disciplinary-records?member_ids=${memberIdsParam}`);
+            const response = await fetch(`/api/disciplinary-records?team_id=${team.id}`);
             if (response.ok) {
                 const allRecords = await response.json();
                 
@@ -607,16 +603,16 @@ class CheckInViewApp {
                 });
                 
             } else {
-                console.warn(`❌ API failed with status ${response.status}. Falling back to individual requests.`);
+                console.warn(`❌ Team API failed with status ${response.status}. Falling back to individual requests.`);
                 
-                // **Fallback Strategy**: If batch API fails, fall back to individual requests
+                // **Fallback Strategy**: If team API fails, fall back to individual requests
                 console.log('🔄 Fallback: Using individual API calls per player');
                 await this.loadLifetimeCardsForTeamFallback(team);
             }
         } catch (error) {
-            console.error('❌ Batch API request failed:', error);
+            console.error('❌ Team API request failed:', error);
             
-            // **Fallback Strategy**: If batch request fails, use individual requests
+            // **Fallback Strategy**: If team request fails, use individual requests
             console.log('🔄 Fallback: Using individual API calls per player');
             await this.loadLifetimeCardsForTeamFallback(team);
         }
@@ -1069,24 +1065,29 @@ class CheckInViewApp {
         this.loadLifetimeCardsForMatch(homeTeam, awayTeam);
     }
     
-    // Load lifetime disciplinary cards for match check-in (optimized - single API call)
+    // Load lifetime disciplinary cards for match check-in (optimized - team-based API calls)
     async loadLifetimeCardsForMatch(homeTeam, awayTeam) {
         const allPlayers = [...homeTeam.members, ...awayTeam.members];
         
         if (allPlayers.length === 0) return;
         
         try {
-            // Prepare all member IDs for batch request
-            const memberIds = allPlayers.map(member => member.id);
-            const memberIdsParam = memberIds.join(',');
+            console.log(`🚀 Fetching lifetime cards for match: ${homeTeam.name} vs ${awayTeam.name}`);
             
-            console.log(`🚀 Fetching lifetime cards for ${allPlayers.length} players in match in one request`);
+            // Make two team-based API calls in parallel
+            const [homeResponse, awayResponse] = await Promise.all([
+                fetch(`/api/disciplinary-records?team_id=${homeTeam.id}`),
+                fetch(`/api/disciplinary-records?team_id=${awayTeam.id}`)
+            ]);
             
-            const response = await fetch(`/api/disciplinary-records?member_ids=${memberIdsParam}`);
-            if (response.ok) {
-                const allRecords = await response.json();
+            if (homeResponse.ok && awayResponse.ok) {
+                const [homeRecords, awayRecords] = await Promise.all([
+                    homeResponse.json(),
+                    awayResponse.json()
+                ]);
                 
-                console.log(`✅ Received ${allRecords.length} disciplinary records for match players`);
+                const allRecords = [...homeRecords, ...awayRecords];
+                console.log(`✅ Received ${allRecords.length} disciplinary records for match teams`);
                 
                 // Group records by member ID for efficient lookup
                 const recordsByMember = {};
@@ -1127,16 +1128,16 @@ class CheckInViewApp {
                 });
                 
             } else {
-                console.warn(`❌ Batch API failed with status ${response.status}. Falling back to individual requests.`);
+                console.warn(`❌ Team API failed. Home: ${homeResponse.status}, Away: ${awayResponse.status}. Falling back to individual requests.`);
                 
-                // **Fallback Strategy**: If batch API fails, fall back to individual requests
+                // **Fallback Strategy**: If team API fails, fall back to individual requests
                 console.log('🔄 Fallback: Using individual API calls per player');
                 await this.loadLifetimeCardsForMatchFallback(allPlayers);
             }
         } catch (error) {
-            console.error('❌ Batch API request failed:', error);
+            console.error('❌ Team API request failed:', error);
             
-            // **Fallback Strategy**: If batch request fails, use individual requests
+            // **Fallback Strategy**: If team request fails, use individual requests
             console.log('🔄 Fallback: Using individual API calls per player');
             await this.loadLifetimeCardsForMatchFallback(allPlayers);
         }
