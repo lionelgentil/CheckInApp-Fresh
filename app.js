@@ -4,7 +4,7 @@
  */
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '2.16.16';
+const APP_VERSION = '2.16.17';
 
 class CheckInApp {
     constructor() {
@@ -350,24 +350,26 @@ class CheckInApp {
                             ` : ''}
                             <div class="members-list-full">
                                 ${selectedTeam.members.map(member => {
-                                    // Count all cards for this member across all matches (fix scoping issue)
-                                    let totalYellowCards = 0;
-                                    let totalRedCards = 0;
+                                    // Count current season cards for this member across all matches
+                                    let currentYellowCards = 0;
+                                    let currentRedCards = 0;
                                     
                                     this.events.forEach(event => {
                                         event.matches.forEach(match => {
                                             if (match.cards) {
                                                 const memberCards = match.cards.filter(card => card.memberId === member.id);
-                                                totalYellowCards += memberCards.filter(card => card.cardType === 'yellow').length;
-                                                totalRedCards += memberCards.filter(card => card.cardType === 'red').length;
+                                                currentYellowCards += memberCards.filter(card => card.cardType === 'yellow').length;
+                                                currentRedCards += memberCards.filter(card => card.cardType === 'red').length;
                                             }
                                         });
                                     });
                                     
-                                    const cardsDisplay = [];
-                                    if (totalYellowCards > 0) cardsDisplay.push(`🟨${totalYellowCards}`);
-                                    if (totalRedCards > 0) cardsDisplay.push(`🟥${totalRedCards}`);
-                                    const cardsText = cardsDisplay.length > 0 ? ` • ${cardsDisplay.join(' ')}` : '';
+                                    // Note: Lifetime cards will be fetched asynchronously and updated via DOM manipulation
+                                    // This is a placeholder that will be updated once the disciplinary records are loaded
+                                    const currentCardsDisplay = [];
+                                    if (currentYellowCards > 0) currentCardsDisplay.push(`🟨${currentYellowCards}`);
+                                    if (currentRedCards > 0) currentCardsDisplay.push(`🟥${currentRedCards}`);
+                                    const currentCardsText = currentCardsDisplay.length > 0 ? ` • ${currentCardsDisplay.join(' ')} (season)` : '';
                                     
                                     return `
                                         <div class="member-item">
@@ -378,10 +380,11 @@ class CheckInApp {
                                                 }
                                                 <div class="member-details">
                                                     <div class="member-name">${member.name}${member.id === selectedTeam.captainId ? ' 👑' : ''}</div>
-                                                    <div class="member-meta">
+                                                    <div class="member-meta" id="member-meta-${member.id}">
                                                         ${member.jerseyNumber ? `#${member.jerseyNumber}` : ''}
                                                         ${member.gender ? ` • ${member.gender}` : ''}
-                                                        ${cardsText}
+                                                        ${currentCardsText}
+                                                        <span class="lifetime-cards" id="lifetime-cards-${member.id}"> • Loading...</span>
                                                     </div>
                                                 </div>
                                             </div>
@@ -402,6 +405,113 @@ class CheckInApp {
         }
         
         container.innerHTML = selectorHtml;
+        
+        // Load lifetime disciplinary records for displayed team members
+        if (selectedTeamId) {
+            const selectedTeam = this.teams.find(team => team.id === selectedTeamId);
+            if (selectedTeam && selectedTeam.members.length > 0) {
+                this.loadLifetimeCardsForTeam(selectedTeam);
+            }
+        }
+    }
+    
+    // Load lifetime disciplinary cards for team members
+    async loadLifetimeCardsForTeam(team) {
+        for (const member of team.members) {
+            try {
+                const response = await fetch(`/api/disciplinary-records?member_id=${member.id}`);
+                if (response.ok) {
+                    const records = await response.json();
+                    
+                    // Count lifetime cards
+                    let lifetimeYellow = 0;
+                    let lifetimeRed = 0;
+                    
+                    records.forEach(record => {
+                        if (record.cardType === 'yellow') lifetimeYellow++;
+                        else if (record.cardType === 'red') lifetimeRed++;
+                    });
+                    
+                    // Update the DOM element for this member
+                    const lifetimeElement = document.getElementById(`lifetime-cards-${member.id}`);
+                    if (lifetimeElement) {
+                        if (lifetimeYellow > 0 || lifetimeRed > 0) {
+                            const lifetimeDisplay = [];
+                            if (lifetimeYellow > 0) lifetimeDisplay.push(`🟨${lifetimeYellow}`);
+                            if (lifetimeRed > 0) lifetimeDisplay.push(`🟥${lifetimeRed}`);
+                            lifetimeElement.textContent = ` • ${lifetimeDisplay.join(' ')} (lifetime)`;
+                        } else {
+                            lifetimeElement.textContent = '';
+                        }
+                    }
+                } else {
+                    // Hide loading text if API fails
+                    const lifetimeElement = document.getElementById(`lifetime-cards-${member.id}`);
+                    if (lifetimeElement) {
+                        lifetimeElement.textContent = '';
+                    }
+                }
+            } catch (error) {
+                console.error('Error loading lifetime cards for member:', member.id, error);
+                // Hide loading text on error
+                const lifetimeElement = document.getElementById(`lifetime-cards-${member.id}`);
+                if (lifetimeElement) {
+                    lifetimeElement.textContent = '';
+                }
+            }
+        }
+    }
+    
+    // Load lifetime disciplinary cards for match check-in
+    async loadLifetimeCardsForMatch(homeTeam, awayTeam) {
+        const allPlayers = [...homeTeam.members, ...awayTeam.members];
+        
+        for (const member of allPlayers) {
+            try {
+                const response = await fetch(`/api/disciplinary-records?member_id=${member.id}`);
+                if (response.ok) {
+                    const records = await response.json();
+                    
+                    // Count lifetime cards
+                    let lifetimeYellow = 0;
+                    let lifetimeRed = 0;
+                    
+                    records.forEach(record => {
+                        if (record.cardType === 'yellow') lifetimeYellow++;
+                        else if (record.cardType === 'red') lifetimeRed++;
+                    });
+                    
+                    // Update both possible DOM elements for this member (home and away)
+                    const homeElement = document.getElementById(`match-lifetime-cards-${member.id}`);
+                    const awayElement = document.getElementById(`match-lifetime-cards-away-${member.id}`);
+                    
+                    let lifetimeText = '';
+                    if (lifetimeYellow > 0 || lifetimeRed > 0) {
+                        const lifetimeDisplay = [];
+                        if (lifetimeYellow > 0) lifetimeDisplay.push(`🟨${lifetimeYellow}`);
+                        if (lifetimeRed > 0) lifetimeDisplay.push(`🟥${lifetimeRed}`);
+                        lifetimeText = ` | ${lifetimeDisplay.join(' ')} (lifetime)`;
+                    }
+                    
+                    if (homeElement) homeElement.textContent = lifetimeText;
+                    if (awayElement) awayElement.textContent = lifetimeText;
+                    
+                } else {
+                    // Hide loading text if API fails
+                    const homeElement = document.getElementById(`match-lifetime-cards-${member.id}`);
+                    const awayElement = document.getElementById(`match-lifetime-cards-away-${member.id}`);
+                    if (homeElement) homeElement.textContent = '';
+                    if (awayElement) awayElement.textContent = '';
+                }
+            } catch (error) {
+                console.error('Error loading lifetime cards for member:', member.id, error);
+                // Hide loading text on error
+                const homeElement = document.getElementById(`match-lifetime-cards-${member.id}`);
+                const awayElement = document.getElementById(`match-lifetime-cards-away-${member.id}`);
+                if (homeElement) homeElement.textContent = '';
+                if (awayElement) awayElement.textContent = '';
+            }
+        }
     }
     
     renderEvents() {
@@ -2281,13 +2391,37 @@ Please check the browser console (F12) for more details.`);
                         ${homeTeam.members.map(member => {
                             const isCheckedIn = match.homeTeamAttendees.some(a => a.memberId === member.id);
                             
-                            // Get card counts for this member in this match
+                            // Get current match card counts for this member
                             const memberCards = match.cards ? match.cards.filter(card => card.memberId === member.id) : [];
-                            const yellowCards = memberCards.filter(card => card.cardType === 'yellow').length;
-                            const redCards = memberCards.filter(card => card.cardType === 'red').length;
+                            const matchYellowCards = memberCards.filter(card => card.cardType === 'yellow').length;
+                            const matchRedCards = memberCards.filter(card => card.cardType === 'red').length;
+                            
+                            // Get current season card counts
+                            let seasonYellowCards = 0;
+                            let seasonRedCards = 0;
+                            this.events.forEach(event => {
+                                event.matches.forEach(m => {
+                                    if (m.cards) {
+                                        const cards = m.cards.filter(card => card.memberId === member.id);
+                                        seasonYellowCards += cards.filter(card => card.cardType === 'yellow').length;
+                                        seasonRedCards += cards.filter(card => card.cardType === 'red').length;
+                                    }
+                                });
+                            });
+                            
                             const cardsDisplay = [];
-                            if (yellowCards > 0) cardsDisplay.push(`🟨${yellowCards}`);
-                            if (redCards > 0) cardsDisplay.push(`🟥${redCards}`);
+                            if (matchYellowCards > 0 || matchRedCards > 0) {
+                                const matchCards = [];
+                                if (matchYellowCards > 0) matchCards.push(`🟨${matchYellowCards}`);
+                                if (matchRedCards > 0) matchCards.push(`🟥${matchRedCards}`);
+                                cardsDisplay.push(`${matchCards.join(' ')} (match)`);
+                            }
+                            if (seasonYellowCards > 0 || seasonRedCards > 0) {
+                                const seasonCards = [];
+                                if (seasonYellowCards > 0) seasonCards.push(`🟨${seasonYellowCards}`);
+                                if (seasonRedCards > 0) seasonCards.push(`🟥${seasonRedCards}`);
+                                cardsDisplay.push(`${seasonCards.join(' ')} (season)`);
+                            }
                             
                             return `
                                 <div class="attendee-row ${isCheckedIn ? 'checked-in' : ''}" onclick="app.toggleMatchAttendance('${eventId}', '${matchId}', '${member.id}', 'home')">
@@ -2295,10 +2429,11 @@ Please check the browser console (F12) for more details.`);
                                         ${member.photo ? `<img src="${member.photo}" alt="${member.name}" class="member-photo-small">` : `<div class="member-photo-small"></div>`}
                                         <div class="member-details-full">
                                             <div class="member-name-full">${member.name}</div>
-                                            <div class="member-meta-full">
+                                            <div class="member-meta-full" id="match-member-meta-${member.id}">
                                                 ${member.jerseyNumber ? `#${member.jerseyNumber}` : ''}
                                                 ${member.gender ? ` • ${member.gender}` : ''}
-                                                ${cardsDisplay.length > 0 ? ` • ${cardsDisplay.join(' ')}` : ''}
+                                                ${cardsDisplay.length > 0 ? ` • ${cardsDisplay.join(' | ')}` : ''}
+                                                <span class="lifetime-cards" id="match-lifetime-cards-${member.id}"> • Loading...</span>
                                             </div>
                                         </div>
                                     </div>
@@ -2321,13 +2456,37 @@ Please check the browser console (F12) for more details.`);
                         ${awayTeam.members.map(member => {
                             const isCheckedIn = match.awayTeamAttendees.some(a => a.memberId === member.id);
                             
-                            // Get card counts for this member in this match
+                            // Get current match card counts for this member
                             const memberCards = match.cards ? match.cards.filter(card => card.memberId === member.id) : [];
-                            const yellowCards = memberCards.filter(card => card.cardType === 'yellow').length;
-                            const redCards = memberCards.filter(card => card.cardType === 'red').length;
+                            const matchYellowCards = memberCards.filter(card => card.cardType === 'yellow').length;
+                            const matchRedCards = memberCards.filter(card => card.cardType === 'red').length;
+                            
+                            // Get current season card counts
+                            let seasonYellowCards = 0;
+                            let seasonRedCards = 0;
+                            this.events.forEach(event => {
+                                event.matches.forEach(m => {
+                                    if (m.cards) {
+                                        const cards = m.cards.filter(card => card.memberId === member.id);
+                                        seasonYellowCards += cards.filter(card => card.cardType === 'yellow').length;
+                                        seasonRedCards += cards.filter(card => card.cardType === 'red').length;
+                                    }
+                                });
+                            });
+                            
                             const cardsDisplay = [];
-                            if (yellowCards > 0) cardsDisplay.push(`🟨${yellowCards}`);
-                            if (redCards > 0) cardsDisplay.push(`🟥${redCards}`);
+                            if (matchYellowCards > 0 || matchRedCards > 0) {
+                                const matchCards = [];
+                                if (matchYellowCards > 0) matchCards.push(`🟨${matchYellowCards}`);
+                                if (matchRedCards > 0) matchCards.push(`🟥${matchRedCards}`);
+                                cardsDisplay.push(`${matchCards.join(' ')} (match)`);
+                            }
+                            if (seasonYellowCards > 0 || seasonRedCards > 0) {
+                                const seasonCards = [];
+                                if (seasonYellowCards > 0) seasonCards.push(`🟨${seasonYellowCards}`);
+                                if (seasonRedCards > 0) seasonCards.push(`🟥${seasonRedCards}`);
+                                cardsDisplay.push(`${seasonCards.join(' ')} (season)`);
+                            }
                             
                             return `
                                 <div class="attendee-row ${isCheckedIn ? 'checked-in' : ''}" onclick="app.toggleMatchAttendance('${eventId}', '${matchId}', '${member.id}', 'away')">
@@ -2335,10 +2494,11 @@ Please check the browser console (F12) for more details.`);
                                         ${member.photo ? `<img src="${member.photo}" alt="${member.name}" class="member-photo-small">` : `<div class="member-photo-small"></div>`}
                                         <div class="member-details-full">
                                             <div class="member-name-full">${member.name}</div>
-                                            <div class="member-meta-full">
+                                            <div class="member-meta-full" id="match-member-meta-away-${member.id}">
                                                 ${member.jerseyNumber ? `#${member.jerseyNumber}` : ''}
                                                 ${member.gender ? ` • ${member.gender}` : ''}
-                                                ${cardsDisplay.length > 0 ? ` • ${cardsDisplay.join(' ')}` : ''}
+                                                ${cardsDisplay.length > 0 ? ` • ${cardsDisplay.join(' | ')}` : ''}
+                                                <span class="lifetime-cards" id="match-lifetime-cards-away-${member.id}"> • Loading...</span>
                                             </div>
                                         </div>
                                     </div>
@@ -2360,6 +2520,9 @@ Please check the browser console (F12) for more details.`);
         `);
         
         document.body.appendChild(modal);
+        
+        // Load lifetime cards for all players in the match
+        this.loadLifetimeCardsForMatch(homeTeam, awayTeam);
     }
     
     toggleTeamView(viewType) {
