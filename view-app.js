@@ -4,7 +4,7 @@
  */
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '2.16.9';
+const APP_VERSION = '2.16.11';
 
 class CheckInViewApp {
     constructor() {
@@ -488,48 +488,49 @@ class CheckInViewApp {
                                 </div>
                             ` : ''}
                             <div class="members-list-full">
-                                ${selectedTeam.members.map(member => `
-                                    <div class="member-item">
-                                        <div class="member-info">
-                                            ${member.photo ? 
-                                                `<img src="${member.photo}" alt="${member.name}" class="member-photo">` :
-                                                `<div class="member-photo"></div>`
+                                ${selectedTeam.members.map(member => {
+                                    // Count all cards for this member across all matches (fix scoping issue)
+                                    let totalYellowCards = 0;
+                                    let totalRedCards = 0;
+                                    
+                                    this.events.forEach(event => {
+                                        event.matches.forEach(match => {
+                                            if (match.cards) {
+                                                const memberCards = match.cards.filter(card => card.memberId === member.id);
+                                                totalYellowCards += memberCards.filter(card => card.cardType === 'yellow').length;
+                                                totalRedCards += memberCards.filter(card => card.cardType === 'red').length;
                                             }
-                                            <div class="member-details">
-                                                <div class="member-name">${member.name}${member.id === selectedTeam.captainId ? ' 👑' : ''}</div>
-                                                <div class="member-meta">
-                                                    ${member.jerseyNumber ? `#${member.jerseyNumber}` : ''}
-                                                    ${member.gender ? ` • ${member.gender}` : ''}
-                                                    ${(() => {
-                                                        // Count all cards for this member across all matches
-                                                        let totalYellowCards = 0;
-                                                        let totalRedCards = 0;
-                                                        
-                                                        this.events.forEach(event => {
-                                                            event.matches.forEach(match => {
-                                                                if (match.cards) {
-                                                                    const memberCards = match.cards.filter(card => card.memberId === member.id);
-                                                                    totalYellowCards += memberCards.filter(card => card.cardType === 'yellow').length;
-                                                                    totalRedCards += memberCards.filter(card => card.cardType === 'red').length;
-                                                                }
-                                                            });
-                                                        });
-                                                        
-                                                        const cardsDisplay = [];
-                                                        if (totalYellowCards > 0) cardsDisplay.push(`🟨${totalYellowCards}`);
-                                                        if (totalRedCards > 0) cardsDisplay.push(`🟥${totalRedCards}`);
-                                                        
-                                                        return cardsDisplay.length > 0 ? ` • ${cardsDisplay.join(' ')}` : '';
-                                                    })()}
+                                        });
+                                    });
+                                    
+                                    const cardsDisplay = [];
+                                    if (totalYellowCards > 0) cardsDisplay.push(`🟨${totalYellowCards}`);
+                                    if (totalRedCards > 0) cardsDisplay.push(`🟥${totalRedCards}`);
+                                    const cardsText = cardsDisplay.length > 0 ? ` • ${cardsDisplay.join(' ')}` : '';
+                                    
+                                    return `
+                                        <div class="member-item">
+                                            <div class="member-info">
+                                                ${member.photo ? 
+                                                    `<img src="${member.photo}" alt="${member.name}" class="member-photo">` :
+                                                    `<div class="member-photo"></div>`
+                                                }
+                                                <div class="member-details">
+                                                    <div class="member-name">${member.name}${member.id === selectedTeam.captainId ? ' 👑' : ''}</div>
+                                                    <div class="member-meta">
+                                                        ${member.jerseyNumber ? `#${member.jerseyNumber}` : ''}
+                                                        ${member.gender ? ` • ${member.gender}` : ''}
+                                                        ${cardsText}
+                                                    </div>
                                                 </div>
                                             </div>
+                                            <div class="member-actions">
+                                                <button class="btn btn-small" onclick="app.viewPlayerProfile('${selectedTeam.id}', '${member.id}')" title="View Profile">👤</button>
+                                                <button class="btn btn-small btn-secondary" onclick="app.editMemberLimited('${selectedTeam.id}', '${member.id}')" title="Edit Jersey & Photo">✏️</button>
+                                            </div>
                                         </div>
-                                        <div class="member-actions">
-                                            <button class="btn btn-small" onclick="app.viewPlayerProfile('${selectedTeam.id}', '${member.id}')" title="View Profile">👤</button>
-                                            <button class="btn btn-small btn-secondary" onclick="app.editMemberLimited('${selectedTeam.id}', '${member.id}')" title="Edit Jersey & Photo">✏️</button>
-                                        </div>
-                                    </div>
-                                `).join('')}
+                                    `;
+                                }).join('')}
                                 ${selectedTeam.members.length === 0 ? '<div class="empty-state"><p>No members yet</p></div>' : ''}
                             </div>
                         </div>
