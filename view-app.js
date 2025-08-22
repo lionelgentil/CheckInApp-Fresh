@@ -1,10 +1,10 @@
 /**
- * CheckIn App v2.16.23 - View Only Mode
+ * CheckIn App v2.16.24 - View Only Mode
  * Read-only version for public viewing
  */
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '2.16.23';
+const APP_VERSION = '2.16.24';
 
 class CheckInViewApp {
     constructor() {
@@ -651,15 +651,21 @@ class CheckInViewApp {
                 let totalLifetimeYellow = 0;
                 let totalLifetimeRed = 0;
                 
+                // Create a set of team member IDs for filtering
+                const teamMemberIds = new Set(team.members.map(member => member.id));
+                
                 allRecords.forEach(record => {
-                    if (!recordsByMember[record.memberId]) {
-                        recordsByMember[record.memberId] = [];
+                    // Only process records for members of this specific team
+                    if (teamMemberIds.has(record.memberId)) {
+                        if (!recordsByMember[record.memberId]) {
+                            recordsByMember[record.memberId] = [];
+                        }
+                        recordsByMember[record.memberId].push(record);
+                        
+                        // Count team-wide lifetime cards (only for this team's members)
+                        if (record.cardType === 'yellow') totalLifetimeYellow++;
+                        else if (record.cardType === 'red') totalLifetimeRed++;
                     }
-                    recordsByMember[record.memberId].push(record);
-                    
-                    // Count team-wide lifetime cards
-                    if (record.cardType === 'yellow') totalLifetimeYellow++;
-                    else if (record.cardType === 'red') totalLifetimeRed++;
                 });
                 
                 // Update team-wide lifetime statistics
