@@ -1,10 +1,10 @@
 /**
- * CheckIn App v2.16.26 - View Only Mode
+ * CheckIn App v2.16.27 - View Only Mode
  * Read-only version for public viewing
  */
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '2.16.26';
+const APP_VERSION = '2.16.27';
 
 class CheckInViewApp {
     constructor() {
@@ -1423,15 +1423,15 @@ class CheckInViewApp {
                                         <option value="Delaying the restart of play" ${card.reason === 'Delaying the restart of play' ? 'selected' : ''}>Delaying the restart of play</option>
                                         <option value="Failure to respect distance" ${card.reason === 'Failure to respect distance' ? 'selected' : ''}>Failure to respect distance</option>
                                         <option value="Entering/leaving without permission" ${card.reason === 'Entering/leaving without permission' ? 'selected' : ''}>Entering/leaving without permission</option>
+                                        <option value="Sliding" ${card.reason === 'Sliding' ? 'selected' : ''}>Sliding</option>
+                                        <option value="Reckless/aggressive challenge" ${card.reason === 'Reckless/aggressive challenge' ? 'selected' : ''}>Reckless/aggressive challenge</option>
+                                        <option value="Denial of a goal scoring opportunity" ${card.reason === 'Denial of a goal scoring opportunity' ? 'selected' : ''}>Denial of a goal scoring opportunity</option>
+                                        <option value="Stopping a promising attack" ${card.reason === 'Stopping a promising attack' ? 'selected' : ''}>Stopping a promising attack</option>
                                         <option value="Serious foul play" ${card.reason === 'Serious foul play' ? 'selected' : ''}>Serious foul play</option>
                                         <option value="Violent conduct" ${card.reason === 'Violent conduct' ? 'selected' : ''}>Violent conduct</option>
                                         <option value="Spitting" ${card.reason === 'Spitting' ? 'selected' : ''}>Spitting</option>
                                         <option value="Offensive/insulting language" ${card.reason === 'Offensive/insulting language' ? 'selected' : ''}>Offensive/insulting language</option>
                                         <option value="Second yellow card" ${card.reason === 'Second yellow card' ? 'selected' : ''}>Second yellow card</option>
-                                        <option value="Sliding" ${card.reason === 'Sliding' ? 'selected' : ''}>Sliding</option>
-                                        <option value="Reckless/aggressive challenge" ${card.reason === 'Reckless/aggressive challenge' ? 'selected' : ''}>Reckless/aggressive challenge</option>
-                                        <option value="Denial of a goal scoring opportunity" ${card.reason === 'Denial of a goal scoring opportunity' ? 'selected' : ''}>Denial of a goal scoring opportunity</option>
-                                        <option value="Stopping a promising attack" ${card.reason === 'Stopping a promising attack' ? 'selected' : ''}>Stopping a promising attack</option>
                                     </select>
                                     <input type="text" class="form-input" style="flex: 1;" placeholder="Additional Notes (optional)" data-card-index="${index}" data-field="notes" value="${card.notes || ''}">
                                 </div>
@@ -1487,15 +1487,15 @@ class CheckInViewApp {
                         <option value="Delaying the restart of play">Delaying the restart of play</option>
                         <option value="Failure to respect distance">Failure to respect distance</option>
                         <option value="Entering/leaving without permission">Entering/leaving without permission</option>
+                        <option value="Sliding">Sliding</option>
+                        <option value="Reckless/aggressive challenge">Reckless/aggressive challenge</option>
+                        <option value="Denial of a goal scoring opportunity">Denial of a goal scoring opportunity</option>
+                        <option value="Stopping a promising attack">Stopping a promising attack</option>
                         <option value="Serious foul play">Serious foul play</option>
                         <option value="Violent conduct">Violent conduct</option>
                         <option value="Spitting">Spitting</option>
                         <option value="Offensive/insulting language">Offensive/insulting language</option>
                         <option value="Second yellow card">Second yellow card</option>
-                        <option value="Sliding">Sliding</option>
-                        <option value="Reckless/aggressive challenge">Reckless/aggressive challenge</option>
-                        <option value="Denial of a goal scoring opportunity">Denial of a goal scoring opportunity</option>
-                        <option value="Stopping a promising attack">Stopping a promising attack</option>
                     </select>
                     <input type="text" class="form-input" style="flex: 1;" placeholder="Additional Notes (optional)" data-card-index="${newIndex}" data-field="notes">
                 </div>
