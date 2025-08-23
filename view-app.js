@@ -4,7 +4,7 @@
  */
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '3.0.0';
+const APP_VERSION = '3.0.1';
 
 class CheckInViewApp {
     constructor() {
@@ -1373,8 +1373,14 @@ class CheckInViewApp {
     }
     
     // View Match (read-only)
-    viewMatch(eventId, matchId) {
+    async viewMatch(eventId, matchId) {
         this.currentModalType = 'match';
+        
+        // Ensure referees are loaded before viewing match
+        if (this.referees.length === 0) {
+            await this.loadReferees();
+        }
+        
         const event = this.events.find(e => e.id === eventId);
         const match = event.matches.find(m => m.id === matchId);
         const homeTeam = this.teams.find(t => t.id === match.homeTeamId);
