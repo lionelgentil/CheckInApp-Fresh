@@ -1,10 +1,10 @@
 /**
- * CheckIn App v2.16.25 - View Only Mode
+ * CheckIn App v2.16.26 - View Only Mode
  * Read-only version for public viewing
  */
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '2.16.25';
+const APP_VERSION = '2.16.26';
 
 class CheckInViewApp {
     constructor() {
@@ -234,13 +234,15 @@ class CheckInViewApp {
         if (!member) return;
         
         try {
+            let needsTeamsRefresh = false;
+            
             // Handle photo upload separately if a new photo was selected
             if (photoFile) {
                 console.log('Uploading new photo for member:', memberId);
                 const photoUrl = await this.uploadPhoto(photoFile, memberId);
                 console.log('Photo uploaded successfully:', photoUrl);
-                // Photo upload automatically updates the database, so we just need to update UI
-                member.photo = photoUrl;
+                // Photo upload automatically updates the database, so we need to refresh from server
+                needsTeamsRefresh = true;
             }
             
             // Update jersey number if changed
@@ -249,6 +251,13 @@ class CheckInViewApp {
                 member.jerseyNumber = newJerseyNumber;
                 // Save teams data for jersey number change
                 await this.saveTeams();
+                needsTeamsRefresh = true;
+            }
+            
+            // Refresh teams data from server if photo was uploaded or jersey number changed
+            if (needsTeamsRefresh) {
+                console.log('Refreshing teams data from server after member update...');
+                await this.loadTeams();
             }
             
             this.renderTeams();
@@ -287,7 +296,7 @@ class CheckInViewApp {
             throw new Error(result.error || 'Photo upload failed');
         }
         
-        return result.url; // Return the photo URL
+        return result.url + '&_t=' + Date.now(); // Add cache-busting timestamp
     }
     
     // Utility method for file conversion (DEPRECATED - keeping for compatibility)

@@ -1,10 +1,10 @@
 /**
- * CheckIn App v2.16.25 - JavaScript Frontend
+ * CheckIn App v2.16.26 - JavaScript Frontend
  * Works with PHP/SQLite backend
  */
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '2.16.25';
+const APP_VERSION = '2.16.26';
 
 class CheckInApp {
     constructor() {
@@ -241,7 +241,7 @@ class CheckInApp {
             throw new Error(result.error || 'Photo upload failed');
         }
         
-        return result.url; // Return the photo URL
+        return result.url + '&_t=' + Date.now(); // Add cache-busting timestamp
     }
     
     // Debug helper function - can be called from browser console
@@ -1728,6 +1728,12 @@ Please check the browser console (F12) for more details.`);
             
             const disciplinaryResult = await disciplinaryResponse.json();
             console.log('✅ Disciplinary records saved successfully:', disciplinaryResult);
+            
+            // If a photo was uploaded, refresh teams data from server to get the latest photo URLs
+            if (photoFile) {
+                console.log('Refreshing teams data from server after photo upload...');
+                await this.loadTeams();
+            }
             
             this.renderTeams();
             this.closeModal();
