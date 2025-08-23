@@ -4,7 +4,7 @@
  */
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '3.0.3';
+const APP_VERSION = '3.0.4';
 
 class CheckInApp {
     constructor() {
@@ -165,20 +165,41 @@ class CheckInApp {
     
     // Get member photo URL with gender defaults
     getMemberPhotoUrl(member) {
-        // Only use custom photos if they are actual uploaded files (not API-generated placeholders)
-        // Real custom photos should be actual filenames like "abc123.jpg", not API URLs
-        if (member.photo && 
-            !member.photo.includes('male.svg') && 
-            !member.photo.includes('female.svg') && 
-            !member.photo.includes('default.svg') &&
-            !member.photo.includes('/api/photos?filename=') &&  // Exclude API URLs
-            !member.photo.startsWith('data:image/') &&          // Exclude base64 images
-            (member.photo.includes('.jpg') || member.photo.includes('.jpeg') || 
-             member.photo.includes('.png') || member.photo.includes('.webp'))) {
-            return member.photo;
+        // Check if member has a real custom photo
+        if (member.photo) {
+            // Skip gender defaults
+            if (member.photo.includes('male.svg') || 
+                member.photo.includes('female.svg') || 
+                member.photo.includes('default.svg')) {
+                // Use gender-based defaults
+                return this.getGenderDefaultPhoto(member);
+            }
+            
+            // Skip base64 images - use gender defaults instead
+            if (member.photo.startsWith('data:image/')) {
+                return this.getGenderDefaultPhoto(member);
+            }
+            
+            // Check if it's a real uploaded photo (either filename or API URL with real extension)
+            if (member.photo.includes('.jpg') || member.photo.includes('.jpeg') || 
+                member.photo.includes('.png') || member.photo.includes('.webp')) {
+                
+                // If it's just a filename, convert to API URL
+                if (!member.photo.startsWith('/api/photos') && !member.photo.startsWith('http')) {
+                    return `/api/photos?filename=${member.photo}`;
+                }
+                
+                // If it's already an API URL, use it directly
+                return member.photo;
+            }
         }
         
         // Use gender-based defaults for everyone else
+        return this.getGenderDefaultPhoto(member);
+    }
+    
+    // Helper method for gender defaults
+    getGenderDefaultPhoto(member) {
         if (member.gender === 'male') {
             return 'photos/defaults/male.svg';
         } else if (member.gender === 'female') {
