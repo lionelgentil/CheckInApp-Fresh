@@ -4,7 +4,7 @@
  */
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '3.0.1';
+const APP_VERSION = '3.0.2';
 
 class CheckInViewApp {
     constructor() {
@@ -330,6 +330,27 @@ class CheckInViewApp {
         });
     }
     
+    // Get member photo URL with gender defaults
+    getMemberPhotoUrl(member) {
+        // If member has a custom photo (not a default), use it
+        if (member.photo && 
+            !member.photo.includes('male.svg') && 
+            !member.photo.includes('female.svg') && 
+            !member.photo.includes('default.svg')) {
+            return member.photo;
+        }
+        
+        // Use gender-based defaults
+        if (member.gender === 'male') {
+            return 'photos/defaults/male.svg';
+        } else if (member.gender === 'female') {
+            return 'photos/defaults/female.svg';
+        } else {
+            // No gender specified, use male as default
+            return 'photos/defaults/male.svg';
+        }
+    }
+    
     // Player Profile Management  
     async viewPlayerProfile(teamId, memberId) {
         const team = this.teams.find(t => t.id === teamId);
@@ -413,10 +434,7 @@ class CheckInViewApp {
         return `
             <div style="margin-bottom: 20px; padding: 15px; background: #f8f9fa; border-radius: 12px; text-align: center;">
                 <div style="margin-bottom: 12px;">
-                    ${member.photo ? 
-                        `<img src="${member.photo}" alt="${member.name}" style="width: 60px; height: 60px; border-radius: 50%; object-fit: cover; border: 3px solid #2196F3;">` :
-                        `<div style="width: 60px; height: 60px; border-radius: 50%; background: #e9ecef; margin: 0 auto; display: flex; align-items: center; justify-content: center; font-size: 1.5em; color: #6c757d;">👤</div>`
-                    }
+                    <img src="${this.getMemberPhotoUrl(member)}" alt="${member.name}" style="width: 60px; height: 60px; border-radius: 50%; object-fit: cover; border: 3px solid #2196F3;">
                 </div>
                 <h3 style="margin: 0 0 4px 0; color: #333; font-size: 1.1em;">${member.name}</h3>
                 <p style="margin: 0; color: #666; font-size: 0.85em;">
@@ -657,10 +675,7 @@ class CheckInViewApp {
                                     return `
                                         <div class="member-item">
                                             <div class="member-info">
-                                                ${member.photo ? 
-                                                    `<img src="${member.photo}" alt="${member.name}" class="member-photo">` :
-                                                    `<div class="member-photo"></div>`
-                                                }
+                                                <img src="${this.getMemberPhotoUrl(member)}" alt="${member.name}" class="member-photo">
                                                 <div class="member-details">
                                                     <div class="member-name">${member.name}${member.id === selectedTeam.captainId ? ' 👑' : ''}</div>
                                                     <div class="member-meta" id="member-meta-${member.id}">
@@ -1510,7 +1525,7 @@ class CheckInViewApp {
                             return `
                                 <div class="attendee-row ${isCheckedIn ? 'checked-in' : ''}" onclick="app.toggleMatchAttendance('${eventId}', '${matchId}', '${member.id}', 'home')">
                                     <div class="member-info-full">
-                                        ${member.photo ? `<img src="${member.photo}" alt="${member.name}" class="member-photo-small">` : `<div class="member-photo-small"></div>`}
+                                        <img src="${this.getMemberPhotoUrl(member)}" alt="${member.name}" class="member-photo-small">
                                         <div class="member-details-full">
                                             <div class="member-name-full">${member.name}</div>
                                             <div class="member-meta-full" id="match-member-meta-${member.id}">
@@ -1578,7 +1593,7 @@ class CheckInViewApp {
                             return `
                                 <div class="attendee-row ${isCheckedIn ? 'checked-in' : ''}" onclick="app.toggleMatchAttendance('${eventId}', '${matchId}', '${member.id}', 'away')">
                                     <div class="member-info-full">
-                                        ${member.photo ? `<img src="${member.photo}" alt="${member.name}" class="member-photo-small">` : `<div class="member-photo-small"></div>`}
+                                        <img src="${this.getMemberPhotoUrl(member)}" alt="${member.name}" class="member-photo-small">
                                         <div class="member-details-full">
                                             <div class="member-name-full">${member.name}</div>
                                             <div class="member-meta-full" id="match-member-meta-away-${member.id}">
