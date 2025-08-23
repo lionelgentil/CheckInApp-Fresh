@@ -296,6 +296,16 @@ try {
             }
             break;
             
+        case 'db-maintenance':
+            // Database maintenance endpoint for SQL execution
+            if ($method === 'POST') {
+                executeDatabaseMaintenance($db);
+            } else {
+                http_response_code(405);
+                echo json_encode(['error' => 'POST method required']);
+            }
+            break;
+            
         default:
             http_response_code(404);
             echo json_encode(['error' => 'Endpoint not found']);
@@ -1902,6 +1912,95 @@ function cleanupPhotoPaths($db) {
         echo json_encode([
             'success' => false,
             'error' => 'Cleanup failed: ' . $e->getMessage()
+        ]);
+    }
+}
+
+function executeDatabaseMaintenance($db) {
+    $input = json_decode(file_get_contents('php://input'), true);
+    
+    if (!$input || !isset($input['query'])) {
+        http_response_code(400);
+        echo json_encode(['error' => 'Query is required']);
+        return;
+    }
+    
+    $query = trim($input['query']);
+    
+    if (empty($query)) {
+        http_response_code(400);
+        echo json_encode(['error' => 'Query cannot be empty']);
+        return;
+    }
+    
+    // Basic security: only allow certain operations
+    $query_upper = strtoupper($query);
+    $allowed_operations = ['SELECT', 'UPDATE', 'DELETE', 'INSERT'];
+    $is_allowed = false;
+    
+    foreach ($allowed_operations as $op) {
+        if (strpos($query_upper, $op) === 0) {
+            $is_allowed = true;
+            break;
+        }
+    }
+    
+    if (!$is_allowed) {
+        http_response_code(400);
+        echo json_encode(['error' => 'Only SELECT, UPDATE, DELETE, and INSERT operations are allowed']);
+        return;
+    }
+    
+    // Prevent dangerous operations
+    $dangerous_keywords = ['DROP', 'TRUNCATE', 'ALTER', 'CREATE', 'GRANT', 'REVOKE'];
+    foreach ($dangerous_keywords as $keyword) {
+        if (strpos($query_upper, $keyword) !== false) {
+            http_response_code(400);
+            echo json_encode(['error' => "Operation contains forbidden keyword: $keyword"]);
+            return;
+        }
+    }
+    
+    try {
+        $db->beginTransaction();
+        
+        if (strpos($query_upper, 'SELECT') === 0) {
+            // For SELECT queries, return the data
+            $stmt = $db->prepare($query);
+            $stmt->execute();
+            $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            $db->commit();
+            echo json_encode([
+                'success' => true,
+                'data' => $data,
+                'rowCount' => count($data)
+            ]);
+        } else {
+            // For other queries (UPDATE, DELETE, INSERT), return affected rows
+            $stmt = $db->prepare($query);
+            $stmt->execute();
+            $rowCount = $stmt->rowCount();
+            
+            $db->commit();
+            echo json_encode([
+                'success' => true,
+                'rowCount' => $rowCount,
+                'message' => "Query executed successfully. $rowCount row(s) affected."
+            ]);
+        }
+        
+    } catch (PDOException $e) {
+        $db->rollBack();
+        http_response_code(400);
+        echo json_encode([
+            'error' => 'Database error: ' . $e->getMessage()
+        ]);
+    } catch (Exception $e) {
+        $db->rollBack();
+        http_response_code(500);
+        echo json_encode([
+            'error' => 'Server error: ' . $e->getMessage()
         ]);
     }
 }
