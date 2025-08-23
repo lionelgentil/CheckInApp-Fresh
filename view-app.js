@@ -1,10 +1,10 @@
 /**
- * CheckIn App v2.16.24 - View Only Mode
+ * CheckIn App v2.16.25 - View Only Mode
  * Read-only version for public viewing
  */
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '2.16.24';
+const APP_VERSION = '2.16.25';
 
 class CheckInViewApp {
     constructor() {
@@ -233,30 +233,64 @@ class CheckInViewApp {
         const member = team.members.find(m => m.id === memberId);
         if (!member) return;
         
-        let photo = member.photo; // Keep existing photo if no new one
-        
-        if (photoFile) {
-            try {
-                photo = await this.convertFileToBase64(photoFile);
-            } catch (error) {
-                console.error('Error converting photo:', error);
-            }
-        }
-        
-        // Update only jersey number and photo
-        member.jerseyNumber = jerseyNumber ? parseInt(jerseyNumber) : null;
-        if (photo) member.photo = photo;
-        
         try {
-            await this.saveTeams();
+            // Handle photo upload separately if a new photo was selected
+            if (photoFile) {
+                console.log('Uploading new photo for member:', memberId);
+                const photoUrl = await this.uploadPhoto(photoFile, memberId);
+                console.log('Photo uploaded successfully:', photoUrl);
+                // Photo upload automatically updates the database, so we just need to update UI
+                member.photo = photoUrl;
+            }
+            
+            // Update jersey number if changed
+            const newJerseyNumber = jerseyNumber ? parseInt(jerseyNumber) : null;
+            if (member.jerseyNumber !== newJerseyNumber) {
+                member.jerseyNumber = newJerseyNumber;
+                // Save teams data for jersey number change
+                await this.saveTeams();
+            }
+            
             this.renderTeams();
             this.closeModal();
         } catch (error) {
-            alert('Failed to update player. Please try again.');
+            console.error('Error updating player:', error);
+            alert('Failed to update player: ' + error.message);
         }
     }
     
-    // Utility method for file conversion
+    // Photo upload method (same as main app)
+    async uploadPhoto(file, memberId) {
+        console.log('uploadPhoto called with:', { fileName: file.name, fileSize: file.size, memberId });
+        
+        if (!file || !memberId) {
+            throw new Error('File and member ID are required');
+        }
+        
+        const formData = new FormData();
+        formData.append('photo', file);
+        formData.append('member_id', memberId);
+        
+        console.log('Sending photo upload request to /api/photos');
+        
+        const response = await fetch('/api/photos', {
+            method: 'POST',
+            body: formData
+        });
+        
+        console.log('Photo upload response status:', response.status, response.ok);
+        
+        const result = await response.json();
+        console.log('Photo upload result:', result);
+        
+        if (!response.ok) {
+            throw new Error(result.error || 'Photo upload failed');
+        }
+        
+        return result.url; // Return the photo URL
+    }
+    
+    // Utility method for file conversion (DEPRECATED - keeping for compatibility)
     async convertFileToBase64(file) {
         return new Promise((resolve, reject) => {
             const reader = new FileReader();
