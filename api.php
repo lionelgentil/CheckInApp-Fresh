@@ -1102,6 +1102,7 @@ function debugDisciplinaryRecords($db) {
 
 function getDisciplinaryRecords($db) {
     $memberId = $_GET['member_id'] ?? null;
+    $teamId = $_GET['team_id'] ?? null;
     
     if ($memberId) {
         // Get records for specific member
@@ -1114,6 +1115,17 @@ function getDisciplinaryRecords($db) {
             ORDER BY pdr.incident_date DESC, pdr.created_at DESC
         ');
         $stmt->execute([$memberId]);
+    } elseif ($teamId) {
+        // Get records for all members of a specific team
+        $stmt = $db->prepare('
+            SELECT pdr.*, tm.name as member_name, t.name as team_name
+            FROM player_disciplinary_records pdr
+            JOIN team_members tm ON pdr.member_id = tm.id
+            JOIN teams t ON tm.team_id = t.id
+            WHERE t.id = ?
+            ORDER BY pdr.incident_date DESC, pdr.created_at DESC
+        ');
+        $stmt->execute([$teamId]);
     } else {
         // Get all records
         $stmt = $db->query('

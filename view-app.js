@@ -4,7 +4,7 @@
  */
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '3.0.4';
+const APP_VERSION = '3.0.5';
 
 class CheckInViewApp {
     constructor() {
@@ -347,9 +347,10 @@ class CheckInViewApp {
                 return this.getGenderDefaultPhoto(member);
             }
             
-            // Check if it's a real uploaded photo (either filename or API URL with real extension)
-            if (member.photo.includes('.jpg') || member.photo.includes('.jpeg') || 
-                member.photo.includes('.png') || member.photo.includes('.webp')) {
+            // Check if it's a real uploaded photo - handle URLs with query parameters
+            const photoUrl = member.photo.split('?')[0]; // Remove query parameters for extension check
+            if (photoUrl.includes('.jpg') || photoUrl.includes('.jpeg') || 
+                photoUrl.includes('.png') || photoUrl.includes('.webp')) {
                 
                 // If it's just a filename, convert to API URL
                 if (!member.photo.startsWith('/api/photos') && !member.photo.startsWith('http')) {
