@@ -4,7 +4,7 @@
  */
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '3.0.6';
+const APP_VERSION = '3.0.7';
 
 class CheckInApp {
     constructor() {
@@ -165,38 +165,55 @@ class CheckInApp {
     
     // Get member photo URL with gender defaults
     getMemberPhotoUrl(member) {
+        // Debug logging
+        console.log('getMemberPhotoUrl called for:', member.name, 'photo:', member.photo);
+        
         // Check if member has a real custom photo
         if (member.photo) {
             // Skip gender defaults
             if (member.photo.includes('male.svg') || 
                 member.photo.includes('female.svg') || 
                 member.photo.includes('default.svg')) {
-                // Use gender-based defaults
+                console.log('Using gender default for:', member.name);
                 return this.getGenderDefaultPhoto(member);
             }
             
             // Skip base64 images - use gender defaults instead
             if (member.photo.startsWith('data:image/')) {
+                console.log('Skipping base64 image for:', member.name);
                 return this.getGenderDefaultPhoto(member);
             }
             
             // Check if it's a real uploaded photo - handle URLs with query parameters
             const photoUrl = member.photo.split('?')[0]; // Remove query parameters for extension check
+            console.log('Checking photo URL:', photoUrl, 'for extensions');
+            
             if (photoUrl.includes('.jpg') || photoUrl.includes('.jpeg') || 
                 photoUrl.includes('.png') || photoUrl.includes('.webp')) {
                 
+                console.log('Valid photo extension found for:', member.name);
+                
                 // If it's just a filename, convert to API URL
                 if (!member.photo.startsWith('/api/photos') && !member.photo.startsWith('http')) {
-                    return `/api/photos?filename=${member.photo}`;
+                    const finalUrl = `/api/photos?filename=${member.photo}`;
+                    console.log('Converting filename to URL:', finalUrl);
+                    return finalUrl;
                 }
                 
                 // If it's already an API URL, use it directly
+                console.log('Using existing URL for:', member.name, member.photo);
                 return member.photo;
             }
+            
+            console.log('No valid extension found, falling back to gender default for:', member.name);
+        } else {
+            console.log('No photo field for:', member.name);
         }
         
         // Use gender-based defaults for everyone else
-        return this.getGenderDefaultPhoto(member);
+        const defaultPhoto = this.getGenderDefaultPhoto(member);
+        console.log('Using gender default:', defaultPhoto, 'for:', member.name);
+        return defaultPhoto;
     }
     
     // Helper method for gender defaults
