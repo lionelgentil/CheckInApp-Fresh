@@ -4,7 +4,7 @@
  */
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '2.16.29';
+const APP_VERSION = '2.16.30';
 
 class CheckInViewApp {
     constructor() {
@@ -160,6 +160,18 @@ class CheckInViewApp {
                 await this.loadEvents();
             }
             this.renderStandings();
+        } else if (sectionName === 'cards') {
+            // Ensure we have all data loaded for card tracking
+            if (this.teams.length === 0) {
+                await this.loadTeams();
+            }
+            if (this.events.length === 0) {
+                await this.loadEvents();
+            }
+            if (this.referees.length === 0) {
+                await this.loadReferees();
+            }
+            this.renderCardTracker();
         }
         
         // Show section
@@ -1219,6 +1231,145 @@ class CheckInViewApp {
             over30: over30Teams,
             over40: over40Teams
         };
+    }
+    
+    renderCardTracker() {
+        const container = document.getElementById('cards-tracker-container');
+        const cardTypeFilter = document.getElementById('card-type-filter')?.value || 'all';
+        
+        // Collect all cards from current season matches
+        const cardRecords = this.collectCurrentSeasonCards();
+        
+        // Filter by card type if specified
+        let filteredCards = cardRecords;
+        if (cardTypeFilter !== 'all') {
+            filteredCards = cardRecords.filter(card => card.cardType === cardTypeFilter);
+        }
+        
+        if (filteredCards.length === 0) {
+            const message = cardTypeFilter === 'all' ? 'No cards issued' : `No ${cardTypeFilter} cards issued`;
+            container.innerHTML = `
+                <div class="empty-state">
+                    <h3>${message}</h3>
+                    <p>Card records for the current season will appear here</p>
+                </div>
+            `;
+            return;
+        }
+        
+        // Sort by date (most recent first), then by team name
+        filteredCards.sort((a, b) => {
+            const dateA = new Date(a.eventDate);
+            const dateB = new Date(b.eventDate);
+            if (dateB - dateA !== 0) return dateB - dateA;
+            return a.teamName.localeCompare(b.teamName);
+        });
+        
+        container.innerHTML = `
+            <table class="card-tracker-table">
+                <thead>
+                    <tr>
+                        <th>Team</th>
+                        <th>Player</th>
+                        <th class="center-header">Card</th>
+                        <th>Infraction</th>
+                        <th>Notes</th>
+                        <th>Match</th>
+                        <th>Referee</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${filteredCards.map(card => `
+                        <tr>
+                            <td class="team-name-badge">${card.teamName}</td>
+                            <td class="player-name-cell">${card.playerName}</td>
+                            <td class="center-cell">
+                                <span class="card-type-badge card-type-${card.cardType}">
+                                    ${card.cardType === 'yellow' ? '🟨 Yellow' : '🟥 Red'}
+                                </span>
+                            </td>
+                            <td>${card.reason || 'Not specified'}</td>
+                            <td class="notes-cell" title="${card.notes || ''}">${card.notes || '—'}</td>
+                            <td class="match-info-cell">
+                                <div><strong>${card.matchInfo}</strong></div>
+                                <div style="font-size: 0.8em; color: #888;">${new Date(card.eventDate).toLocaleDateString()}</div>
+                                ${card.minute ? `<div style="font-size: 0.8em; color: #888;">${card.minute}'</div>` : ''}
+                            </td>
+                            <td class="referee-cell">${card.refereeName || 'Not recorded'}</td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+        `;
+    }
+    
+    collectCurrentSeasonCards() {
+        const cardRecords = [];
+        
+        // Create lookup maps for efficiency
+        const teamLookup = new Map();
+        const refereeLookup = new Map();
+        
+        this.teams.forEach(team => teamLookup.set(team.id, team));
+        this.referees.forEach(referee => refereeLookup.set(referee.id, referee));
+        
+        // Process all events and matches
+        this.events.forEach(event => {
+            // Only include current season events
+            if (!this.isCurrentSeasonEvent(event.date)) {
+                return;
+            }
+            
+            event.matches.forEach(match => {
+                if (!match.cards || match.cards.length === 0) {
+                    return;
+                }
+                
+                const homeTeam = teamLookup.get(match.homeTeamId);
+                const awayTeam = teamLookup.get(match.awayTeamId);
+                const mainReferee = refereeLookup.get(match.mainRefereeId);
+                
+                // Process each card in the match
+                match.cards.forEach(card => {
+                    // Determine which team the player belongs to
+                    let playerTeam = null;
+                    let playerName = 'Unknown Player';
+                    
+                    // Check home team first
+                    if (homeTeam) {
+                        const homePlayer = homeTeam.members.find(m => m.id === card.memberId);
+                        if (homePlayer) {
+                            playerTeam = homeTeam;
+                            playerName = homePlayer.name;
+                        }
+                    }
+                    
+                    // Check away team if not found in home team
+                    if (!playerTeam && awayTeam) {
+                        const awayPlayer = awayTeam.members.find(m => m.id === card.memberId);
+                        if (awayPlayer) {
+                            playerTeam = awayTeam;
+                            playerName = awayPlayer.name;
+                        }
+                    }
+                    
+                    cardRecords.push({
+                        eventDate: event.date,
+                        eventName: event.name,
+                        matchInfo: `${homeTeam?.name || 'Unknown'} vs ${awayTeam?.name || 'Unknown'}`,
+                        teamName: playerTeam?.name || 'Unknown Team',
+                        playerName: playerName,
+                        cardType: card.cardType,
+                        reason: card.reason,
+                        notes: card.notes,
+                        minute: card.minute,
+                        refereeName: mainReferee?.name
+                    });
+                });
+            });
+        });
+        
+        return cardRecords;
     }
     
     // View Match (read-only)
