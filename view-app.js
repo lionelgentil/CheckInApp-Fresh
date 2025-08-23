@@ -4,7 +4,7 @@
  */
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '2.16.27';
+const APP_VERSION = '2.16.28';
 
 class CheckInViewApp {
     constructor() {
@@ -1368,6 +1368,8 @@ class CheckInViewApp {
         const match = event.matches.find(m => m.id === matchId);
         const homeTeam = this.teams.find(t => t.id === match.homeTeamId);
         const awayTeam = this.teams.find(t => t.id === match.awayTeamId);
+        const mainReferee = match.mainRefereeId ? this.referees.find(r => r.id === match.mainRefereeId) : null;
+        const assistantReferee = match.assistantRefereeId ? this.referees.find(r => r.id === match.assistantRefereeId) : null;
         
         if (!match) return;
         
@@ -1393,6 +1395,21 @@ class CheckInViewApp {
                     <label class="form-label">${awayTeam.name} Score</label>
                     <input type="number" class="form-input" id="away-score" value="${match.awayScore !== null ? match.awayScore : ''}" min="0">
                 </div>
+            </div>
+            
+            ${mainReferee ? `
+            <div class="form-group">
+                <label class="form-label">Match Officials</label>
+                <div style="padding: 12px; background: #f8f9fa; border-radius: 8px; border: 2px solid #e9ecef;">
+                    <div style="font-weight: 600; color: #333; margin-bottom: 4px;">Referee: ${mainReferee.name}</div>
+                    ${assistantReferee ? `<div style="color: #666; font-size: 0.9em;">Assistant: ${assistantReferee.name}</div>` : ''}
+                </div>
+            </div>
+            ` : ''}
+            
+            <div class="form-group">
+                <label class="form-label">Match Notes</label>
+                <textarea class="form-input" id="match-notes" rows="3" placeholder="Enter any notes about this match (optional)">${match.matchNotes || ''}</textarea>
             </div>
             
             <div class="form-group">
@@ -1539,11 +1556,13 @@ class CheckInViewApp {
         const matchStatus = document.getElementById('match-status').value;
         const homeScore = document.getElementById('home-score').value;
         const awayScore = document.getElementById('away-score').value;
+        const matchNotes = document.getElementById('match-notes').value.trim();
         
         // Update match data
         match.matchStatus = matchStatus;
         match.homeScore = homeScore !== '' ? parseInt(homeScore) : null;
         match.awayScore = awayScore !== '' ? parseInt(awayScore) : null;
+        match.matchNotes = matchNotes;
         
         // Collect cards data
         const cardItems = document.querySelectorAll('.card-item');
