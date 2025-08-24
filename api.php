@@ -5,7 +5,7 @@
  */
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '3.2.2';
+const APP_VERSION = '3.2.3';
 
 // Default photos - fallback to API serving for SVG compatibility
 function getDefaultPhoto($gender) {
@@ -241,6 +241,118 @@ try {
                 uploadPhoto($db);
             } elseif ($method === 'DELETE') {
                 deletePhoto($db);
+            }
+            break;
+            
+        case 'fix-photos-directory':
+            // Emergency fix to recreate photos directory and clean database
+            if ($method === 'POST') {
+                $password = isset($_POST['password']) ? $_POST['password'] : '';
+                if ($password !== 'fixphotos2024') {
+                    http_response_code(401);
+                    echo json_encode(['error' => 'Invalid password']);
+                    break;
+                }
+                
+                $photosDir = __DIR__ . '/photos/members';
+                $defaultsDir = __DIR__ . '/photos/defaults';
+                $results = [];
+                
+                // Create photos directories if they don't exist
+                if (!is_dir($photosDir)) {
+                    if (mkdir($photosDir, 0755, true)) {
+                        $results[] = "Created photos/members directory";
+                    } else {
+                        $results[] = "ERROR: Could not create photos/members directory";
+                    }
+                } else {
+                    $results[] = "photos/members directory already exists";
+                }
+                
+                if (!is_dir($defaultsDir)) {
+                    if (mkdir($defaultsDir, 0755, true)) {
+                        $results[] = "Created photos/defaults directory";
+                    } else {
+                        $results[] = "ERROR: Could not create photos/defaults directory";
+                    }
+                } else {
+                    $results[] = "photos/defaults directory already exists";
+                }
+                
+                // Clean up database - set photo field to NULL for members with missing files
+                $stmt = $db->query("SELECT id, name, photo FROM team_members WHERE photo IS NOT NULL");
+                $members = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                $cleanedCount = 0;
+                
+                foreach ($members as $member) {
+                    $photoFilename = $member['photo'];
+                    
+                    // Extract filename if it's a URL
+                    if (strpos($photoFilename, '/api/photos?filename=') === 0) {
+                        $parsedUrl = parse_url($photoFilename);
+                        if ($parsedUrl && isset($parsedUrl['query'])) {
+                            parse_str($parsedUrl['query'], $query);
+                            if (isset($query['filename'])) {
+                                $photoFilename = $query['filename'];
+                            }
+                        }
+                    }
+                    
+                    $photoPath = $photosDir . '/' . $photoFilename;
+                    
+                    // If file doesn't exist, clear the database reference
+                    if (!file_exists($photoPath)) {
+                        $updateStmt = $db->prepare('UPDATE team_members SET photo = NULL WHERE id = ?');
+                        $updateStmt->execute([$member['id']]);
+                        $cleanedCount++;
+                    }
+                }
+                
+                $results[] = "Cleaned {$cleanedCount} missing photo references from database";
+                
+                // Create default SVG files if they don't exist
+                $maleDefault = $defaultsDir . '/male.svg';
+                $femaleDefault = $defaultsDir . '/female.svg';
+                
+                if (!file_exists($maleDefault)) {
+                    $maleSvg = '<svg width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="50" cy="50" r="50" fill="#4F80FF"/>
+    <circle cx="50" cy="35" r="18" fill="white"/>
+    <ellipse cx="50" cy="75" rx="25" ry="20" fill="white"/>
+</svg>';
+                    if (file_put_contents($maleDefault, $maleSvg)) {
+                        $results[] = "Created male.svg default avatar";
+                    } else {
+                        $results[] = "ERROR: Could not create male.svg";
+                    }
+                } else {
+                    $results[] = "male.svg already exists";
+                }
+                
+                if (!file_exists($femaleDefault)) {
+                    $femaleSvg = '<svg width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
+    <circle cx="50" cy="50" r="50" fill="#FF69B4"/>
+    <circle cx="50" cy="35" r="18" fill="white"/>
+    <ellipse cx="50" cy="75" rx="25" ry="20" fill="white"/>
+</svg>';
+                    if (file_put_contents($femaleDefault, $femaleSvg)) {
+                        $results[] = "Created female.svg default avatar";
+                    } else {
+                        $results[] = "ERROR: Could not create female.svg";
+                    }
+                } else {
+                    $results[] = "female.svg already exists";
+                }
+                
+                echo json_encode([
+                    'success' => true,
+                    'message' => 'Photos directory fix completed',
+                    'results' => $results,
+                    'cleaned_members' => $cleanedCount
+                ]);
+            } else {
+                http_response_code(405);
+                echo json_encode(['error' => 'POST method required']);
             }
             break;
             
