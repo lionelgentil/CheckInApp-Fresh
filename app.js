@@ -4,7 +4,7 @@
  */
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '3.2.0';
+const APP_VERSION = '3.2.1';
 
 class CheckInApp {
     constructor() {
@@ -187,8 +187,9 @@ class CheckInApp {
                     // Check if the filename has a valid image extension
                     if (filename.includes('.jpg') || filename.includes('.jpeg') || 
                         filename.includes('.png') || filename.includes('.webp')) {
-                        // Return the full API URL as-is
-                        return member.photo;
+                        // Return the full API URL with additional cache-busting
+                        const separator = member.photo.includes('&') ? '&' : '&';
+                        return member.photo + separator + '_cb=' + Date.now();
                     }
                 }
             }
@@ -197,15 +198,17 @@ class CheckInApp {
             if ((member.photo.includes('.jpg') || member.photo.includes('.jpeg') || 
                 member.photo.includes('.png') || member.photo.includes('.webp')) &&
                 !member.photo.startsWith('/api/photos') && !member.photo.startsWith('http')) {
-                // Convert filename to API URL
-                return `/api/photos?filename=${member.photo}`;
+                // Convert filename to API URL with cache-busting
+                return `/api/photos?filename=${member.photo}&_cb=${Date.now()}`;
             }
             
             // Check if it's already a full HTTP URL with valid extension
             if (member.photo.startsWith('http') && 
                 (member.photo.includes('.jpg') || member.photo.includes('.jpeg') || 
                  member.photo.includes('.png') || member.photo.includes('.webp'))) {
-                return member.photo;
+                // Add cache-busting to external URLs
+                const separator = member.photo.includes('?') ? '&' : '?';
+                return member.photo + separator + '_cb=' + Date.now();
             }
         }
         
