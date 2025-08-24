@@ -5,7 +5,7 @@
  */
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '3.2.1';
+const APP_VERSION = '3.2.2';
 
 // Default photos - fallback to API serving for SVG compatibility
 function getDefaultPhoto($gender) {
@@ -241,6 +241,61 @@ try {
                 uploadPhoto($db);
             } elseif ($method === 'DELETE') {
                 deletePhoto($db);
+            }
+            break;
+            
+        case 'debug-photos-detailed':
+            // Enhanced debug endpoint to check photo data and files
+            if ($method === 'GET') {
+                $stmt = $db->query("
+                    SELECT id, name, gender, photo, 
+                           LENGTH(photo) as photo_length,
+                           CASE 
+                               WHEN photo LIKE '/api/photos%' THEN 'API_URL'
+                               WHEN photo LIKE '/photos/members%' THEN 'FULL_PATH'  
+                               WHEN photo LIKE '%.svg' OR photo LIKE '%.jpg' OR photo LIKE '%.png' THEN 'FILENAME'
+                               ELSE 'OTHER'
+                           END as photo_type
+                    FROM team_members 
+                    WHERE photo IS NOT NULL 
+                    ORDER BY photo_type, id
+                    LIMIT 20
+                ");
+                $members = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                
+                // Check if files actually exist
+                $photosDir = __DIR__ . '/photos/members';
+                foreach ($members as &$member) {
+                    $photoFilename = $member['photo'];
+                    
+                    // Extract filename if it's a URL
+                    if (strpos($photoFilename, '/api/photos?filename=') === 0) {
+                        $parsedUrl = parse_url($photoFilename);
+                        if ($parsedUrl && isset($parsedUrl['query'])) {
+                            parse_str($parsedUrl['query'], $query);
+                            if (isset($query['filename'])) {
+                                $photoFilename = $query['filename'];
+                            }
+                        }
+                    }
+                    
+                    $photoPath = $photosDir . '/' . $photoFilename;
+                    $member['file_exists'] = file_exists($photoPath);
+                    $member['file_size'] = file_exists($photoPath) ? filesize($photoPath) : 0;
+                    $member['expected_path'] = $photoPath;
+                    
+                    // Check for any files starting with member ID
+                    $memberFiles = glob($photosDir . '/' . $member['id'] . '*');
+                    $member['found_files'] = array_map('basename', $memberFiles);
+                }
+                
+                echo json_encode([
+                    'success' => true,
+                    'members' => $members,
+                    'photos_directory' => $photosDir,
+                    'directory_exists' => is_dir($photosDir),
+                    'timestamp' => date('c')
+                ]);
             }
             break;
             
@@ -1335,19 +1390,24 @@ function servePhoto($db) {
             $photosDir = __DIR__ . '/photos/members';
             $existingFiles = glob($photosDir . '/' . $memberId . '*');
             
+            error_log("servePhoto: Searching for files matching pattern: " . $photosDir . '/' . $memberId . '*');
+            error_log("servePhoto: Found " . count($existingFiles) . " matching files: " . implode(', ', $existingFiles));
+            
             if (!empty($existingFiles)) {
                 // Use the most recent file (in case there are multiple)
                 $photoPath = end($existingFiles);
-                error_log("servePhoto: Found existing photo for member {$memberId}: " . basename($photoPath));
+                error_log("servePhoto: Using existing photo for member {$memberId}: " . basename($photoPath));
             } else {
                 // No photo file found, fall back to gender-appropriate default
+                error_log("servePhoto: No files found for member {$memberId}, looking up gender for fallback");
                 $stmt = $db->prepare('SELECT gender FROM team_members WHERE id = ?');
                 $stmt->execute([$memberId]);
                 $member = $stmt->fetch(PDO::FETCH_ASSOC);
                 
                 $gender = ($member && $member['gender'] === 'female') ? 'female' : 'male';
                 $photoPath = __DIR__ . '/photos/defaults/' . ($gender === 'female' ? 'female.svg' : 'male.svg');
-                error_log("Photo not found for member {$memberId}, falling back to {$gender} default: " . $photoPath);
+                error_log("servePhoto: No photo found for member {$memberId}, falling back to {$gender} default: " . $photoPath);
+                error_log("servePhoto: WARNING - Serving {$gender}.svg for requested filename: {$filename}");
             }
         }
     }
