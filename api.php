@@ -1424,7 +1424,7 @@ function uploadPhoto($db) {
         return;
     }
     
-    // Generate filename
+    // Generate filename with timestamp to ensure uniqueness
     switch($mimeType) {
         case 'image/jpeg':
             $extension = 'jpg';
@@ -1439,7 +1439,8 @@ function uploadPhoto($db) {
             $extension = 'jpg';
     }
     
-    $filename = $memberId . '.' . $extension;
+    $timestamp = time();
+    $filename = $memberId . '_' . $timestamp . '.' . $extension;
     
     // Ensure photos directory exists
     $photosDir = __DIR__ . '/photos/members';
