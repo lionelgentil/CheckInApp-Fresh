@@ -1313,18 +1313,35 @@ function servePhoto($db) {
         error_log("servePhoto: Constructed photo path: " . $photoPath);
         error_log("servePhoto: File exists check: " . (file_exists($photoPath) ? 'YES' : 'NO'));
         
-        // If member photo doesn't exist, fall back to gender-appropriate default
+        // If the exact filename doesn't exist, try to find any photo for this member
         if (!file_exists($photoPath)) {
-            // Look up member's gender from database
-            $memberId = pathinfo($filename, PATHINFO_FILENAME); // Extract UUID from filename
+            $filenameWithoutExt = pathinfo($filename, PATHINFO_FILENAME);
             
-            $stmt = $db->prepare('SELECT gender FROM team_members WHERE id = ?');
-            $stmt->execute([$memberId]);
-            $member = $stmt->fetch(PDO::FETCH_ASSOC);
+            // Handle both old format (memberId.ext) and new format (memberId_timestamp.ext)
+            $memberId = $filenameWithoutExt;
+            if (strpos($filenameWithoutExt, '_') !== false) {
+                // New format: extract memberId from memberId_timestamp
+                $memberId = substr($filenameWithoutExt, 0, strrpos($filenameWithoutExt, '_'));
+            }
             
-            $gender = ($member && $member['gender'] === 'female') ? 'female' : 'male';
-            $photoPath = __DIR__ . '/photos/defaults/' . ($gender === 'female' ? 'female.svg' : 'male.svg');
-            error_log("Photo not found for member {$memberId}, falling back to {$gender} default: " . $photoPath);
+            // Try to find any existing photo file for this member (old or new format)
+            $photosDir = __DIR__ . '/photos/members';
+            $existingFiles = glob($photosDir . '/' . $memberId . '*');
+            
+            if (!empty($existingFiles)) {
+                // Use the most recent file (in case there are multiple)
+                $photoPath = end($existingFiles);
+                error_log("servePhoto: Found existing photo for member {$memberId}: " . basename($photoPath));
+            } else {
+                // No photo file found, fall back to gender-appropriate default
+                $stmt = $db->prepare('SELECT gender FROM team_members WHERE id = ?');
+                $stmt->execute([$memberId]);
+                $member = $stmt->fetch(PDO::FETCH_ASSOC);
+                
+                $gender = ($member && $member['gender'] === 'female') ? 'female' : 'male';
+                $photoPath = __DIR__ . '/photos/defaults/' . ($gender === 'female' ? 'female.svg' : 'male.svg');
+                error_log("Photo not found for member {$memberId}, falling back to {$gender} default: " . $photoPath);
+            }
         }
     }
     
