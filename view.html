@@ -908,11 +908,39 @@
     
     <div class="version-footer">v<span id="footer-version"></span> - View Only</div>
     
-    <script src="view-app.js?v=3.1.2"></script>
     <script>
-        // Set version numbers from JavaScript constant
-        document.getElementById('app-version').textContent = APP_VERSION;
-        document.getElementById('footer-version').textContent = APP_VERSION;
+        // Dynamic version loading to prevent cache issues
+        async function loadApp() {
+            try {
+                // Fetch current version from API
+                const response = await fetch('/api/version');
+                const data = await response.json();
+                const version = data.version;
+                
+                // Create and load the view app script with current version
+                const script = document.createElement('script');
+                script.src = `view-app.js?v=${version}`;
+                script.onload = function() {
+                    // Set version numbers from JavaScript constant after script loads
+                    document.getElementById('app-version').textContent = APP_VERSION;
+                    document.getElementById('footer-version').textContent = APP_VERSION;
+                };
+                document.body.appendChild(script);
+            } catch (error) {
+                console.error('Failed to load version:', error);
+                // Fallback: load without version parameter
+                const script = document.createElement('script');
+                script.src = 'view-app.js';
+                document.body.appendChild(script);
+            }
+        }
+        
+        // Load app when DOM is ready
+        if (document.readyState === 'loading') {
+            document.addEventListener('DOMContentLoaded', loadApp);
+        } else {
+            loadApp();
+        }
     </script>
 </body>
 </html>

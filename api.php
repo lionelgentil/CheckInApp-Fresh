@@ -5,7 +5,7 @@
  */
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '2.16.12';
+const APP_VERSION = '3.2.0';
 
 // Default photos - fallback to API serving for SVG compatibility
 function getDefaultPhoto($gender) {
@@ -121,6 +121,13 @@ $method = $_SERVER['REQUEST_METHOD'];
 // Route requests
 try {
     switch ($path) {
+        case 'version':
+            // Version endpoint for dynamic cache-busting
+            if ($method === 'GET') {
+                echo json_encode(['version' => APP_VERSION]);
+            }
+            break;
+            
         case 'health':
             echo json_encode([
                 'status' => 'OK',
