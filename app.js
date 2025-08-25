@@ -4,7 +4,7 @@
  */
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '3.5.1';
+const APP_VERSION = '4.0.1';
 
 class CheckInApp {
     constructor() {
@@ -3077,8 +3077,14 @@ Please check the browser console (F12) for more details.`);
         }
     }
     
-    viewMatch(eventId, matchId) {
-        this.currentModalType = 'match'; // Set modal type
+    async viewMatch(eventId, matchId) {
+        this.currentModalType = 'match';
+        
+        // Ensure referees are loaded before viewing match
+        if (this.referees.length === 0) {
+            await this.loadReferees();
+        }
+        
         const event = this.events.find(e => e.id === eventId);
         const match = event.matches.find(m => m.id === matchId);
         const homeTeam = this.teams.find(t => t.id === match.homeTeamId);
@@ -3086,145 +3092,101 @@ Please check the browser console (F12) for more details.`);
         const mainReferee = match.mainRefereeId ? this.referees.find(r => r.id === match.mainRefereeId) : null;
         const assistantReferee = match.assistantRefereeId ? this.referees.find(r => r.id === match.assistantRefereeId) : null;
         
+        // Match status display
+        const statusMap = {
+            'scheduled': '📅 Scheduled',
+            'in_progress': '⏱️ In Progress', 
+            'completed': '✅ Completed',
+            'cancelled': '❌ Cancelled'
+        };
+        const statusDisplay = statusMap[match.matchStatus] || '📅 Scheduled';
+        
+        // Score display
+        const hasScore = match.homeScore !== null && match.awayScore !== null;
+        const scoreSection = hasScore ? `
+            <div style="margin-bottom: 20px; padding: 15px; background: #e8f5e8; border-radius: 8px; text-align: center;">
+                <h3 style="margin: 0 0 10px 0; color: #28a745;">Final Score</h3>
+                <div style="font-size: 2em; font-weight: bold; color: #333;">
+                    ${homeTeam.name}: ${match.homeScore} - ${match.awayScore} :${awayTeam.name}
+                </div>
+            </div>
+        ` : '';
+        
+        // Cards display
+        const cardsSection = match.cards && match.cards.length > 0 ? `
+            <div style="margin-bottom: 20px; padding: 15px; background: #fff3cd; border-radius: 8px;">
+                <h4 style="margin: 0 0 15px 0; color: #856404;">Cards & Disciplinary Actions</h4>
+                <div style="display: flex; flex-direction: column; gap: 8px;">
+                    ${match.cards.map(card => {
+                        const member = [...homeTeam.members, ...awayTeam.members].find(m => m.id === card.memberId);
+                        const teamName = homeTeam.members.some(m => m.id === card.memberId) ? homeTeam.name : awayTeam.name;
+                        const cardIcon = card.cardType === 'yellow' ? '🟨' : '🟥';
+                        const cardColor = card.cardType === 'yellow' ? '#ffc107' : '#dc3545';
+                        
+                        return `
+                            <div style="display: flex; align-items: center; gap: 10px; padding: 8px; background: white; border-radius: 6px; border-left: 4px solid ${cardColor};">
+                                <span style="font-size: 1.2em;">${cardIcon}</span>
+                                <div style="flex: 1;">
+                                    <strong>${member ? member.name : 'Unknown Player'}</strong> (${teamName})
+                                    ${card.minute ? `<span style="color: #666;"> - ${card.minute}'</span>` : ''}
+                                    ${card.reason ? `<div style="font-size: 0.9em; color: #666; margin-top: 2px;">${card.reason}</div>` : ''}
+                                    ${card.notes ? `<div style="font-size: 0.85em; color: #888; margin-top: 2px; font-style: italic;">Notes: ${card.notes}</div>` : ''}
+                                </div>
+                            </div>
+                        `;
+                    }).join('')}
+                </div>
+            </div>
+        ` : '';
+        
         const modal = this.createModal(`Match: ${homeTeam.name} vs ${awayTeam.name}`, `
             <div style="margin-bottom: 20px; padding: 15px; background: #f8f9fa; border-radius: 8px;">
                 <p><strong>Date:</strong> ${new Date(event.date).toLocaleDateString()}</p>
+                <p><strong>Status:</strong> ${statusDisplay}</p>
                 ${match.field ? `<p><strong>Field:</strong> ${match.field}</p>` : ''}
                 ${match.time ? `<p><strong>Time:</strong> ${match.time.substring(0, 5)}</p>` : ''}
                 ${mainReferee ? `<p><strong>Referee:</strong> ${mainReferee.name}${assistantReferee ? `, ${assistantReferee.name}` : ''}</p>` : ''}
                 ${match.notes ? `<p><strong>Notes:</strong> ${match.notes}</p>` : ''}
             </div>
             
+            ${scoreSection}
+            ${cardsSection}
+            
+            <!-- Team Selector for Grid View -->
             <div style="margin-bottom: 20px;">
-                <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
-                    <input type="radio" name="team-toggle" value="both" checked onchange="app.toggleTeamView('both')">
-                    <span>Show Both Teams</span>
-                </label>
-                <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; margin-top: 8px;">
-                    <input type="radio" name="team-toggle" value="home" onchange="app.toggleTeamView('home')">
-                    <span>Show ${homeTeam.name} Only</span>
-                </label>
-                <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; margin-top: 8px;">
-                    <input type="radio" name="team-toggle" value="away" onchange="app.toggleTeamView('away')">
-                    <span>Show ${awayTeam.name} Only</span>
-                </label>
+                <div id="grid-view-controls">
+                    <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                        <input type="radio" name="grid-team-toggle" value="home" checked onchange="app.toggleGridTeam('home')">
+                        <span>${homeTeam.name}</span>
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; margin-top: 8px;">
+                        <input type="radio" name="grid-team-toggle" value="away" onchange="app.toggleGridTeam('away')">
+                        <span>${awayTeam.name}</span>
+                    </label>
+                </div>
             </div>
             
-            <div style="display: flex; flex-direction: column; gap: 20px;">
-                <div id="home-team-section">
-                    <div style="background: ${homeTeam.colorData}; color: white; padding: 12px; border-radius: 8px; margin-bottom: 15px;">
-                        <h3 style="margin: 0; text-shadow: 1px 1px 2px rgba(0,0,0,0.3);">${homeTeam.name} (Home)</h3>
+            
+            <!-- ECNL-Style Grid Check-In View -->
+            <div id="grid-checkin-view" style="display: block;">
+                <div id="grid-home-team" style="display: block;">
+                    <div style="background: ${homeTeam.colorData}; color: white; padding: 12px; border-radius: 8px; margin-bottom: 15px; text-align: center;">
+                        <h3 style="margin: 0; text-shadow: 1px 1px 2px rgba(0,0,0,0.3);">${homeTeam.name} Check-In</h3>
+                        <div style="font-size: 0.9em; opacity: 0.9; margin-top: 4px;">Tap players to check them in</div>
                     </div>
-                    <div class="attendees-list">
-                        ${homeTeam.members.map(member => {
-                            const isCheckedIn = match.homeTeamAttendees.some(a => a.memberId === member.id);
-                            
-                            // Get current season card counts for this member across all matches (using new season logic)
-                            let currentSeasonYellowCards = 0;
-                            let currentSeasonRedCards = 0;
-                            
-                            this.events.forEach(event => {
-                                // Only count cards from current season events
-                                if (this.isCurrentSeasonEvent(event.date)) {
-                                    event.matches.forEach(m => {
-                                        if (m.cards) {
-                                            const cards = m.cards.filter(card => card.memberId === member.id);
-                                            currentSeasonYellowCards += cards.filter(card => card.cardType === 'yellow').length;
-                                            currentSeasonRedCards += cards.filter(card => card.cardType === 'red').length;
-                                        }
-                                    });
-                                }
-                            });
-                            
-                            const cardsDisplay = [];
-                            if (currentSeasonYellowCards > 0 || currentSeasonRedCards > 0) {
-                                const currentSeasonCards = [];
-                                if (currentSeasonYellowCards > 0) currentSeasonCards.push(`🟨${currentSeasonYellowCards}`);
-                                if (currentSeasonRedCards > 0) currentSeasonCards.push(`🟥${currentSeasonRedCards}`);
-                                cardsDisplay.push(`${currentSeasonCards.join(' ')} (current season)`);
-                            }
-                            
-                            return `
-                                <div class="attendee-row ${isCheckedIn ? 'checked-in' : ''}" onclick="app.toggleMatchAttendance('${eventId}', '${matchId}', '${member.id}', 'home')">
-                                    <div class="member-info-full">
-                                        <img src="${this.getMemberPhotoUrl(member)}" alt="${member.name}" class="member-photo-small">
-                                        <div class="member-details-full">
-                                            <div class="member-name-full">${member.name}</div>
-                                            <div class="member-meta-full" id="match-member-meta-${member.id}">
-                                                ${member.jerseyNumber ? `#${member.jerseyNumber}` : ''}
-                                                ${member.gender ? ` • ${member.gender}` : ''}
-                                                ${cardsDisplay.length > 0 ? ` • ${cardsDisplay.join(' | ')}` : ''}
-                                                <span class="lifetime-cards" id="match-lifetime-cards-${member.id}"> • Loading disciplinary records...</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="checkbox-area">
-                                        <div class="attendance-checkbox ${isCheckedIn ? 'checked' : ''}">
-                                            ${isCheckedIn ? '✓' : '○'}
-                                        </div>
-                                    </div>
-                                </div>
-                            `;
-                        }).join('')}
-                    </div>
+                    <div id="grid-pagination-info-home" style="text-align: center; margin-bottom: 15px; color: #666; font-size: 0.9em;"></div>
+                    <div id="grid-container-home" class="player-grid-container" style="gap: 60px 15px;"></div>
+                    <div id="grid-pagination-home" style="text-align: center; margin-top: 15px;"></div>
                 </div>
                 
-                <div id="away-team-section">
-                    <div style="background: ${awayTeam.colorData}; color: white; padding: 12px; border-radius: 8px; margin-bottom: 15px;">
-                        <h3 style="margin: 0; text-shadow: 1px 1px 2px rgba(0,0,0,0.3);">${awayTeam.name} (Away)</h3>
+                <div id="grid-away-team" style="display: none;">
+                    <div style="background: ${awayTeam.colorData}; color: white; padding: 12px; border-radius: 8px; margin-bottom: 15px; text-align: center;">
+                        <h3 style="margin: 0; text-shadow: 1px 1px 2px rgba(0,0,0,0.3);">${awayTeam.name} Check-In</h3>
+                        <div style="font-size: 0.9em; opacity: 0.9; margin-top: 4px;">Tap players to check them in</div>
                     </div>
-                    <div class="attendees-list">
-                        ${awayTeam.members.map(member => {
-                            const isCheckedIn = match.awayTeamAttendees.some(a => a.memberId === member.id);
-                            
-                            // Get current season card counts for this member across all matches (using new season logic)
-                            let currentSeasonYellowCards = 0;
-                            let currentSeasonRedCards = 0;
-                            
-                            this.events.forEach(event => {
-                                // Only count cards from current season events
-                                if (this.isCurrentSeasonEvent(event.date)) {
-                                    event.matches.forEach(m => {
-                                        if (m.cards) {
-                                            const cards = m.cards.filter(card => card.memberId === member.id);
-                                            currentSeasonYellowCards += cards.filter(card => card.cardType === 'yellow').length;
-                                            currentSeasonRedCards += cards.filter(card => card.cardType === 'red').length;
-                                        }
-                                    });
-                                }
-                            });
-                            
-                            const cardsDisplay = [];
-                            if (currentSeasonYellowCards > 0 || currentSeasonRedCards > 0) {
-                                const currentSeasonCards = [];
-                                if (currentSeasonYellowCards > 0) currentSeasonCards.push(`🟨${currentSeasonYellowCards}`);
-                                if (currentSeasonRedCards > 0) currentSeasonCards.push(`🟥${currentSeasonRedCards}`);
-                                cardsDisplay.push(`${currentSeasonCards.join(' ')} (current season)`);
-                            }
-                            
-                            return `
-                                <div class="attendee-row ${isCheckedIn ? 'checked-in' : ''}" onclick="app.toggleMatchAttendance('${eventId}', '${matchId}', '${member.id}', 'away')">
-                                    <div class="member-info-full">
-                                        <img src="${this.getMemberPhotoUrl(member)}" alt="${member.name}" class="member-photo-small">
-                                        <div class="member-details-full">
-                                            <div class="member-name-full">${member.name}</div>
-                                            <div class="member-meta-full" id="match-member-meta-away-${member.id}">
-                                                ${member.jerseyNumber ? `#${member.jerseyNumber}` : ''}
-                                                ${member.gender ? ` • ${member.gender}` : ''}
-                                                ${cardsDisplay.length > 0 ? ` • ${cardsDisplay.join(' | ')}` : ''}
-                                                <span class="lifetime-cards" id="match-lifetime-cards-away-${member.id}"> • Loading disciplinary records...</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="checkbox-area">
-                                        <div class="attendance-checkbox ${isCheckedIn ? 'checked' : ''}">
-                                            ${isCheckedIn ? '✓' : '○'}
-                                        </div>
-                                    </div>
-                                </div>
-                            `;
-                        }).join('')}
-                    </div>
+                    <div id="grid-pagination-info-away" style="text-align: center; margin-bottom: 15px; color: #666; font-size: 0.9em;"></div>
+                    <div id="grid-container-away" class="player-grid-container" style="gap: 60px 15px;"></div>
+                    <div id="grid-pagination-away" style="text-align: center; margin-top: 15px;"></div>
                 </div>
             </div>
             
@@ -3235,8 +3197,100 @@ Please check the browser console (F12) for more details.`);
         
         document.body.appendChild(modal);
         
+        // Initialize grid view
+        this.initializeGridView(eventId, matchId, homeTeam, awayTeam, match);
+        
         // Load lifetime cards for all players in the match
         this.loadLifetimeCardsForMatch(homeTeam, awayTeam);
+    }
+    
+    // Initialize the grid view with data
+    initializeGridView(eventId, matchId, homeTeam, awayTeam, match) {
+        this.currentEventId = eventId;
+        this.currentMatchId = matchId;
+        this.currentMatch = match;
+        this.currentHomeTeam = homeTeam;
+        this.currentAwayTeam = awayTeam;
+        this.currentGridTeam = 'home';
+        this.currentGridPage = 0;
+        
+        this.renderGridTeam('home');
+        this.renderGridTeam('away');
+    }
+    
+    // Toggle between home and away team in grid view
+    toggleGridTeam(teamType) {
+        this.currentGridTeam = teamType;
+        this.currentGridPage = 0; // Reset to first page
+        
+        const homeTeamDiv = document.getElementById('grid-home-team');
+        const awayTeamDiv = document.getElementById('grid-away-team');
+        
+        if (teamType === 'home') {
+            homeTeamDiv.style.display = 'block';
+            awayTeamDiv.style.display = 'none';
+        } else {
+            homeTeamDiv.style.display = 'none';
+            awayTeamDiv.style.display = 'block';
+        }
+        
+        this.renderGridTeam(teamType);
+    }
+    
+    // Render grid for specific team with scrolling (no pagination)
+    renderGridTeam(teamType) {
+        const team = teamType === 'home' ? this.currentHomeTeam : this.currentAwayTeam;
+        const attendees = teamType === 'home' ? this.currentMatch.homeTeamAttendees : this.currentMatch.awayTeamAttendees;
+        
+        const container = document.getElementById(`grid-container-${teamType}`);
+        const paginationInfo = document.getElementById(`grid-pagination-info-${teamType}`);
+        const paginationContainer = document.getElementById(`grid-pagination-${teamType}`);
+        
+        if (!team || !team.members) return;
+        
+        const totalPlayers = team.members.length;
+        
+        // Update info to show total players
+        paginationInfo.innerHTML = `${totalPlayers} player${totalPlayers !== 1 ? 's' : ''} • Scroll to find players`;
+        
+        // Render all grid items (no pagination)
+        container.innerHTML = team.members.map(member => {
+            const isCheckedIn = attendees.some(a => a.memberId === member.id);
+            
+            return `
+                <div class="player-grid-item ${isCheckedIn ? 'checked-in' : ''}" 
+                     onclick="app.toggleGridPlayerAttendance('${this.currentEventId}', '${this.currentMatchId}', '${member.id}', '${teamType}')">
+                    <div class="grid-check-icon">✓</div>
+                    <img src="${this.getMemberPhotoUrl(member)}" alt="${member.name}" class="player-grid-photo">
+                    <div class="player-grid-name">${member.name}</div>
+                    <div class="player-grid-info">
+                        ${member.jerseyNumber ? `#${member.jerseyNumber}` : ''}
+                        ${member.gender ? (member.jerseyNumber ? ` • ${member.gender}` : member.gender) : ''}
+                    </div>
+                </div>
+            `;
+        }).join('');
+        
+        // Clear pagination controls (not needed for scrolling)
+        paginationContainer.innerHTML = '';
+    }
+    
+    // Toggle player attendance in grid view
+    async toggleGridPlayerAttendance(eventId, matchId, memberId, teamType) {
+        // Use the existing toggle function
+        await this.toggleMatchAttendance(eventId, matchId, memberId, teamType);
+        
+        // Re-render the current grid to update the check-in status
+        this.renderGridTeam(this.currentGridTeam);
+        
+        // Update current match reference
+        const event = this.events.find(e => e.id === eventId);
+        if (event) {
+            const match = event.matches.find(m => m.id === matchId);
+            if (match) {
+                this.currentMatch = match; // Update current match reference
+            }
+        }
     }
     
     toggleTeamView(viewType) {

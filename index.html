@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CheckIn App v2.0</title>
+    <title>CheckIn App v4.0.1</title>
     <meta name="theme-color" content="#2196F3">
     <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/x-icon" href="favicon.ico">
@@ -1171,6 +1171,191 @@
             box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
             z-index: 1000;
         }
+
+        /* ECNL-Style Grid Check-In Styles */
+        .player-grid-container {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 60px 15px; /* 60px vertical gap, 15px horizontal gap */
+            max-width: 600px;
+            margin: 0 auto;
+            padding: 0 15px;
+            max-height: 70vh;
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+
+        /* Scrollbar styling for grid container */
+        .player-grid-container::-webkit-scrollbar {
+            width: 8px;
+        }
+
+        .player-grid-container::-webkit-scrollbar-track {
+            background: #f1f1f1;
+            border-radius: 4px;
+        }
+
+        .player-grid-container::-webkit-scrollbar-thumb {
+            background: #c1c1c1;
+            border-radius: 4px;
+        }
+
+        .player-grid-container::-webkit-scrollbar-thumb:hover {
+            background: #a8a8a8;
+        }
+
+        .player-grid-item {
+            aspect-ratio: 1;
+            border: 3px solid #e9ecef;
+            border-radius: 15px;
+            padding: 15px;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            background: white;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            position: relative;
+            overflow: hidden;
+        }
+
+        .player-grid-item:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+            border-color: #007bff;
+        }
+
+        .player-grid-item.checked-in {
+            background: linear-gradient(135deg, #28a745, #20c997);
+            border-color: #28a745;
+            color: white;
+        }
+
+        .player-grid-item.checked-in:hover {
+            border-color: #1e7e34;
+            background: linear-gradient(135deg, #218838, #1c7430);
+        }
+
+        .player-grid-photo {
+            width: 60px;
+            height: 60px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 3px solid #fff;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+            margin-bottom: 8px;
+        }
+
+        .player-grid-name {
+            font-weight: 600;
+            font-size: 0.9em;
+            text-align: center;
+            line-height: 1.2;
+            margin-bottom: 4px;
+        }
+
+        .player-grid-info {
+            font-size: 0.75em;
+            opacity: 0.8;
+            text-align: center;
+            line-height: 1.1;
+        }
+
+        .player-grid-item.checked-in .player-grid-info {
+            opacity: 0.9;
+        }
+
+        .grid-check-icon {
+            position: absolute;
+            top: 8px;
+            right: 8px;
+            background: #28a745;
+            color: white;
+            border-radius: 50%;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 14px;
+            font-weight: bold;
+            opacity: 0;
+            transform: scale(0);
+            transition: all 0.3s ease;
+        }
+
+        .player-grid-item.checked-in .grid-check-icon {
+            opacity: 1;
+            transform: scale(1);
+        }
+
+        .grid-pagination {
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            gap: 15px;
+            margin: 20px 0;
+        }
+
+        .grid-pagination button {
+            padding: 8px 16px;
+            border: 2px solid #007bff;
+            background: white;
+            color: #007bff;
+            border-radius: 8px;
+            cursor: pointer;
+            font-weight: 600;
+            transition: all 0.2s ease;
+        }
+
+        .grid-pagination button:hover:not(:disabled) {
+            background: #007bff;
+            color: white;
+        }
+
+        .grid-pagination button:disabled {
+            opacity: 0.4;
+            cursor: not-allowed;
+            border-color: #6c757d;
+            color: #6c757d;
+        }
+
+        .grid-page-info {
+            font-weight: 600;
+            color: #495057;
+            min-width: 100px;
+            text-align: center;
+        }
+
+        /* Mobile responsiveness for grid */
+        @media (max-width: 768px) {
+            .player-grid-container {
+                gap: 70px 15px; /* Even more vertical space on mobile: 70px vertical, 15px horizontal */
+                padding: 0 10px;
+            }
+
+            .player-grid-item {
+                padding: 12px;
+                border-radius: 12px;
+                gap: 12px; /* More internal spacing between elements */
+            }
+
+            .player-grid-photo {
+                width: 50px;
+                height: 50px;
+                margin-bottom: 10px;
+            }
+
+            .player-grid-name {
+                font-size: 0.8em;
+            }
+
+            .player-grid-info {
+                font-size: 0.7em;
+            }
+        }
     </style>
 </head>
 <body>
@@ -1287,9 +1472,9 @@
                 const data = await response.json();
                 const version = data.version;
                 
-                // Create and load the main app script with current version
+                // Create and load the main app script with current version + cache busting
                 const script = document.createElement('script');
-                script.src = `app.js?v=${version}`;
+                script.src = `app.js?v=${version}&cb=${Date.now()}`;
                 script.onload = function() {
                     // Set version numbers from JavaScript constant after script loads
                     document.getElementById('app-version').textContent = APP_VERSION;
@@ -1298,9 +1483,9 @@
                 document.body.appendChild(script);
             } catch (error) {
                 console.error('Failed to load version:', error);
-                // Fallback: load without version parameter
+                // Fallback: load without version parameter but with cache busting
                 const script = document.createElement('script');
-                script.src = 'app.js';
+                script.src = `app.js?cb=${Date.now()}`;
                 document.body.appendChild(script);
             }
         }
