@@ -4,7 +4,7 @@
  */
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '3.5.4';
+const APP_VERSION = '4.0.0';
 
 class CheckInViewApp {
     constructor() {
@@ -1539,7 +1539,7 @@ class CheckInViewApp {
                         <div style="font-size: 0.9em; opacity: 0.9; margin-top: 4px;">Tap players to check them in</div>
                     </div>
                     <div id="grid-pagination-info-home" style="text-align: center; margin-bottom: 15px; color: #666; font-size: 0.9em;"></div>
-                    <div id="grid-container-home" class="player-grid-container"></div>
+                    <div id="grid-container-home" class="player-grid-container" style="gap: 40px 15px;"></div>
                     <div id="grid-pagination-home" style="text-align: center; margin-top: 15px;"></div>
                 </div>
                 
@@ -1549,7 +1549,7 @@ class CheckInViewApp {
                         <div style="font-size: 0.9em; opacity: 0.9; margin-top: 4px;">Tap players to check them in</div>
                     </div>
                     <div id="grid-pagination-info-away" style="text-align: center; margin-bottom: 15px; color: #666; font-size: 0.9em;"></div>
-                    <div id="grid-container-away" class="player-grid-container"></div>
+                    <div id="grid-container-away" class="player-grid-container" style="gap: 40px 15px;"></div>
                     <div id="grid-pagination-away" style="text-align: center; margin-top: 15px;"></div>
                 </div>
             </div>
@@ -1649,7 +1649,7 @@ class CheckInViewApp {
         // Re-render the current grid to update the check-in status
         this.renderGridTeam(this.currentGridTeam);
         
-        // Also update the list view in background to keep them in sync
+        // Update current match reference
         const event = this.events.find(e => e.id === eventId);
         if (event) {
             const match = event.matches.find(m => m.id === matchId);
