@@ -4,7 +4,7 @@
  */
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '3.3.1';
+const APP_VERSION = '3.3.2';
 
 class CheckInViewApp {
     constructor() {
@@ -364,8 +364,8 @@ class CheckInViewApp {
                     if (filename.includes('.jpg') || filename.includes('.jpeg') || 
                         filename.includes('.png') || filename.includes('.webp')) {
                         // Return the full API URL with additional cache-busting
-                        const separator = member.photo.includes('&') ? '&' : '?';
-                        return member.photo + separator + '_cb=' + Date.now();
+                        // Since this already has '?filename=', we need '&' for additional params
+                        return member.photo + '&_cb=' + Date.now();
                     }
                 }
             }
