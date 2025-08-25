@@ -809,6 +809,168 @@
             height: 50px;
         }
     }
+
+    /* ECNL-Style Grid Check-In Styles */
+    .player-grid-container {
+        display: grid;
+        grid-template-columns: repeat(3, 1fr);
+        gap: 15px;
+        max-width: 600px;
+        margin: 0 auto;
+        padding: 0 15px;
+    }
+
+    .player-grid-item {
+        aspect-ratio: 1;
+        border: 3px solid #e9ecef;
+        border-radius: 15px;
+        padding: 15px;
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        cursor: pointer;
+        transition: all 0.3s ease;
+        background: white;
+        box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        position: relative;
+        overflow: hidden;
+    }
+
+    .player-grid-item:hover {
+        transform: translateY(-2px);
+        box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+        border-color: #007bff;
+    }
+
+    .player-grid-item.checked-in {
+        background: linear-gradient(135deg, #28a745, #20c997);
+        border-color: #28a745;
+        color: white;
+    }
+
+    .player-grid-item.checked-in:hover {
+        border-color: #1e7e34;
+        background: linear-gradient(135deg, #218838, #1c7430);
+    }
+
+    .player-grid-photo {
+        width: 60px;
+        height: 60px;
+        border-radius: 50%;
+        object-fit: cover;
+        border: 3px solid #fff;
+        box-shadow: 0 2px 6px rgba(0,0,0,0.2);
+        margin-bottom: 8px;
+    }
+
+    .player-grid-name {
+        font-weight: 600;
+        font-size: 0.9em;
+        text-align: center;
+        line-height: 1.2;
+        margin-bottom: 4px;
+    }
+
+    .player-grid-info {
+        font-size: 0.75em;
+        opacity: 0.8;
+        text-align: center;
+        line-height: 1.1;
+    }
+
+    .player-grid-item.checked-in .player-grid-info {
+        opacity: 0.9;
+    }
+
+    .grid-check-icon {
+        position: absolute;
+        top: 8px;
+        right: 8px;
+        background: #28a745;
+        color: white;
+        border-radius: 50%;
+        width: 24px;
+        height: 24px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 14px;
+        font-weight: bold;
+        opacity: 0;
+        transform: scale(0);
+        transition: all 0.3s ease;
+    }
+
+    .player-grid-item.checked-in .grid-check-icon {
+        opacity: 1;
+        transform: scale(1);
+    }
+
+    .grid-pagination {
+        display: flex;
+        justify-content: center;
+        align-items: center;
+        gap: 15px;
+        margin: 20px 0;
+    }
+
+    .grid-pagination button {
+        padding: 8px 16px;
+        border: 2px solid #007bff;
+        background: white;
+        color: #007bff;
+        border-radius: 8px;
+        cursor: pointer;
+        font-weight: 600;
+        transition: all 0.2s ease;
+    }
+
+    .grid-pagination button:hover:not(:disabled) {
+        background: #007bff;
+        color: white;
+    }
+
+    .grid-pagination button:disabled {
+        opacity: 0.4;
+        cursor: not-allowed;
+        border-color: #6c757d;
+        color: #6c757d;
+    }
+
+    .grid-page-info {
+        font-weight: 600;
+        color: #495057;
+        min-width: 100px;
+        text-align: center;
+    }
+
+    /* Mobile responsiveness for grid */
+    @media (max-width: 768px) {
+        .player-grid-container {
+            gap: 10px;
+            padding: 0 10px;
+        }
+
+        .player-grid-item {
+            padding: 12px;
+            border-radius: 12px;
+        }
+
+        .player-grid-photo {
+            width: 50px;
+            height: 50px;
+            margin-bottom: 6px;
+        }
+
+        .player-grid-name {
+            font-size: 0.8em;
+        }
+
+        .player-grid-info {
+            font-size: 0.7em;
+        }
+    }
     </style>
 </head>
 <body>

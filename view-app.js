@@ -4,7 +4,7 @@
  */
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '3.2.3';
+const APP_VERSION = '3.3.0';
 
 class CheckInViewApp {
     constructor() {
@@ -1517,18 +1517,42 @@ class CheckInViewApp {
             ${cardsSection}
             
             <div style="margin-bottom: 20px;">
-                <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
-                    <input type="radio" name="team-toggle" value="both" checked onchange="app.toggleTeamView('both')">
-                    <span>Show Both Teams</span>
-                </label>
-                <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; margin-top: 8px;">
-                    <input type="radio" name="team-toggle" value="home" onchange="app.toggleTeamView('home')">
-                    <span>Show ${homeTeam.name} Only</span>
-                </label>
-                <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; margin-top: 8px;">
-                    <input type="radio" name="team-toggle" value="away" onchange="app.toggleTeamView('away')">
-                    <span>Show ${awayTeam.name} Only</span>
-                </label>
+                <div style="margin-bottom: 15px;">
+                    <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                        <input type="radio" name="view-mode" value="list" checked onchange="app.toggleCheckInView('list')">
+                        <span>📋 List View</span>
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; margin-top: 8px;">
+                        <input type="radio" name="view-mode" value="grid" onchange="app.toggleCheckInView('grid')">
+                        <span>📱 Grid Check-In (ECNL Style)</span>
+                    </label>
+                </div>
+                
+                <div id="list-view-controls">
+                    <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                        <input type="radio" name="team-toggle" value="both" checked onchange="app.toggleTeamView('both')">
+                        <span>Show Both Teams</span>
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; margin-top: 8px;">
+                        <input type="radio" name="team-toggle" value="home" onchange="app.toggleTeamView('home')">
+                        <span>Show ${homeTeam.name} Only</span>
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; margin-top: 8px;">
+                        <input type="radio" name="team-toggle" value="away" onchange="app.toggleTeamView('away')">
+                        <span>Show ${awayTeam.name} Only</span>
+                    </label>
+                </div>
+                
+                <div id="grid-view-controls" style="display: none;">
+                    <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                        <input type="radio" name="grid-team-toggle" value="home" checked onchange="app.toggleGridTeam('home')">
+                        <span>📱 ${homeTeam.name}</span>
+                    </label>
+                    <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; margin-top: 8px;">
+                        <input type="radio" name="grid-team-toggle" value="away" onchange="app.toggleGridTeam('away')">
+                        <span>📱 ${awayTeam.name}</span>
+                    </label>
+                </div>
             </div>
             
             <div style="display: flex; flex-direction: column; gap: 20px;">
@@ -1669,6 +1693,29 @@ class CheckInViewApp {
                 </div>
             </div>
             
+            <!-- ECNL-Style Grid Check-In View -->
+            <div id="grid-checkin-view" style="display: none;">
+                <div id="grid-home-team" style="display: block;">
+                    <div style="background: ${homeTeam.colorData}; color: white; padding: 12px; border-radius: 8px; margin-bottom: 15px; text-align: center;">
+                        <h3 style="margin: 0; text-shadow: 1px 1px 2px rgba(0,0,0,0.3);">${homeTeam.name} Check-In</h3>
+                        <div style="font-size: 0.9em; opacity: 0.9; margin-top: 4px;">Tap players to check them in</div>
+                    </div>
+                    <div id="grid-pagination-info-home" style="text-align: center; margin-bottom: 15px; color: #666; font-size: 0.9em;"></div>
+                    <div id="grid-container-home" class="player-grid-container"></div>
+                    <div id="grid-pagination-home" style="text-align: center; margin-top: 15px;"></div>
+                </div>
+                
+                <div id="grid-away-team" style="display: none;">
+                    <div style="background: ${awayTeam.colorData}; color: white; padding: 12px; border-radius: 8px; margin-bottom: 15px; text-align: center;">
+                        <h3 style="margin: 0; text-shadow: 1px 1px 2px rgba(0,0,0,0.3);">${awayTeam.name} Check-In</h3>
+                        <div style="font-size: 0.9em; opacity: 0.9; margin-top: 4px;">Tap players to check them in</div>
+                    </div>
+                    <div id="grid-pagination-info-away" style="text-align: center; margin-bottom: 15px; color: #666; font-size: 0.9em;"></div>
+                    <div id="grid-container-away" class="player-grid-container"></div>
+                    <div id="grid-pagination-away" style="text-align: center; margin-top: 15px;"></div>
+                </div>
+            </div>
+            
             <div style="text-align: center; margin-top: 20px;">
                 <button class="btn btn-secondary" onclick="app.closeModal()">Close</button>
             </div>
@@ -1676,8 +1723,159 @@ class CheckInViewApp {
         
         document.body.appendChild(modal);
         
+        // Initialize grid view
+        this.initializeGridView(eventId, matchId, homeTeam, awayTeam, match);
+        
         // Load lifetime cards for all players in the match
         this.loadLifetimeCardsForMatch(homeTeam, awayTeam);
+    }
+    
+    // Initialize the grid view with data
+    initializeGridView(eventId, matchId, homeTeam, awayTeam, match) {
+        this.currentEventId = eventId;
+        this.currentMatchId = matchId;
+        this.currentMatch = match;
+        this.currentHomeTeam = homeTeam;
+        this.currentAwayTeam = awayTeam;
+        this.currentGridTeam = 'home';
+        this.currentGridPage = 0;
+        
+        this.renderGridTeam('home');
+        this.renderGridTeam('away');
+    }
+    
+    // Toggle between list and grid view
+    toggleCheckInView(viewMode) {
+        const listView = document.getElementById('home-team-section').parentElement;
+        const gridView = document.getElementById('grid-checkin-view');
+        const listControls = document.getElementById('list-view-controls');
+        const gridControls = document.getElementById('grid-view-controls');
+        
+        if (viewMode === 'grid') {
+            listView.style.display = 'none';
+            gridView.style.display = 'block';
+            listControls.style.display = 'none';
+            gridControls.style.display = 'block';
+            
+            // Render current grid team
+            this.renderGridTeam(this.currentGridTeam);
+        } else {
+            listView.style.display = 'block';
+            gridView.style.display = 'none';
+            listControls.style.display = 'block';
+            gridControls.style.display = 'none';
+        }
+    }
+    
+    // Toggle between home and away team in grid view
+    toggleGridTeam(teamType) {
+        this.currentGridTeam = teamType;
+        this.currentGridPage = 0; // Reset to first page
+        
+        const homeTeamDiv = document.getElementById('grid-home-team');
+        const awayTeamDiv = document.getElementById('grid-away-team');
+        
+        if (teamType === 'home') {
+            homeTeamDiv.style.display = 'block';
+            awayTeamDiv.style.display = 'none';
+        } else {
+            homeTeamDiv.style.display = 'none';
+            awayTeamDiv.style.display = 'block';
+        }
+        
+        this.renderGridTeam(teamType);
+    }
+    
+    // Render grid for specific team with pagination
+    renderGridTeam(teamType) {
+        const team = teamType === 'home' ? this.currentHomeTeam : this.currentAwayTeam;
+        const attendees = teamType === 'home' ? this.currentMatch.homeTeamAttendees : this.currentMatch.awayTeamAttendees;
+        
+        const container = document.getElementById(`grid-container-${teamType}`);
+        const paginationInfo = document.getElementById(`grid-pagination-info-${teamType}`);
+        const paginationContainer = document.getElementById(`grid-pagination-${teamType}`);
+        
+        if (!team || !team.members) return;
+        
+        const playersPerPage = 9;
+        const totalPlayers = team.members.length;
+        const totalPages = Math.ceil(totalPlayers / playersPerPage);
+        const startIndex = this.currentGridPage * playersPerPage;
+        const endIndex = Math.min(startIndex + playersPerPage, totalPlayers);
+        const currentPagePlayers = team.members.slice(startIndex, endIndex);
+        
+        // Update pagination info
+        paginationInfo.innerHTML = `Showing ${startIndex + 1}-${endIndex} of ${totalPlayers} players`;
+        
+        // Render grid items
+        container.innerHTML = currentPagePlayers.map(member => {
+            const isCheckedIn = attendees.some(a => a.memberId === member.id);
+            
+            return `
+                <div class="player-grid-item ${isCheckedIn ? 'checked-in' : ''}" 
+                     onclick="app.toggleGridPlayerAttendance('${this.currentEventId}', '${this.currentMatchId}', '${member.id}', '${teamType}')">
+                    <div class="grid-check-icon">✓</div>
+                    <img src="${this.getMemberPhotoUrl(member)}" alt="${member.name}" class="player-grid-photo">
+                    <div class="player-grid-name">${member.name}</div>
+                    <div class="player-grid-info">
+                        ${member.jerseyNumber ? `#${member.jerseyNumber}` : ''}
+                        ${member.gender ? (member.jerseyNumber ? ` • ${member.gender}` : member.gender) : ''}
+                    </div>
+                </div>
+            `;
+        }).join('');
+        
+        // Render pagination controls
+        if (totalPages > 1) {
+            paginationContainer.innerHTML = `
+                <div class="grid-pagination">
+                    <button onclick="app.changeGridPage(-1)" ${this.currentGridPage === 0 ? 'disabled' : ''}>
+                        ← Previous
+                    </button>
+                    <div class="grid-page-info">
+                        Page ${this.currentGridPage + 1} of ${totalPages}
+                    </div>
+                    <button onclick="app.changeGridPage(1)" ${this.currentGridPage >= totalPages - 1 ? 'disabled' : ''}>
+                        Next →
+                    </button>
+                </div>
+            `;
+        } else {
+            paginationContainer.innerHTML = '';
+        }
+    }
+    
+    // Change grid page
+    changeGridPage(direction) {
+        const team = this.currentGridTeam === 'home' ? this.currentHomeTeam : this.currentAwayTeam;
+        const playersPerPage = 9;
+        const totalPages = Math.ceil(team.members.length / playersPerPage);
+        
+        this.currentGridPage += direction;
+        
+        // Ensure page is within bounds
+        if (this.currentGridPage < 0) this.currentGridPage = 0;
+        if (this.currentGridPage >= totalPages) this.currentGridPage = totalPages - 1;
+        
+        this.renderGridTeam(this.currentGridTeam);
+    }
+    
+    // Toggle player attendance in grid view
+    async toggleGridPlayerAttendance(eventId, matchId, memberId, teamType) {
+        // Use the existing toggle function
+        await this.toggleMatchAttendance(eventId, matchId, memberId, teamType);
+        
+        // Re-render the current grid to update the check-in status
+        this.renderGridTeam(this.currentGridTeam);
+        
+        // Also update the list view in background to keep them in sync
+        const event = this.events.find(e => e.id === eventId);
+        if (event) {
+            const match = event.matches.find(m => m.id === matchId);
+            if (match) {
+                this.currentMatch = match; // Update current match reference
+            }
+        }
     }
     
     // Load lifetime disciplinary cards for match check-in (optimized - team-based API calls)
