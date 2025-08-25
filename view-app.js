@@ -4,7 +4,7 @@
  */
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '3.3.0';
+const APP_VERSION = '3.3.1';
 
 class CheckInViewApp {
     constructor() {
@@ -364,7 +364,7 @@ class CheckInViewApp {
                     if (filename.includes('.jpg') || filename.includes('.jpeg') || 
                         filename.includes('.png') || filename.includes('.webp')) {
                         // Return the full API URL with additional cache-busting
-                        const separator = member.photo.includes('&') ? '&' : '&';
+                        const separator = member.photo.includes('&') ? '&' : '?';
                         return member.photo + separator + '_cb=' + Date.now();
                     }
                 }
@@ -1786,7 +1786,7 @@ class CheckInViewApp {
         this.renderGridTeam(teamType);
     }
     
-    // Render grid for specific team with pagination
+    // Render grid for specific team with scrolling (no pagination)
     renderGridTeam(teamType) {
         const team = teamType === 'home' ? this.currentHomeTeam : this.currentAwayTeam;
         const attendees = teamType === 'home' ? this.currentMatch.homeTeamAttendees : this.currentMatch.awayTeamAttendees;
@@ -1797,18 +1797,13 @@ class CheckInViewApp {
         
         if (!team || !team.members) return;
         
-        const playersPerPage = 9;
         const totalPlayers = team.members.length;
-        const totalPages = Math.ceil(totalPlayers / playersPerPage);
-        const startIndex = this.currentGridPage * playersPerPage;
-        const endIndex = Math.min(startIndex + playersPerPage, totalPlayers);
-        const currentPagePlayers = team.members.slice(startIndex, endIndex);
         
-        // Update pagination info
-        paginationInfo.innerHTML = `Showing ${startIndex + 1}-${endIndex} of ${totalPlayers} players`;
+        // Update info to show total players
+        paginationInfo.innerHTML = `${totalPlayers} player${totalPlayers !== 1 ? 's' : ''} • Scroll to find players`;
         
-        // Render grid items
-        container.innerHTML = currentPagePlayers.map(member => {
+        // Render all grid items (no pagination)
+        container.innerHTML = team.members.map(member => {
             const isCheckedIn = attendees.some(a => a.memberId === member.id);
             
             return `
@@ -1825,39 +1820,8 @@ class CheckInViewApp {
             `;
         }).join('');
         
-        // Render pagination controls
-        if (totalPages > 1) {
-            paginationContainer.innerHTML = `
-                <div class="grid-pagination">
-                    <button onclick="app.changeGridPage(-1)" ${this.currentGridPage === 0 ? 'disabled' : ''}>
-                        ← Previous
-                    </button>
-                    <div class="grid-page-info">
-                        Page ${this.currentGridPage + 1} of ${totalPages}
-                    </div>
-                    <button onclick="app.changeGridPage(1)" ${this.currentGridPage >= totalPages - 1 ? 'disabled' : ''}>
-                        Next →
-                    </button>
-                </div>
-            `;
-        } else {
-            paginationContainer.innerHTML = '';
-        }
-    }
-    
-    // Change grid page
-    changeGridPage(direction) {
-        const team = this.currentGridTeam === 'home' ? this.currentHomeTeam : this.currentAwayTeam;
-        const playersPerPage = 9;
-        const totalPages = Math.ceil(team.members.length / playersPerPage);
-        
-        this.currentGridPage += direction;
-        
-        // Ensure page is within bounds
-        if (this.currentGridPage < 0) this.currentGridPage = 0;
-        if (this.currentGridPage >= totalPages) this.currentGridPage = totalPages - 1;
-        
-        this.renderGridTeam(this.currentGridTeam);
+        // Clear pagination controls (not needed for scrolling)
+        paginationContainer.innerHTML = '';
     }
     
     // Toggle player attendance in grid view

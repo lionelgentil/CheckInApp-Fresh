@@ -818,6 +818,28 @@
         max-width: 600px;
         margin: 0 auto;
         padding: 0 15px;
+        max-height: 70vh;
+        overflow-y: auto;
+        overflow-x: hidden;
+    }
+
+    /* Scrollbar styling for grid container */
+    .player-grid-container::-webkit-scrollbar {
+        width: 8px;
+    }
+
+    .player-grid-container::-webkit-scrollbar-track {
+        background: #f1f1f1;
+        border-radius: 4px;
+    }
+
+    .player-grid-container::-webkit-scrollbar-thumb {
+        background: #c1c1c1;
+        border-radius: 4px;
+    }
+
+    .player-grid-container::-webkit-scrollbar-thumb:hover {
+        background: #a8a8a8;
     }
 
     .player-grid-item {
