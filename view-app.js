@@ -4,7 +4,7 @@
  */
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '3.3.2';
+const APP_VERSION = '3.5.0';
 
 class CheckInViewApp {
     constructor() {
@@ -350,9 +350,9 @@ class CheckInViewApp {
                 return this.getGenderDefaultPhoto(member);
             }
             
-            // Skip base64 images - use gender defaults instead
+            // Handle base64 images (for Railway deployment where filesystem is ephemeral)
             if (member.photo.startsWith('data:image/')) {
-                return this.getGenderDefaultPhoto(member);
+                return member.photo; // Return base64 image directly
             }
             
             // Check if it's an API URL with filename parameter

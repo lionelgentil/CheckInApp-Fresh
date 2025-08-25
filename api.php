@@ -5,7 +5,7 @@
  */
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '3.3.2';
+const APP_VERSION = '3.5.0';
 
 // Default photos - fallback to API serving for SVG compatibility
 function getDefaultPhoto($gender) {
@@ -241,6 +241,13 @@ try {
                 uploadPhoto($db);
             } elseif ($method === 'DELETE') {
                 deletePhoto($db);
+            }
+            break;
+            
+        case 'migrate-photos':
+            // Migrate photos from team_members.photo to member_photos table
+            if ($method === 'POST') {
+                migratePhotosToSeparateTable($db);
             }
             break;
             
@@ -496,7 +503,7 @@ try {
 }
 
 function getTeams($db) {
-    // Optimized single query with JOIN to get all teams and members at once
+    // Optimized single query with JOIN to get all teams and members with photos from separate table
     $stmt = $db->query('
         SELECT 
             t.id as team_id,
@@ -509,9 +516,14 @@ function getTeams($db) {
             tm.name as member_name,
             tm.jersey_number,
             tm.gender,
-            tm.photo
+            CASE 
+                WHEN tm.photo = \'has_photo\' THEN \'has_photo\'
+                ELSE tm.photo
+            END AS photo_flag,
+            mp.photo_data
         FROM teams t
         LEFT JOIN team_members tm ON t.id = tm.team_id
+        LEFT JOIN member_photos mp ON tm.id = mp.member_id
         ORDER BY t.name, tm.name
     ');
     
@@ -540,42 +552,52 @@ function getTeams($db) {
         
         // Add member to current team (if member exists)
         if ($row['member_id']) {
-            // Generate photo URL - API serving for consistency  
-            if ($row['photo']) {
-                // Clean up photo value to ensure we only store/use filenames
-                $photoValue = $row['photo'];
+            // Generate photo URL - handle new member_photos table and legacy formats
+            if ($row['photo_data']) {
+                // Photo exists in member_photos table - use base64 data directly
+                $photo = $row['photo_data'];
+            } elseif ($row['photo_flag'] && $row['photo_flag'] !== 'has_photo') {
+                // Legacy photo stored in team_members.photo field
+                $photoValue = $row['photo_flag'];
                 
-                // Handle different photo storage formats
-                if (strpos($photoValue, '/photos/members/') === 0) {
-                    // Full path format: /photos/members/filename.ext
-                    $photoValue = basename($photoValue);
-                } elseif (strpos($photoValue, '/api/photos') === 0) {
-                    // Already a URL format: /api/photos?filename=xyz - extract filename
-                    $parsedUrl = parse_url($photoValue);
-                    if ($parsedUrl && isset($parsedUrl['query'])) {
-                        parse_str($parsedUrl['query'], $query);
-                        if (isset($query['filename'])) {
-                            $photoValue = $query['filename'];
-                            // Clean recursively in case of nested URLs
-                            while (strpos($photoValue, '/api/photos') === 0) {
-                                $nestedUrl = parse_url($photoValue);
-                                if ($nestedUrl && isset($nestedUrl['query'])) {
-                                    parse_str($nestedUrl['query'], $nestedQuery);
-                                    if (isset($nestedQuery['filename'])) {
-                                        $photoValue = $nestedQuery['filename'];
+                // Check if it's already base64 data
+                if (strpos($photoValue, 'data:image/') === 0) {
+                    // It's base64 data, use directly
+                    $photo = $photoValue;
+                } else {
+                    // Legacy file-based storage - convert to API URL
+                    // Handle different photo storage formats
+                    if (strpos($photoValue, '/photos/members/') === 0) {
+                        // Full path format: /photos/members/filename.ext
+                        $photoValue = basename($photoValue);
+                    } elseif (strpos($photoValue, '/api/photos') === 0) {
+                        // Already a URL format: /api/photos?filename=xyz - extract filename
+                        $parsedUrl = parse_url($photoValue);
+                        if ($parsedUrl && isset($parsedUrl['query'])) {
+                            parse_str($parsedUrl['query'], $query);
+                            if (isset($query['filename'])) {
+                                $photoValue = $query['filename'];
+                                // Clean recursively in case of nested URLs
+                                while (strpos($photoValue, '/api/photos') === 0) {
+                                    $nestedUrl = parse_url($photoValue);
+                                    if ($nestedUrl && isset($nestedUrl['query'])) {
+                                        parse_str($nestedUrl['query'], $nestedQuery);
+                                        if (isset($nestedQuery['filename'])) {
+                                            $photoValue = $nestedQuery['filename'];
+                                        } else {
+                                            break;
+                                        }
                                     } else {
                                         break;
                                     }
-                                } else {
-                                    break;
                                 }
                             }
                         }
                     }
+                    // If it's already just a filename (preferred), use as-is
+                    
+                    $photo = '/api/photos?filename=' . urlencode($photoValue);
                 }
-                // If it's already just a filename (preferred), use as-is
-                
-                $photo = '/api/photos?filename=' . urlencode($photoValue);
             } else {
                 $photo = getDefaultPhoto($row['gender']);
             }
@@ -1648,60 +1670,148 @@ function uploadPhoto($db) {
         }
     }
     
-    $photoPath = $photosDir . '/' . $filename;
-    
-    // Remove any existing photo for this member
-    $existingFiles = glob($photosDir . '/' . $memberId . '.*');
-    foreach ($existingFiles as $existingFile) {
-        unlink($existingFile);
-    }
-    
-    // Move uploaded file with better error handling
-    if (!move_uploaded_file($file['tmp_name'], $photoPath)) {
-        $error = error_get_last();
+    // Convert uploaded file to base64 for database storage (Railway-compatible)
+    $imageData = file_get_contents($file['tmp_name']);
+    if ($imageData === false) {
         http_response_code(500);
-        echo json_encode([
-            'error' => 'Failed to save photo',
-            'details' => $error ? $error['message'] : 'Unknown error',
-            'target_path' => $photoPath,
-            'source_path' => $file['tmp_name']
-        ]);
+        echo json_encode(['error' => 'Failed to read uploaded file']);
         return;
     }
     
-    // Update database
+    $base64Image = 'data:' . $file['type'] . ';base64,' . base64_encode($imageData);
+    
+    error_log("uploadPhoto: Converted to base64, size: " . strlen($base64Image) . " characters");
+    
+    // Remove any existing photo files for this member (cleanup old files)
+    $photosDir = __DIR__ . '/photos/members';
+    if (is_dir($photosDir)) {
+        $existingFiles = glob($photosDir . '/' . $memberId . '.*');
+        foreach ($existingFiles as $existingFile) {
+            unlink($existingFile);
+        }
+    }
+    
+    // Update database with base64 image data in separate photos table
     try {
-        error_log("uploadPhoto: Updating database - filename: " . $filename . " for member: " . $memberId);
-        $stmt = $db->prepare('UPDATE team_members SET photo = ? WHERE id = ?');
-        $result = $stmt->execute([$filename, $memberId]);
+        error_log("uploadPhoto: Storing base64 data in member_photos table for member: " . $memberId);
+        
+        // Get content type and file size
+        $contentType = $file['type'];
+        $fileSize = strlen($base64Image);
+        
+        // Insert/update in member_photos table
+        $stmt = $db->prepare('
+            INSERT INTO member_photos (member_id, photo_data, content_type, file_size, uploaded_at)
+            VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
+            ON CONFLICT (member_id) DO UPDATE SET
+                photo_data = EXCLUDED.photo_data,
+                content_type = EXCLUDED.content_type,
+                file_size = EXCLUDED.file_size,
+                uploaded_at = CURRENT_TIMESTAMP
+        ');
+        $result = $stmt->execute([$memberId, $base64Image, $contentType, $fileSize]);
         
         if ($result) {
             $rowsAffected = $stmt->rowCount();
-            error_log("uploadPhoto: Database updated successfully. Rows affected: " . $rowsAffected);
-            
-            // Verify the update worked
-            $verifyStmt = $db->prepare('SELECT photo FROM team_members WHERE id = ?');
-            $verifyStmt->execute([$memberId]);
-            $updatedPhoto = $verifyStmt->fetchColumn();
-            error_log("uploadPhoto: Verified photo in DB: " . $updatedPhoto);
+            error_log("uploadPhoto: member_photos table updated successfully. Rows affected: " . $rowsAffected);
+        } else {
+            throw new Exception("Failed to update member_photos table");
         }
+        
+        // Also set a flag in team_members table to indicate photo exists
+        $flagStmt = $db->prepare('UPDATE team_members SET photo = ? WHERE id = ?');
+        $flagStmt->execute(['has_photo', $memberId]);
+        
+        // Verify the update worked
+        $verifyStmt = $db->prepare('SELECT photo_data FROM member_photos WHERE member_id = ?');
+        $verifyStmt->execute([$memberId]);
+        $photoExists = $verifyStmt->fetchColumn();
+        error_log("uploadPhoto: Verified photo exists in member_photos table: " . ($photoExists ? 'YES' : 'NO'));
         
         $responseData = [
             'success' => true,
-            'filename' => $filename,
-            'url' => '/api/photos?filename=' . $filename,
             'member_id' => $memberId,
-            'file_path' => $photoPath
+            'url' => $base64Image, // Return the base64 data directly
+            'storage_type' => 'base64_database',
+            'data_size' => strlen($base64Image)
         ];
         
-        error_log("uploadPhoto: Success response: " . json_encode($responseData));
+        error_log("uploadPhoto: Success response (base64 storage)");
         echo json_encode($responseData);
         
     } catch (Exception $e) {
         error_log("uploadPhoto: Database error: " . $e->getMessage());
-        // Clean up file if database update fails
-        unlink($photoPath);
+        // No file to clean up since we're using base64
         throw $e;
+    }
+}
+
+function migratePhotosToSeparateTable($db) {
+    try {
+        $results = [];
+        
+        // Get all members with photo data
+        $stmt = $db->prepare('SELECT id, photo FROM team_members WHERE photo IS NOT NULL AND photo != \'\'');
+        $stmt->execute();
+        $members = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        $migratedCount = 0;
+        $skippedCount = 0;
+        
+        foreach ($members as $member) {
+            $memberId = $member['id'];
+            $photoData = $member['photo'];
+            
+            // Check if it's base64 data that should be migrated
+            if (strpos($photoData, 'data:image/') === 0) {
+                // Extract content type and file size
+                $contentType = '';
+                $fileSize = strlen($photoData);
+                
+                if (preg_match('/^data:([^;]+);/', $photoData, $matches)) {
+                    $contentType = $matches[1];
+                }
+                
+                // Insert into member_photos table
+                $insertStmt = $db->prepare('
+                    INSERT INTO member_photos (member_id, photo_data, content_type, file_size, uploaded_at)
+                    VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
+                    ON CONFLICT (member_id) DO UPDATE SET
+                        photo_data = EXCLUDED.photo_data,
+                        content_type = EXCLUDED.content_type,
+                        file_size = EXCLUDED.file_size,
+                        uploaded_at = CURRENT_TIMESTAMP
+                ');
+                
+                $insertStmt->execute([$memberId, $photoData, $contentType, $fileSize]);
+                
+                // Clear photo from team_members table
+                $updateStmt = $db->prepare('UPDATE team_members SET photo = NULL WHERE id = ?');
+                $updateStmt->execute([$memberId]);
+                
+                $migratedCount++;
+            } else {
+                // Skip filename-based photos (legacy file system photos)
+                $skippedCount++;
+            }
+        }
+        
+        $results[] = "Migration completed successfully";
+        $results[] = "Migrated {$migratedCount} base64 photos to member_photos table";
+        $results[] = "Skipped {$skippedCount} filename-based photos (legacy file system)";
+        
+        echo json_encode([
+            'success' => true,
+            'results' => $results,
+            'migrated_count' => $migratedCount,
+            'skipped_count' => $skippedCount
+        ]);
+        
+    } catch (Exception $e) {
+        http_response_code(500);
+        echo json_encode([
+            'error' => 'Migration failed: ' . $e->getMessage()
+        ]);
     }
 }
 
@@ -1865,6 +1975,18 @@ function initializeDatabase($db) {
             photo TEXT,
             created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
             FOREIGN KEY (team_id) REFERENCES teams(id) ON DELETE CASCADE
+        )
+    ');
+    
+    // Separate photos table for better performance with 720+ players
+    $db->exec('
+        CREATE TABLE IF NOT EXISTS member_photos (
+            member_id TEXT PRIMARY KEY,
+            photo_data TEXT NOT NULL,
+            content_type VARCHAR(50),
+            file_size INTEGER,
+            uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (member_id) REFERENCES team_members(id) ON DELETE CASCADE
         )
     ');
     
