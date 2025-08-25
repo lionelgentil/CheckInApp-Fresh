@@ -4,7 +4,7 @@
  */
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '4.0.4';
+const APP_VERSION = '4.0.5';
 
 class CheckInViewApp {
     constructor() {
@@ -1642,20 +1642,83 @@ class CheckInViewApp {
     
     // Toggle player attendance in grid view
     async toggleGridPlayerAttendance(eventId, matchId, memberId, teamType) {
-        // Use the existing toggle function
-        await this.toggleMatchAttendance(eventId, matchId, memberId, teamType);
-        
-        // Re-render the current grid to update the check-in status
-        this.renderGridTeam(this.currentGridTeam);
-        
-        // Update current match reference
         const event = this.events.find(e => e.id === eventId);
-        if (event) {
-            const match = event.matches.find(m => m.id === matchId);
-            if (match) {
-                this.currentMatch = match; // Update current match reference
+        const match = event?.matches.find(m => m.id === matchId);
+        
+        if (!event || !match) {
+            console.error('Event or match not found');
+            alert('Event or match not found. Please refresh and try again.');
+            return;
+        }
+        
+        const attendeesArray = teamType === 'home' ? match.homeTeamAttendees : match.awayTeamAttendees;
+        const existingIndex = attendeesArray.findIndex(a => a.memberId === memberId);
+        
+        // Find the grid item for immediate UI update
+        const gridItem = document.querySelector(`[onclick*="'${memberId}'"][onclick*="'${teamType}'"]`);
+        const checkIcon = gridItem?.querySelector('.grid-check-icon');
+        
+        // Store original state for potential rollback
+        const originalAttendees = [...attendeesArray];
+        const wasCheckedIn = existingIndex >= 0;
+        
+        // Update UI IMMEDIATELY for instant feedback
+        if (gridItem) {
+            if (wasCheckedIn) {
+                // Remove check-in
+                attendeesArray.splice(existingIndex, 1);
+                gridItem.classList.remove('checked-in');
+                console.log('Removed attendance for member:', memberId);
+            } else {
+                // Add check-in
+                const team = this.teams.find(t => t.id === (teamType === 'home' ? match.homeTeamId : match.awayTeamId));
+                const member = team?.members.find(m => m.id === memberId);
+                
+                if (!team || !member) {
+                    console.error('Team or member not found');
+                    alert('Team or member not found. Please refresh and try again.');
+                    return;
+                }
+                
+                attendeesArray.push({
+                    memberId: memberId,
+                    name: member.name,
+                    checkedInAt: new Date().toISOString()
+                });
+                gridItem.classList.add('checked-in');
+                console.log('Added attendance for member:', memberId);
             }
         }
+        
+        // Save to server in background (don't await for UI responsiveness)
+        this.saveEvents().then(() => {
+            console.log('Events saved successfully');
+            // Update the events display in the background (no modal refresh)
+            this.renderEvents();
+        }).catch(error => {
+            console.error('Failed to save events:', error);
+            
+            // Revert the data and UI changes on error
+            if (teamType === 'home') {
+                match.homeTeamAttendees = originalAttendees;
+            } else {
+                match.awayTeamAttendees = originalAttendees;
+            }
+            
+            // Revert UI changes
+            if (gridItem) {
+                if (wasCheckedIn) {
+                    gridItem.classList.add('checked-in');
+                } else {
+                    gridItem.classList.remove('checked-in');
+                }
+            }
+            
+            alert(`Failed to update attendance: ${error.message}\n\nChanges have been reverted.`);
+        });
+        
+        // Update current match reference
+        this.currentMatch = match;
     }
     
     // Load lifetime disciplinary cards for match check-in (optimized - team-based API calls)
