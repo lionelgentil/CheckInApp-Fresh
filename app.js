@@ -4,7 +4,7 @@
  */
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '3.2.3';
+const APP_VERSION = '3.5.1';
 
 class CheckInApp {
     constructor() {
@@ -174,9 +174,9 @@ class CheckInApp {
                 return this.getGenderDefaultPhoto(member);
             }
             
-            // Skip base64 images - use gender defaults instead
+            // Handle base64 images (for Railway deployment where filesystem is ephemeral)
             if (member.photo.startsWith('data:image/')) {
-                return this.getGenderDefaultPhoto(member);
+                return member.photo; // Return base64 image directly
             }
             
             // Check if it's an API URL with filename parameter
@@ -188,8 +188,8 @@ class CheckInApp {
                     if (filename.includes('.jpg') || filename.includes('.jpeg') || 
                         filename.includes('.png') || filename.includes('.webp')) {
                         // Return the full API URL with additional cache-busting
-                        const separator = member.photo.includes('&') ? '&' : '&';
-                        return member.photo + separator + '_cb=' + Date.now();
+                        // Since this already has '?filename=', we need '&' for additional params
+                        return member.photo + '&_cb=' + Date.now();
                     }
                 }
             }
