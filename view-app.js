@@ -4,7 +4,7 @@
  */
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '3.5.2';
+const APP_VERSION = '3.5.3';
 
 class CheckInViewApp {
     constructor() {
@@ -1516,34 +1516,9 @@ class CheckInViewApp {
             ${scoreSection}
             ${cardsSection}
             
+            <!-- Team Selector for Grid View -->
             <div style="margin-bottom: 20px;">
-                <div style="margin-bottom: 15px;">
-                    <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
-                        <input type="radio" name="view-mode" value="list" checked onchange="app.toggleCheckInView('list')">
-                        <span>📋 List View</span>
-                    </label>
-                    <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; margin-top: 8px;">
-                        <input type="radio" name="view-mode" value="grid" onchange="app.toggleCheckInView('grid')">
-                        <span>📱 Grid Check-In (ECNL Style)</span>
-                    </label>
-                </div>
-                
-                <div id="list-view-controls">
-                    <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
-                        <input type="radio" name="team-toggle" value="both" checked onchange="app.toggleTeamView('both')">
-                        <span>Show Both Teams</span>
-                    </label>
-                    <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; margin-top: 8px;">
-                        <input type="radio" name="team-toggle" value="home" onchange="app.toggleTeamView('home')">
-                        <span>Show ${homeTeam.name} Only</span>
-                    </label>
-                    <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; margin-top: 8px;">
-                        <input type="radio" name="team-toggle" value="away" onchange="app.toggleTeamView('away')">
-                        <span>Show ${awayTeam.name} Only</span>
-                    </label>
-                </div>
-                
-                <div id="grid-view-controls" style="display: none;">
+                <div id="grid-view-controls">
                     <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
                         <input type="radio" name="grid-team-toggle" value="home" checked onchange="app.toggleGridTeam('home')">
                         <span>${homeTeam.name}</span>
@@ -1555,146 +1530,9 @@ class CheckInViewApp {
                 </div>
             </div>
             
-            <div style="display: flex; flex-direction: column; gap: 20px;">
-                <div id="home-team-section">
-                    <div style="background: ${homeTeam.colorData}; color: white; padding: 12px; border-radius: 8px; margin-bottom: 15px;">
-                        <h3 style="margin: 0; text-shadow: 1px 1px 2px rgba(0,0,0,0.3);">${homeTeam.name} (Home) ${hasScore ? `- ${match.homeScore}` : ''}</h3>
-                    </div>
-                    <div class="attendees-list">
-                        ${homeTeam.members.map(member => {
-                            const isCheckedIn = match.homeTeamAttendees.some(a => a.memberId === member.id);
-                            
-                            // Get current match card counts for this member
-                            const memberCards = match.cards ? match.cards.filter(card => card.memberId === member.id) : [];
-                            const matchYellowCards = memberCards.filter(card => card.cardType === 'yellow').length;
-                            const matchRedCards = memberCards.filter(card => card.cardType === 'red').length;
-                            
-                            // Get current season card counts (only from current season events)
-                            let seasonYellowCards = 0;
-                            let seasonRedCards = 0;
-                            this.events.forEach(event => {
-                                // Only count cards from current season events
-                                if (this.isCurrentSeasonEvent(event.date)) {
-                                    event.matches.forEach(m => {
-                                        if (m.cards) {
-                                            const cards = m.cards.filter(card => card.memberId === member.id);
-                                            seasonYellowCards += cards.filter(card => card.cardType === 'yellow').length;
-                                            seasonRedCards += cards.filter(card => card.cardType === 'red').length;
-                                        }
-                                    });
-                                }
-                            });
-                            
-                            const cardsDisplay = [];
-                            if (matchYellowCards > 0 || matchRedCards > 0) {
-                                const matchCards = [];
-                                if (matchYellowCards > 0) matchCards.push(`🟨${matchYellowCards}`);
-                                if (matchRedCards > 0) matchCards.push(`🟥${matchRedCards}`);
-                                cardsDisplay.push(`${matchCards.join(' ')} (match)`);
-                            }
-                            if (seasonYellowCards > 0 || seasonRedCards > 0) {
-                                const seasonCards = [];
-                                if (seasonYellowCards > 0) seasonCards.push(`🟨${seasonYellowCards}`);
-                                if (seasonRedCards > 0) seasonCards.push(`🟥${seasonRedCards}`);
-                                cardsDisplay.push(`${seasonCards.join(' ')} (current season)`);
-                            }
-                            
-                            return `
-                                <div class="attendee-row ${isCheckedIn ? 'checked-in' : ''}" onclick="app.toggleMatchAttendance('${eventId}', '${matchId}', '${member.id}', 'home')">
-                                    <div class="member-info-full">
-                                        <img src="${this.getMemberPhotoUrl(member)}" alt="${member.name}" class="member-photo-small">
-                                        <div class="member-details-full">
-                                            <div class="member-name-full">${member.name}</div>
-                                            <div class="member-meta-full" id="match-member-meta-${member.id}">
-                                                ${member.jerseyNumber ? `#${member.jerseyNumber}` : ''}
-                                                ${member.gender ? ` • ${member.gender}` : ''}
-                                                ${cardsDisplay.length > 0 ? ` • ${cardsDisplay.join(' | ')}` : ''}
-                                                <span class="lifetime-cards" id="match-lifetime-cards-${member.id}"> • Loading disciplinary records...</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="checkbox-area">
-                                        <div class="attendance-checkbox ${isCheckedIn ? 'checked' : ''}">
-                                            ${isCheckedIn ? '✓' : '○'}
-                                        </div>
-                                    </div>
-                                </div>
-                            `;
-                        }).join('')}
-                    </div>
-                </div>
-                
-                <div id="away-team-section">
-                    <div style="background: ${awayTeam.colorData}; color: white; padding: 12px; border-radius: 8px; margin-bottom: 15px;">
-                        <h3 style="margin: 0; text-shadow: 1px 1px 2px rgba(0,0,0,0.3);">${awayTeam.name} (Away) ${hasScore ? `- ${match.awayScore}` : ''}</h3>
-                    </div>
-                    <div class="attendees-list">
-                        ${awayTeam.members.map(member => {
-                            const isCheckedIn = match.awayTeamAttendees.some(a => a.memberId === member.id);
-                            
-                            // Get current match card counts for this member
-                            const memberCards = match.cards ? match.cards.filter(card => card.memberId === member.id) : [];
-                            const matchYellowCards = memberCards.filter(card => card.cardType === 'yellow').length;
-                            const matchRedCards = memberCards.filter(card => card.cardType === 'red').length;
-                            
-                            // Get current season card counts (only from current season events)
-                            let seasonYellowCards = 0;
-                            let seasonRedCards = 0;
-                            this.events.forEach(event => {
-                                // Only count cards from current season events
-                                if (this.isCurrentSeasonEvent(event.date)) {
-                                    event.matches.forEach(m => {
-                                        if (m.cards) {
-                                            const cards = m.cards.filter(card => card.memberId === member.id);
-                                            seasonYellowCards += cards.filter(card => card.cardType === 'yellow').length;
-                                            seasonRedCards += cards.filter(card => card.cardType === 'red').length;
-                                        }
-                                    });
-                                }
-                            });
-                            
-                            const cardsDisplay = [];
-                            if (matchYellowCards > 0 || matchRedCards > 0) {
-                                const matchCards = [];
-                                if (matchYellowCards > 0) matchCards.push(`🟨${matchYellowCards}`);
-                                if (matchRedCards > 0) matchCards.push(`🟥${matchRedCards}`);
-                                cardsDisplay.push(`${matchCards.join(' ')} (match)`);
-                            }
-                            if (seasonYellowCards > 0 || seasonRedCards > 0) {
-                                const seasonCards = [];
-                                if (seasonYellowCards > 0) seasonCards.push(`🟨${seasonYellowCards}`);
-                                if (seasonRedCards > 0) seasonCards.push(`🟥${seasonRedCards}`);
-                                cardsDisplay.push(`${seasonCards.join(' ')} (current season)`);
-                            }
-                            
-                            return `
-                                <div class="attendee-row ${isCheckedIn ? 'checked-in' : ''}" onclick="app.toggleMatchAttendance('${eventId}', '${matchId}', '${member.id}', 'away')">
-                                    <div class="member-info-full">
-                                        <img src="${this.getMemberPhotoUrl(member)}" alt="${member.name}" class="member-photo-small">
-                                        <div class="member-details-full">
-                                            <div class="member-name-full">${member.name}</div>
-                                            <div class="member-meta-full" id="match-member-meta-away-${member.id}">
-                                                ${member.jerseyNumber ? `#${member.jerseyNumber}` : ''}
-                                                ${member.gender ? ` • ${member.gender}` : ''}
-                                                ${cardsDisplay.length > 0 ? ` • ${cardsDisplay.join(' | ')}` : ''}
-                                                <span class="lifetime-cards" id="match-lifetime-cards-away-${member.id}"> • Loading disciplinary records...</span>
-                                            </div>
-                                        </div>
-                                    </div>
-                                    <div class="checkbox-area">
-                                        <div class="attendance-checkbox ${isCheckedIn ? 'checked' : ''}">
-                                            ${isCheckedIn ? '✓' : '○'}
-                                        </div>
-                                    </div>
-                                </div>
-                            `;
-                        }).join('')}
-                    </div>
-                </div>
-            </div>
             
             <!-- ECNL-Style Grid Check-In View -->
-            <div id="grid-checkin-view" style="display: none;">
+            <div id="grid-checkin-view" style="display: block;">
                 <div id="grid-home-team" style="display: block;">
                     <div style="background: ${homeTeam.colorData}; color: white; padding: 12px; border-radius: 8px; margin-bottom: 15px; text-align: center;">
                         <h3 style="margin: 0; text-shadow: 1px 1px 2px rgba(0,0,0,0.3);">${homeTeam.name} Check-In</h3>
@@ -1726,20 +1564,7 @@ class CheckInViewApp {
         // Initialize grid view
         this.initializeGridView(eventId, matchId, homeTeam, awayTeam, match);
         
-        // Auto-switch to grid view on mobile
-        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 768;
-        if (isMobile) {
-            // Hide view mode selector on mobile
-            const viewModeDiv = modal.querySelector('div[style*="margin-bottom: 20px;"]');
-            if (viewModeDiv) {
-                viewModeDiv.style.display = 'none';
-            }
-            
-            // Auto-start grid view on mobile
-            setTimeout(() => {
-                this.toggleCheckInView('grid');
-            }, 100);
-        }
+        // Grid view is now always active - no need for mobile detection or toggling
         
         // Load lifetime cards for all players in the match
         this.loadLifetimeCardsForMatch(homeTeam, awayTeam);
