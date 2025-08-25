@@ -4,7 +4,7 @@
  */
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '3.5.3';
+const APP_VERSION = '3.5.4';
 
 class CheckInViewApp {
     constructor() {
@@ -1582,29 +1582,6 @@ class CheckInViewApp {
         
         this.renderGridTeam('home');
         this.renderGridTeam('away');
-    }
-    
-    // Toggle between list and grid view
-    toggleCheckInView(viewMode) {
-        const listView = document.getElementById('home-team-section').parentElement;
-        const gridView = document.getElementById('grid-checkin-view');
-        const listControls = document.getElementById('list-view-controls');
-        const gridControls = document.getElementById('grid-view-controls');
-        
-        if (viewMode === 'grid') {
-            listView.style.display = 'none';
-            gridView.style.display = 'block';
-            listControls.style.display = 'none';
-            gridControls.style.display = 'block';
-            
-            // Render current grid team
-            this.renderGridTeam(this.currentGridTeam);
-        } else {
-            listView.style.display = 'block';
-            gridView.style.display = 'none';
-            listControls.style.display = 'block';
-            gridControls.style.display = 'none';
-        }
     }
     
     // Toggle between home and away team in grid view

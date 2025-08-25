@@ -814,7 +814,7 @@
     .player-grid-container {
         display: grid;
         grid-template-columns: repeat(3, 1fr);
-        gap: 20px 15px; /* 20px vertical gap, 15px horizontal gap */
+        gap: 30px 15px; /* 30px vertical gap, 15px horizontal gap */
         max-width: 600px;
         margin: 0 auto;
         padding: 0 15px;
@@ -970,20 +970,20 @@
     /* Mobile responsiveness for grid */
     @media (max-width: 768px) {
         .player-grid-container {
-            gap: 25px 15px; /* Even more vertical space on mobile: 25px vertical, 15px horizontal */
+            gap: 40px 15px; /* Even more vertical space on mobile: 40px vertical, 15px horizontal */
             padding: 0 10px;
         }
 
         .player-grid-item {
             padding: 12px;
             border-radius: 12px;
-            gap: 8px; /* Add internal spacing between elements */
+            gap: 12px; /* More internal spacing between elements */
         }
 
         .player-grid-photo {
             width: 50px;
             height: 50px;
-            margin-bottom: 6px;
+            margin-bottom: 10px;
         }
 
         .player-grid-name {
