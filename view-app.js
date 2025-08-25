@@ -4,7 +4,7 @@
  */
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '3.5.1';
+const APP_VERSION = '3.5.2';
 
 class CheckInViewApp {
     constructor() {
@@ -1546,11 +1546,11 @@ class CheckInViewApp {
                 <div id="grid-view-controls" style="display: none;">
                     <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
                         <input type="radio" name="grid-team-toggle" value="home" checked onchange="app.toggleGridTeam('home')">
-                        <span>📱 ${homeTeam.name}</span>
+                        <span>${homeTeam.name}</span>
                     </label>
                     <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; margin-top: 8px;">
                         <input type="radio" name="grid-team-toggle" value="away" onchange="app.toggleGridTeam('away')">
-                        <span>📱 ${awayTeam.name}</span>
+                        <span>${awayTeam.name}</span>
                     </label>
                 </div>
             </div>
@@ -1725,6 +1725,21 @@ class CheckInViewApp {
         
         // Initialize grid view
         this.initializeGridView(eventId, matchId, homeTeam, awayTeam, match);
+        
+        // Auto-switch to grid view on mobile
+        const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent) || window.innerWidth <= 768;
+        if (isMobile) {
+            // Hide view mode selector on mobile
+            const viewModeDiv = modal.querySelector('div[style*="margin-bottom: 20px;"]');
+            if (viewModeDiv) {
+                viewModeDiv.style.display = 'none';
+            }
+            
+            // Auto-start grid view on mobile
+            setTimeout(() => {
+                this.toggleCheckInView('grid');
+            }, 100);
+        }
         
         // Load lifetime cards for all players in the match
         this.loadLifetimeCardsForMatch(homeTeam, awayTeam);
