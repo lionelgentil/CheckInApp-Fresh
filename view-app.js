@@ -4,7 +4,7 @@
  */
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '4.0.5';
+const APP_VERSION = '4.0.6';
 
 class CheckInViewApp {
     constructor() {
@@ -1334,6 +1334,7 @@ class CheckInViewApp {
         });
         
         container.innerHTML = `
+            <!-- Desktop Table View -->
             <table class="card-tracker-table">
                 <thead>
                     <tr>
@@ -1368,6 +1369,49 @@ class CheckInViewApp {
                     `).join('')}
                 </tbody>
             </table>
+            
+            <!-- Mobile Card View -->
+            <div class="card-tracker-mobile">
+                ${filteredCards.map(card => `
+                    <div class="card-record-item">
+                        <div class="card-record-header">
+                            <div class="card-type-section">
+                                <span class="card-type-badge card-type-${card.cardType}">
+                                    ${card.cardType === 'yellow' ? '🟨 Yellow' : '🟥 Red'}
+                                </span>
+                                ${card.minute ? `<span class="card-minute">${card.minute}'</span>` : ''}
+                            </div>
+                            <div class="card-date">${new Date(card.eventDate).toLocaleDateString()}</div>
+                        </div>
+                        
+                        <div class="card-record-details">
+                            <div class="player-team-info">
+                                <div class="player-name-large">${card.playerName}</div>
+                                <div class="team-name-large">${card.teamName}</div>
+                            </div>
+                            
+                            <div class="match-info-section">
+                                <div class="match-teams"><strong>${card.matchInfo}</strong></div>
+                                ${card.refereeName ? `<div class="referee-info">Referee: ${card.refereeName}</div>` : ''}
+                            </div>
+                            
+                            ${card.reason ? `
+                                <div class="infraction-section">
+                                    <div class="infraction-label">Infraction:</div>
+                                    <div class="infraction-text">${card.reason}</div>
+                                </div>
+                            ` : ''}
+                            
+                            ${card.notes ? `
+                                <div class="notes-section">
+                                    <div class="notes-label">Notes:</div>
+                                    <div class="notes-text">${card.notes}</div>
+                                </div>
+                            ` : ''}
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
         `;
     }
     
