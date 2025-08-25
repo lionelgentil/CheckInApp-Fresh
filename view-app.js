@@ -4,7 +4,7 @@
  */
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '4.0.3';
+const APP_VERSION = '4.0.4';
 
 class CheckInViewApp {
     constructor() {
@@ -1539,7 +1539,7 @@ class CheckInViewApp {
                         <div style="font-size: 0.9em; opacity: 0.9; margin-top: 4px;">Tap players to check them in</div>
                     </div>
                     <div id="grid-pagination-info-home" style="text-align: center; margin-bottom: 15px; color: #666; font-size: 0.9em;"></div>
-                    <div id="grid-container-home" class="player-grid-container" style="gap: 100px 15px;"></div>
+                    <div id="grid-container-home" class="player-grid-container"></div>
                     <div id="grid-pagination-home" style="text-align: center; margin-top: 15px;"></div>
                 </div>
                 
@@ -1549,7 +1549,7 @@ class CheckInViewApp {
                         <div style="font-size: 0.9em; opacity: 0.9; margin-top: 4px;">Tap players to check them in</div>
                     </div>
                     <div id="grid-pagination-info-away" style="text-align: center; margin-bottom: 15px; color: #666; font-size: 0.9em;"></div>
-                    <div id="grid-container-away" class="player-grid-container" style="gap: 100px 15px;"></div>
+                    <div id="grid-container-away" class="player-grid-container"></div>
                     <div id="grid-pagination-away" style="text-align: center; margin-top: 15px;"></div>
                 </div>
             </div>
@@ -1619,7 +1619,7 @@ class CheckInViewApp {
         // Update info to show total players
         paginationInfo.innerHTML = `${totalPlayers} player${totalPlayers !== 1 ? 's' : ''} • Scroll to find players`;
         
-        // Render all grid items (no pagination)
+        // Render all grid items with new structure (no pagination)
         container.innerHTML = team.members.map(member => {
             const isCheckedIn = attendees.some(a => a.memberId === member.id);
             
@@ -1628,10 +1628,9 @@ class CheckInViewApp {
                      onclick="app.toggleGridPlayerAttendance('${this.currentEventId}', '${this.currentMatchId}', '${member.id}', '${teamType}')">
                     <div class="grid-check-icon">✓</div>
                     <img src="${this.getMemberPhotoUrl(member)}" alt="${member.name}" class="player-grid-photo">
-                    <div class="player-grid-name">${member.name}</div>
-                    <div class="player-grid-info">
-                        ${member.jerseyNumber ? `#${member.jerseyNumber}` : ''}
-                        ${member.gender ? (member.jerseyNumber ? ` • ${member.gender}` : member.gender) : ''}
+                    <div class="player-grid-content">
+                        <div class="player-grid-name">${member.name}</div>
+                        ${member.jerseyNumber ? `<div class="player-grid-jersey">#${member.jerseyNumber}</div>` : ''}
                     </div>
                 </div>
             `;
