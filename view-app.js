@@ -4,7 +4,7 @@
  */
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '4.0.6';
+const APP_VERSION = '4.0.7';
 
 class CheckInViewApp {
     constructor() {
@@ -1560,41 +1560,40 @@ class CheckInViewApp {
             ${scoreSection}
             ${cardsSection}
             
-            <!-- Team Selector for Grid View -->
-            <div style="margin-bottom: 20px;">
-                <div id="grid-view-controls">
-                    <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+            <!-- Team Selector for Grid View - Horizontal Layout -->
+            <div style="margin-bottom: 15px;">
+                <div id="grid-view-controls" style="display: flex; justify-content: center; gap: 30px; padding: 10px; background: #f8f9fa; border-radius: 8px;">
+                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-weight: 600;">
                         <input type="radio" name="grid-team-toggle" value="home" checked onchange="app.toggleGridTeam('home')">
                         <span>${homeTeam.name}</span>
                     </label>
-                    <label style="display: flex; align-items: center; gap: 10px; cursor: pointer; margin-top: 8px;">
+                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-weight: 600;">
                         <input type="radio" name="grid-team-toggle" value="away" onchange="app.toggleGridTeam('away')">
                         <span>${awayTeam.name}</span>
                     </label>
                 </div>
             </div>
             
-            
             <!-- ECNL-Style Grid Check-In View -->
             <div id="grid-checkin-view" style="display: block;">
                 <div id="grid-home-team" style="display: block;">
-                    <div style="background: ${homeTeam.colorData}; color: white; padding: 12px; border-radius: 8px; margin-bottom: 15px; text-align: center;">
-                        <h3 style="margin: 0; text-shadow: 1px 1px 2px rgba(0,0,0,0.3);">${homeTeam.name} Check-In</h3>
-                        <div style="font-size: 0.9em; opacity: 0.9; margin-top: 4px;">Tap players to check them in</div>
+                    <div style="background: ${homeTeam.colorData}; color: white; padding: 8px 12px; border-radius: 6px; margin-bottom: 10px; text-align: center;">
+                        <h4 style="margin: 0; font-size: 1em; text-shadow: 1px 1px 2px rgba(0,0,0,0.3);">${homeTeam.name} Check-In</h4>
+                        <div style="font-size: 0.8em; opacity: 0.9; margin-top: 2px;">Tap players to check them in</div>
                     </div>
-                    <div id="grid-pagination-info-home" style="text-align: center; margin-bottom: 15px; color: #666; font-size: 0.9em;"></div>
+                    <div id="grid-pagination-info-home" style="text-align: center; margin-bottom: 10px; color: #666; font-size: 0.85em;"></div>
                     <div id="grid-container-home" class="player-grid-container"></div>
-                    <div id="grid-pagination-home" style="text-align: center; margin-top: 15px;"></div>
+                    <div id="grid-pagination-home" style="text-align: center; margin-top: 10px;"></div>
                 </div>
                 
                 <div id="grid-away-team" style="display: none;">
-                    <div style="background: ${awayTeam.colorData}; color: white; padding: 12px; border-radius: 8px; margin-bottom: 15px; text-align: center;">
-                        <h3 style="margin: 0; text-shadow: 1px 1px 2px rgba(0,0,0,0.3);">${awayTeam.name} Check-In</h3>
-                        <div style="font-size: 0.9em; opacity: 0.9; margin-top: 4px;">Tap players to check them in</div>
+                    <div style="background: ${awayTeam.colorData}; color: white; padding: 8px 12px; border-radius: 6px; margin-bottom: 10px; text-align: center;">
+                        <h4 style="margin: 0; font-size: 1em; text-shadow: 1px 1px 2px rgba(0,0,0,0.3);">${awayTeam.name} Check-In</h4>
+                        <div style="font-size: 0.8em; opacity: 0.9; margin-top: 2px;">Tap players to check them in</div>
                     </div>
-                    <div id="grid-pagination-info-away" style="text-align: center; margin-bottom: 15px; color: #666; font-size: 0.9em;"></div>
+                    <div id="grid-pagination-info-away" style="text-align: center; margin-bottom: 10px; color: #666; font-size: 0.85em;"></div>
                     <div id="grid-container-away" class="player-grid-container"></div>
-                    <div id="grid-pagination-away" style="text-align: center; margin-top: 15px;"></div>
+                    <div id="grid-pagination-away" style="text-align: center; margin-top: 10px;"></div>
                 </div>
             </div>
             
