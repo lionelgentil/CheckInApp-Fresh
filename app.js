@@ -4,7 +4,7 @@
  */
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '4.1.0';
+const APP_VERSION = '4.2.0';
 
 class CheckInApp {
     constructor() {
@@ -394,6 +394,18 @@ class CheckInApp {
                 await this.loadReferees();
             }
             this.renderCardTracker();
+        } else if (sectionName === 'season') {
+            // Ensure we have all data loaded for season management
+            if (this.teams.length === 0) {
+                await this.loadTeams();
+            }
+            if (this.events.length === 0) {
+                await this.loadEvents();
+            }
+            if (this.referees.length === 0) {
+                await this.loadReferees();
+            }
+            this.renderSeasonManagement();
         }
         
         // Show section
@@ -2534,6 +2546,455 @@ Please check the browser console (F12) for more details.`);
         });
         
         return cardRecords;
+    }
+    
+    // Season Management Methods
+    renderSeasonManagement() {
+        const container = document.getElementById('season-management-container');
+        const seasonDisplay = document.getElementById('current-season-display');
+        
+        const currentSeason = this.getCurrentSeason();
+        seasonDisplay.textContent = `${currentSeason.type} ${currentSeason.year}`;
+        
+        // Calculate season statistics
+        const stats = this.calculateSeasonStats();
+        
+        container.innerHTML = `
+            <div class="season-overview-card">
+                <div class="season-title">
+                    <span>🏆</span>
+                    <span>${currentSeason.type} ${currentSeason.year} Season</span>
+                </div>
+                
+                <div class="season-stats">
+                    <div class="stat-item">
+                        <div class="stat-number">${stats.totalEvents}</div>
+                        <div class="stat-label">Events</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number">${stats.totalMatches}</div>
+                        <div class="stat-label">Matches</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number">${stats.totalCards}</div>
+                        <div class="stat-label">Cards Issued</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number">${stats.completedMatches}</div>
+                        <div class="stat-label">Completed Matches</div>
+                    </div>
+                </div>
+                
+                ${this.renderPendingSuspensions(stats.pendingSuspensions)}
+                
+                <div class="season-actions">
+                    <button class="btn-season-action btn-preview-migration" onclick="app.previewSeasonMigration()">
+                        Preview Migration
+                    </button>
+                    <button class="btn-season-action btn-close-season" 
+                            onclick="app.showCloseSeasonModal()" 
+                            ${stats.pendingSuspensions.length > 0 ? 'disabled title="Cannot close season with pending suspensions"' : ''}>
+                        Close Season
+                    </button>
+                </div>
+            </div>
+            
+            <div id="migration-preview-container"></div>
+        `;
+    }
+    
+    calculateSeasonStats() {
+        const stats = {
+            totalEvents: 0,
+            totalMatches: 0,
+            totalCards: 0,
+            completedMatches: 0,
+            pendingSuspensions: []
+        };
+        
+        // Count current season events and matches
+        this.events.forEach(event => {
+            if (this.isCurrentSeasonEvent(event.date)) {
+                stats.totalEvents++;
+                stats.totalMatches += event.matches.length;
+                
+                event.matches.forEach(match => {
+                    if (match.matchStatus === 'completed') {
+                        stats.completedMatches++;
+                    }
+                    
+                    if (match.cards) {
+                        stats.totalCards += match.cards.length;
+                        
+                        // Check for unserved suspensions
+                        match.cards.forEach(card => {
+                            if (card.cardType === 'red' && 
+                                card.suspensionMatches && 
+                                card.suspensionMatches > 0 && 
+                                !card.suspensionServed) {
+                                
+                                const team = this.teams.find(t => 
+                                    t.members.some(m => m.id === card.memberId)
+                                );
+                                const member = team?.members.find(m => m.id === card.memberId);
+                                
+                                if (team && member) {
+                                    stats.pendingSuspensions.push({
+                                        playerName: member.name,
+                                        teamName: team.name,
+                                        matches: card.suspensionMatches,
+                                        reason: card.reason || 'Not specified',
+                                        eventName: event.name,
+                                        eventDate: event.date
+                                    });
+                                }
+                            }
+                        });
+                    }
+                });
+            }
+        });
+        
+        return stats;
+    }
+    
+    renderPendingSuspensions(suspensions) {
+        if (suspensions.length === 0) {
+            return `
+                <div class="pending-suspensions none">
+                    <div class="suspensions-title none">
+                        <span>✅</span>
+                        <span>No Pending Suspensions</span>
+                    </div>
+                    <p style="margin: 0; color: #155724; font-style: italic;">All suspensions have been served or resolved.</p>
+                </div>
+            `;
+        }
+        
+        return `
+            <div class="pending-suspensions">
+                <div class="suspensions-title">
+                    <span>⚠️</span>
+                    <span>Pending Suspensions (${suspensions.length})</span>
+                </div>
+                ${suspensions.map(suspension => `
+                    <div class="suspension-item">
+                        <div class="player-suspension-info">
+                            <div class="player-name-suspension">${suspension.playerName}</div>
+                            <div class="suspension-details">
+                                ${suspension.teamName} • ${suspension.reason} • ${suspension.eventName}
+                            </div>
+                        </div>
+                        <div class="suspension-matches">${suspension.matches} match${suspension.matches !== 1 ? 'es' : ''}</div>
+                    </div>
+                `).join('')}
+                <p style="margin: 10px 0 0 0; color: #856404; font-size: 0.9em; font-style: italic;">
+                    ⚠️ Season cannot be closed until all suspensions are resolved.
+                </p>
+            </div>
+        `;
+    }
+    
+    async previewSeasonMigration() {
+        const container = document.getElementById('migration-preview-container');
+        
+        // Collect all cards from current season
+        const cardsToMigrate = this.collectCurrentSeasonCards();
+        
+        if (cardsToMigrate.length === 0) {
+            container.innerHTML = `
+                <div class="migration-preview">
+                    <h3 style="margin-bottom: 15px; color: #666;">Migration Preview</h3>
+                    <div class="empty-state">
+                        <h4>No Cards to Migrate</h4>
+                        <p>There are no cards from the current season to migrate to disciplinary records.</p>
+                    </div>
+                </div>
+            `;
+            return;
+        }
+        
+        // Group by card type for summary
+        const yellowCards = cardsToMigrate.filter(card => card.cardType === 'yellow');
+        const redCards = cardsToMigrate.filter(card => card.cardType === 'red');
+        
+        container.innerHTML = `
+            <div class="migration-preview">
+                <h3 style="margin-bottom: 15px; color: #333;">Migration Preview</h3>
+                <p style="margin-bottom: 20px; color: #666;">
+                    The following ${cardsToMigrate.length} card${cardsToMigrate.length !== 1 ? 's' : ''} will be moved from match records to the disciplinary records database:
+                </p>
+                
+                <div class="migration-summary">
+                    <div class="migration-stat">
+                        <div class="migration-number">${yellowCards.length}</div>
+                        <div class="stat-label">Yellow Cards</div>
+                    </div>
+                    <div class="migration-stat">
+                        <div class="migration-number">${redCards.length}</div>
+                        <div class="stat-label">Red Cards</div>
+                    </div>
+                    <div class="migration-stat">
+                        <div class="migration-number">${cardsToMigrate.length}</div>
+                        <div class="stat-label">Total Cards</div>
+                    </div>
+                </div>
+                
+                <div class="cards-to-migrate">
+                    ${cardsToMigrate.map(card => `
+                        <div class="card-migration-item">
+                            <div>
+                                <strong>${card.playerName}</strong> (${card.teamName})
+                                <br>
+                                <small style="color: #666;">
+                                    ${card.cardType === 'yellow' ? '🟨' : '🟥'} ${card.cardType} card • ${card.eventName} • ${new Date(card.eventDate).toLocaleDateString()}
+                                </small>
+                            </div>
+                            <div style="font-size: 0.8em; color: #666;">
+                                ${card.reason || 'No reason specified'}
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            </div>
+        `;
+    }
+    
+    showCloseSeasonModal() {
+        const stats = this.calculateSeasonStats();
+        const currentSeason = this.getCurrentSeason();
+        
+        if (stats.pendingSuspensions.length > 0) {
+            alert('Cannot close season with pending suspensions. Please resolve all suspensions first.');
+            return;
+        }
+        
+        const modal = this.createModal(`Close ${currentSeason.type} ${currentSeason.year} Season`, `
+            <div style="margin-bottom: 20px;">
+                <p style="color: #856404; background: #fff3cd; padding: 15px; border-radius: 8px; margin-bottom: 15px;">
+                    <strong>⚠️ Warning:</strong> This action will permanently close the current season and cannot be undone.
+                </p>
+                
+                <h4 style="margin-bottom: 10px;">This will:</h4>
+                <ul style="margin: 0 0 15px 20px; color: #666;">
+                    <li>Move all ${stats.totalCards} match cards to disciplinary records</li>
+                    <li>Archive all ${stats.totalEvents} events and ${stats.totalMatches} matches</li>
+                    <li>Clear current season data to prepare for new season</li>
+                    <li>Preserve all team rosters and referees</li>
+                </ul>
+                
+                <div style="background: #f8f9fa; padding: 15px; border-radius: 8px; margin-bottom: 20px;">
+                    <label style="display: flex; align-items: center; gap: 10px; cursor: pointer;">
+                        <input type="checkbox" id="confirm-close-season" style="transform: scale(1.2);">
+                        <span style="font-weight: 600;">I understand this action cannot be undone</span>
+                    </label>
+                </div>
+            </div>
+            
+            <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                <button class="btn btn-secondary" onclick="app.closeModal()">Cancel</button>
+                <button class="btn btn-danger" onclick="app.closeSeason()" id="confirm-close-btn" disabled>
+                    Close Season
+                </button>
+            </div>
+            
+            <script>
+                document.getElementById('confirm-close-season').addEventListener('change', function() {
+                    document.getElementById('confirm-close-btn').disabled = !this.checked;
+                });
+            </script>
+        `);
+        
+        document.body.appendChild(modal);
+    }
+    
+    async closeSeason() {
+        const progressContainer = document.querySelector('.modal-content');
+        const currentSeason = this.getCurrentSeason();
+        
+        // Show progress UI
+        progressContainer.innerHTML = `
+            <div class="modal-header">
+                <h2 class="modal-title">Closing ${currentSeason.type} ${currentSeason.year} Season</h2>
+            </div>
+            
+            <div class="progress-container">
+                <div class="progress-text" id="progress-text">Preparing migration...</div>
+                <div class="progress-bar">
+                    <div class="progress-fill" id="progress-fill"></div>
+                </div>
+                <div id="progress-details" style="font-size: 0.9em; color: #666; margin-top: 10px;"></div>
+            </div>
+        `;
+        
+        try {
+            // Step 1: Collect all cards to migrate
+            this.updateProgress(10, 'Collecting cards to migrate...');
+            const cardsToMigrate = this.collectCurrentSeasonCards();
+            
+            // Step 2: Convert cards to disciplinary records format
+            this.updateProgress(25, 'Converting cards to disciplinary records...');
+            const disciplinaryRecords = cardsToMigrate.map(card => ({
+                memberId: card.memberId,
+                cardType: card.cardType,
+                reason: card.reason,
+                notes: card.notes,
+                incidentDate: card.eventDate,
+                suspensionMatches: 0, // Will be updated for red cards
+                suspensionServed: true, // Mark as served for historical records
+                seasonClosed: true,
+                originalEventName: card.eventName,
+                originalMatchInfo: card.matchInfo
+            }));
+            
+            // Step 3: Send disciplinary records to server
+            this.updateProgress(50, 'Saving disciplinary records...');
+            await this.saveDisciplinaryRecords(disciplinaryRecords);
+            
+            // Step 4: Archive current season data
+            this.updateProgress(75, 'Archiving season data...');
+            await this.archiveSeasonData(currentSeason);
+            
+            // Step 5: Clear current events
+            this.updateProgress(90, 'Clearing current season events...');
+            this.events = [];
+            await this.saveEvents(); // Save empty events array
+            
+            // Step 6: Complete
+            this.updateProgress(100, 'Season closed successfully!');
+            
+            setTimeout(() => {
+                this.closeModal();
+                this.renderSeasonManagement();
+                this.renderEvents(); // Refresh events display
+                alert(`${currentSeason.type} ${currentSeason.year} season has been successfully closed. You can now start a new season.`);
+            }, 1500);
+            
+        } catch (error) {
+            console.error('Error closing season:', error);
+            this.updateProgress(0, `Error: ${error.message}`);
+            setTimeout(() => {
+                this.closeModal();
+                alert('Failed to close season. Please try again.');
+            }, 2000);
+        }
+    }
+    
+    updateProgress(percentage, text) {
+        const progressFill = document.getElementById('progress-fill');
+        const progressText = document.getElementById('progress-text');
+        
+        if (progressFill) progressFill.style.width = percentage + '%';
+        if (progressText) progressText.textContent = text;
+    }
+    
+    async saveDisciplinaryRecords(records) {
+        if (records.length === 0) return;
+        
+        const response = await fetch('/api/disciplinary-records', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(records)
+        });
+        
+        if (!response.ok) {
+            throw new Error('Failed to save disciplinary records');
+        }
+        
+        return await response.json();
+    }
+    
+    async archiveSeasonData(season) {
+        const archiveData = {
+            season: season,
+            events: this.events,
+            archivedAt: new Date().toISOString()
+        };
+        
+        const response = await fetch('/api/archive-season', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify(archiveData)
+        });
+        
+        if (!response.ok) {
+            throw new Error('Failed to archive season data');
+        }
+        
+        return await response.json();
+    }
+    
+    showNewSeasonModal() {
+        const modal = this.createModal('Start New Season', `
+            <div style="margin-bottom: 20px;">
+                <h4 style="margin-bottom: 15px;">Select New Season:</h4>
+                
+                <div style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 20px;">
+                    <label style="display: flex; align-items: center; gap: 10px; padding: 10px; border: 2px solid #e9ecef; border-radius: 8px; cursor: pointer;">
+                        <input type="radio" name="new-season" value="spring" id="spring-season">
+                        <div>
+                            <strong>Spring ${new Date().getFullYear()}</strong>
+                            <div style="font-size: 0.9em; color: #666;">February 15 - June 30</div>
+                        </div>
+                    </label>
+                    
+                    <label style="display: flex; align-items: center; gap: 10px; padding: 10px; border: 2px solid #e9ecef; border-radius: 8px; cursor: pointer;">
+                        <input type="radio" name="new-season" value="fall" id="fall-season">
+                        <div>
+                            <strong>Fall ${new Date().getFullYear()}</strong>
+                            <div style="font-size: 0.9em; color: #666;">August 1 - December 31</div>
+                        </div>
+                    </label>
+                </div>
+                
+                <div style="background: #d4edda; border: 1px solid #c3e6cb; border-radius: 8px; padding: 15px; margin-bottom: 20px;">
+                    <p style="margin: 0; color: #155724; font-size: 0.9em;">
+                        <strong>✅ Note:</strong> Starting a new season will clear all current events but preserve team rosters, referees, and disciplinary records.
+                    </p>
+                </div>
+            </div>
+            
+            <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                <button class="btn btn-secondary" onclick="app.closeModal()">Cancel</button>
+                <button class="btn" onclick="app.startNewSeason()">Start New Season</button>
+            </div>
+        `);
+        
+        document.body.appendChild(modal);
+    }
+    
+    async startNewSeason() {
+        const selectedSeason = document.querySelector('input[name="new-season"]:checked');
+        
+        if (!selectedSeason) {
+            alert('Please select a season type.');
+            return;
+        }
+        
+        const seasonType = selectedSeason.value;
+        const year = new Date().getFullYear();
+        
+        try {
+            // Clear current events
+            this.events = [];
+            await this.saveEvents();
+            
+            // Update display
+            this.closeModal();
+            this.renderSeasonManagement();
+            this.renderEvents();
+            
+            const seasonName = seasonType.charAt(0).toUpperCase() + seasonType.slice(1);
+            alert(`${seasonName} ${year} season has been started! You can now create new events.`);
+            
+        } catch (error) {
+            console.error('Error starting new season:', error);
+            alert('Failed to start new season. Please try again.');
+        }
     }
     
     // Referee Management

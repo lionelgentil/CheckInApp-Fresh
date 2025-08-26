@@ -4,7 +4,7 @@
  */
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '4.1.0';
+const APP_VERSION = '4.2.0';
 
 class CheckInViewApp {
     constructor() {
@@ -181,6 +181,18 @@ class CheckInViewApp {
                 await this.loadReferees();
             }
             this.renderCardTracker();
+        } else if (sectionName === 'season') {
+            // Ensure we have all data loaded for season management display
+            if (this.teams.length === 0) {
+                await this.loadTeams();
+            }
+            if (this.events.length === 0) {
+                await this.loadEvents();
+            }
+            if (this.referees.length === 0) {
+                await this.loadReferees();
+            }
+            this.renderSeasonManagement();
         }
         
         // Show section
@@ -1482,6 +1494,150 @@ class CheckInViewApp {
         });
         
         return cardRecords;
+    }
+    
+    // Season Management Methods (Read-Only View)
+    renderSeasonManagement() {
+        const container = document.getElementById('season-management-container');
+        const seasonDisplay = document.getElementById('current-season-display');
+        
+        const currentSeason = this.getCurrentSeason();
+        seasonDisplay.textContent = `${currentSeason.type} ${currentSeason.year}`;
+        
+        // Calculate season statistics
+        const stats = this.calculateSeasonStats();
+        
+        container.innerHTML = `
+            <div class="season-overview-card">
+                <div class="season-title">
+                    <span>🏆</span>
+                    <span>${currentSeason.type} ${currentSeason.year} Season</span>
+                </div>
+                
+                <div class="season-stats">
+                    <div class="stat-item">
+                        <div class="stat-number">${stats.totalEvents}</div>
+                        <div class="stat-label">Events</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number">${stats.totalMatches}</div>
+                        <div class="stat-label">Matches</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number">${stats.totalCards}</div>
+                        <div class="stat-label">Cards Issued</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number">${stats.completedMatches}</div>
+                        <div class="stat-label">Completed Matches</div>
+                    </div>
+                </div>
+                
+                ${this.renderPendingSuspensions(stats.pendingSuspensions)}
+                
+                <div class="view-only-notice">
+                    <div class="view-only-notice-title">
+                        <span>👀</span>
+                        <span>Read-Only Mode</span>
+                    </div>
+                    <p style="margin: 0; color: #1565c0; font-size: 0.9em;">
+                        Season management functions are not available in view-only mode. Use the main admin interface to close seasons and migrate data.
+                    </p>
+                </div>
+            </div>
+        `;
+    }
+    
+    calculateSeasonStats() {
+        const stats = {
+            totalEvents: 0,
+            totalMatches: 0,
+            totalCards: 0,
+            completedMatches: 0,
+            pendingSuspensions: []
+        };
+        
+        // Count current season events and matches
+        this.events.forEach(event => {
+            if (this.isCurrentSeasonEvent(event.date)) {
+                stats.totalEvents++;
+                stats.totalMatches += event.matches.length;
+                
+                event.matches.forEach(match => {
+                    if (match.matchStatus === 'completed') {
+                        stats.completedMatches++;
+                    }
+                    
+                    if (match.cards) {
+                        stats.totalCards += match.cards.length;
+                        
+                        // Check for unserved suspensions
+                        match.cards.forEach(card => {
+                            if (card.cardType === 'red' && 
+                                card.suspensionMatches && 
+                                card.suspensionMatches > 0 && 
+                                !card.suspensionServed) {
+                                
+                                const team = this.teams.find(t => 
+                                    t.members.some(m => m.id === card.memberId)
+                                );
+                                const member = team?.members.find(m => m.id === card.memberId);
+                                
+                                if (team && member) {
+                                    stats.pendingSuspensions.push({
+                                        playerName: member.name,
+                                        teamName: team.name,
+                                        matches: card.suspensionMatches,
+                                        reason: card.reason || 'Not specified',
+                                        eventName: event.name,
+                                        eventDate: event.date
+                                    });
+                                }
+                            }
+                        });
+                    }
+                });
+            }
+        });
+        
+        return stats;
+    }
+    
+    renderPendingSuspensions(suspensions) {
+        if (suspensions.length === 0) {
+            return `
+                <div class="pending-suspensions none">
+                    <div class="suspensions-title none">
+                        <span>✅</span>
+                        <span>No Pending Suspensions</span>
+                    </div>
+                    <p style="margin: 0; color: #155724; font-style: italic;">All suspensions have been served or resolved.</p>
+                </div>
+            `;
+        }
+        
+        return `
+            <div class="pending-suspensions">
+                <div class="suspensions-title">
+                    <span>⚠️</span>
+                    <span>Pending Suspensions (${suspensions.length})</span>
+                </div>
+                ${suspensions.map(suspension => `
+                    <div class="suspension-item">
+                        <div class="player-suspension-info">
+                            <div class="player-name-suspension">${suspension.playerName}</div>
+                            <div class="suspension-details">
+                                ${suspension.teamName} • ${suspension.reason} • ${suspension.eventName}
+                            </div>
+                        </div>
+                        <div class="suspension-matches">${suspension.matches} match${suspension.matches !== 1 ? 'es' : ''}</div>
+                    </div>
+                `).join('')}
+                <p style="margin: 10px 0 0 0; color: #856404; font-size: 0.9em; font-style: italic;">
+                    ⚠️ These suspensions must be resolved before the season can be closed.
+                </p>
+            </div>
+        `;
     }
     
     // View Match (read-only)
