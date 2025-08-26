@@ -4,7 +4,7 @@
  */
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '4.0.8';
+const APP_VERSION = '4.0.9';
 
 class CheckInApp {
     constructor() {
@@ -3009,6 +3009,28 @@ Please check the browser console (F12) for more details.`);
                                             <label class="mobile-label">Additional Notes (Optional)</label>
                                             <input type="text" class="form-input-mobile" placeholder="Additional notes..." data-card-index="${index}" data-field="notes" value="${card.notes || ''}">
                                         </div>
+                                        
+                                        ${card.cardType === 'red' || (card.suspensionMatches !== null && card.suspensionMatches !== undefined) ? `
+                                            <div class="suspension-section-mobile" id="suspension-section-${index}" style="margin-top: 16px; padding: 12px; background: #fff3cd; border-radius: 8px; border-left: 4px solid #ffc107;">
+                                                <div class="form-row-mobile-dual">
+                                                    <div class="form-col-mobile">
+                                                        <label class="mobile-label">Suspension Matches</label>
+                                                        <input type="number" class="form-input-mobile" placeholder="0" data-card-index="${index}" data-field="suspensionMatches" value="${card.suspensionMatches || ''}" min="0" max="99">
+                                                    </div>
+                                                    <div class="form-col-mobile">
+                                                        <label class="mobile-label">Served?</label>
+                                                        <label style="display: flex; align-items: center; gap: 8px; margin-top: 12px;">
+                                                            <input type="checkbox" data-card-index="${index}" data-field="suspensionServed" ${card.suspensionServed ? 'checked' : ''} onchange="app.toggleMatchSuspensionServedDate(${index})">
+                                                            <span style="font-size: 0.9em;">Suspension served</span>
+                                                        </label>
+                                                    </div>
+                                                </div>
+                                                <div id="served-date-section-${index}" style="display: ${card.suspensionServed ? 'block' : 'none'}; margin-top: 12px;">
+                                                    <label class="mobile-label">Date Served</label>
+                                                    <input type="date" class="form-input-mobile" data-card-index="${index}" data-field="suspensionServedDate" value="${card.suspensionServedDate || ''}">
+                                                </div>
+                                            </div>
+                                        ` : ''}
                                     </div>
                                 </div>
                             `;
@@ -3103,6 +3125,26 @@ Please check the browser console (F12) for more details.`);
                         <label class="mobile-label">Additional Notes (Optional)</label>
                         <input type="text" class="form-input-mobile" placeholder="Additional notes..." data-card-index="${newIndex}" data-field="notes">
                     </div>
+                    
+                    <div class="suspension-section-mobile" id="suspension-section-${newIndex}" style="display: none; margin-top: 16px; padding: 12px; background: #fff3cd; border-radius: 8px; border-left: 4px solid #ffc107;">
+                        <div class="form-row-mobile-dual">
+                            <div class="form-col-mobile">
+                                <label class="mobile-label">Suspension Matches</label>
+                                <input type="number" class="form-input-mobile" placeholder="0" data-card-index="${newIndex}" data-field="suspensionMatches" min="0" max="99">
+                            </div>
+                            <div class="form-col-mobile">
+                                <label class="mobile-label">Served?</label>
+                                <label style="display: flex; align-items: center; gap: 8px; margin-top: 12px;">
+                                    <input type="checkbox" data-card-index="${newIndex}" data-field="suspensionServed" onchange="app.toggleMatchSuspensionServedDate(${newIndex})">
+                                    <span style="font-size: 0.9em;">Suspension served</span>
+                                </label>
+                            </div>
+                        </div>
+                        <div id="served-date-section-${newIndex}" style="display: none; margin-top: 12px;">
+                            <label class="mobile-label">Date Served</label>
+                            <input type="date" class="form-input-mobile" data-card-index="${newIndex}" data-field="suspensionServedDate">
+                        </div>
+                    </div>
                 </div>
             </div>
         `;
@@ -3114,11 +3156,52 @@ Please check the browser console (F12) for more details.`);
         const cardItem = document.querySelector(`[data-card-index="${index}"]`);
         const cardTypeSelect = cardItem?.querySelector('[data-field="cardType"]');
         const cardHeader = cardItem?.querySelector('.card-type-display');
+        const suspensionSection = document.getElementById(`suspension-section-${index}`);
         
         if (cardTypeSelect && cardHeader) {
             const cardType = cardTypeSelect.value;
             cardHeader.className = `card-type-display ${cardType}`;
             cardHeader.textContent = cardType === 'yellow' ? '🟨 YELLOW CARD' : '🟥 RED CARD';
+            
+            // Show/hide suspension section based on card type
+            if (suspensionSection) {
+                if (cardType === 'red') {
+                    suspensionSection.style.display = 'block';
+                } else {
+                    suspensionSection.style.display = 'none';
+                    // Clear suspension fields when hiding
+                    const suspensionMatchesField = suspensionSection.querySelector('[data-field="suspensionMatches"]');
+                    const suspensionServedField = suspensionSection.querySelector('[data-field="suspensionServed"]');
+                    const suspensionServedDateField = suspensionSection.querySelector('[data-field="suspensionServedDate"]');
+                    
+                    if (suspensionMatchesField) suspensionMatchesField.value = '';
+                    if (suspensionServedField) suspensionServedField.checked = false;
+                    if (suspensionServedDateField) suspensionServedDateField.value = '';
+                    
+                    // Hide served date section
+                    const servedDateSection = document.getElementById(`served-date-section-${index}`);
+                    if (servedDateSection) servedDateSection.style.display = 'none';
+                }
+            }
+        }
+    }
+    
+    toggleMatchSuspensionServedDate(index) {
+        const checkbox = document.querySelector(`[data-card-index="${index}"][data-field="suspensionServed"]`);
+        const servedDateSection = document.getElementById(`served-date-section-${index}`);
+        const dateField = document.querySelector(`[data-card-index="${index}"][data-field="suspensionServedDate"]`);
+        
+        if (checkbox && servedDateSection) {
+            if (checkbox.checked) {
+                servedDateSection.style.display = 'block';
+                // Set today's date as default if no date is set
+                if (!dateField.value) {
+                    dateField.value = new Date().toISOString().split('T')[0];
+                }
+            } else {
+                servedDateSection.style.display = 'none';
+                dateField.value = '';
+            }
         }
     }
     
@@ -3182,6 +3265,29 @@ Please check the browser console (F12) for more details.`);
             const reason = cardItem.querySelector('[data-field="reason"]').value;
             const notes = cardItem.querySelector('[data-field="notes"]').value;
             
+            // Collect suspension data for red cards
+            let suspensionMatches = null;
+            let suspensionServed = false;
+            let suspensionServedDate = null;
+            
+            if (cardType === 'red') {
+                const suspensionMatchesField = cardItem.querySelector('[data-field="suspensionMatches"]');
+                const suspensionServedField = cardItem.querySelector('[data-field="suspensionServed"]');
+                const suspensionServedDateField = cardItem.querySelector('[data-field="suspensionServedDate"]');
+                
+                if (suspensionMatchesField && suspensionMatchesField.value) {
+                    suspensionMatches = parseInt(suspensionMatchesField.value);
+                }
+                
+                if (suspensionServedField) {
+                    suspensionServed = suspensionServedField.checked;
+                }
+                
+                if (suspensionServed && suspensionServedDateField && suspensionServedDateField.value) {
+                    suspensionServedDate = suspensionServedDateField.value;
+                }
+            }
+            
             if (memberId && cardType) {
                 // Determine team type
                 const isHomePlayer = homeTeam.members.some(m => m.id === memberId);
@@ -3193,7 +3299,10 @@ Please check the browser console (F12) for more details.`);
                     cardType: cardType,
                     minute: minute ? parseInt(minute) : null,
                     reason: reason || null,
-                    notes: notes || null
+                    notes: notes || null,
+                    suspensionMatches: suspensionMatches,
+                    suspensionServed: suspensionServed,
+                    suspensionServedDate: suspensionServedDate
                 });
             }
         });
@@ -3408,28 +3517,62 @@ Please check the browser console (F12) for more details.`);
     // Check if player is currently suspended
     async checkPlayerSuspensionStatus(memberId) {
         try {
+            // Check both disciplinary records AND match cards for suspensions
             const response = await fetch(`/api/disciplinary-records?member_id=${memberId}`);
-            if (!response.ok) {
-                console.warn('Could not check suspension status:', response.status);
-                return { suspended: false }; // Allow check-in if we can't verify
+            let disciplinaryRecords = [];
+            
+            if (response.ok) {
+                disciplinaryRecords = await response.json();
+            } else {
+                console.warn('Could not check disciplinary records:', response.status);
             }
             
-            const records = await response.json();
-            
-            // Find any unserved suspensions
-            const activeSuspensions = records.filter(record => 
+            // Find any unserved suspensions from disciplinary records
+            const activeDisciplinaryRecords = disciplinaryRecords.filter(record => 
                 record.cardType === 'red' && 
                 record.suspensionMatches && 
                 record.suspensionMatches > 0 && 
                 !record.suspensionServed
             );
             
-            if (activeSuspensions.length > 0) {
-                const totalMatches = activeSuspensions.reduce((sum, record) => sum + record.suspensionMatches, 0);
+            // Also check for unserved suspensions from match cards
+            const activeMatchCards = [];
+            this.events.forEach(event => {
+                event.matches.forEach(match => {
+                    if (match.cards) {
+                        match.cards.forEach(card => {
+                            if (card.memberId === memberId && 
+                                card.cardType === 'red' && 
+                                card.suspensionMatches && 
+                                card.suspensionMatches > 0 && 
+                                !card.suspensionServed) {
+                                activeMatchCards.push({
+                                    eventName: event.name,
+                                    eventDate: event.date,
+                                    suspensionMatches: card.suspensionMatches,
+                                    reason: card.reason
+                                });
+                            }
+                        });
+                    }
+                });
+            });
+            
+            const totalActiveSuspensions = [...activeDisciplinaryRecords, ...activeMatchCards];
+            
+            if (totalActiveSuspensions.length > 0) {
+                const totalMatches = totalActiveSuspensions.reduce((sum, record) => {
+                    return sum + (record.suspensionMatches || 0);
+                }, 0);
+                
                 return {
                     suspended: true,
                     totalMatches: totalMatches,
-                    records: activeSuspensions
+                    records: totalActiveSuspensions,
+                    sources: {
+                        disciplinary: activeDisciplinaryRecords.length,
+                        matches: activeMatchCards.length
+                    }
                 };
             }
             

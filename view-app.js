@@ -4,7 +4,7 @@
  */
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '4.0.8';
+const APP_VERSION = '4.0.9';
 
 class CheckInViewApp {
     constructor() {
@@ -1686,28 +1686,62 @@ class CheckInViewApp {
     // Check if player is currently suspended
     async checkPlayerSuspensionStatus(memberId) {
         try {
+            // Check both disciplinary records AND match cards for suspensions
             const response = await fetch(`/api/disciplinary-records?member_id=${memberId}`);
-            if (!response.ok) {
-                console.warn('Could not check suspension status:', response.status);
-                return { suspended: false }; // Allow check-in if we can't verify
+            let disciplinaryRecords = [];
+            
+            if (response.ok) {
+                disciplinaryRecords = await response.json();
+            } else {
+                console.warn('Could not check disciplinary records:', response.status);
             }
             
-            const records = await response.json();
-            
-            // Find any unserved suspensions
-            const activeSuspensions = records.filter(record => 
+            // Find any unserved suspensions from disciplinary records
+            const activeDisciplinaryRecords = disciplinaryRecords.filter(record => 
                 record.cardType === 'red' && 
                 record.suspensionMatches && 
                 record.suspensionMatches > 0 && 
                 !record.suspensionServed
             );
             
-            if (activeSuspensions.length > 0) {
-                const totalMatches = activeSuspensions.reduce((sum, record) => sum + record.suspensionMatches, 0);
+            // Also check for unserved suspensions from match cards
+            const activeMatchCards = [];
+            this.events.forEach(event => {
+                event.matches.forEach(match => {
+                    if (match.cards) {
+                        match.cards.forEach(card => {
+                            if (card.memberId === memberId && 
+                                card.cardType === 'red' && 
+                                card.suspensionMatches && 
+                                card.suspensionMatches > 0 && 
+                                !card.suspensionServed) {
+                                activeMatchCards.push({
+                                    eventName: event.name,
+                                    eventDate: event.date,
+                                    suspensionMatches: card.suspensionMatches,
+                                    reason: card.reason
+                                });
+                            }
+                        });
+                    }
+                });
+            });
+            
+            const totalActiveSuspensions = [...activeDisciplinaryRecords, ...activeMatchCards];
+            
+            if (totalActiveSuspensions.length > 0) {
+                const totalMatches = totalActiveSuspensions.reduce((sum, record) => {
+                    return sum + (record.suspensionMatches || 0);
+                }, 0);
+                
                 return {
                     suspended: true,
                     totalMatches: totalMatches,
-                    records: activeSuspensions
+                    records: totalActiveSuspensions,
+                    sources: {
+                        disciplinary: activeDisciplinaryRecords.length,
+                        matches: activeMatchCards.length
+                    }
                 };
             }
             
