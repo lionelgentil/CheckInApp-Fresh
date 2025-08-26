@@ -1,250 +1,238 @@
-# CheckIn App v2.16.12
+# CheckIn App v4.2.0
 
-A comprehensive team and event management application with advanced disciplinary tracking, built with PHP 8 and PostgreSQL for professional sports organizations and leagues.
+A comprehensive soccer league management system designed for recreational adult leagues. Features team management, event scheduling, player check-ins, disciplinary tracking, and season management.
 
-## Features
-
-### Core Management
-- ✅ **Team Management**: Create, edit, and delete teams with custom colors and categories
-- ✅ **Member Management**: Add team members with jersey numbers, gender, and photo upload
-- ✅ **Captain Assignment**: Designate team captains with visual indicators
-- ✅ **Event Management**: Create and manage match day events with filtering
-- ✅ **Match System**: Complete match setup with referee assignments and results tracking
-
-### Advanced Disciplinary System
-- ✅ **Card Management**: Issue yellow and red cards during matches with detailed reasons
-- ✅ **Prior Records**: Track disciplinary history from external competitions
-- ✅ **Suspension Tracking**: Monitor suspension status with match counts and served dates
-- ✅ **Comprehensive Reasons**: 15+ specific card reasons including tactical fouls
-- ✅ **Player Profiles**: Complete disciplinary history with chronological display
-
-### Match & Attendance Features
-- ✅ **Player Check-ins**: Real-time attendance tracking for matches
-- ✅ **Match Results**: Score tracking with match status management
-- ✅ **Referee Management**: Assign main and assistant referees
-- ✅ **Live Cards**: Issue cards during matches with minute tracking
-- ✅ **Match Filtering**: View past/future events with smart filtering
-
-### Technical Features
-- ✅ **Progressive Web App**: PWA-ready with offline capabilities
-- ✅ **Responsive Design**: Mobile-optimized interface
-- ✅ **View-Only Mode**: Public viewing interface for spectators
-- ✅ **RESTful API**: Clean PHP API with complete CRUD operations
-- ✅ **Container Ready**: Dockerized for Railway deployment
-
-## Architecture
-
-- **Backend**: PHP 8.2 with Apache
-- **Database**: PostgreSQL with advanced relational schema
-- **Frontend**: Vanilla JavaScript SPA with dual interface modes
-- **Styling**: Modern responsive CSS with mobile optimization
-- **Container**: Docker with PHP 8.2-apache base image
-- **Deployment**: Railway-optimized with automatic PostgreSQL integration
-
-## Database Schema
-
-### Core Tables
-- `teams` - Team information, colors, categories, and captain assignments
-- `team_members` - Players with jersey numbers, gender, photos
-- `events` - Match day events with date filtering
-- `matches` - Individual matches with referee assignments and results
-- `referees` - Referee contact information and assignments
-
-### Attendance & Cards
-- `match_attendees` - Player check-ins for specific matches
-- `general_attendees` - General event attendance tracking
-- `match_cards` - Cards issued during matches with minutes and reasons
-
-### Disciplinary System
-- `player_disciplinary_records` - Complete disciplinary tracking with:
-  - Card type and detailed reasons
-  - Incident dates and event descriptions
-  - Suspension match counts
-  - Suspension served status and dates
-  - External competition records
-
-## API Endpoints
-
-### Core Data
-- `GET /api/health` - Health check and version info
-- `GET /api/teams` - Retrieve all teams with complete member data
-- `POST /api/teams` - Save teams and member information
-- `GET /api/events` - Retrieve events with matches, attendance, and cards
-- `POST /api/events` - Save complete event data
-- `GET /api/referees` - Retrieve referee information
-- `POST /api/referees` - Save referee data
-
-### Disciplinary System
-- `GET /api/disciplinary-records` - Retrieve disciplinary records (with optional member filter)
-- `POST /api/disciplinary-records` - Save disciplinary records with suspension tracking
-- `POST /api/cleanup-disciplinary` - Administrative cleanup for database resets
-- `GET /api/debug-disciplinary` - Debug endpoint for troubleshooting
-
-## Card Reasons System
-
-### Yellow Card Reasons
-- Unsporting behavior
-- Dissent by word or action
-- Persistent infringement
-- Delaying the restart of play
-- Failure to respect distance
-- Entering/leaving without permission
-- Sliding
-- Reckless/aggressive challenge
-- Denial of a goal scoring opportunity
-- Stopping a promising attack
-
-### Red Card Reasons
-- Serious foul play
-- Violent conduct
-- Spitting
-- Offensive/insulting language
-- Second yellow card
-
-## Suspension Management
-
-### Automatic Tracking
-- **Red Card Suspensions**: Automatically track suspension match counts
-- **Served Date Recording**: Log exact dates when suspensions are completed
-- **Status Indicators**: Visual indicators for pending (⏳) vs served (✅) suspensions
-- **Profile Integration**: Complete suspension history in player profiles
-
-### Administrative Features
-- **Prior Record Entry**: Add disciplinary records from external competitions
-- **Bulk Management**: Edit multiple disciplinary records per player
-- **Data Migration**: Clean database resets with preservation options
-
-## Quick Start
-
-### Railway Deployment (Recommended)
-
-1. **Fork Repository**: Fork this repository to your GitHub account
-
-2. **Railway Setup**:
-   - Connect your GitHub repo to Railway
-   - Add PostgreSQL service
-   - Railway auto-deploys with DATABASE_URL
-
-3. **Access**: Your app will be available at `yourapp.up.railway.app`
-
-### Local Development
-
-1. **Prerequisites**: PHP 8.2+ with PostgreSQL extension
-
-2. **Environment Setup**:
-   ```bash
-   # Set your PostgreSQL connection
-   export DATABASE_URL="postgres://user:pass@localhost:5432/checkin"
-   ```
-
-3. **Start Development Server**:
-   ```bash
-   php -S localhost:8080 api.php
-   ```
-
-4. **Open**: http://localhost:8080
-
-### Docker Deployment
-
-1. **Build Container**:
-   ```bash
-   docker build -t checkin-app .
-   ```
-
-2. **Run with PostgreSQL**:
-   ```bash
-   docker run -p 8080:80 -e DATABASE_URL="your_postgres_url" checkin-app
-   ```
-
-## File Structure
-
-```
-CheckInApp-Fresh/
-├── index.html          # Main application interface
-├── view.html           # View-only public interface
-├── app.js             # Main application logic (v2.16.12)
-├── view-app.js        # View-only application logic
-├── api.php            # PHP REST API with PostgreSQL
-├── manifest.json      # PWA manifest
-├── favicon.ico        # App icon
-├── Dockerfile         # Railway deployment container
-├── .htaccess          # Apache URL rewriting
-└── README.md          # This documentation
-```
-
-## Usage Guide
+## 🏆 Features
 
 ### Team Management
-1. **Create Teams**: Add teams with custom colors and categories (Over 30, Over 40)
-2. **Add Players**: Include jersey numbers, gender, and photos
-3. **Assign Captains**: Designate team leaders with crown indicators
+- **Team Registration**: Create and manage teams with categories (Over 30, Over 40)
+- **Player Rosters**: Add/remove players with photos, jersey numbers, and captain designation
+- **Player Profiles**: Complete disciplinary history with current season and lifetime records
+- **Photo Management**: Upload and manage player photos with gender-based defaults
 
-### Event & Match Management  
-1. **Create Events**: Set up match days with dates and descriptions
-2. **Schedule Matches**: Assign home/away teams with referee assignments
-3. **Track Attendance**: Real-time player check-ins for matches
-4. **Record Results**: Enter scores and match status
+### Event & Match Management
+- **Event Creation**: Schedule tournaments and match days
+- **Match Setup**: Configure home/away teams, referees, fields, and times
+- **Real-time Check-ins**: ECNL-style grid interface for quick player attendance
+- **Match Results**: Score tracking, match status, and referee assignment
 
 ### Disciplinary System
-1. **Live Cards**: Issue cards during matches with specific reasons and minutes
-2. **Prior Records**: Add disciplinary history from external competitions
-3. **Suspension Tracking**: Monitor suspension status and completion dates
-4. **Player Profiles**: View complete disciplinary history chronologically
+- **Card Tracking**: Issue yellow and red cards with detailed reasons
+- **Suspension Management**: Automatic suspension tracking for red cards
+- **Suspension Enforcement**: Prevents suspended players from checking in
+- **Lifetime Records**: Complete disciplinary history across all seasons
 
-### View-Only Mode
-- **Public Access**: Share `view.html` for spectator viewing
-- **Match Editing**: Limited editing capabilities for match results
-- **Real-time Updates**: Live attendance and card tracking
+### Season Management
+- **Season Overview**: Current season statistics and pending suspensions
+- **Data Migration**: Seamless transition between seasons with complete audit trail
+- **Archive System**: Preserve historical data while starting fresh seasons
+- **Validation**: Prevents season closure with unresolved suspensions
 
-## Technical Specifications
+### Reporting & Analytics
+- **League Standings**: Real-time standings by division with points, goals, and rankings
+- **Card Tracker**: Comprehensive disciplinary report with filters
+- **Player Statistics**: Individual player performance and discipline records
+- **Season Summary**: Complete overview of events, matches, and cards
 
-- **PHP Version**: 8.2+
-- **Database**: PostgreSQL 13+ with advanced indexing
-- **Web Server**: Apache with mod_rewrite
-- **Frontend**: Progressive Web App (PWA) with service worker
-- **API Design**: RESTful with comprehensive error handling
-- **Security**: Input validation, parameterized queries, CSRF protection
-- **Performance**: Database indexing, optimized queries, caching headers
+## 🎯 User Interfaces
 
-## Version History
+### Main Admin Interface (`index.html`)
+- Full administrative control
+- Team, event, and referee management
+- Match result entry and card issuance
+- Season management and data migration
+- Complete CRUD operations
 
-- **v2.16.12**: 🔧 **500 Error Fix** - Fixed disciplinary record saving 500 error by improving PostgreSQL boolean handling, enhanced error reporting with stack traces, and better data validation for suspension fields.
-- **v2.16.11**: ⚡ **Disciplinary Records Performance Fix** - Optimized disciplinary record saving from 5+ seconds to under 1 second. Removed excessive logging, simplified backend logic, and eliminated unnecessary saveTeams() calls. Frontend now only saves teams data when member info actually changes.
-- **v2.16.10**: 🕰️ **Time Format Fix** - Fixed Edit Match time preselection to handle database format with seconds (e.g., '09:00:00', '11:00:00', '13:00:00'). Time selections now properly preselect when editing matches.
-- **v2.16.9**: 🚀 **Edit Match Performance Fix** - Removed slow "Current:" value lookups that caused 16-second rendering delays. Enhanced time preselection to handle both "09:00" and "9:00" formats. Form now opens instantly with proper preselection.
-- **v2.16.8**: 🔧 **Edit Match Improvements** - Fixed Edit Match form to properly preselect current time and referees. Added async referee loading with proper await, debug logging, and current value indicators for better user experience.
-- **v2.16.7**: ✨ **Edit Match Feature** - Added Edit Match button to Events Management allowing modification of match details including field, time, referee assignments, and notes. Teams cannot be changed after match creation for data integrity.
-- **v2.16.6**: 🐛 **Teams Loading Fix** - Fixed Teams section stuck on "Loading teams..." by ensuring renderTeams() is always called when switching to Teams section, regardless of whether teams data was already loaded during initialization.
-- **v2.16.5**: 🚀 **Performance Optimization** - Optimized player profile loading from 1.5 seconds to under 200ms (~87% improvement). Eliminated triple nested loops, implemented team lookup caching, and optimized DOM string building for faster modal rendering.
-- **v2.16.4**: 🐛 **Lazy Loading Fix** - Fixed "Unknown Team" issue on initial page load by ensuring teams data is loaded during app initialization. Added debugging for team lookup issues.
-- **v2.16.2**: 🐛 **Photo Display Fix** - Enhanced debugging and UI refresh logic to ensure uploaded photos display immediately in player profiles. Added comprehensive logging for photo upload tracking.
-- **v2.16.1**: 🚀 **Photo Upload Architecture Fix** - Eliminated massive 102KB teams POST requests during photo uploads. Photos now upload directly via `/api/photos` endpoint without triggering full teams data sync. Major performance improvement for photo operations.
-- **v2.14.11**: Added tactical foul card reasons (denial of opportunity, stopping attacks)
-- **v2.14.10**: Added reckless/aggressive challenge card reason
-- **v2.14.9**: Suspension served date tracking
-- **v2.14.8**: Boolean parameter fixes, header cleanup
-- **v2.14.7**: Enhanced suspension tracking system
-- **v2.14.6**: Added "Sliding" card reason
-- **v2.14.x**: Complete disciplinary records system
-- **v2.x**: PostgreSQL migration, referee management, match results
-- **v2.0**: Complete rewrite in PHP 8 with enhanced features
+### View-Only Interface (`view.html`)
+- Public viewing access
+- Read-only data display
+- Player check-ins (with suspension enforcement)
+- Statistics and standings viewing
+- Player profile management (jersey numbers and photos only)
 
-## Database Migration & Cleanup
+## 🏗️ Technical Architecture
 
-The app includes built-in database migration and cleanup tools:
+### Frontend
+- **Pure JavaScript** (ES6+) with modular class-based architecture
+- **Responsive CSS** with mobile-first design
+- **Progressive Web App** capabilities
+- **Real-time UI updates** with optimistic rendering
 
-### Automatic Schema Updates
-- Tables and indexes are automatically created/updated on deployment
-- New columns are added with `IF NOT EXISTS` for safe upgrades
-- Foreign key constraints ensure data integrity
+### Backend Integration
+- RESTful API endpoints for all data operations
+- Photo upload and management system
+- Season archiving and data migration
+- Disciplinary records management
 
-### Administrative Tools
-- **Cleanup Endpoint**: `POST /api/cleanup-disciplinary` for fresh starts
-- **Debug Tools**: Comprehensive logging for troubleshooting
-- **Version Tracking**: Built-in version management across deployments
+### Key API Endpoints
+```
+GET/POST  /api/teams              - Team management
+GET/POST  /api/events             - Event and match data
+GET/POST  /api/referees           - Referee management
+GET/POST  /api/disciplinary-records - Disciplinary tracking
+POST      /api/photos             - Photo uploads
+POST      /api/archive-season     - Season data archiving
+GET       /api/version            - Version information
+```
+
+## 🚀 Getting Started
+
+### Prerequisites
+- Web server with PHP support
+- SQLite database
+- Modern web browser
+
+### Installation
+1. Clone or download the application files
+2. Configure your web server to serve the application directory
+3. Ensure proper permissions for photo uploads and database access
+4. Access `index.html` for admin interface or `view.html` for public access
+
+### Initial Setup
+1. **Create Teams**: Add your league teams with player rosters
+2. **Add Referees**: Register referees with contact information
+3. **Schedule Events**: Create match days and configure matches
+4. **Configure Season**: Review current season settings in Season Management
+
+## 📱 Mobile Features
+
+### ECNL-Style Check-in Grid
+- Touch-optimized player grid interface
+- Instant visual feedback for check-ins
+- Scrollable player roster with photos
+- Suspension enforcement with alerts
+
+### Mobile-Optimized Match Results
+- Sectioned layout for better mobile UX
+- Large touch targets for score entry
+- Responsive card management interface
+- Progressive form design
+
+### Responsive Design
+- Adapts to all screen sizes
+- Mobile-first CSS approach
+- Touch-friendly interactions
+- Optimized for tablets and phones
+
+## 🔐 Season Management
+
+### Season Lifecycle
+1. **Active Season**: Current season with ongoing events and matches
+2. **Season Statistics**: Real-time tracking of events, matches, and disciplinary actions
+3. **Suspension Monitoring**: Automatic tracking of pending suspensions
+4. **Season Closure**: Validated migration process with data preservation
+5. **New Season**: Clean start with preserved team and referee data
+
+### Data Migration Process
+When closing a season:
+1. **Validation**: Ensures all suspensions are resolved
+2. **Preview**: Shows exactly what data will be migrated
+3. **Migration**: Moves match cards to disciplinary records database
+4. **Archive**: Preserves complete season data with timestamps
+5. **Cleanup**: Clears current events for new season
+
+## 🛡️ Suspension System
+
+### Automatic Enforcement
+- Real-time suspension checking during player check-ins
+- Background validation with instant UI feedback
+- Comprehensive suspension tracking across multiple sources
+- Detailed suspension alerts with context
+
+### Suspension Sources
+- **Match Cards**: Red cards issued during current season matches
+- **Disciplinary Records**: Lifetime disciplinary history
+- **Cross-Season**: Suspensions carry over between seasons
+
+## 📊 Reporting Features
+
+### League Standings
+- Automatic point calculation (3 for win, 1 for draw)
+- Goal difference and goals for/against tracking
+- Division-based standings (Over 30, Over 40)
+- Current season vs. all-time toggles
+
+### Card Tracking
+- Real-time disciplinary report
+- Filter by card type (yellow, red, all)
+- Player and team breakdowns
+- Match context and referee information
+
+### Player Profiles
+- Complete disciplinary history
+- Current season vs. lifetime statistics
+- Team and jersey information
+- Photo management
+
+## 🔧 Configuration
+
+### Season Configuration
+Seasons are automatically determined by date ranges:
+- **Spring**: February 15 - June 30
+- **Fall**: August 1 - December 31
+- **Between Seasons**: Defaults to next upcoming season
+
+### Team Categories
+- **Over 30**: Teams with age restriction of 30+
+- **Over 40**: Teams with age restriction of 40+
+
+### Match Status Options
+- **Scheduled**: Match is planned but not yet played
+- **In Progress**: Match is currently being played
+- **Completed**: Match has finished with final score
+- **Cancelled**: Match was cancelled
+
+## 🎨 Customization
+
+### Styling
+- Modern CSS with comprehensive responsive design
+- Customizable color schemes and branding
+- Mobile-optimized touch targets
+- Progressive enhancement approach
+
+### Photo Management
+- Upload and crop player photos
+- Gender-based default avatars
+- Automatic image optimization
+- Cache-busting for immediate updates
+
+## 📝 Version History
+
+### v4.2.0 (Current)
+- ✅ Complete Season Management system
+- ✅ Data migration and archiving
+- ✅ Enhanced suspension enforcement
+- ✅ Mobile-optimized match results interface
+
+### v4.1.0
+- ✅ Performance-optimized suspension checking
+- ✅ Background validation with UI reversion
+- ✅ Enhanced mobile match result interface
+
+### v4.0.9
+- ✅ Comprehensive suspension system
+- ✅ Red card suspension tracking
+- ✅ Enhanced disciplinary records
+
+### Previous Versions (v2.x)
+- PostgreSQL migration and optimization
+- Complete disciplinary records system
+- Referee management and match results
+- Photo upload architecture improvements
+- Performance optimizations and bug fixes
+
+## 🤝 Support
+
+For technical support or feature requests:
+1. Check the application logs for error details
+2. Verify database connectivity and permissions
+3. Ensure all API endpoints are accessible
+4. Review browser console for JavaScript errors
+
+## 📄 License
+
+This application is designed for recreational soccer league management. Please ensure compliance with your local data protection and privacy regulations when handling player information.
 
 ---
 
-🤖 Generated with [Claude Code](https://claude.ai/code)
-
-Co-Authored-By: Claude <noreply@anthropic.com>
+**CheckIn App v4.2.0** - Comprehensive Soccer League Management System
