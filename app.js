@@ -4,7 +4,7 @@
  */
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '4.0.9';
+const APP_VERSION = '4.1.0';
 
 class CheckInApp {
     constructor() {
@@ -3605,32 +3605,7 @@ Please check the browser console (F12) for more details.`);
         const originalAttendees = [...attendeesArray];
         const wasCheckedIn = existingIndex >= 0;
         
-        // Check for suspensions BEFORE allowing check-in (but allow check-out regardless)
-        if (!wasCheckedIn) {
-            // Show loading state
-            if (gridItem) {
-                gridItem.style.opacity = '0.6';
-                gridItem.style.pointerEvents = 'none';
-            }
-            
-            const suspensionStatus = await this.checkPlayerSuspensionStatus(memberId);
-            
-            // Restore UI state
-            if (gridItem) {
-                gridItem.style.opacity = '1';
-                gridItem.style.pointerEvents = 'auto';
-            }
-            
-            if (suspensionStatus.suspended) {
-                const team = this.teams.find(t => t.id === (teamType === 'home' ? match.homeTeamId : match.awayTeamId));
-                const member = team?.members.find(m => m.id === memberId);
-                
-                alert(`❌ ${member?.name || 'Player'} is currently suspended and cannot be checked in.\n\n🚫 Active suspension: ${suspensionStatus.totalMatches} match${suspensionStatus.totalMatches > 1 ? 'es' : ''} remaining\n\n⚖️ This suspension must be served before the player can participate in matches.`);
-                return;
-            }
-        }
-        
-        // Update UI IMMEDIATELY for instant feedback
+        // UPDATE UI IMMEDIATELY for instant feedback (same as before the suspension feature)
         if (gridItem) {
             if (wasCheckedIn) {
                 // Remove check-in
@@ -3656,6 +3631,33 @@ Please check the browser console (F12) for more details.`);
                 gridItem.classList.add('checked-in');
                 console.log('Added attendance for member:', memberId);
             }
+        }
+        
+        // Check for suspensions AFTER UI update (for check-ins only) - this runs in background
+        if (!wasCheckedIn) {
+            this.checkPlayerSuspensionStatus(memberId).then(suspensionStatus => {
+                if (suspensionStatus.suspended) {
+                    // Revert the check-in if player is suspended
+                    const currentIndex = attendeesArray.findIndex(a => a.memberId === memberId);
+                    if (currentIndex >= 0) {
+                        attendeesArray.splice(currentIndex, 1);
+                        if (gridItem) {
+                            gridItem.classList.remove('checked-in');
+                        }
+                        
+                        // Show suspension alert
+                        const team = this.teams.find(t => t.id === (teamType === 'home' ? match.homeTeamId : match.awayTeamId));
+                        const member = team?.members.find(m => m.id === memberId);
+                        
+                        alert(`❌ ${member?.name || 'Player'} is currently suspended and cannot be checked in.\n\n🚫 Active suspension: ${suspensionStatus.totalMatches} match${suspensionStatus.totalMatches > 1 ? 'es' : ''} remaining\n\n⚖️ This suspension must be served before the player can participate in matches.`);
+                        
+                        console.log('Reverted check-in due to suspension:', memberId);
+                    }
+                }
+            }).catch(error => {
+                console.error('Error checking suspension status:', error);
+                // Don't revert on error - allow the check-in to stand
+            });
         }
         
         // Save to server in background (don't await for UI responsiveness)
