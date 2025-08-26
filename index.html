@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CheckIn App v4.0.7</title>
+    <title>CheckIn App v4.0.8</title>
     <meta name="theme-color" content="#2196F3">
     <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/x-icon" href="favicon.ico">
@@ -1497,6 +1497,309 @@
                 font-size: 0.7em;
             }
         }
+        
+        /* Mobile-friendly Match Result Styles */
+        .match-result-mobile {
+            padding: 0;
+        }
+        
+        .form-section {
+            margin-bottom: 24px;
+            padding: 16px;
+            background: #f8f9fa;
+            border-radius: 12px;
+            border: 1px solid #e9ecef;
+        }
+        
+        .form-section:last-child {
+            margin-bottom: 0;
+        }
+        
+        .form-section .form-label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #495057;
+            font-size: 0.95em;
+        }
+        
+        /* Score Input Container */
+        .score-input-container {
+            display: flex;
+            align-items: center;
+            gap: 16px;
+            margin-top: 12px;
+        }
+        
+        .team-score-input {
+            flex: 1;
+            text-align: center;
+        }
+        
+        .team-name-label {
+            font-size: 0.85em;
+            font-weight: 600;
+            color: #6c757d;
+            margin-bottom: 8px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .score-input {
+            width: 100%;
+            font-size: 2em;
+            font-weight: bold;
+            text-align: center;
+            padding: 16px;
+            border: 2px solid #dee2e6;
+            border-radius: 12px;
+            background: white;
+            color: #495057;
+        }
+        
+        .score-input:focus {
+            border-color: #2196F3;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.1);
+        }
+        
+        .vs-divider {
+            font-size: 1.2em;
+            font-weight: bold;
+            color: #6c757d;
+            text-align: center;
+            min-width: 40px;
+        }
+        
+        /* Officials Info */
+        .officials-info {
+            padding: 12px;
+            background: white;
+            border-radius: 8px;
+            border-left: 4px solid #28a745;
+        }
+        
+        .official-name {
+            font-weight: 600;
+            color: #495057;
+            margin-bottom: 4px;
+        }
+        
+        .assistant-name {
+            color: #6c757d;
+            font-size: 0.9em;
+        }
+        
+        /* Cards Mobile Container */
+        .cards-mobile-container {
+            margin-top: 12px;
+        }
+        
+        .card-item-mobile {
+            margin-bottom: 16px;
+            border-radius: 12px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            background: white;
+        }
+        
+        .card-header-mobile {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 12px 16px;
+            background: #fff3cd;
+            border-bottom: 1px solid #ffeaa7;
+        }
+        
+        .card-type-display {
+            font-weight: bold;
+            font-size: 0.9em;
+            letter-spacing: 0.5px;
+        }
+        
+        .card-type-display.yellow {
+            color: #856404;
+            background: #fff3cd;
+        }
+        
+        .card-type-display.red {
+            color: #721c24;
+            background: #f8d7da;
+        }
+        
+        .card-item-mobile .card-header-mobile.red {
+            background: #f8d7da;
+            border-bottom-color: #f5c6cb;
+        }
+        
+        .btn-remove-card {
+            background: none;
+            border: none;
+            font-size: 1.5em;
+            color: #dc3545;
+            cursor: pointer;
+            padding: 4px;
+            line-height: 1;
+            border-radius: 50%;
+            width: 32px;
+            height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: background-color 0.2s;
+        }
+        
+        .btn-remove-card:hover {
+            background: rgba(220, 53, 69, 0.1);
+        }
+        
+        .card-details-mobile {
+            padding: 16px;
+        }
+        
+        .form-row-mobile {
+            margin-bottom: 16px;
+        }
+        
+        .form-row-mobile:last-child {
+            margin-bottom: 0;
+        }
+        
+        .form-row-mobile-dual {
+            display: flex;
+            gap: 12px;
+            margin-bottom: 16px;
+        }
+        
+        .form-col-mobile {
+            flex: 1;
+        }
+        
+        .mobile-label {
+            display: block;
+            font-size: 0.85em;
+            font-weight: 600;
+            color: #495057;
+            margin-bottom: 6px;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .form-select-mobile,
+        .form-input-mobile {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            font-size: 1em;
+            background: white;
+            color: #495057;
+        }
+        
+        .form-select-mobile:focus,
+        .form-input-mobile:focus {
+            border-color: #2196F3;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.1);
+        }
+        
+        .no-cards-message {
+            text-align: center;
+            padding: 32px 16px;
+            color: #6c757d;
+            font-style: italic;
+            background: white;
+            border-radius: 8px;
+            border: 2px dashed #dee2e6;
+        }
+        
+        .btn-add-card {
+            width: 100%;
+            padding: 16px;
+            background: #28a745;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1em;
+            font-weight: 600;
+            cursor: pointer;
+            margin-top: 16px;
+            transition: background-color 0.2s;
+        }
+        
+        .btn-add-card:hover {
+            background: #218838;
+        }
+        
+        /* Action Buttons */
+        .action-buttons-mobile {
+            display: flex;
+            gap: 12px;
+            margin-top: 24px;
+            padding: 16px;
+            background: #f8f9fa;
+            border-radius: 12px;
+        }
+        
+        .btn-mobile {
+            flex: 1;
+            padding: 16px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1.1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+        }
+        
+        .btn-cancel {
+            background: #6c757d;
+            color: white;
+        }
+        
+        .btn-cancel:hover {
+            background: #5a6268;
+        }
+        
+        .btn-save {
+            background: #2196F3;
+            color: white;
+        }
+        
+        .btn-save:hover {
+            background: #0b7dda;
+        }
+        
+        /* Mobile-specific adjustments */
+        @media (max-width: 768px) {
+            .modal-content {
+                margin: 10px;
+                max-height: calc(100vh - 20px);
+                overflow-y: auto;
+            }
+            
+            .score-input-container {
+                flex-direction: column;
+                gap: 20px;
+            }
+            
+            .vs-divider {
+                order: -1;
+                margin-bottom: 12px;
+                font-size: 1em;
+            }
+            
+            .team-score-input {
+                width: 100%;
+            }
+            
+            .score-input {
+                font-size: 2.5em;
+                padding: 20px;
+            }
+        }
+        
     </style>
 </head>
 <body>

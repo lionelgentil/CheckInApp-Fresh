@@ -1683,6 +1683,41 @@ class CheckInViewApp {
         paginationContainer.innerHTML = '';
     }
     
+    // Check if player is currently suspended
+    async checkPlayerSuspensionStatus(memberId) {
+        try {
+            const response = await fetch(`/api/disciplinary-records?member_id=${memberId}`);
+            if (!response.ok) {
+                console.warn('Could not check suspension status:', response.status);
+                return { suspended: false }; // Allow check-in if we can't verify
+            }
+            
+            const records = await response.json();
+            
+            // Find any unserved suspensions
+            const activeSuspensions = records.filter(record => 
+                record.cardType === 'red' && 
+                record.suspensionMatches && 
+                record.suspensionMatches > 0 && 
+                !record.suspensionServed
+            );
+            
+            if (activeSuspensions.length > 0) {
+                const totalMatches = activeSuspensions.reduce((sum, record) => sum + record.suspensionMatches, 0);
+                return {
+                    suspended: true,
+                    totalMatches: totalMatches,
+                    records: activeSuspensions
+                };
+            }
+            
+            return { suspended: false };
+        } catch (error) {
+            console.error('Error checking suspension status:', error);
+            return { suspended: false }; // Allow check-in if there's an error
+        }
+    }
+
     // Toggle player attendance in grid view
     async toggleGridPlayerAttendance(eventId, matchId, memberId, teamType) {
         const event = this.events.find(e => e.id === eventId);
@@ -1693,9 +1728,64 @@ class CheckInViewApp {
             alert('Event or match not found. Please refresh and try again.');
             return;
         }
+
+        // Find the team and member for suspension check
+        const team = this.teams.find(t => t.id === (teamType === 'home' ? match.homeTeamId : match.awayTeamId));
+        const member = team?.members.find(m => m.id === memberId);
         
+        if (!team || !member) {
+            console.error('Team or member not found');
+            alert('Team or member not found. Please refresh and try again.');
+            return;
+        }
+
+        // Check if player is trying to check in (not already checked in)
         const attendeesArray = teamType === 'home' ? match.homeTeamAttendees : match.awayTeamAttendees;
         const existingIndex = attendeesArray.findIndex(a => a.memberId === memberId);
+        const isCheckingIn = existingIndex < 0; // True if player is not currently checked in
+        
+        // Only check suspension when trying to check IN (not when checking out)
+        if (isCheckingIn) {
+            console.log('Checking suspension status for:', member.name);
+            
+            // Show loading state briefly
+            const gridItem = document.querySelector(`[onclick*="'${memberId}'"][onclick*="'${teamType}'"]`);
+            const originalOpacity = gridItem ? gridItem.style.opacity : '1';
+            if (gridItem) {
+                gridItem.style.opacity = '0.5';
+                gridItem.style.pointerEvents = 'none';
+            }
+            
+            try {
+                const suspensionStatus = await this.checkPlayerSuspensionStatus(memberId);
+                
+                // Restore UI state
+                if (gridItem) {
+                    gridItem.style.opacity = originalOpacity;
+                    gridItem.style.pointerEvents = 'auto';
+                }
+                
+                if (suspensionStatus.suspended) {
+                    // Create detailed suspension message
+                    const suspensionDetails = suspensionStatus.records.map(record => {
+                        const incidentDate = record.incidentDate ? new Date(record.incidentDate).toLocaleDateString() : 'Unknown date';
+                        const reason = record.reason ? ` (${record.reason})` : '';
+                        return `• ${record.suspensionMatches} match${record.suspensionMatches !== 1 ? 'es' : ''} - ${incidentDate}${reason}`;
+                    }).join('\n');
+                    
+                    alert(`🚫 PLAYER SUSPENDED\n\n${member.name} cannot be checked in due to active suspension${suspensionStatus.records.length > 1 ? 's' : ''}:\n\n${suspensionDetails}\n\nTotal: ${suspensionStatus.totalMatches} match${suspensionStatus.totalMatches !== 1 ? 'es' : ''} remaining\n\nPlease mark suspension as "served" in player profile if completed.`);
+                    return; // Block check-in
+                }
+            } catch (error) {
+                // Restore UI state on error
+                if (gridItem) {
+                    gridItem.style.opacity = originalOpacity;
+                    gridItem.style.pointerEvents = 'auto';
+                }
+                console.error('Error checking suspension:', error);
+                // Continue with check-in if suspension check fails (fail-safe)
+            }
+        }
         
         // Find the grid item for immediate UI update
         const gridItem = document.querySelector(`[onclick*="'${memberId}'"][onclick*="'${teamType}'"]`);
@@ -1713,16 +1803,7 @@ class CheckInViewApp {
                 gridItem.classList.remove('checked-in');
                 console.log('Removed attendance for member:', memberId);
             } else {
-                // Add check-in
-                const team = this.teams.find(t => t.id === (teamType === 'home' ? match.homeTeamId : match.awayTeamId));
-                const member = team?.members.find(m => m.id === memberId);
-                
-                if (!team || !member) {
-                    console.error('Team or member not found');
-                    alert('Team or member not found. Please refresh and try again.');
-                    return;
-                }
-                
+                // Add check-in (suspension already checked above)
                 attendeesArray.push({
                     memberId: memberId,
                     name: member.name,
