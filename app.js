@@ -1,10 +1,10 @@
 /**
- * CheckIn App v4.2.1 - JavaScript Frontend
+ * CheckIn App v4.2.2 - JavaScript Frontend
  * Works with PHP/PostgreSQL backend
  */
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '4.2.1';
+const APP_VERSION = '4.2.2';
 
 class CheckInApp {
     constructor() {
