@@ -1,4 +1,4 @@
-# CheckIn App v4.2.0
+# CheckIn App v4.2.1
 
 A comprehensive soccer league management system designed for recreational adult leagues. Features team management, event scheduling, player check-ins, disciplinary tracking, and season management.
 
@@ -198,7 +198,13 @@ Seasons are automatically determined by date ranges:
 
 ## 📝 Version History
 
-### v4.2.0 (Current)
+### v4.2.1 (Current)
+- 🔐 Added admin authentication system
+- 🔒 Password protection for admin interface
+- 🛡️ Protected all admin API endpoints
+- ⏰ Session-based authentication with timeout
+
+### v4.2.0
 - ✅ Complete Season Management system
 - ✅ Data migration and archiving
 - ✅ Enhanced suspension enforcement

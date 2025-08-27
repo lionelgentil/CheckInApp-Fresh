@@ -135,9 +135,16 @@ try {
     echo json_encode(array(
         'error' => 'PostgreSQL connection failed: ' . $e->getMessage(),
         'database_url_found' => !empty($databaseUrl),
-        'dsn' => isset($dsn) ? $dsn : 'failed_to_build',
+        'parsed_components' => array(
+            'host' => $parsedUrl['host'] ?? 'missing',
+            'port' => $parsedUrl['port'] ?? 5432,
+            'dbname' => ltrim($parsedUrl['path'] ?? '', '/'),
+            'user' => isset($parsedUrl['user']) ? 'present' : 'missing',
+            'password' => isset($parsedUrl['pass']) ? 'present' : 'missing'
+        ),
+        'dsn' => $dsn ?? 'failed_to_build',
         'available_drivers' => PDO::getAvailableDrivers()
-    ));
+    ]);
     exit();
 }
 
@@ -162,7 +169,7 @@ try {
             // Admin login
             if ($method === 'POST') {
                 $input = json_decode(file_get_contents('php://input'), true);
-                $password = isset($input['password']) ? $input['password'] : '';
+                $password = $input['password'] ?? '';
                 
                 if (authenticate($password)) {
                     echo json_encode(array(
@@ -190,7 +197,7 @@ try {
         case 'version':
             // Version endpoint for dynamic cache-busting
             if ($method === 'GET') {
-                echo json_encode(array('version' => APP_VERSION));
+                echo json_encode(array('version' => APP_VERSION]);
             }
             break;
             
@@ -202,7 +209,7 @@ try {
                 'database' => 'PostgreSQL',
                 'php_version' => PHP_VERSION,
                 'persistent' => true
-            ));
+            ]);
             break;
             
         case 'teams':
@@ -290,7 +297,7 @@ try {
         case 'cleanup-disciplinary':
             // DISABLED: Cleanup endpoint removed to prevent accidental data loss
             http_response_code(404);
-            echo json_encode(['error' => 'Cleanup endpoint disabled for data protection']);
+            echo json_encode(array('error' => 'Cleanup endpoint disabled for data protection']);
             break;
             
         case 'db-schema':
@@ -332,7 +339,7 @@ try {
                 $password = isset($_POST['password']) ? $_POST['password'] : '';
                 if ($password !== 'fixphotos2024') {
                     http_response_code(401);
-                    echo json_encode(['error' => 'Invalid password']);
+                    echo json_encode(array('error' => 'Invalid password']);
                     break;
                 }
                 
@@ -426,7 +433,7 @@ try {
                     $results[] = "female.svg already exists";
                 }
                 
-                echo json_encode([
+                echo json_encode(array(
                     'success' => true,
                     'message' => 'Photos directory fix completed',
                     'results' => $results,
@@ -434,7 +441,7 @@ try {
                 ]);
             } else {
                 http_response_code(405);
-                echo json_encode(['error' => 'POST method required']);
+                echo json_encode(array('error' => 'POST method required']);
             }
             break;
             
@@ -483,7 +490,7 @@ try {
                     $member['found_files'] = array_map('basename', $memberFiles);
                 }
                 
-                echo json_encode([
+                echo json_encode(array(
                     'success' => true,
                     'members' => $members,
                     'photos_directory' => $photosDir,
@@ -511,7 +518,7 @@ try {
                     LIMIT 20
                 ");
                 $members = $stmt->fetchAll(PDO::FETCH_ASSOC);
-                echo json_encode([
+                echo json_encode(array(
                     'success' => true,
                     'members' => $members,
                     'timestamp' => date('c'),
@@ -526,13 +533,13 @@ try {
                 $password = isset($_POST['password']) ? $_POST['password'] : '';
                 if ($password !== 'cleanup2024') {
                     http_response_code(401);
-                    echo json_encode(['error' => 'Invalid password']);
+                    echo json_encode(array('error' => 'Invalid password']);
                     break;
                 }
                 cleanupPhotoPaths($db);
             } else {
                 http_response_code(405);
-                echo json_encode(['error' => 'POST method required']);
+                echo json_encode(array('error' => 'POST method required']);
             }
             break;
             
@@ -542,13 +549,13 @@ try {
                 $password = isset($_POST['password']) ? $_POST['password'] : '';
                 if ($password !== 'migrate2024') {
                     http_response_code(401);
-                    echo json_encode(['error' => 'Invalid password']);
+                    echo json_encode(array('error' => 'Invalid password']);
                     break;
                 }
                 migratePhotos($db);
             } else {
                 http_response_code(405);
-                echo json_encode(['error' => 'POST method required']);
+                echo json_encode(array('error' => 'POST method required']);
             }
             break;
             
@@ -559,19 +566,19 @@ try {
                 executeDatabaseMaintenance($db);
             } else {
                 http_response_code(405);
-                echo json_encode(['error' => 'POST method required']);
+                echo json_encode(array('error' => 'POST method required']);
             }
             break;
             
         default:
             http_response_code(404);
-            echo json_encode(['error' => 'Endpoint not found']);
+            echo json_encode(array('error' => 'Endpoint not found']);
     }
 } catch (Exception $e) {
     error_log("API Error: " . $e->getMessage());
     error_log("API Stack trace: " . $e->getTraceAsString());
     http_response_code(500);
-    echo json_encode([
+    echo json_encode(array(
         'error' => $e->getMessage(),
         'file' => $e->getFile(),
         'line' => $e->getLine()
@@ -700,7 +707,7 @@ function saveTeams($db) {
     $input = json_decode(file_get_contents('php://input'), true);
     if (!$input) {
         http_response_code(400);
-        echo json_encode(['error' => 'Invalid JSON data']);
+        echo json_encode(array('error' => 'Invalid JSON data']);
         return;
     }
     
@@ -830,7 +837,7 @@ function saveTeams($db) {
         }
         
         $db->commit();
-        echo json_encode(['success' => true]);
+        echo json_encode(array('success' => true]);
         
     } catch (Exception $e) {
         $db->rollBack();
@@ -857,7 +864,7 @@ function getEvents($db) {
     }
     
     if (empty($eventIds)) {
-        echo json_encode([]);
+        echo json_encode(array(]);
         return;
     }
     
@@ -965,7 +972,7 @@ function saveEvents($db) {
     $input = json_decode(file_get_contents('php://input'), true);
     if (!$input) {
         http_response_code(400);
-        echo json_encode(['error' => 'Invalid JSON data']);
+        echo json_encode(array('error' => 'Invalid JSON data']);
         return;
     }
     
@@ -1100,7 +1107,7 @@ function saveEvents($db) {
         }
         
         $db->commit();
-        echo json_encode(['success' => true]);
+        echo json_encode(array('success' => true]);
         
     } catch (Exception $e) {
         $db->rollBack();
@@ -1127,7 +1134,7 @@ function saveReferees($db) {
     $input = json_decode(file_get_contents('php://input'), true);
     if (!$input) {
         http_response_code(400);
-        echo json_encode(['error' => 'Invalid JSON data']);
+        echo json_encode(array('error' => 'Invalid JSON data']);
         return;
     }
     
@@ -1149,7 +1156,7 @@ function saveReferees($db) {
         }
         
         $db->commit();
-        echo json_encode(['success' => true]);
+        echo json_encode(array('success' => true]);
         
     } catch (Exception $e) {
         $db->rollBack();
@@ -1185,7 +1192,7 @@ function cleanupDisciplinaryRecords($db) {
         // Reset the auto-increment counter
         $db->exec('ALTER SEQUENCE player_disciplinary_records_id_seq RESTART WITH 1');
         
-        echo json_encode([
+        echo json_encode(array(
             'success' => true,
             'message' => 'Disciplinary records cleaned up successfully for v2.14.9',
             'records_deleted' => $recordsBeforeCleanup,
@@ -1196,7 +1203,7 @@ function cleanupDisciplinaryRecords($db) {
         
     } catch (Exception $e) {
         http_response_code(500);
-        echo json_encode([
+        echo json_encode(array(
             'error' => 'Failed to cleanup disciplinary records: ' . $e->getMessage(),
             'timestamp' => date('c')
         ]);
@@ -1270,7 +1277,7 @@ function getDatabaseSchema($db) {
             ];
         }
         
-        echo json_encode([
+        echo json_encode(array(
             'success' => true,
             'schema' => $schema,
             'table_count' => count($tables),
@@ -1279,7 +1286,7 @@ function getDatabaseSchema($db) {
         
     } catch (Exception $e) {
         http_response_code(500);
-        echo json_encode([
+        echo json_encode(array(
             'error' => 'Failed to get database schema: ' . $e->getMessage(),
             'timestamp' => date('c')
         ]);
@@ -1322,7 +1329,7 @@ function getDatabaseData($db) {
             $totalRows += $count;
         }
         
-        echo json_encode([
+        echo json_encode(array(
             'success' => true,
             'data' => $data,
             'total_tables' => count($tables),
@@ -1332,7 +1339,7 @@ function getDatabaseData($db) {
         
     } catch (Exception $e) {
         http_response_code(500);
-        echo json_encode([
+        echo json_encode(array(
             'error' => 'Failed to get database data: ' . $e->getMessage(),
             'timestamp' => date('c')
         ]);
@@ -1366,7 +1373,7 @@ function debugDisciplinaryRecords($db) {
                            ORDER BY ordinal_position");
         $tableStructure = $stmt->fetchAll(PDO::FETCH_ASSOC);
         
-        echo json_encode([
+        echo json_encode(array(
             'total_records' => $totalRecords,
             'raw_records' => $rawRecords,
             'orphaned_records' => $orphanedRecords,
@@ -1375,7 +1382,7 @@ function debugDisciplinaryRecords($db) {
         ]);
         
     } catch (Exception $e) {
-        echo json_encode([
+        echo json_encode(array(
             'error' => $e->getMessage(),
             'debug_timestamp' => date('c')
         ]);
@@ -1444,7 +1451,7 @@ function saveDisciplinaryRecords($db) {
     $input = json_decode(file_get_contents('php://input'), true);
     if (!$input) {
         http_response_code(400);
-        echo json_encode(['error' => 'Invalid JSON data']);
+        echo json_encode(array('error' => 'Invalid JSON data']);
         return;
     }
     
@@ -1457,17 +1464,17 @@ function saveDisciplinaryRecords($db) {
             $stmt = $db->prepare('DELETE FROM player_disciplinary_records WHERE id = ?');
             $result = $stmt->execute([$input['record_id']]);
             $deletedRows = $stmt->rowCount();
-            echo json_encode(['success' => true, 'deleted_rows' => $deletedRows]);
+            echo json_encode(array('success' => true, 'deleted_rows' => $deletedRows]);
         } catch (Exception $e) {
             http_response_code(500);
-            echo json_encode(['error' => 'Failed to delete record: ' . $e->getMessage()]);
+            echo json_encode(array('error' => 'Failed to delete record: ' . $e->getMessage()]);
         }
         return;
     }
     
     if (!$memberId || !isset($input['records'])) {
         http_response_code(400);
-        echo json_encode(['error' => 'Missing required fields']);
+        echo json_encode(array('error' => 'Missing required fields']);
         return;
     }
     
@@ -1517,12 +1524,12 @@ function saveDisciplinaryRecords($db) {
         }
         
         $db->commit();
-        echo json_encode(['success' => true, 'saved_records' => count($input['records'])]);
+        echo json_encode(array('success' => true, 'saved_records' => count($input['records'])]);
         
     } catch (Exception $e) {
         $db->rollBack();
         http_response_code(500);
-        echo json_encode(['error' => 'Database error: ' . $e->getMessage(), 'trace' => $e->getTraceAsString()]);
+        echo json_encode(array('error' => 'Database error: ' . $e->getMessage(), 'trace' => $e->getTraceAsString()]);
     }
 }
 
@@ -1534,7 +1541,7 @@ function servePhoto($db) {
     
     if (empty($filename)) {
         http_response_code(400);
-        echo json_encode(['error' => 'Filename required']);
+        echo json_encode(array('error' => 'Filename required']);
         return;
     }
     
@@ -1577,7 +1584,7 @@ function servePhoto($db) {
         // Sanitize filename - only allow alphanumeric, dashes, dots
         if (!preg_match('/^[a-zA-Z0-9\-_.]+$/', $filename)) {
             http_response_code(400);
-            echo json_encode(['error' => 'Invalid filename: ' . $filename]);
+            echo json_encode(array('error' => 'Invalid filename: ' . $filename]);
             return;
         }
         
@@ -1624,7 +1631,7 @@ function servePhoto($db) {
     
     if (!file_exists($photoPath)) {
         http_response_code(404);
-        echo json_encode(['error' => 'Photo not found']);
+        echo json_encode(array('error' => 'Photo not found']);
         return;
     }
     
@@ -1670,7 +1677,7 @@ function uploadPhoto($db) {
     
     if (empty($memberId)) {
         http_response_code(400);
-        echo json_encode(['error' => 'Member ID required']);
+        echo json_encode(array('error' => 'Member ID required']);
         return;
     }
     
@@ -1681,7 +1688,7 @@ function uploadPhoto($db) {
     if (!$member) {
         error_log("uploadPhoto: Member not found: " . $memberId);
         http_response_code(404);
-        echo json_encode(['error' => 'Member not found']);
+        echo json_encode(array('error' => 'Member not found']);
         return;
     }
     
@@ -1692,7 +1699,7 @@ function uploadPhoto($db) {
         $errorMsg = isset($_FILES['photo']) ? 'Upload error: ' . $_FILES['photo']['error'] : 'No file uploaded';
         error_log("uploadPhoto: " . $errorMsg);
         http_response_code(400);
-        echo json_encode(['error' => 'No valid file uploaded', 'details' => $errorMsg]);
+        echo json_encode(array('error' => 'No valid file uploaded', 'details' => $errorMsg]);
         return;
     }
     
@@ -1702,7 +1709,7 @@ function uploadPhoto($db) {
     // Validate file size (2MB max)
     if ($file['size'] > 2 * 1024 * 1024) {
         http_response_code(400);
-        echo json_encode(['error' => 'File too large (max 2MB)']);
+        echo json_encode(array('error' => 'File too large (max 2MB)']);
         return;
     }
     
@@ -1714,7 +1721,7 @@ function uploadPhoto($db) {
     
     if (!in_array($mimeType, $allowedTypes)) {
         http_response_code(400);
-        echo json_encode(['error' => 'Invalid file type. Only JPEG, PNG, and WebP allowed']);
+        echo json_encode(array('error' => 'Invalid file type. Only JPEG, PNG, and WebP allowed']);
         return;
     }
     
@@ -1741,7 +1748,7 @@ function uploadPhoto($db) {
     if (!is_dir($photosDir)) {
         if (!mkdir($photosDir, 0755, true)) {
             http_response_code(500);
-            echo json_encode(['error' => 'Failed to create photos directory']);
+            echo json_encode(array('error' => 'Failed to create photos directory']);
             return;
         }
     }
@@ -1750,7 +1757,7 @@ function uploadPhoto($db) {
     $imageData = file_get_contents($file['tmp_name']);
     if ($imageData === false) {
         http_response_code(500);
-        echo json_encode(['error' => 'Failed to read uploaded file']);
+        echo json_encode(array('error' => 'Failed to read uploaded file']);
         return;
     }
     
@@ -1876,7 +1883,7 @@ function migratePhotosToSeparateTable($db) {
         $results[] = "Migrated {$migratedCount} base64 photos to member_photos table";
         $results[] = "Skipped {$skippedCount} filename-based photos (legacy file system)";
         
-        echo json_encode([
+        echo json_encode(array(
             'success' => true,
             'results' => $results,
             'migrated_count' => $migratedCount,
@@ -1885,7 +1892,7 @@ function migratePhotosToSeparateTable($db) {
         
     } catch (Exception $e) {
         http_response_code(500);
-        echo json_encode([
+        echo json_encode(array(
             'error' => 'Migration failed: ' . $e->getMessage()
         ]);
     }
@@ -1896,7 +1903,7 @@ function deletePhoto($db) {
     
     if (empty($memberId)) {
         http_response_code(400);
-        echo json_encode(['error' => 'Member ID required']);
+        echo json_encode(array('error' => 'Member ID required']);
         return;
     }
     
@@ -1907,7 +1914,7 @@ function deletePhoto($db) {
     
     if (!$member) {
         http_response_code(404);
-        echo json_encode(['error' => 'Member not found']);
+        echo json_encode(array('error' => 'Member not found']);
         return;
     }
     
@@ -1923,7 +1930,7 @@ function deletePhoto($db) {
     $stmt = $db->prepare('UPDATE team_members SET photo = NULL WHERE id = ?');
     $stmt->execute([$memberId]);
     
-    echo json_encode(['success' => true]);
+    echo json_encode(array('success' => true]);
 }
 
 function migratePhotos($db) {
@@ -2220,7 +2227,7 @@ function cleanupPhotoPaths($db) {
         $cleanedCount = 0;
         
         if (empty($members)) {
-            echo json_encode([
+            echo json_encode(array(
                 'success' => true,
                 'message' => 'No photo paths need cleaning',
                 'cleaned' => 0
@@ -2265,7 +2272,7 @@ function cleanupPhotoPaths($db) {
         
         $db->commit();
         
-        echo json_encode([
+        echo json_encode(array(
             'success' => true,
             'message' => 'Photo paths cleaned successfully',
             'cleaned' => $cleanedCount,
@@ -2304,7 +2311,7 @@ function cleanupPhotoPaths($db) {
         
     } catch (Exception $e) {
         $db->rollBack();
-        echo json_encode([
+        echo json_encode(array(
             'success' => false,
             'error' => 'Cleanup failed: ' . $e->getMessage()
         ]);
@@ -2316,7 +2323,7 @@ function executeDatabaseMaintenance($db) {
     
     if (!$input || !isset($input['query'])) {
         http_response_code(400);
-        echo json_encode(['error' => 'Query is required']);
+        echo json_encode(array('error' => 'Query is required']);
         return;
     }
     
@@ -2324,7 +2331,7 @@ function executeDatabaseMaintenance($db) {
     
     if (empty($query)) {
         http_response_code(400);
-        echo json_encode(['error' => 'Query cannot be empty']);
+        echo json_encode(array('error' => 'Query cannot be empty']);
         return;
     }
     
@@ -2342,7 +2349,7 @@ function executeDatabaseMaintenance($db) {
     
     if (!$is_allowed) {
         http_response_code(400);
-        echo json_encode(['error' => 'Only SELECT, UPDATE, DELETE, and INSERT operations are allowed']);
+        echo json_encode(array('error' => 'Only SELECT, UPDATE, DELETE, and INSERT operations are allowed']);
         return;
     }
     
@@ -2351,7 +2358,7 @@ function executeDatabaseMaintenance($db) {
     foreach ($dangerous_keywords as $keyword) {
         if (strpos($query_upper, $keyword) !== false) {
             http_response_code(400);
-            echo json_encode(['error' => "Operation contains forbidden keyword: $keyword"]);
+            echo json_encode(array('error' => "Operation contains forbidden keyword: $keyword"]);
             return;
         }
     }
@@ -2366,7 +2373,7 @@ function executeDatabaseMaintenance($db) {
             $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
             
             $db->commit();
-            echo json_encode([
+            echo json_encode(array(
                 'success' => true,
                 'data' => $data,
                 'rowCount' => count($data)
@@ -2378,7 +2385,7 @@ function executeDatabaseMaintenance($db) {
             $rowCount = $stmt->rowCount();
             
             $db->commit();
-            echo json_encode([
+            echo json_encode(array(
                 'success' => true,
                 'rowCount' => $rowCount,
                 'message' => "Query executed successfully. $rowCount row(s) affected."
@@ -2388,13 +2395,13 @@ function executeDatabaseMaintenance($db) {
     } catch (PDOException $e) {
         $db->rollBack();
         http_response_code(400);
-        echo json_encode([
+        echo json_encode(array(
             'error' => 'Database error: ' . $e->getMessage()
         ]);
     } catch (Exception $e) {
         $db->rollBack();
         http_response_code(500);
-        echo json_encode([
+        echo json_encode(array(
             'error' => 'Server error: ' . $e->getMessage()
         ]);
     }

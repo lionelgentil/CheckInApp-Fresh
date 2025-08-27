@@ -132,12 +132,19 @@ try {
     
 } catch (PDOException $e) {
     http_response_code(500);
-    echo json_encode(array(
+    echo json_encode([
         'error' => 'PostgreSQL connection failed: ' . $e->getMessage(),
         'database_url_found' => !empty($databaseUrl),
-        'dsn' => isset($dsn) ? $dsn : 'failed_to_build',
+        'parsed_components' => [
+            'host' => $parsedUrl['host'] ?? 'missing',
+            'port' => $parsedUrl['port'] ?? 5432,
+            'dbname' => ltrim($parsedUrl['path'] ?? '', '/'),
+            'user' => isset($parsedUrl['user']) ? 'present' : 'missing',
+            'password' => isset($parsedUrl['pass']) ? 'present' : 'missing'
+        ],
+        'dsn' => $dsn ?? 'failed_to_build',
         'available_drivers' => PDO::getAvailableDrivers()
-    ));
+    ]);
     exit();
 }
 
@@ -162,7 +169,7 @@ try {
             // Admin login
             if ($method === 'POST') {
                 $input = json_decode(file_get_contents('php://input'), true);
-                $password = isset($input['password']) ? $input['password'] : '';
+                $password = $input['password'] ?? '';
                 
                 if (authenticate($password)) {
                     echo json_encode(array(
@@ -190,19 +197,19 @@ try {
         case 'version':
             // Version endpoint for dynamic cache-busting
             if ($method === 'GET') {
-                echo json_encode(array('version' => APP_VERSION));
+                echo json_encode(['version' => APP_VERSION]);
             }
             break;
             
         case 'health':
-            echo json_encode(array(
+            echo json_encode([
                 'status' => 'OK',
                 'version' => APP_VERSION,
                 'timestamp' => date('c'),
                 'database' => 'PostgreSQL',
                 'php_version' => PHP_VERSION,
                 'persistent' => true
-            ));
+            ]);
             break;
             
         case 'teams':

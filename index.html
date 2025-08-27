@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CheckIn App v4.2.0</title>
+    <title>CheckIn App v4.2.1</title>
     <meta name="theme-color" content="#2196F3">
     <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/x-icon" href="favicon.ico">
@@ -2201,7 +2201,215 @@
     
     <div class="version-footer">v<span id="footer-version"></span></div>
     
+    <!-- Authentication Modal -->
+    <div id="authModal" class="auth-modal">
+        <div class="auth-modal-content">
+            <div class="auth-header">
+                <h2>🔐 Admin Access Required</h2>
+                <p>Enter the admin password to access the management interface</p>
+            </div>
+            <form id="authForm">
+                <div class="auth-input-group">
+                    <input type="password" id="adminPassword" placeholder="Admin Password" required>
+                    <button type="submit">Login</button>
+                </div>
+                <div id="authError" class="auth-error"></div>
+            </form>
+        </div>
+    </div>
+    
+    <style>
+        .auth-modal {
+            display: none;
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 10000;
+            justify-content: center;
+            align-items: center;
+        }
+        
+        .auth-modal.show {
+            display: flex;
+        }
+        
+        .auth-modal-content {
+            background: white;
+            padding: 40px;
+            border-radius: 12px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            max-width: 400px;
+            width: 90%;
+            text-align: center;
+        }
+        
+        .auth-header h2 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 1.5em;
+        }
+        
+        .auth-header p {
+            color: #666;
+            margin-bottom: 30px;
+        }
+        
+        .auth-input-group {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 20px;
+        }
+        
+        .auth-input-group input {
+            flex: 1;
+            padding: 12px;
+            border: 2px solid #ddd;
+            border-radius: 6px;
+            font-size: 16px;
+        }
+        
+        .auth-input-group input:focus {
+            outline: none;
+            border-color: #2196F3;
+        }
+        
+        .auth-input-group button {
+            padding: 12px 20px;
+            background: #2196F3;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            cursor: pointer;
+            font-size: 16px;
+            font-weight: bold;
+        }
+        
+        .auth-input-group button:hover {
+            background: #1976D2;
+        }
+        
+        .auth-error {
+            color: #f44336;
+            font-size: 14px;
+            min-height: 20px;
+        }
+        
+        /* Hide main app initially */
+        .container {
+            display: none;
+        }
+        
+        .container.authenticated {
+            display: block;
+        }
+    </style>
+    
     <script>
+        // Authentication system
+        class AdminAuth {
+            constructor() {
+                this.isAuthenticated = false;
+                this.authModal = document.getElementById('authModal');
+                this.authForm = document.getElementById('authForm');
+                this.authError = document.getElementById('authError');
+                this.passwordInput = document.getElementById('adminPassword');
+                this.container = document.querySelector('.container');
+                
+                this.init();
+            }
+            
+            init() {
+                // Check existing session
+                this.checkExistingAuth();
+                
+                // Setup form handler
+                this.authForm.addEventListener('submit', (e) => {
+                    e.preventDefault();
+                    this.authenticate();
+                });
+                
+                // Focus password input when modal opens
+                this.passwordInput.addEventListener('keypress', (e) => {
+                    if (e.key === 'Enter') {
+                        this.authenticate();
+                    }
+                });
+            }
+            
+            async checkExistingAuth() {
+                try {
+                    const response = await fetch('/api/auth/check');
+                    const result = await response.json();
+                    
+                    if (response.ok && result.authenticated) {
+                        this.showApp();
+                    } else {
+                        this.showLoginModal();
+                    }
+                } catch (error) {
+                    console.error('Auth check failed:', error);
+                    this.showLoginModal();
+                }
+            }
+            
+            async authenticate() {
+                const password = this.passwordInput.value.trim();
+                
+                if (!password) {
+                    this.showError('Please enter a password');
+                    return;
+                }
+                
+                try {
+                    const response = await fetch('/api/auth/login', {
+                        method: 'POST',
+                        headers: {
+                            'Content-Type': 'application/json',
+                        },
+                        body: JSON.stringify({ password })
+                    });
+                    
+                    const result = await response.json();
+                    
+                    if (response.ok && result.success) {
+                        this.showApp();
+                    } else {
+                        this.showError(result.message || 'Invalid password');
+                        this.passwordInput.value = '';
+                        this.passwordInput.focus();
+                    }
+                } catch (error) {
+                    console.error('Authentication failed:', error);
+                    this.showError('Authentication failed. Please try again.');
+                }
+            }
+            
+            showLoginModal() {
+                this.authModal.classList.add('show');
+                setTimeout(() => this.passwordInput.focus(), 100);
+            }
+            
+            hideLoginModal() {
+                this.authModal.classList.remove('show');
+                this.authError.textContent = '';
+                this.passwordInput.value = '';
+            }
+            
+            showApp() {
+                this.isAuthenticated = true;
+                this.hideLoginModal();
+                this.container.classList.add('authenticated');
+                loadApp();
+            }
+            
+            showError(message) {
+                this.authError.textContent = message;
+            }
+        }
+        
         // Dynamic version loading to prevent cache issues
         async function loadApp() {
             try {
@@ -2228,11 +2436,11 @@
             }
         }
         
-        // Load app when DOM is ready
+        // Initialize authentication when DOM is ready
         if (document.readyState === 'loading') {
-            document.addEventListener('DOMContentLoaded', loadApp);
+            document.addEventListener('DOMContentLoaded', () => new AdminAuth());
         } else {
-            loadApp();
+            new AdminAuth();
         }
     </script>
 </body>
