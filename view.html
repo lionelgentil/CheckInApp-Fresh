@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CheckIn App v4.3.0 - View Only</title>
+    <title>CheckIn App v4.3.1 - View Only</title>
     <meta name="theme-color" content="#2196F3">
     <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/x-icon" href="favicon.ico">
@@ -89,6 +89,12 @@
                 font-size: 13px;
                 border-radius: 8px;
             }
+            
+            /* Adjust Standings button for mobile */
+            .standings-btn {
+                padding: 10px 16px;
+                min-width: 80px;
+            }
         }
         
         @media (max-width: 480px) {
@@ -96,6 +102,18 @@
                 padding: 8px 10px;
                 font-size: 12px;
             }
+            
+            /* Ensure Standings button still fits well on smallest screens */
+            .standings-btn {
+                padding: 8px 14px;
+                min-width: 75px;
+            }
+        }
+        
+        /* Make Standings button wider to fit text better */
+        .standings-btn {
+            padding: 12px 24px;
+            min-width: 95px;
         }
         
         .nav-btn:hover {
@@ -1547,8 +1565,7 @@
         <nav class="main-nav">
             <button class="nav-btn" onclick="showSection('teams')">Teams</button>
             <button class="nav-btn active" onclick="showSection('events')">Events</button>
-            <button class="nav-btn" onclick="showSection('referees')">Referees</button>
-            <button class="nav-btn" onclick="showSection('standings')">Standings</button>
+            <button class="nav-btn standings-btn" onclick="showSection('standings')">Standings</button>
             <button class="nav-btn" onclick="showSection('cards')">Cards</button>
         </nav>
         
@@ -1575,17 +1592,6 @@
             
             <div id="events-container" class="events-list">
                 <div class="loading">Loading events...</div>
-            </div>
-        </div>
-        
-        <!-- Referees Section -->
-        <div id="referees-section" class="content-section">
-            <div class="section-header">
-                <h2 class="section-title">Referees Management</h2>
-            </div>
-            
-            <div id="referees-container" class="teams-grid">
-                <div class="loading">Loading referees...</div>
             </div>
         </div>
         

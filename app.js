@@ -1,10 +1,10 @@
 /**
- * CheckIn App v4.3.0 - JavaScript Frontend
+ * CheckIn App v4.3.1 - JavaScript Frontend
  * Works with PHP/PostgreSQL backend
  */
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '4.3.0';
+const APP_VERSION = '4.3.1';
 
 class CheckInApp {
     constructor() {
@@ -3696,6 +3696,35 @@ Please check the browser console (F12) for more details.`);
         const homeTeam = this.teams.find(t => t.id === this.currentMatch?.homeTeamId);
         const awayTeam = this.teams.find(t => t.id === this.currentMatch?.awayTeamId);
         
+        // 🚀 IMPROVEMENT: Only show players who were checked in for this match
+        const homeAttendees = this.currentMatch?.homeTeamAttendees || [];
+        const awayAttendees = this.currentMatch?.awayTeamAttendees || [];
+        
+        // Create lookup sets for faster checking
+        const homeAttendeeIds = new Set(homeAttendees.map(a => a.memberId));
+        const awayAttendeeIds = new Set(awayAttendees.map(a => a.memberId));
+        
+        // Filter team members to only checked-in players
+        const checkedInHomePlayers = homeTeam?.members.filter(m => homeAttendeeIds.has(m.id)) || [];
+        const checkedInAwayPlayers = awayTeam?.members.filter(m => awayAttendeeIds.has(m.id)) || [];
+        
+        // Show helpful message if no players checked in
+        let playerOptions = '';
+        if (checkedInHomePlayers.length === 0 && checkedInAwayPlayers.length === 0) {
+            playerOptions = '<option value="" disabled>No players checked in for this match</option>';
+        } else {
+            if (checkedInHomePlayers.length > 0) {
+                playerOptions += `<optgroup label="${homeTeam?.name || 'Home Team'} (${checkedInHomePlayers.length} checked in)">
+                    ${checkedInHomePlayers.map(m => `<option value="${m.id}">${m.name}${m.jerseyNumber ? ` (#${m.jerseyNumber})` : ''}</option>`).join('')}
+                </optgroup>`;
+            }
+            if (checkedInAwayPlayers.length > 0) {
+                playerOptions += `<optgroup label="${awayTeam?.name || 'Away Team'} (${checkedInAwayPlayers.length} checked in)">
+                    ${checkedInAwayPlayers.map(m => `<option value="${m.id}">${m.name}${m.jerseyNumber ? ` (#${m.jerseyNumber})` : ''}</option>`).join('')}
+                </optgroup>`;
+            }
+        }
+        
         const cardHtml = `
             <div class="card-item-mobile" data-card-index="${newIndex}">
                 <div class="card-header-mobile">
@@ -3707,15 +3736,10 @@ Please check the browser console (F12) for more details.`);
                 
                 <div class="card-details-mobile">
                     <div class="form-row-mobile">
-                        <label class="mobile-label">Player</label>
+                        <label class="mobile-label">Player (Only checked-in players shown)</label>
                         <select class="form-select-mobile" data-card-index="${newIndex}" data-field="memberId">
                             <option value="">Select Player</option>
-                            <optgroup label="${homeTeam?.name || 'Home Team'}">
-                                ${homeTeam?.members.map(m => `<option value="${m.id}">${m.name}</option>`).join('') || ''}
-                            </optgroup>
-                            <optgroup label="${awayTeam?.name || 'Away Team'}">
-                                ${awayTeam?.members.map(m => `<option value="${m.id}">${m.name}</option>`).join('') || ''}
-                            </optgroup>
+                            ${playerOptions}
                         </select>
                     </div>
                     
