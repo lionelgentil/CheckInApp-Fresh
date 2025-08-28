@@ -1,10 +1,10 @@
 /**
- * CheckIn App v4.2.2 - JavaScript Frontend
+ * CheckIn App v4.3.0 - JavaScript Frontend
  * Works with PHP/PostgreSQL backend
  */
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '4.2.2';
+const APP_VERSION = '4.3.0';
 
 class CheckInApp {
     constructor() {
@@ -17,7 +17,133 @@ class CheckInApp {
         this.currentEditingReferee = null;
         this.currentModalType = null; // Track current modal type
         
+        // Performance optimization: API Cache
+        this.apiCache = new Map();
+        this.cacheTimeout = 5 * 60 * 1000; // 5 minutes
+        this.apiVersion = null;
+        
+        // 🚀 PERFORMANCE OPTIMIZATION: Lazy loading for images
+        this.imageObserver = null;
+        this.initializeLazyLoading();
+        
         this.init();
+    }
+    
+    // 🚀 PERFORMANCE OPTIMIZATION: Initialize lazy loading system
+    initializeLazyLoading() {
+        if ('IntersectionObserver' in window) {
+            this.imageObserver = new IntersectionObserver((entries, observer) => {
+                entries.forEach(entry => {
+                    if (entry.isIntersecting) {
+                        const img = entry.target;
+                        const src = img.dataset.lazySrc;
+                        
+                        if (src) {
+                            // Create a new image to preload
+                            const imageLoader = new Image();
+                            imageLoader.onload = () => {
+                                img.src = src;
+                                img.classList.remove('lazy');
+                                img.classList.add('lazy-loaded');
+                            };
+                            imageLoader.onerror = () => {
+                                // Fallback to default photo
+                                img.src = img.dataset.fallback || '/api/photos?filename=default&gender=male';
+                                img.classList.remove('lazy');
+                                img.classList.add('lazy-error');
+                            };
+                            imageLoader.src = src;
+                        }
+                        
+                        observer.unobserve(img);
+                    }
+                });
+            }, {
+                root: null,
+                rootMargin: '50px',
+                threshold: 0.1
+            });
+            
+            console.log('📈 Performance: Lazy loading initialized with IntersectionObserver');
+        } else {
+            console.log('⚠️ IntersectionObserver not supported, falling back to immediate loading');
+        }
+    }
+    
+    // Add image to lazy loading queue
+    observeLazyImage(img) {
+        if (this.imageObserver && img) {
+            this.imageObserver.observe(img);
+        }
+    }
+    
+    // Initialize lazy loading for newly added images
+    initializeLazyImages(container = document) {
+        if (this.imageObserver) {
+            const lazyImages = container.querySelectorAll('img.lazy');
+            lazyImages.forEach(img => {
+                this.imageObserver.observe(img);
+            });
+            
+            if (lazyImages.length > 0) {
+                console.log('📸 Performance: Added', lazyImages.length, 'images to lazy loading queue');
+            }
+        }
+    }
+    
+    // Disconnect lazy loading observer
+    disconnectLazyLoading() {
+        if (this.imageObserver) {
+            this.imageObserver.disconnect();
+        }
+    }
+    
+    // Performance: Smart caching system
+    async cachedFetch(url, options = {}) {
+        const cacheKey = url + JSON.stringify(options);
+        const now = Date.now();
+        
+        // Check if we have cached data that's still valid
+        if (this.apiCache.has(cacheKey)) {
+            const cached = this.apiCache.get(cacheKey);
+            if (now - cached.timestamp < this.cacheTimeout) {
+                console.log(`📦 Cache hit for ${url}`);
+                return cached.data;
+            }
+        }
+        
+        // Fetch fresh data
+        console.log(`🌐 Cache miss, fetching ${url}`);
+        const response = await fetch(url, options);
+        
+        if (response.ok) {
+            const data = await response.json();
+            
+            // Cache the response
+            this.apiCache.set(cacheKey, {
+                data: data,
+                timestamp: now
+            });
+            
+            return data;
+        }
+        
+        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+    }
+    
+    // Clear cache when data is modified
+    clearCache(pattern = null) {
+        if (pattern) {
+            // Clear specific cache entries
+            for (let key of this.apiCache.keys()) {
+                if (key.includes(pattern)) {
+                    this.apiCache.delete(key);
+                }
+            }
+        } else {
+            // Clear all cache
+            this.apiCache.clear();
+        }
     }
     
     async init() {
@@ -35,13 +161,7 @@ class CheckInApp {
     // API Methods
     async loadTeams() {
         try {
-            const response = await fetch(`/api/teams?_t=${Date.now()}`);
-            if (response.ok) {
-                this.teams = await response.json();
-            } else {
-                console.error('Failed to load teams');
-                this.teams = [];
-            }
+            this.teams = await this.cachedFetch('/api/teams');
         } catch (error) {
             console.error('Error loading teams:', error);
             this.teams = [];
@@ -54,7 +174,7 @@ class CheckInApp {
         console.trace('saveTeams call stack:');
         
         try {
-            const response = await fetch(`/api/teams?_t=${Date.now()}`, {
+            const response = await fetch('/api/teams', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -71,6 +191,10 @@ class CheckInApp {
                 throw new Error(`Failed to save teams: ${response.status} ${response.statusText}`);
             }
             
+            // Clear cache after successful save to ensure fresh data on next load
+            this.clearCache();
+            console.log('🧹 Cache cleared after teams save');
+            
             return await response.json();
         } catch (error) {
             console.error('Error saving teams:', error);
@@ -80,13 +204,7 @@ class CheckInApp {
     
     async loadEvents() {
         try {
-            const response = await fetch(`/api/events?_t=${Date.now()}`);
-            if (response.ok) {
-                this.events = await response.json();
-            } else {
-                console.error('Failed to load events');
-                this.events = [];
-            }
+            this.events = await this.cachedFetch('/api/events');
         } catch (error) {
             console.error('Error loading events:', error);
             this.events = [];
@@ -95,7 +213,7 @@ class CheckInApp {
     
     async saveEvents() {
         try {
-            const response = await fetch(`/api/events?_t=${Date.now()}`, {
+            const response = await fetch('/api/events', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -107,6 +225,10 @@ class CheckInApp {
                 throw new Error('Failed to save events');
             }
             
+            // Clear cache after successful save to ensure fresh data on next load
+            this.clearCache();
+            console.log('🧹 Cache cleared after events save');
+            
             return await response.json();
         } catch (error) {
             console.error('Error saving events:', error);
@@ -116,13 +238,7 @@ class CheckInApp {
     
     async loadReferees() {
         try {
-            const response = await fetch('/api/referees');
-            if (response.ok) {
-                this.referees = await response.json();
-            } else {
-                console.error('Failed to load referees');
-                this.referees = [];
-            }
+            this.referees = await this.cachedFetch('/api/referees');
         } catch (error) {
             console.error('Error loading referees:', error);
             this.referees = [];
@@ -143,6 +259,10 @@ class CheckInApp {
                 throw new Error('Failed to save referees');
             }
             
+            // Clear cache after successful save to ensure fresh data on next load
+            this.clearCache();
+            console.log('🧹 Cache cleared after referees save');
+            
             return await response.json();
         } catch (error) {
             console.error('Error saving referees:', error);
@@ -161,6 +281,31 @@ class CheckInApp {
             const v = c == 'x' ? r : (r & 0x3 | 0x8);
             return v.toString(16);
         });
+    }
+    
+    // 🚀 PERFORMANCE: Generate lazy-loading image HTML
+    getLazyImageHtml(member, className = 'member-photo', style = '') {
+        const photoUrl = this.getMemberPhotoUrl(member);
+        const fallbackUrl = this.getGenderDefaultPhoto(member);
+        
+        if (this.imageObserver) {
+            // Use lazy loading with placeholder
+            const placeholder = '/api/photos?filename=default&gender=' + (member.gender || 'male');
+            return `<img src="${placeholder}" 
+                         data-lazy-src="${photoUrl}" 
+                         data-fallback="${fallbackUrl}"
+                         alt="${member.name}" 
+                         class="${className} lazy" 
+                         ${style ? `style="${style}"` : ''}
+                         loading="lazy">`;
+        } else {
+            // Fallback to immediate loading
+            return `<img src="${photoUrl}" 
+                         alt="${member.name}" 
+                         class="${className}" 
+                         ${style ? `style="${style}"` : ''}
+                         loading="lazy">`;
+        }
     }
     
     // Get member photo URL with gender defaults
@@ -559,7 +704,7 @@ class CheckInApp {
                                     return `
                                         <div class="member-item">
                                             <div class="member-info">
-                                                <img src="${this.getMemberPhotoUrl(member)}" alt="${member.name}" class="member-photo">
+                                                ${this.getLazyImageHtml(member, 'member-photo')}
                                                 <div class="member-details">
                                                     <div class="member-name">${member.name}${member.id === selectedTeam.captainId ? ' 👑' : ''}</div>
                                                     <div class="member-meta" id="member-meta-${member.id}">
@@ -595,6 +740,9 @@ class CheckInApp {
                 this.loadLifetimeCardsForTeam(selectedTeam);
             }
         }
+        
+        // 🚀 PERFORMANCE: Initialize lazy loading for newly rendered images
+        this.initializeLazyImages(container);
     }
     
     // Load lifetime disciplinary cards for team members (optimized - single API call per team)
@@ -632,17 +780,22 @@ class CheckInApp {
                     }
                 });
                 
-                // Update team-wide lifetime statistics
+                // 🚀 PERFORMANCE OPTIMIZATION: Batch DOM updates to avoid reflows
+                console.log('📈 Performance: Batching DOM updates for', team.members.length, 'team members');
+                
+                // Collect all DOM updates in a batch
+                const domUpdates = [];
+                
+                // Prepare team-wide lifetime statistics update
                 const teamLifetimeElement = document.getElementById(`team-lifetime-stats-${team.id}`);
                 if (teamLifetimeElement) {
-                    if (totalLifetimeYellow > 0 || totalLifetimeRed > 0) {
-                        teamLifetimeElement.textContent = ` • 🟨${totalLifetimeYellow} 🟥${totalLifetimeRed} (lifetime)`;
-                    } else {
-                        teamLifetimeElement.textContent = ' • No lifetime cards';
-                    }
+                    const teamText = (totalLifetimeYellow > 0 || totalLifetimeRed > 0) 
+                        ? ` • 🟨${totalLifetimeYellow} 🟥${totalLifetimeRed} (lifetime)`
+                        : ' • No lifetime cards';
+                    domUpdates.push({ element: teamLifetimeElement, text: teamText });
                 }
                 
-                // Update DOM for each member
+                // Prepare individual member updates
                 team.members.forEach(member => {
                     const memberRecords = recordsByMember[member.id] || [];
                     
@@ -655,18 +808,27 @@ class CheckInApp {
                         else if (record.cardType === 'red') lifetimeRed++;
                     });
                     
-                    // Update the DOM element for this member
+                    // Prepare DOM update for this member
                     const lifetimeElement = document.getElementById(`lifetime-cards-${member.id}`);
                     if (lifetimeElement) {
+                        let memberText = '';
                         if (lifetimeYellow > 0 || lifetimeRed > 0) {
                             const lifetimeDisplay = [];
                             if (lifetimeYellow > 0) lifetimeDisplay.push(`🟨${lifetimeYellow}`);
                             if (lifetimeRed > 0) lifetimeDisplay.push(`🟥${lifetimeRed}`);
-                            lifetimeElement.textContent = ` • ${lifetimeDisplay.join(' ')} (lifetime)`;
-                        } else {
-                            lifetimeElement.textContent = '';
+                            memberText = ` • ${lifetimeDisplay.join(' ')} (lifetime)`;
                         }
+                        domUpdates.push({ element: lifetimeElement, text: memberText });
                     }
+                });
+                
+                // 🚀 Apply all DOM updates in a single batch using requestAnimationFrame
+                // This ensures updates happen during the next repaint cycle, minimizing reflows
+                requestAnimationFrame(() => {
+                    domUpdates.forEach(update => {
+                        update.element.textContent = update.text;
+                    });
+                    console.log('⚡ Batched', domUpdates.length, 'DOM updates for team', team.name);
                 });
                 
             } else {
@@ -893,6 +1055,15 @@ class CheckInApp {
             return;
         }
         
+        // 🚀 PERFORMANCE OPTIMIZATION: Create lookup maps to eliminate O(n) searches
+        const teamLookup = new Map();
+        this.teams.forEach(team => teamLookup.set(team.id, team));
+        
+        const refereeLookup = new Map();
+        this.referees.forEach(referee => refereeLookup.set(referee.id, referee));
+        
+        console.log('📈 Performance: Created lookup maps for', this.teams.length, 'teams and', this.referees.length, 'referees');
+        
         // Filter events based on date and toggle
         const today = new Date();
         today.setHours(0, 0, 0, 0);
@@ -967,19 +1138,21 @@ class CheckInApp {
                             return 0;
                         })
                         .map(match => {
-                        const homeTeam = this.teams.find(t => t.id === match.homeTeamId);
-                        const awayTeam = this.teams.find(t => t.id === match.awayTeamId);
+                        // 🚀 PERFORMANCE: Use O(1) lookup instead of O(n) find
+                        const homeTeam = teamLookup.get(match.homeTeamId);
+                        const awayTeam = teamLookup.get(match.awayTeamId);
                         
                         // Debug team lookups
                         if (!homeTeam) {
-                            console.log('❌ Home team not found for ID:', match.homeTeamId, 'Available team IDs:', this.teams.map(t => t.id));
+                            console.log('❌ Home team not found for ID:', match.homeTeamId, 'Available team IDs:', Array.from(teamLookup.keys()));
                         }
                         if (!awayTeam) {
-                            console.log('❌ Away team not found for ID:', match.awayTeamId, 'Available team IDs:', this.teams.map(t => t.id));
+                            console.log('❌ Away team not found for ID:', match.awayTeamId, 'Available team IDs:', Array.from(teamLookup.keys()));
                         }
                         
-                        const mainReferee = match.mainRefereeId ? this.referees.find(r => r.id === match.mainRefereeId) : null;
-                        const assistantReferee = match.assistantRefereeId ? this.referees.find(r => r.id === match.assistantRefereeId) : null;
+                        // 🚀 PERFORMANCE: Use O(1) lookup instead of O(n) find
+                        const mainReferee = match.mainRefereeId ? refereeLookup.get(match.mainRefereeId) : null;
+                        const assistantReferee = match.assistantRefereeId ? refereeLookup.get(match.assistantRefereeId) : null;
                         
                         const homeAttendanceCount = match.homeTeamAttendees ? match.homeTeamAttendees.length : 0;
                         const awayAttendanceCount = match.awayTeamAttendees ? match.awayTeamAttendees.length : 0;
@@ -1935,7 +2108,7 @@ Please check the browser console (F12) for more details.`);
         return `
             <div style="margin-bottom: 20px; padding: 15px; background: #f8f9fa; border-radius: 12px; text-align: center;">
                 <div style="margin-bottom: 12px;">
-                    <img src="${this.getMemberPhotoUrl(member)}" alt="${member.name}" style="width: 60px; height: 60px; border-radius: 50%; object-fit: cover; border: 3px solid #2196F3;">
+                    ${this.getLazyImageHtml(member, 'profile-photo', 'width: 60px; height: 60px; border-radius: 50%; object-fit: cover; border: 3px solid #2196F3;')}
                 </div>
                 <h3 style="margin: 0 0 4px 0; color: #333; font-size: 1.1em;">${member.name}</h3>
                 <p style="margin: 0; color: #666; font-size: 0.85em;">
@@ -3962,7 +4135,7 @@ Please check the browser console (F12) for more details.`);
                 <div class="player-grid-item ${isCheckedIn ? 'checked-in' : ''}" 
                      onclick="app.toggleGridPlayerAttendance('${this.currentEventId}', '${this.currentMatchId}', '${member.id}', '${teamType}')">
                     <div class="grid-check-icon">✓</div>
-                    <img src="${this.getMemberPhotoUrl(member)}" alt="${member.name}" class="player-grid-photo">
+                    ${this.getLazyImageHtml(member, 'player-grid-photo')}
                     <div class="player-grid-content">
                         <div class="player-grid-name">${member.name}</div>
                         ${member.jerseyNumber ? `<div class="player-grid-jersey">#${member.jerseyNumber}</div>` : ''}
@@ -3973,6 +4146,9 @@ Please check the browser console (F12) for more details.`);
         
         // Clear pagination controls (not needed for scrolling)
         paginationContainer.innerHTML = '';
+        
+        // 🚀 PERFORMANCE: Initialize lazy loading for newly rendered grid images
+        this.initializeLazyImages(gridContainer);
     }
     
     // Check if player is currently suspended

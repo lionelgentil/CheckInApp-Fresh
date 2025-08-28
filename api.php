@@ -8,7 +8,7 @@
 session_start();
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '4.2.2';
+const APP_VERSION = '4.3.0';
 
 // Authentication configuration
 const ADMIN_PASSWORD = 'checkin2024'; // Change this to your desired password
@@ -18,6 +18,25 @@ const SESSION_TIMEOUT = 3600; // 1 hour in seconds
 function getDefaultPhoto($gender) {
     // Use API serving for SVG files to ensure proper MIME type in all browsers
     return '/api/photos?filename=default&gender=' . ($gender === 'female' ? 'female' : 'male');
+}
+
+// Performance optimization: Cache for database queries
+$queryCache = array();
+
+// Helper function to get disciplinary records count with caching
+function getDisciplinaryRecordsCount($db, $bustCache = false) {
+    global $queryCache;
+    $cacheKey = 'disciplinary_records_count';
+    
+    if (!$bustCache && isset($queryCache[$cacheKey])) {
+        return $queryCache[$cacheKey];
+    }
+    
+    $stmt = $db->query('SELECT COUNT(*) as total FROM player_disciplinary_records');
+    $count = $stmt->fetch(PDO::FETCH_ASSOC)['total'];
+    $queryCache[$cacheKey] = $count;
+    
+    return $count;
 }
 
 // Authentication functions
@@ -217,15 +236,13 @@ try {
                 error_log("Team save data: " . file_get_contents('php://input'));
                 
                 // Count disciplinary records before team save
-                $stmt = $db->query('SELECT COUNT(*) as total FROM player_disciplinary_records');
-                $recordsBeforeTeamSave = $stmt->fetch(PDO::FETCH_ASSOC)['total'];
+                $recordsBeforeTeamSave = getDisciplinaryRecordsCount($db);
                 error_log("Disciplinary records before team save: " . $recordsBeforeTeamSave);
                 
                 saveTeams($db);
                 
-                // Count disciplinary records after team save
-                $stmt = $db->query('SELECT COUNT(*) as total FROM player_disciplinary_records');
-                $recordsAfterTeamSave = $stmt->fetch(PDO::FETCH_ASSOC)['total'];
+                // Count disciplinary records after team save (bust cache for fresh count)
+                $recordsAfterTeamSave = getDisciplinaryRecordsCount($db, true);
                 error_log("Disciplinary records after team save: " . $recordsAfterTeamSave);
                 
                 if ($recordsAfterTeamSave < $recordsBeforeTeamSave) {
@@ -245,15 +262,13 @@ try {
                 error_log("=== EVENT SAVE TRIGGERED ===");
                 
                 // Count disciplinary records before event save
-                $stmt = $db->query('SELECT COUNT(*) as total FROM player_disciplinary_records');
-                $recordsBeforeEventSave = $stmt->fetch(PDO::FETCH_ASSOC)['total'];
+                $recordsBeforeEventSave = getDisciplinaryRecordsCount($db);
                 error_log("Disciplinary records before event save: " . $recordsBeforeEventSave);
                 
                 saveEvents($db);
                 
-                // Count disciplinary records after event save
-                $stmt = $db->query('SELECT COUNT(*) as total FROM player_disciplinary_records');
-                $recordsAfterEventSave = $stmt->fetch(PDO::FETCH_ASSOC)['total'];
+                // Count disciplinary records after event save (bust cache for fresh count)
+                $recordsAfterEventSave = getDisciplinaryRecordsCount($db, true);
                 error_log("Disciplinary records after event save: " . $recordsAfterEventSave);
                 
                 if ($recordsAfterEventSave < $recordsBeforeEventSave) {
