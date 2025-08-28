@@ -8,7 +8,7 @@
 session_start();
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '4.3.1';
+const APP_VERSION = '4.4.0';
 
 // Authentication configuration
 const ADMIN_PASSWORD = 'checkin2024'; // Change this to your desired password
@@ -275,6 +275,34 @@ try {
                     error_log("ALERT: Event save deleted " . ($recordsBeforeEventSave - $recordsAfterEventSave) . " disciplinary records!");
                 }
                 error_log("=== EVENT SAVE COMPLETE ===");
+            }
+            break;
+            
+        case 'attendance':
+            // Attendance-only endpoint for view.html (no admin auth required)
+            if ($method === 'POST') {
+                updateAttendanceOnly($db);
+            }
+            break;
+            
+        case 'teams/member-profile':
+            // Update limited member profile data (jersey number, photo) - no admin auth required
+            if ($method === 'POST') {
+                updateMemberProfile($db);
+            }
+            break;
+            
+        case 'match-results':
+            // Match results endpoint for view.html (no admin auth required)
+            if ($method === 'POST') {
+                updateMatchResults($db);
+            }
+            break;
+            
+        case 'players/cards':
+            // Add cards to players - no admin auth required for view.html referees
+            if ($method === 'POST') {
+                addPlayerCards($db);
             }
             break;
             
@@ -2412,6 +2440,271 @@ function executeDatabaseMaintenance($db) {
         echo json_encode([
             'error' => 'Server error: ' . $e->getMessage()
         ]);
+    }
+}
+
+// Attendance-only update function for view.html (no admin auth required)
+function updateAttendanceOnly($db) {
+    $input = json_decode(file_get_contents('php://input'), true);
+    
+    if (!$input || !isset($input['eventId']) || !isset($input['matchId']) || !isset($input['memberId']) || !isset($input['teamType'])) {
+        http_response_code(400);
+        echo json_encode(['error' => 'Missing required parameters']);
+        return;
+    }
+    
+    $eventId = $input['eventId'];
+    $matchId = $input['matchId'];
+    $memberId = $input['memberId'];
+    $teamType = $input['teamType'];
+    $action = $input['action'] ?? 'toggle'; // 'add', 'remove', or 'toggle'
+    
+    try {
+        $db->beginTransaction();
+        
+        // Check if attendee already exists
+        $stmt = $db->prepare('
+            SELECT id FROM match_attendees 
+            WHERE match_id = ? AND member_id = ? AND team_type = ?
+        ');
+        $stmt->execute([$matchId, $memberId, $teamType]);
+        $existingAttendee = $stmt->fetch();
+        
+        if ($action === 'toggle') {
+            if ($existingAttendee) {
+                // Remove attendance
+                $stmt = $db->prepare('
+                    DELETE FROM match_attendees 
+                    WHERE match_id = ? AND member_id = ? AND team_type = ?
+                ');
+                $stmt->execute([$matchId, $memberId, $teamType]);
+                $result = ['action' => 'removed', 'success' => true];
+            } else {
+                // Add attendance
+                $stmt = $db->prepare('
+                    INSERT INTO match_attendees (match_id, member_id, team_type, checked_in_at)
+                    VALUES (?, ?, ?, CURRENT_TIMESTAMP)
+                ');
+                $stmt->execute([$matchId, $memberId, $teamType]);
+                $result = ['action' => 'added', 'success' => true];
+            }
+        } elseif ($action === 'add' && !$existingAttendee) {
+            // Add attendance
+            $stmt = $db->prepare('
+                INSERT INTO match_attendees (match_id, member_id, team_type, checked_in_at)
+                VALUES (?, ?, ?, CURRENT_TIMESTAMP)
+            ');
+            $stmt->execute([$matchId, $memberId, $teamType]);
+            $result = ['action' => 'added', 'success' => true];
+        } elseif ($action === 'remove' && $existingAttendee) {
+            // Remove attendance
+            $stmt = $db->prepare('
+                DELETE FROM match_attendees 
+                WHERE match_id = ? AND member_id = ? AND team_type = ?
+            ');
+            $stmt->execute([$matchId, $memberId, $teamType]);
+            $result = ['action' => 'removed', 'success' => true];
+        } else {
+            $result = ['action' => 'none', 'success' => true, 'message' => 'No change needed'];
+        }
+        
+        $db->commit();
+        echo json_encode($result);
+        
+    } catch (Exception $e) {
+        $db->rollBack();
+        http_response_code(500);
+        echo json_encode(['error' => 'Failed to update attendance: ' . $e->getMessage()]);
+    }
+}
+
+// Update member profile data (jersey number, photo only) - for view.html
+function updateMemberProfile($db) {
+    try {
+        $input = json_decode(file_get_contents('php://input'), true);
+        
+        $teamId = $input['teamId'] ?? null;
+        $memberId = $input['memberId'] ?? null;
+        $jerseyNumber = $input['jerseyNumber'] ?? null;
+        
+        if (!$teamId || !$memberId) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Team ID and Member ID are required']);
+            return;
+        }
+        
+        // Only allow updating jersey number (photo updates handled via photo upload endpoint)
+        $stmt = $db->prepare('UPDATE team_members SET jersey_number = ? WHERE id = ? AND team_id = ?');
+        $result = $stmt->execute([$jerseyNumber, $memberId, $teamId]);
+        
+        if ($result) {
+            echo json_encode(['success' => true, 'message' => 'Member profile updated successfully']);
+        } else {
+            http_response_code(500);
+            echo json_encode(['error' => 'Failed to update member profile']);
+        }
+        
+    } catch (Exception $e) {
+        http_response_code(500);
+        echo json_encode(['error' => 'Failed to update member profile: ' . $e->getMessage()]);
+    }
+}
+
+// Update match results (scores, status, notes, cards) - for view.html
+function updateMatchResults($db) {
+    try {
+        $input = json_decode(file_get_contents('php://input'), true);
+        
+        $eventId = $input['eventId'] ?? null;
+        $matchId = $input['matchId'] ?? null;
+        $homeScore = $input['homeScore'] ?? null;
+        $awayScore = $input['awayScore'] ?? null;
+        $matchStatus = $input['matchStatus'] ?? 'scheduled';
+        $matchNotes = $input['matchNotes'] ?? '';
+        $cards = $input['cards'] ?? [];
+        
+        if (!$eventId || !$matchId) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Event ID and Match ID are required']);
+            return;
+        }
+        
+        $db->beginTransaction();
+        
+        // Get current events data
+        $stmt = $db->prepare('SELECT events_data FROM events WHERE id = ?');
+        $stmt->execute([$eventId]);
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        if (!$result) {
+            $db->rollback();
+            http_response_code(404);
+            echo json_encode(['error' => 'Event not found']);
+            return;
+        }
+        
+        $eventsData = json_decode($result['events_data'], true);
+        
+        // Find and update the specific match
+        $matchFound = false;
+        foreach ($eventsData as &$event) {
+            if ($event['id'] === $eventId) {
+                foreach ($event['matches'] as &$match) {
+                    if ($match['id'] === $matchId) {
+                        $match['homeScore'] = $homeScore !== '' ? (int)$homeScore : null;
+                        $match['awayScore'] = $awayScore !== '' ? (int)$awayScore : null;
+                        $match['matchStatus'] = $matchStatus;
+                        $match['matchNotes'] = $matchNotes;
+                        $match['cards'] = $cards;
+                        $matchFound = true;
+                        break;
+                    }
+                }
+                break;
+            }
+        }
+        
+        if (!$matchFound) {
+            $db->rollback();
+            http_response_code(404);
+            echo json_encode(['error' => 'Match not found']);
+            return;
+        }
+        
+        // Update the database
+        $stmt = $db->prepare('UPDATE events SET events_data = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?');
+        $result = $stmt->execute([json_encode($eventsData), $eventId]);
+        
+        if ($result) {
+            $db->commit();
+            echo json_encode(['success' => true, 'message' => 'Match results updated successfully']);
+        } else {
+            $db->rollback();
+            http_response_code(500);
+            echo json_encode(['error' => 'Failed to update match results']);
+        }
+        
+    } catch (Exception $e) {
+        $db->rollback();
+        http_response_code(500);
+        echo json_encode(['error' => 'Failed to update match results: ' . $e->getMessage()]);
+    }
+}
+
+// Add cards to players - for view.html referees
+function addPlayerCards($db) {
+    try {
+        $input = json_decode(file_get_contents('php://input'), true);
+        
+        $eventId = $input['eventId'] ?? null;
+        $matchId = $input['matchId'] ?? null;
+        $cards = $input['cards'] ?? [];
+        
+        if (!$eventId || !$matchId || empty($cards)) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Event ID, Match ID, and cards data are required']);
+            return;
+        }
+        
+        $db->beginTransaction();
+        
+        // Get current events data
+        $stmt = $db->prepare('SELECT events_data FROM events WHERE id = ?');
+        $stmt->execute([$eventId]);
+        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+        
+        if (!$result) {
+            $db->rollback();
+            http_response_code(404);
+            echo json_encode(['error' => 'Event not found']);
+            return;
+        }
+        
+        $eventsData = json_decode($result['events_data'], true);
+        
+        // Find and update the specific match cards
+        $matchFound = false;
+        foreach ($eventsData as &$event) {
+            if ($event['id'] === $eventId) {
+                foreach ($event['matches'] as &$match) {
+                    if ($match['id'] === $matchId) {
+                        // Append new cards to existing ones
+                        if (!isset($match['cards'])) {
+                            $match['cards'] = [];
+                        }
+                        $match['cards'] = array_merge($match['cards'], $cards);
+                        $matchFound = true;
+                        break;
+                    }
+                }
+                break;
+            }
+        }
+        
+        if (!$matchFound) {
+            $db->rollback();
+            http_response_code(404);
+            echo json_encode(['error' => 'Match not found']);
+            return;
+        }
+        
+        // Update the database
+        $stmt = $db->prepare('UPDATE events SET events_data = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?');
+        $result = $stmt->execute([json_encode($eventsData), $eventId]);
+        
+        if ($result) {
+            $db->commit();
+            echo json_encode(['success' => true, 'message' => 'Cards added successfully']);
+        } else {
+            $db->rollback();
+            http_response_code(500);
+            echo json_encode(['error' => 'Failed to add cards']);
+        }
+        
+    } catch (Exception $e) {
+        $db->rollback();
+        http_response_code(500);
+        echo json_encode(['error' => 'Failed to add cards: ' . $e->getMessage()]);
     }
 }
 ?>

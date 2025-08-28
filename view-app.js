@@ -4,7 +4,7 @@
  */
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '4.2.0';
+const APP_VERSION = '4.4.0';
 
 class CheckInViewApp {
     constructor() {
@@ -202,26 +202,30 @@ class CheckInViewApp {
         document.getElementById(sectionName + '-section').classList.add('active');
     }
     
-    // Save Teams (for jersey number and photo updates)
-    async saveTeams() {
+    // Save Teams (for jersey number updates only)
+    async saveMemberProfile(teamId, memberId, jerseyNumber) {
         try {
-            const response = await fetch(`/api/teams?_t=${Date.now()}`, {
+            const response = await fetch('/api/teams/member-profile', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify(this.teams)
+                body: JSON.stringify({
+                    teamId: teamId,
+                    memberId: memberId,
+                    jerseyNumber: jerseyNumber
+                })
             });
             
             if (!response.ok) {
                 const errorText = await response.text();
                 console.error('Server response:', errorText);
-                throw new Error(`Failed to save teams: ${response.status} ${response.statusText}`);
+                throw new Error(`Failed to save member profile: ${response.status} ${response.statusText}`);
             }
             
             return await response.json();
         } catch (error) {
-            console.error('Error saving teams:', error);
+            console.error('Error saving member profile:', error);
             throw error;
         }
     }
@@ -290,9 +294,9 @@ class CheckInViewApp {
             // Update jersey number if changed
             const newJerseyNumber = jerseyNumber ? parseInt(jerseyNumber) : null;
             if (member.jerseyNumber !== newJerseyNumber) {
-                member.jerseyNumber = newJerseyNumber;
-                // Save teams data for jersey number change
-                await this.saveTeams();
+                // Use new granular endpoint for member profile updates
+                await this.saveMemberProfile(teamId, memberId, newJerseyNumber);
+                member.jerseyNumber = newJerseyNumber; // Update local data
                 needsTeamsRefresh = true;
             }
             
@@ -2347,12 +2351,6 @@ class CheckInViewApp {
         const awayScore = document.getElementById('away-score').value;
         const matchNotes = document.getElementById('match-notes').value.trim();
         
-        // Update match data
-        match.matchStatus = matchStatus;
-        match.homeScore = homeScore !== '' ? parseInt(homeScore) : null;
-        match.awayScore = awayScore !== '' ? parseInt(awayScore) : null;
-        match.matchNotes = matchNotes;
-        
         // Collect cards data
         const cardItems = document.querySelectorAll('.card-item');
         const cards = [];
@@ -2382,14 +2380,40 @@ class CheckInViewApp {
             }
         });
         
-        match.cards = cards;
-        
         try {
-            await this.saveEvents();
+            // Use new granular endpoint for match results
+            const response = await fetch('/api/match-results', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    eventId: eventId,
+                    matchId: matchId,
+                    homeScore: homeScore,
+                    awayScore: awayScore,
+                    matchStatus: matchStatus,
+                    matchNotes: matchNotes,
+                    cards: cards
+                })
+            });
+            
+            if (!response.ok) {
+                throw new Error(`Failed to save match result: ${response.status} ${response.statusText}`);
+            }
+            
+            // Update local data
+            match.matchStatus = matchStatus;
+            match.homeScore = homeScore !== '' ? parseInt(homeScore) : null;
+            match.awayScore = awayScore !== '' ? parseInt(awayScore) : null;
+            match.matchNotes = matchNotes;
+            match.cards = cards;
+            
             this.renderEvents();
             this.closeModal();
         } catch (error) {
-            alert('Failed to save match result. Please try again.');
+            console.error('Error saving match result:', error);
+            alert('Failed to save match result: ' + error.message);
         }
     }
     
@@ -2499,12 +2523,29 @@ class CheckInViewApp {
         }
         
         try {
-            console.log('Saving events...');
-            await this.saveEvents();
-            console.log('Events saved successfully');
+            console.log('Updating attendance via API...');
             
-            // Update the events display in the background (no modal refresh)
-            this.renderEvents();
+            // Use the new attendance-only endpoint (no admin auth required)
+            const response = await fetch('/api/attendance', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    eventId: eventId,
+                    matchId: matchId,
+                    memberId: memberId,
+                    teamType: teamType,
+                    action: 'toggle'
+                })
+            });
+            
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            
+            const result = await response.json();
+            console.log('Attendance updated successfully:', result);
         } catch (error) {
             console.error('Failed to save events:', error);
             
@@ -2529,9 +2570,7 @@ class CheckInViewApp {
                 }
             }
             
-            alert(`Failed to update attendance: ${error.message}\
-\
-Changes have been reverted.`);
+            alert(`Failed to update attendance: ${error.message}\n\nChanges have been reverted.`);
         }
     }
     
