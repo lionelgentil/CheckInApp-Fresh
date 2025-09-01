@@ -4,7 +4,7 @@
  */
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '4.3.1';
+const APP_VERSION = '4.5.0';
 
 class CheckInApp {
     constructor() {
@@ -171,6 +171,32 @@ class CheckInApp {
     async saveTeams() {
         const dataSize = JSON.stringify(this.teams).length;
         console.log('🚨 saveTeams called with data size:', dataSize, 'bytes');
+        
+        // ⚠️ WARNING: If data size is > 1MB, there might be circular references or corruption
+        if (dataSize > 1000000) {
+            console.error('🚫 CRITICAL: Teams data is suspiciously large!', dataSize, 'bytes');
+            console.error('🔍 This suggests circular references or data corruption');
+            console.log('Teams data sample:', JSON.stringify(this.teams).substring(0, 1000) + '...');
+            
+            // Try to identify the issue
+            this.teams.forEach((team, teamIndex) => {
+                const teamSize = JSON.stringify(team).length;
+                if (teamSize > 100000) {
+                    console.error(`🚫 Team ${teamIndex} (${team.name}) is huge:`, teamSize, 'bytes');
+                    
+                    team.members.forEach((member, memberIndex) => {
+                        const memberSize = JSON.stringify(member).length;
+                        if (memberSize > 10000) {
+                            console.error(`🚫 Member ${memberIndex} (${member.name}) is huge:`, memberSize, 'bytes');
+                            console.log('Member data:', member);
+                        }
+                    });
+                }
+            });
+            
+            throw new Error('Teams data is too large - possible circular reference or data corruption');
+        }
+        
         console.trace('saveTeams call stack:');
         
         try {
@@ -451,7 +477,54 @@ class CheckInApp {
             throw new Error(result.error || 'Photo upload failed');
         }
         
-        return result.url + '&_t=' + Date.now(); // Add cache-busting timestamp
+        const photoUrl = result.url + '&_t=' + Date.now(); // Add cache-busting timestamp
+        
+        // 🚀 PHOTO REFRESH FIX: Force refresh all images of this member immediately
+        this.forceRefreshMemberPhoto(memberId, photoUrl);
+        
+        return photoUrl;
+    }
+    
+    // 🚀 NEW: Force refresh member photo in all UI elements
+    forceRefreshMemberPhoto(memberId, newPhotoUrl) {
+        console.log('🖼️ Force refreshing photo for member:', memberId, 'with URL:', newPhotoUrl);
+        
+        // Find all image elements for this member and update them immediately
+        const memberImages = document.querySelectorAll(`img[alt*="${memberId}"], img[data-member-id="${memberId}"]`);
+        
+        memberImages.forEach(img => {
+            const oldSrc = img.src;
+            img.src = newPhotoUrl;
+            console.log('Updated image src from', oldSrc, 'to', newPhotoUrl);
+        });
+        
+        // Also find images by member name pattern (fallback)
+        const memberNameImages = document.querySelectorAll('.member-photo, .member-photo-small');
+        memberNameImages.forEach(img => {
+            // Check if this image's src matches the old member pattern
+            if (img.src.includes(`member_id=${memberId}`) || img.src.includes(`filename=${memberId}`)) {
+                const oldSrc = img.src;
+                img.src = newPhotoUrl;
+                console.log('Updated member image by pattern from', oldSrc, 'to', newPhotoUrl);
+            }
+        });
+        
+        // Clear any image cache to ensure fresh loads
+        this.clearImageCache();
+        
+        console.log('✅ Photo refresh completed for member:', memberId);
+    }
+    
+    // 🚀 NEW: Clear image cache to force fresh loads
+    clearImageCache() {
+        // Force browser to reload images by adding cache-busting parameters
+        const allImages = document.querySelectorAll('img');
+        allImages.forEach(img => {
+            if (img.src.includes('/api/photos') && !img.src.includes('_refresh=')) {
+                const separator = img.src.includes('?') ? '&' : '?';
+                img.src = img.src + separator + '_refresh=' + Date.now();
+            }
+        });
     }
     
     // Debug helper function - can be called from browser console
@@ -1472,122 +1545,78 @@ Please check the browser console (F12) for more details.`);
         const team = this.teams.find(t => t.id === teamId);
         if (!team) return;
         
-        let photoUrl = null;
-        let needsTeamsSave = false;
-        
-        // Handle member creation/update
-        if (this.currentEditingMember) {
-            // Edit existing member - check what actually changed BEFORE updating values
-            const originalName = this.currentEditingMember.name;
-            const originalJerseyNumber = this.currentEditingMember.jerseyNumber;
-            const originalGender = this.currentEditingMember.gender;
-            
-            const basicInfoChanged = (
-                originalName !== name ||
-                (originalJerseyNumber || null) !== (jerseyNumber ? parseInt(jerseyNumber) : null) ||
-                (originalGender || null) !== (gender || null)
-            );
-            
-            console.log('Basic info change detection:', {
-                originalName, name, nameChanged: originalName !== name,
-                originalJerseyNumber, jerseyNumber: jerseyNumber ? parseInt(jerseyNumber) : null, jerseyChanged: (originalJerseyNumber || null) !== (jerseyNumber ? parseInt(jerseyNumber) : null),
-                originalGender, gender: gender || null, genderChanged: (originalGender || null) !== (gender || null),
-                basicInfoChanged
-            });
-            
-            // Update local data
-            this.currentEditingMember.name = name;
-            this.currentEditingMember.jerseyNumber = jerseyNumber ? parseInt(jerseyNumber) : null;
-            this.currentEditingMember.gender = gender || null;
-            
-            // Upload photo FIRST if provided - this will update database directly
-            if (photoFile) {
-                try {
+        try {
+            if (this.currentEditingMember) {
+                // ✅ OPTIMIZED: Edit existing member using granular API
+                const originalName = this.currentEditingMember.name;
+                const originalJerseyNumber = this.currentEditingMember.jerseyNumber;
+                const originalGender = this.currentEditingMember.gender;
+                
+                const basicInfoChanged = (
+                    originalName !== name ||
+                    (originalJerseyNumber || null) !== (jerseyNumber ? parseInt(jerseyNumber) : null) ||
+                    (originalGender || null) !== (gender || null)
+                );
+                
+                // Update local data first
+                this.currentEditingMember.name = name;
+                this.currentEditingMember.jerseyNumber = jerseyNumber ? parseInt(jerseyNumber) : null;
+                this.currentEditingMember.gender = gender || null;
+                
+                // Handle photo upload first if provided
+                if (photoFile) {
                     console.log('Uploading photo for existing member:', this.currentEditingMember.id);
-                    photoUrl = await this.uploadPhoto(photoFile, this.currentEditingMember.id);
-                    
-                    // Update photo in BOTH the editing reference AND the teams array
+                    const photoUrl = await this.uploadPhoto(photoFile, this.currentEditingMember.id);
                     this.currentEditingMember.photo = photoUrl;
                     
-                    // Also find and update in teams array to be absolutely sure
-                    const team = this.teams.find(t => t.id === teamId);
+                    // Also update in teams array
                     const memberInArray = team.members.find(m => m.id === this.currentEditingMember.id);
                     if (memberInArray) {
                         memberInArray.photo = photoUrl;
-                        console.log('Photo updated in teams array as well');
                     }
                     
-                    console.log('Photo uploaded successfully:', photoUrl);
-                    console.log('Updated member object:', this.currentEditingMember);
-                    
-                    // Force immediate UI refresh to show new photo
-                    console.log('saveMember: Forcing UI refresh after photo upload...');
-                    this.renderTeams();
-                    console.log('saveMember: UI refreshed');
-                } catch (error) {
-                    console.error('Error uploading photo:', error);
-                    alert('Photo upload failed: ' + error.message);
-                    return;
+                    console.log('Photo uploaded successfully');
                 }
-            }
-            
-            // Only save teams if basic member info actually changed
-            // If only photo changed, uploadPhoto already updated the database
-            needsTeamsSave = basicInfoChanged;
-            
-            if (basicInfoChanged) {
-                console.log('Basic member info changed, will call saveTeams()');
-            } else {
-                console.log('Only photo changed, skipping saveTeams() - uploadPhoto already updated database');
-            }
-        } else {
-            // Add new member - create locally first
-            const newMember = {
-                id: this.generateUUID(),
-                name: name,
-                jerseyNumber: jerseyNumber ? parseInt(jerseyNumber) : null,
-                gender: gender || null,
-                photo: null
-            };
-            team.members.push(newMember);
-            
-            try {
-                // Create the member in database first
-                await this.saveTeams();
                 
-                // Now upload photo if provided - this updates database directly
-                if (photoFile) {
-                    photoUrl = await this.uploadPhoto(photoFile, newMember.id);
-                    newMember.photo = photoUrl;
-                    // Photo is now saved, no need for another saveTeams call
-                    needsTeamsSave = false;
-                } else {
-                    // No photo, member already saved above
-                    needsTeamsSave = false;
+                // Use granular endpoint for basic info updates (much faster!)
+                if (basicInfoChanged) {
+                    console.log('🚀 Using granular API for member profile update');
+                    await this.updateMemberProfile(teamId, this.currentEditingMember.id, {
+                        name: name,
+                        jerseyNumber: jerseyNumber ? parseInt(jerseyNumber) : null,
+                        gender: gender || null
+                    });
                 }
-            } catch (error) {
-                console.error('Error creating member or uploading photo:', error);
-                alert('Failed to create member: ' + error.message);
-                // Remove the member we just added since creation failed
-                const index = team.members.findIndex(m => m.id === newMember.id);
-                if (index !== -1) {
-                    team.members.splice(index, 1);
-                }
-                return;
-            }
-        }
-        
-        try {
-            // Only save teams if needed (avoid redundant 102KB POST requests)
-            console.log('saveMember: needsTeamsSave =', needsTeamsSave);
-            if (needsTeamsSave) {
-                console.log('🚨 About to call saveTeams() - this will send 102KB of data!');
-                await this.saveTeams();
+                
             } else {
-                console.log('✅ Skipping saveTeams() - photo upload already updated database directly');
+                // ✅ OPTIMIZED: Add new member using granular API
+                const newMember = {
+                    id: this.generateUUID(),
+                    name: name,
+                    jerseyNumber: jerseyNumber ? parseInt(jerseyNumber) : null,
+                    gender: gender || null,
+                    photo: null
+                };
+                
+                // Add to local array first
+                team.members.push(newMember);
+                
+                console.log('🚀 Using granular API for new member creation');
+                await this.createMemberProfile(teamId, newMember);
+                
+                // Upload photo if provided
+                if (photoFile) {
+                    console.log('Uploading photo for new member:', newMember.id);
+                    const photoUrl = await this.uploadPhoto(photoFile, newMember.id);
+                    newMember.photo = photoUrl;
+                }
             }
             
-            // Update UI
+            // 🚀 PERFORMANCE: No more 102KB saveTeams calls!
+            console.log('✅ Member saved using optimized granular APIs');
+            
+            // Update UI with fresh data
+            await this.loadTeams(); // Refresh from server
             this.renderTeams();
             
             // Handle modal state
@@ -1600,27 +1629,121 @@ Please check the browser console (F12) for more details.`);
             } else {
                 this.closeModal();
             }
+            
         } catch (error) {
-            alert('Failed to save member. Please try again.');
+            console.error('Error saving member:', error);
+            alert('Failed to save member: ' + error.message);
+            
+            // Revert local changes on error
+            if (!this.currentEditingMember) {
+                // Remove the member we just added
+                const index = team.members.findIndex(m => m.name === name);
+                if (index !== -1) {
+                    team.members.splice(index, 1);
+                }
+            }
         }
     }
     
     async deleteMember(teamId, memberId) {
+        console.log('🗑️ deleteMember called with:', { teamId, memberId });
+        console.log('📍 This should use granular API - if you see saveTeams() call, something is wrong!');
+        
         if (!confirm('Are you sure you want to delete this member?')) {
             return;
         }
         
         const team = this.teams.find(t => t.id === teamId);
-        if (!team) return;
+        if (!team) {
+            console.error('Team not found:', teamId);
+            return;
+        }
         
-        team.members = team.members.filter(m => m.id !== memberId);
+        const memberToDelete = team.members.find(m => m.id === memberId);
+        console.log('🎯 Found member to delete:', memberToDelete);
         
         try {
-            await this.saveTeams();
+            // ✅ OPTIMIZED: Use granular API for deletion
+            console.log('🚀 Using granular API for member deletion');
+            await this.deleteMemberProfile(teamId, memberId);
+            
+            // Update local data
+            const originalLength = team.members.length;
+            team.members = team.members.filter(m => m.id !== memberId);
+            console.log(`✅ Member removed from local array: ${originalLength} → ${team.members.length}`);
+            
+            // Refresh UI
             this.renderTeams();
+            console.log('✅ UI refreshed after deletion');
+            
         } catch (error) {
-            alert('Failed to delete member. Please try again.');
+            console.error('❌ Error deleting member:', error);
+            alert('Failed to delete member: ' + error.message);
         }
+    }
+    
+    // 🚀 NEW: Granular API methods for better performance
+    async updateMemberProfile(teamId, memberId, memberData) {
+        const response = await fetch('/api/teams/member-profile', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                teamId: teamId,
+                memberId: memberId,
+                name: memberData.name,
+                jerseyNumber: memberData.jerseyNumber,
+                gender: memberData.gender
+            })
+        });
+        
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`Failed to update member profile: ${response.status} ${response.statusText}`);
+        }
+        
+        return await response.json();
+    }
+    
+    async createMemberProfile(teamId, memberData) {
+        const response = await fetch('/api/teams/member-create', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                teamId: teamId,
+                member: memberData
+            })
+        });
+        
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`Failed to create member: ${response.status} ${response.statusText}`);
+        }
+        
+        return await response.json();
+    }
+    
+    async deleteMemberProfile(teamId, memberId) {
+        const response = await fetch('/api/teams/member-delete', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                teamId: teamId,
+                memberId: memberId
+            })
+        });
+        
+        if (!response.ok) {
+            const errorText = await response.text();
+            throw new Error(`Failed to delete member: ${response.status} ${response.statusText}`);
+        }
+        
+        return await response.json();
     }
     
     async showDetailedMemberModal(teamId, member) {

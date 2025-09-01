@@ -8,7 +8,7 @@
 session_start();
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '4.4.1';
+const APP_VERSION = '4.5.0';
 
 // Authentication configuration
 const ADMIN_PASSWORD = 'checkin2024'; // Change this to your desired password
@@ -289,6 +289,22 @@ try {
             // Update limited member profile data (jersey number, photo) - no admin auth required
             if ($method === 'POST') {
                 updateMemberProfile($db);
+            }
+            break;
+            
+        case 'teams/member-create':
+            // Create new team member - requires admin auth
+            if ($method === 'POST') {
+                requireAuth();
+                createMemberProfile($db);
+            }
+            break;
+            
+        case 'teams/member-delete':
+            // Delete team member - requires admin auth
+            if ($method === 'POST') {
+                requireAuth();
+                deleteMemberProfile($db);
             }
             break;
             
@@ -2518,14 +2534,16 @@ function updateAttendanceOnly($db) {
     }
 }
 
-// Update member profile data (jersey number, photo only) - for view.html
+// Update member profile data (name, jersey number, gender) - enhanced for admin app
 function updateMemberProfile($db) {
     try {
         $input = json_decode(file_get_contents('php://input'), true);
         
         $teamId = $input['teamId'] ?? null;
         $memberId = $input['memberId'] ?? null;
+        $name = $input['name'] ?? null;
         $jerseyNumber = $input['jerseyNumber'] ?? null;
+        $gender = $input['gender'] ?? null;
         
         if (!$teamId || !$memberId) {
             http_response_code(400);
@@ -2533,9 +2551,9 @@ function updateMemberProfile($db) {
             return;
         }
         
-        // Only allow updating jersey number (photo updates handled via photo upload endpoint)
-        $stmt = $db->prepare('UPDATE team_members SET jersey_number = ? WHERE id = ? AND team_id = ?');
-        $result = $stmt->execute([$jerseyNumber, $memberId, $teamId]);
+        // Update member profile (supports name, jersey number, and gender)
+        $stmt = $db->prepare('UPDATE team_members SET name = ?, jersey_number = ?, gender = ? WHERE id = ? AND team_id = ?');
+        $result = $stmt->execute([$name, $jerseyNumber, $gender, $memberId, $teamId]);
         
         if ($result) {
             echo json_encode(['success' => true, 'message' => 'Member profile updated successfully']);
@@ -2547,6 +2565,74 @@ function updateMemberProfile($db) {
     } catch (Exception $e) {
         http_response_code(500);
         echo json_encode(['error' => 'Failed to update member profile: ' . $e->getMessage()]);
+    }
+}
+
+// Create new team member - for admin app
+function createMemberProfile($db) {
+    try {
+        $input = json_decode(file_get_contents('php://input'), true);
+        
+        $teamId = $input['teamId'] ?? null;
+        $member = $input['member'] ?? null;
+        
+        if (!$teamId || !$member || !$member['id'] || !$member['name']) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Team ID and member data are required']);
+            return;
+        }
+        
+        // Insert new member
+        $stmt = $db->prepare('INSERT INTO team_members (id, team_id, name, jersey_number, gender) VALUES (?, ?, ?, ?, ?)');
+        $result = $stmt->execute([
+            $member['id'],
+            $teamId,
+            $member['name'],
+            $member['jerseyNumber'],
+            $member['gender']
+        ]);
+        
+        if ($result) {
+            echo json_encode(['success' => true, 'message' => 'Member created successfully']);
+        } else {
+            http_response_code(500);
+            echo json_encode(['error' => 'Failed to create member']);
+        }
+        
+    } catch (Exception $e) {
+        http_response_code(500);
+        echo json_encode(['error' => 'Failed to create member: ' . $e->getMessage()]);
+    }
+}
+
+// Delete team member - for admin app
+function deleteMemberProfile($db) {
+    try {
+        $input = json_decode(file_get_contents('php://input'), true);
+        
+        $teamId = $input['teamId'] ?? null;
+        $memberId = $input['memberId'] ?? null;
+        
+        if (!$teamId || !$memberId) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Team ID and Member ID are required']);
+            return;
+        }
+        
+        // Delete member
+        $stmt = $db->prepare('DELETE FROM team_members WHERE id = ? AND team_id = ?');
+        $result = $stmt->execute([$memberId, $teamId]);
+        
+        if ($result) {
+            echo json_encode(['success' => true, 'message' => 'Member deleted successfully']);
+        } else {
+            http_response_code(500);
+            echo json_encode(['error' => 'Failed to delete member']);
+        }
+        
+    } catch (Exception $e) {
+        http_response_code(500);
+        echo json_encode(['error' => 'Failed to delete member: ' . $e->getMessage()]);
     }
 }
 
