@@ -4,7 +4,7 @@
  */
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '4.7.5';
+const APP_VERSION = '4.8.1';
 
 class CheckInApp {
     constructor() {
@@ -282,32 +282,43 @@ class CheckInApp {
     }
     
     async saveTeams() {
-        const dataSize = JSON.stringify(this.teams).length;
-        console.log('🚨 saveTeams called with data size:', dataSize, 'bytes');
+        // Create a cleaned version of teams data without large member photos
+        const cleanedTeams = this.teams.map(team => ({
+            id: team.id,
+            name: team.name,
+            category: team.category,
+            colorData: team.colorData,
+            description: team.description,
+            captainId: team.captainId,
+            members: team.members.map(member => ({
+                id: member.id,
+                name: member.name,
+                jerseyNumber: member.jerseyNumber,
+                gender: member.gender,
+                // Only include small photo references, not base64 data
+                photo: member.photo && member.photo.startsWith('data:image/') ? 'has_photo' : member.photo
+            }))
+        }));
         
-        // ⚠️ WARNING: If data size is > 1MB, there might be circular references or corruption
+        const dataSize = JSON.stringify(cleanedTeams).length;
+        console.log('🚨 saveTeams called with cleaned data size:', dataSize, 'bytes');
+        
+        // ⚠️ WARNING: If data size is still > 1MB after cleaning, there's a real issue
         if (dataSize > 1000000) {
-            console.error('🚫 CRITICAL: Teams data is suspiciously large!', dataSize, 'bytes');
-            console.error('🔍 This suggests circular references or data corruption');
-            console.log('Teams data sample:', JSON.stringify(this.teams).substring(0, 1000) + '...');
+            console.error('🚫 CRITICAL: Teams data is still suspiciously large after cleaning!', dataSize, 'bytes');
+            console.error('🔍 This suggests genuine data corruption or excessive team/member count');
+            console.log('Cleaned teams data sample:', JSON.stringify(cleanedTeams).substring(0, 1000) + '...');
             
             // Try to identify the issue
-            this.teams.forEach((team, teamIndex) => {
+            cleanedTeams.forEach((team, teamIndex) => {
                 const teamSize = JSON.stringify(team).length;
                 if (teamSize > 100000) {
-                    console.error(`🚫 Team ${teamIndex} (${team.name}) is huge:`, teamSize, 'bytes');
-                    
-                    team.members.forEach((member, memberIndex) => {
-                        const memberSize = JSON.stringify(member).length;
-                        if (memberSize > 10000) {
-                            console.error(`🚫 Member ${memberIndex} (${member.name}) is huge:`, memberSize, 'bytes');
-                            console.log('Member data:', member);
-                        }
-                    });
+                    console.error(`🚫 Team ${teamIndex} (${team.name}) is huge even after cleaning:`, teamSize, 'bytes');
+                    console.error(`Team has ${team.members.length} members`);
                 }
             });
             
-            throw new Error('Teams data is too large - possible circular reference or data corruption');
+            throw new Error('Teams data is too large even after cleaning - possible data corruption');
         }
         
         console.trace('saveTeams call stack:');
@@ -318,7 +329,7 @@ class CheckInApp {
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify(this.teams)
+                body: JSON.stringify(cleanedTeams)
             });
             
             console.log('Response status:', response.status);

@@ -4,7 +4,7 @@
  */
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '4.7.5';
+const APP_VERSION = '4.8.0';
 
 class CheckInViewApp {
     constructor() {
@@ -1548,7 +1548,48 @@ class CheckInViewApp {
                     </div>
                 `).join('')}
             </div>
+            
+            <!-- Card Tracking Charts Section -->
+            <div class="card-charts-section">
+                <div class="charts-header">
+                    <h3 class="charts-title">📊 Card Statistics & Analytics</h3>
+                    <p class="charts-subtitle">Visual analysis of card issuance patterns for the current season</p>
+                </div>
+                
+                <div class="charts-grid">
+                    <div class="chart-container">
+                        <h4 class="chart-title">Cards by Match Date</h4>
+                        <div class="chart-canvas">
+                            <canvas id="cards-by-date-chart"></canvas>
+                        </div>
+                    </div>
+                    
+                    <div class="chart-container">
+                        <h4 class="chart-title">Cards by Team & Division</h4>
+                        <div class="chart-canvas">
+                            <canvas id="cards-by-team-chart"></canvas>
+                        </div>
+                    </div>
+                    
+                    <div class="chart-container">
+                        <h4 class="chart-title">Cards by Infraction Reason</h4>
+                        <div class="chart-canvas">
+                            <canvas id="cards-by-reason-chart"></canvas>
+                        </div>
+                    </div>
+                    
+                    <div class="chart-container">
+                        <h4 class="chart-title">Cards by Referee</h4>
+                        <div class="chart-canvas">
+                            <canvas id="cards-by-referee-chart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
         `;
+        
+        // Render the charts after the HTML is in place
+        this.renderCardTrackingCharts(cardRecords);
     }
     
     collectCurrentSeasonCards() {
@@ -1618,6 +1659,348 @@ class CheckInViewApp {
         });
         
         return cardRecords;
+    }
+    
+    renderCardTrackingCharts(cardRecords) {
+        // Destroy existing charts if they exist
+        if (this.cardCharts) {
+            Object.values(this.cardCharts).forEach(chart => {
+                if (chart) chart.destroy();
+            });
+        }
+        this.cardCharts = {};
+        
+        if (cardRecords.length === 0) {
+            // Show no data messages for all charts
+            ['cards-by-date-chart', 'cards-by-team-chart', 'cards-by-reason-chart', 'cards-by-referee-chart'].forEach(chartId => {
+                const canvas = document.getElementById(chartId);
+                if (canvas) {
+                    canvas.parentElement.innerHTML = '<div class="chart-no-data">No card data available for the current season</div>';
+                }
+            });
+            return;
+        }
+        
+        // 1. Cards by Match Date Chart
+        this.renderCardsByDateChart(cardRecords);
+        
+        // 2. Cards by Team & Division Chart
+        this.renderCardsByTeamChart(cardRecords);
+        
+        // 3. Cards by Infraction Reason Chart
+        this.renderCardsByReasonChart(cardRecords);
+        
+        // 4. Cards by Referee Chart
+        this.renderCardsByRefereeChart(cardRecords);
+    }
+    
+    renderCardsByDateChart(cardRecords) {
+        const canvas = document.getElementById('cards-by-date-chart');
+        if (!canvas) return;
+        
+        // Group cards by date and card type
+        const dateGroups = {};
+        cardRecords.forEach(card => {
+            const date = new Date(card.eventDate).toLocaleDateString();
+            if (!dateGroups[date]) {
+                dateGroups[date] = { yellow: 0, red: 0 };
+            }
+            dateGroups[date][card.cardType]++;
+        });
+        
+        // Sort dates chronologically
+        const sortedDates = Object.keys(dateGroups).sort((a, b) => new Date(a) - new Date(b));
+        const yellowData = sortedDates.map(date => dateGroups[date].yellow);
+        const redData = sortedDates.map(date => dateGroups[date].red);
+        
+        this.cardCharts.byDate = new Chart(canvas, {
+            type: 'bar',
+            data: {
+                labels: sortedDates,
+                datasets: [
+                    {
+                        label: 'Yellow Cards',
+                        data: yellowData,
+                        backgroundColor: '#ffc107',
+                        borderColor: '#ffb000',
+                        borderWidth: 1
+                    },
+                    {
+                        label: 'Red Cards',
+                        data: redData,
+                        backgroundColor: '#dc3545',
+                        borderColor: '#c82333',
+                        borderWidth: 1
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'top'
+                    }
+                },
+                scales: {
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Match Date'
+                        }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Number of Cards'
+                        },
+                        ticks: {
+                            stepSize: 1
+                        }
+                    }
+                }
+            }
+        });
+    }
+    
+    renderCardsByTeamChart(cardRecords) {
+        const canvas = document.getElementById('cards-by-team-chart');
+        if (!canvas) return;
+        
+        // Group cards by team and card type
+        const teamGroups = {};
+        cardRecords.forEach(card => {
+            const team = this.teams.find(t => t.name === card.teamName);
+            const teamKey = team ? `${card.teamName} (${team.category || 'No Division'})` : card.teamName;
+            
+            if (!teamGroups[teamKey]) {
+                teamGroups[teamKey] = { yellow: 0, red: 0 };
+            }
+            teamGroups[teamKey][card.cardType]++;
+        });
+        
+        // Sort teams by total cards (descending)
+        const sortedTeams = Object.keys(teamGroups).sort((a, b) => {
+            const totalA = teamGroups[a].yellow + teamGroups[a].red;
+            const totalB = teamGroups[b].yellow + teamGroups[b].red;
+            return totalB - totalA;
+        });
+        
+        const yellowData = sortedTeams.map(team => teamGroups[team].yellow);
+        const redData = sortedTeams.map(team => teamGroups[team].red);
+        
+        this.cardCharts.byTeam = new Chart(canvas, {
+            type: 'bar',
+            data: {
+                labels: sortedTeams,
+                datasets: [
+                    {
+                        label: 'Yellow Cards',
+                        data: yellowData,
+                        backgroundColor: '#ffc107',
+                        borderColor: '#ffb000',
+                        borderWidth: 1
+                    },
+                    {
+                        label: 'Red Cards',
+                        data: redData,
+                        backgroundColor: '#dc3545',
+                        borderColor: '#c82333',
+                        borderWidth: 1
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'top'
+                    }
+                },
+                scales: {
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Team (Division)'
+                        },
+                        ticks: {
+                            maxRotation: 45,
+                            minRotation: 45
+                        }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Number of Cards'
+                        },
+                        ticks: {
+                            stepSize: 1
+                        }
+                    }
+                }
+            }
+        });
+    }
+    
+    renderCardsByReasonChart(cardRecords) {
+        const canvas = document.getElementById('cards-by-reason-chart');
+        if (!canvas) return;
+        
+        // Group cards by reason and card type
+        const reasonGroups = {};
+        cardRecords.forEach(card => {
+            const reason = card.reason || 'Not specified';
+            if (!reasonGroups[reason]) {
+                reasonGroups[reason] = { yellow: 0, red: 0 };
+            }
+            reasonGroups[reason][card.cardType]++;
+        });
+        
+        // Sort reasons by total cards (descending)
+        const sortedReasons = Object.keys(reasonGroups).sort((a, b) => {
+            const totalA = reasonGroups[a].yellow + reasonGroups[a].red;
+            const totalB = reasonGroups[b].yellow + reasonGroups[b].red;
+            return totalB - totalA;
+        });
+        
+        const yellowData = sortedReasons.map(reason => reasonGroups[reason].yellow);
+        const redData = sortedReasons.map(reason => reasonGroups[reason].red);
+        
+        this.cardCharts.byReason = new Chart(canvas, {
+            type: 'bar',
+            data: {
+                labels: sortedReasons,
+                datasets: [
+                    {
+                        label: 'Yellow Cards',
+                        data: yellowData,
+                        backgroundColor: '#ffc107',
+                        borderColor: '#ffb000',
+                        borderWidth: 1
+                    },
+                    {
+                        label: 'Red Cards',
+                        data: redData,
+                        backgroundColor: '#dc3545',
+                        borderColor: '#c82333',
+                        borderWidth: 1
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'top'
+                    }
+                },
+                scales: {
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Infraction Reason'
+                        },
+                        ticks: {
+                            maxRotation: 45,
+                            minRotation: 45
+                        }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Number of Cards'
+                        },
+                        ticks: {
+                            stepSize: 1
+                        }
+                    }
+                }
+            }
+        });
+    }
+    
+    renderCardsByRefereeChart(cardRecords) {
+        const canvas = document.getElementById('cards-by-referee-chart');
+        if (!canvas) return;
+        
+        // Group cards by referee and card type
+        const refereeGroups = {};
+        cardRecords.forEach(card => {
+            const referee = card.refereeName || 'Not recorded';
+            if (!refereeGroups[referee]) {
+                refereeGroups[referee] = { yellow: 0, red: 0 };
+            }
+            refereeGroups[referee][card.cardType]++;
+        });
+        
+        // Sort referees by total cards (descending)
+        const sortedReferees = Object.keys(refereeGroups).sort((a, b) => {
+            const totalA = refereeGroups[a].yellow + refereeGroups[a].red;
+            const totalB = refereeGroups[b].yellow + refereeGroups[b].red;
+            return totalB - totalA;
+        });
+        
+        const yellowData = sortedReferees.map(referee => refereeGroups[referee].yellow);
+        const redData = sortedReferees.map(referee => refereeGroups[referee].red);
+        
+        this.cardCharts.byReferee = new Chart(canvas, {
+            type: 'bar',
+            data: {
+                labels: sortedReferees,
+                datasets: [
+                    {
+                        label: 'Yellow Cards',
+                        data: yellowData,
+                        backgroundColor: '#ffc107',
+                        borderColor: '#ffb000',
+                        borderWidth: 1
+                    },
+                    {
+                        label: 'Red Cards',
+                        data: redData,
+                        backgroundColor: '#dc3545',
+                        borderColor: '#c82333',
+                        borderWidth: 1
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'top'
+                    }
+                },
+                scales: {
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Referee'
+                        },
+                        ticks: {
+                            maxRotation: 45,
+                            minRotation: 45
+                        }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Number of Cards'
+                        },
+                        ticks: {
+                            stepSize: 1
+                        }
+                    }
+                }
+            }
+        });
     }
     
     // Season Management Methods (Read-Only View)

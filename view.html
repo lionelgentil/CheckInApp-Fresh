@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CheckIn App v4.7.5 - View Only</title>
+    <title>CheckIn App v4.8.0 - View Only</title>
     <meta name="theme-color" content="#2196F3">
     <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/x-icon" href="favicon.ico">
@@ -1883,6 +1883,106 @@
             }
         }
         
+        /* Card Tracking Charts Styles */
+        .card-charts-section {
+            margin-top: 30px;
+            padding: 20px;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+        
+        .charts-header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+        
+        .charts-title {
+            font-size: 1.5em;
+            color: #333;
+            margin: 0 0 10px 0;
+            font-weight: 600;
+        }
+        
+        .charts-subtitle {
+            color: #666;
+            font-size: 0.9em;
+            margin: 0;
+        }
+        
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+        
+        .chart-container {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 20px;
+            border: 1px solid #e9ecef;
+            position: relative;
+        }
+        
+        .chart-title {
+            font-size: 1.1em;
+            font-weight: 600;
+            color: #333;
+            margin: 0 0 15px 0;
+            text-align: center;
+        }
+        
+        .chart-canvas {
+            position: relative;
+            height: 300px;
+            width: 100%;
+        }
+        
+        .chart-no-data {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 300px;
+            color: #666;
+            font-style: italic;
+            text-align: center;
+            background: white;
+            border-radius: 8px;
+            border: 2px dashed #dee2e6;
+        }
+        
+        @media (max-width: 1024px) {
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .chart-container {
+                padding: 15px;
+            }
+            
+            .chart-canvas {
+                height: 250px;
+            }
+        }
+        
+        @media (max-width: 768px) {
+            .card-charts-section {
+                margin-top: 20px;
+                padding: 15px;
+            }
+            
+            .charts-grid {
+                gap: 20px;
+            }
+            
+            .chart-canvas {
+                height: 200px;
+            }
+        }
+        
     </style>
 </head>
 <body>
@@ -2004,5 +2104,8 @@
             loadApp();
         }
     </script>
+    
+    <!-- Chart.js for card tracking graphs -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.min.js"></script>
 </body>
 </html>
