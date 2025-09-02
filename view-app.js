@@ -4,11 +4,12 @@
  */
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '4.6.2';
+const APP_VERSION = '4.7.0';
 
 class CheckInViewApp {
     constructor() {
-        this.teams = [];
+        this.teams = []; // Full team data (loaded on demand)
+        this.teamsBasic = []; // Lightweight team data (loaded by default)
         this.events = [];
         this.referees = [];
         this.currentModalType = null;
@@ -17,10 +18,10 @@ class CheckInViewApp {
     }
     
     async init() {
-        // Load both events and teams on initialization since events display requires team names
+        // Load events and basic team info (lightweight) for initial display
         await Promise.all([
             this.loadEvents(),
-            this.loadTeams()
+            this.loadTeamsBasic() // Much faster - no player photos or details
         ]);
         this.renderEvents();
         
@@ -81,12 +82,46 @@ class CheckInViewApp {
         return event >= currentSeason.startDate && event <= currentSeason.endDate;
     }
     
-    // API Methods (read-only)
+    // Lightweight team loading (just basic info for events display)
+    async loadTeamsBasic() {
+        try {
+            const response = await fetch(`/api/teams-basic?_t=${Date.now()}`);
+            if (response.ok) {
+                this.teamsBasic = await response.json();
+                console.log('🚀 Loaded basic teams data:', this.teamsBasic.length, 'teams');
+            } else {
+                console.warn('Teams-basic API not available, falling back to full teams API');
+                // Fallback to full API but extract only needed data
+                await this.loadTeams();
+                this.teamsBasic = this.teams.map(team => ({
+                    id: team.id,
+                    name: team.name,
+                    category: team.category,
+                    colorData: team.colorData,
+                    memberCount: team.members ? team.members.length : 0
+                }));
+            }
+        } catch (error) {
+            console.error('Error loading basic teams, falling back to full teams:', error);
+            // Fallback to full teams API
+            await this.loadTeams();
+            this.teamsBasic = this.teams.map(team => ({
+                id: team.id,
+                name: team.name,
+                category: team.category,
+                colorData: team.colorData,
+                memberCount: team.members ? team.members.length : 0
+            }));
+        }
+    }
+
+    // Full team loading (with all player data) - only when needed
     async loadTeams() {
         try {
             const response = await fetch(`/api/teams?_t=${Date.now()}`);
             if (response.ok) {
                 this.teams = await response.json();
+                console.log('🔍 Loaded full teams data:', this.teams.length, 'teams with all player details');
             } else {
                 console.error('Failed to load teams');
                 this.teams = [];
@@ -94,6 +129,23 @@ class CheckInViewApp {
         } catch (error) {
             console.error('Error loading teams:', error);
             this.teams = [];
+        }
+    }
+    
+    // Get team info (tries basic first, loads full if needed)
+    async getTeamInfo(teamId, needsFullData = false) {
+        if (needsFullData) {
+            // Need full player data
+            if (!this.teams || this.teams.length === 0) {
+                await this.loadTeams();
+            }
+            return this.teams.find(t => t.id === teamId);
+        } else {
+            // Just need basic info
+            if (!this.teamsBasic || this.teamsBasic.length === 0) {
+                await this.loadTeamsBasic();
+            }
+            return this.teamsBasic.find(t => t.id === teamId);
         }
     }
     
@@ -143,17 +195,11 @@ class CheckInViewApp {
         // Lazy load data for the section if not already loaded
         if (sectionName === 'teams') {
             if (this.teams.length === 0) {
-                await this.loadTeams();
+                await this.loadTeams(); // Need full team data for roster display
             }
             this.renderTeams();
         } else if (sectionName === 'events') {
-            // Ensure we have both teams and referees loaded for events display
-            if (this.teams.length === 0) {
-                await this.loadTeams();
-            }
-            if (this.referees.length === 0) {
-                await this.loadReferees();
-            }
+            // Events already loaded with basic team info in init()
             this.renderEvents();
         } else if (sectionName === 'referees') {
             if (this.referees.length === 0) {
@@ -161,7 +207,7 @@ class CheckInViewApp {
             }
             this.renderReferees();
         } else if (sectionName === 'standings') {
-            // Ensure we have both teams and events loaded for standings calculation
+            // Standings need full team data for calculations
             if (this.teams.length === 0) {
                 await this.loadTeams();
             }
@@ -170,7 +216,7 @@ class CheckInViewApp {
             }
             this.renderStandings();
         } else if (sectionName === 'cards') {
-            // Ensure we have all data loaded for card tracking
+            // Cards need full team data for player names
             if (this.teams.length === 0) {
                 await this.loadTeams();
             }
@@ -182,7 +228,7 @@ class CheckInViewApp {
             }
             this.renderCardTracker();
         } else if (sectionName === 'season') {
-            // Ensure we have all data loaded for season management display
+            // Season management needs full data
             if (this.teams.length === 0) {
                 await this.loadTeams();
             }
@@ -1028,15 +1074,15 @@ class CheckInViewApp {
                             return 0;
                         })
                         .map(match => {
-                        const homeTeam = this.teams.find(t => t.id === match.homeTeamId);
-                        const awayTeam = this.teams.find(t => t.id === match.awayTeamId);
+                        const homeTeam = this.teamsBasic.find(t => t.id === match.homeTeamId);
+                        const awayTeam = this.teamsBasic.find(t => t.id === match.awayTeamId);
                         const mainReferee = match.mainRefereeId ? this.referees.find(r => r.id === match.mainRefereeId) : null;
                         const assistantReferee = match.assistantRefereeId ? this.referees.find(r => r.id === match.assistantRefereeId) : null;
                         
                         const homeAttendanceCount = match.homeTeamAttendees ? match.homeTeamAttendees.length : 0;
                         const awayAttendanceCount = match.awayTeamAttendees ? match.awayTeamAttendees.length : 0;
-                        const homeTotalPlayers = homeTeam ? homeTeam.members.length : 0;
-                        const awayTotalPlayers = awayTeam ? awayTeam.members.length : 0;
+                        const homeTotalPlayers = homeTeam ? homeTeam.memberCount : 0;
+                        const awayTotalPlayers = awayTeam ? awayTeam.memberCount : 0;
                         
                         // Match status and score display
                         const hasScore = match.homeScore !== null && match.awayScore !== null;
@@ -1080,7 +1126,7 @@ class CheckInViewApp {
                                 ${cardsDisplay ? `<div class="match-cards">Cards: ${cardsDisplay}</div>` : ''}
                                 <div class="match-actions">
                                     <button class="btn btn-small" onclick="app.viewMatch('${event.id}', '${match.id}')" title="View Match">👁️</button>
-                                    <button class="btn btn-small btn-secondary" onclick="app.editMatchResult('${event.id}', '${match.id}')" title="Edit Result">🏆</button>
+                                    <button class="btn btn-small btn-secondary" onclick="(async () => await app.editMatchResult('${event.id}', '${match.id}'))()" title="Edit Result">🏆</button>
                                 </div>
                             </div>
                         `;
@@ -1658,7 +1704,10 @@ class CheckInViewApp {
     async viewMatch(eventId, matchId) {
         this.currentModalType = 'match';
         
-        // Ensure referees are loaded before viewing match
+        // Ensure full team data and referees are loaded for match view
+        if (this.teams.length === 0) {
+            await this.loadTeams(); // Need full team data for check-in interface
+        }
         if (this.referees.length === 0) {
             await this.loadReferees();
         }
@@ -2312,7 +2361,12 @@ class CheckInViewApp {
         }
     }
     
-    editMatchResult(eventId, matchId) {
+    async editMatchResult(eventId, matchId) {
+        // Ensure full team data is loaded for player dropdowns
+        if (this.teams.length === 0) {
+            await this.loadTeams(); // Need full team data for card player selection
+        }
+        
         const event = this.events.find(e => e.id === eventId);
         const match = event.matches.find(m => m.id === matchId);
         const homeTeam = this.teams.find(t => t.id === match.homeTeamId);
