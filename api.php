@@ -8,7 +8,7 @@
 session_start();
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '4.5.1';
+const APP_VERSION = '4.7.1';
 
 // Authentication configuration
 const ADMIN_PASSWORD = 'checkin2024'; // Change this to your desired password
@@ -249,6 +249,13 @@ try {
                     error_log("ALERT: Team save deleted " . ($recordsBeforeTeamSave - $recordsAfterTeamSave) . " disciplinary records!");
                 }
                 error_log("=== TEAM SAVE COMPLETE ===");
+            }
+            break;
+            
+        case 'teams-basic':
+            // Lightweight teams endpoint for performance optimization
+            if ($method === 'GET') {
+                getTeamsBasic($db);
             }
             break;
             
@@ -754,6 +761,39 @@ function getTeams($db) {
     // Don't forget the last team
     if ($currentTeam) {
         $teams[] = $currentTeam;
+    }
+    
+    echo json_encode($teams);
+}
+
+function getTeamsBasic($db) {
+    // Lightweight teams endpoint - only essential data without player photos for performance
+    $stmt = $db->query('
+        SELECT 
+            t.id,
+            t.name,
+            t.category,
+            t.color,
+            t.description,
+            t.captain_id,
+            COUNT(tm.id) as member_count
+        FROM teams t
+        LEFT JOIN team_members tm ON t.id = tm.team_id
+        GROUP BY t.id, t.name, t.category, t.color, t.description, t.captain_id
+        ORDER BY t.name
+    ');
+    
+    $teams = [];
+    while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+        $teams[] = [
+            'id' => $row['id'],
+            'name' => $row['name'],
+            'category' => $row['category'],
+            'colorData' => $row['color'] ?? '#2196F3',
+            'description' => $row['description'],
+            'captainId' => $row['captain_id'],
+            'memberCount' => (int)$row['member_count']
+        ];
     }
     
     echo json_encode($teams);
