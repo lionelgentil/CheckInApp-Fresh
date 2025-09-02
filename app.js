@@ -1629,8 +1629,14 @@ Please check the browser console (F12) for more details.`);
             // 🚀 PERFORMANCE: No more 102KB saveTeams calls!
             console.log('✅ Member saved using optimized granular APIs');
             
-            // Update UI with fresh data
-            await this.loadTeams(); // Refresh from server
+            // 🚀 PHOTO FIX: Don't refresh from server immediately after photo upload
+            // The local data already has the correct photo URL, server refresh can cause timing issues
+            if (!photoFile) {
+                // Only refresh from server if no photo was uploaded
+                await this.loadTeams(); // Refresh from server
+            } else {
+                console.log('📸 Skipping server refresh to preserve uploaded photo data');
+            }
             this.renderTeams();
             
             // Handle modal state
@@ -2143,10 +2149,10 @@ Please check the browser console (F12) for more details.`);
             const disciplinaryResult = await disciplinaryResponse.json();
             console.log('✅ Disciplinary records saved successfully:', disciplinaryResult);
             
-            // If a photo was uploaded, refresh teams data from server to get the latest photo URLs
+            // 🚀 PHOTO FIX: Don't refresh from server immediately after photo upload
+            // The local data already has the correct photo URL, server refresh can cause timing issues
             if (photoFile) {
-                console.log('Refreshing teams data from server after photo upload...');
-                await this.loadTeams();
+                console.log('📸 Skipping server refresh to preserve uploaded photo data in detailed member view');
             }
             
             this.renderTeams();
