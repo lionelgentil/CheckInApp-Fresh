@@ -1438,11 +1438,16 @@ class CheckInViewApp {
     }
     
     renderCardTracker() {
+        console.log('🎯 renderCardTracker called');
         const container = document.getElementById('cards-tracker-container');
         const cardTypeFilter = document.getElementById('card-type-filter')?.value || 'all';
         
+        console.log('📊 Card type filter:', cardTypeFilter);
+        
         // Collect all cards from current season matches
         const cardRecords = this.collectCurrentSeasonCards();
+        
+        console.log('📊 Collected card records:', cardRecords.length);
         
         // Filter by card type if specified
         let filteredCards = cardRecords;
@@ -1450,8 +1455,11 @@ class CheckInViewApp {
             filteredCards = cardRecords.filter(card => card.cardType === cardTypeFilter);
         }
         
+        console.log('📊 Filtered cards:', filteredCards.length);
+        
         if (filteredCards.length === 0) {
             const message = cardTypeFilter === 'all' ? 'No cards issued' : `No ${cardTypeFilter} cards issued`;
+            console.log('📊 No cards to display:', message);
             container.innerHTML = `
                 <div class="empty-state">
                     <h3>${message}</h3>
@@ -1460,6 +1468,8 @@ class CheckInViewApp {
             `;
             return;
         }
+        
+        console.log('📊 Displaying', filteredCards.length, 'cards');
         
         // Sort by date (most recent first), then by team name
         filteredCards.sort((a, b) => {
@@ -1589,10 +1599,18 @@ class CheckInViewApp {
         `;
         
         // Render the charts after the HTML is in place
-        this.renderCardTrackingCharts(cardRecords);
+        setTimeout(() => {
+            // Small delay to ensure DOM elements are ready
+            this.renderCardTrackingCharts(cardRecords);
+        }, 100);
     }
     
     collectCurrentSeasonCards() {
+        console.log('🔍 collectCurrentSeasonCards called');
+        console.log('📊 Available events:', this.events.length);
+        console.log('👥 Available teams:', this.teams.length);
+        console.log('👨‍⚖️ Available referees:', this.referees.length);
+        
         const cardRecords = [];
         
         // Create lookup maps for efficiency
@@ -1603,23 +1621,44 @@ class CheckInViewApp {
         this.referees.forEach(referee => refereeLookup.set(referee.id, referee));
         
         // Process all events and matches
-        this.events.forEach(event => {
+        this.events.forEach((event, eventIndex) => {
+            console.log(`📅 Processing event ${eventIndex + 1}/${this.events.length}: ${event.name} (${event.date})`);
+            
             // Only include current season events
             if (!this.isCurrentSeasonEvent(event.date)) {
+                console.log(`⏭️ Skipping event ${event.name} - not current season`);
                 return;
             }
             
-            event.matches.forEach(match => {
+            console.log(`✅ Event ${event.name} is current season, processing ${event.matches?.length || 0} matches`);
+            
+            if (!event.matches || event.matches.length === 0) {
+                console.log(`⚠️ Event ${event.name} has no matches`);
+                return;
+            }
+            
+            event.matches.forEach((match, matchIndex) => {
+                console.log(`🏆 Processing match ${matchIndex + 1}/${event.matches.length}: ${match.homeTeamId} vs ${match.awayTeamId}`);
+                
                 if (!match.cards || match.cards.length === 0) {
+                    console.log(`⚠️ Match has no cards`);
                     return;
                 }
+                
+                console.log(`🟨🟥 Match has ${match.cards.length} cards`);
                 
                 const homeTeam = teamLookup.get(match.homeTeamId);
                 const awayTeam = teamLookup.get(match.awayTeamId);
                 const mainReferee = refereeLookup.get(match.mainRefereeId);
                 
+                console.log(`🏠 Home team: ${homeTeam?.name || 'Unknown'}`);
+                console.log(`✈️ Away team: ${awayTeam?.name || 'Unknown'}`);
+                console.log(`👨‍⚖️ Referee: ${mainReferee?.name || 'Not recorded'}`);
+                
                 // Process each card in the match
-                match.cards.forEach(card => {
+                match.cards.forEach((card, cardIndex) => {
+                    console.log(`📇 Processing card ${cardIndex + 1}/${match.cards.length}:`, card);
+                    
                     // Determine which team the player belongs to
                     let playerTeam = null;
                     let playerName = 'Unknown Player';
@@ -1642,7 +1681,7 @@ class CheckInViewApp {
                         }
                     }
                     
-                    cardRecords.push({
+                    const cardRecord = {
                         eventDate: event.date,
                         eventName: event.name,
                         matchInfo: `${homeTeam?.name || 'Unknown'} vs ${awayTeam?.name || 'Unknown'}`,
@@ -1653,24 +1692,106 @@ class CheckInViewApp {
                         notes: card.notes,
                         minute: card.minute,
                         refereeName: mainReferee?.name
-                    });
+                    };
+                    
+                    console.log(`✅ Card record created:`, cardRecord);
+                    cardRecords.push(cardRecord);
                 });
             });
         });
         
+        console.log(`🎯 Final result: ${cardRecords.length} card records collected`);
         return cardRecords;
     }
     
+    async waitForChartJsAndRender(cardRecords) {
+        console.log('⏳ Waiting for Chart.js to load...');
+        
+        // Check if Chart.js is already available
+        if (typeof Chart !== 'undefined') {
+            console.log('✅ Chart.js is already loaded');
+            this.renderCardTrackingCharts(cardRecords);
+            return;
+        }
+        
+        // Wait for Chart.js to load with timeout
+        let attempts = 0;
+        const maxAttempts = 50; // 5 seconds max wait
+        
+        const checkForChart = () => {
+            attempts++;
+            console.log(`🔍 Chart.js check attempt ${attempts}/${maxAttempts}`);
+            
+            if (typeof Chart !== 'undefined') {
+                console.log('✅ Chart.js loaded successfully!');
+                this.renderCardTrackingCharts(cardRecords);
+                return;
+            }
+            
+            if (attempts >= maxAttempts) {
+                console.error('❌ Chart.js failed to load after', maxAttempts * 100, 'ms');
+                this.showChartLoadingError();
+                return;
+            }
+            
+            // Try again in 100ms
+            setTimeout(checkForChart, 100);
+        };
+        
+        checkForChart();
+    }
+    
+    showChartLoadingError() {
+        const chartsSection = document.querySelector('.card-charts-section');
+        if (chartsSection) {
+            chartsSection.innerHTML = `
+                <div class="charts-header">
+                    <h3 class="charts-title">📊 Card Statistics & Analytics</h3>
+                    <p class="charts-subtitle" style="color: #dc3545;">Chart.js library failed to load</p>
+                </div>
+                <div style="padding: 20px; text-align: center; color: #dc3545; background: #fff5f5; border-radius: 8px; margin: 20px;">
+                    <p><strong>Charts are temporarily unavailable</strong></p>
+                    <p style="font-size: 0.9em; margin-top: 10px;">The Chart.js library could not be loaded from the CDN.</p>
+                    <p style="font-size: 0.9em;">Please check your internet connection and refresh the page.</p>
+                    <button onclick="window.location.reload()" style="margin-top: 15px; padding: 8px 16px; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                        Reload Page
+                    </button>
+                </div>
+            `;
+        }
+    }
+    
     renderCardTrackingCharts(cardRecords) {
+        console.log('🎯 renderCardTrackingCharts called with', cardRecords.length, 'card records');
+        
+        // Check if Chart.js is available
+        if (typeof Chart === 'undefined') {
+            console.error('Chart.js is not loaded! Cannot render charts.');
+            ['cards-by-date-chart', 'cards-by-team-chart', 'cards-by-reason-chart', 'cards-by-referee-chart'].forEach(chartId => {
+                const canvas = document.getElementById(chartId);
+                if (canvas) {
+                    canvas.parentElement.innerHTML = '<div class="chart-no-data">Chart.js library not loaded - charts unavailable</div>';
+                }
+            });
+            return;
+        }
+        
         // Destroy existing charts if they exist
         if (this.cardCharts) {
             Object.values(this.cardCharts).forEach(chart => {
-                if (chart) chart.destroy();
+                if (chart) {
+                    try {
+                        chart.destroy();
+                    } catch (e) {
+                        console.warn('Error destroying chart:', e);
+                    }
+                }
             });
         }
         this.cardCharts = {};
         
         if (cardRecords.length === 0) {
+            console.log('📊 No card records - showing empty state');
             // Show no data messages for all charts
             ['cards-by-date-chart', 'cards-by-team-chart', 'cards-by-reason-chart', 'cards-by-referee-chart'].forEach(chartId => {
                 const canvas = document.getElementById(chartId);
@@ -1681,17 +1802,39 @@ class CheckInViewApp {
             return;
         }
         
-        // 1. Cards by Match Date Chart
-        this.renderCardsByDateChart(cardRecords);
+        console.log('📊 Rendering charts with card data...');
         
-        // 2. Cards by Team & Division Chart
-        this.renderCardsByTeamChart(cardRecords);
+        try {
+            // 1. Cards by Match Date Chart
+            this.renderCardsByDateChart(cardRecords);
+            console.log('✅ Cards by date chart rendered');
+        } catch (error) {
+            console.error('❌ Error rendering cards by date chart:', error);
+        }
         
-        // 3. Cards by Infraction Reason Chart
-        this.renderCardsByReasonChart(cardRecords);
+        try {
+            // 2. Cards by Team & Division Chart
+            this.renderCardsByTeamChart(cardRecords);
+            console.log('✅ Cards by team chart rendered');
+        } catch (error) {
+            console.error('❌ Error rendering cards by team chart:', error);
+        }
         
-        // 4. Cards by Referee Chart
-        this.renderCardsByRefereeChart(cardRecords);
+        try {
+            // 3. Cards by Infraction Reason Chart
+            this.renderCardsByReasonChart(cardRecords);
+            console.log('✅ Cards by reason chart rendered');
+        } catch (error) {
+            console.error('❌ Error rendering cards by reason chart:', error);
+        }
+        
+        try {
+            // 4. Cards by Referee Chart
+            this.renderCardsByRefereeChart(cardRecords);
+            console.log('✅ Cards by referee chart rendered');
+        } catch (error) {
+            console.error('❌ Error rendering cards by referee chart:', error);
+        }
     }
     
     renderCardsByDateChart(cardRecords) {

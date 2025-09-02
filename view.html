@@ -2070,6 +2070,9 @@
     
     <div class="version-footer">View Only v<span id="footer-version"></span></div>
     
+    <!-- Chart.js for card tracking graphs - load BEFORE app script -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.min.js"></script>
+    
     <script>
         // Dynamic version loading to prevent cache issues
         async function loadApp() {
@@ -2104,8 +2107,5 @@
             loadApp();
         }
     </script>
-    
-    <!-- Chart.js for card tracking graphs -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.min.js"></script>
 </body>
 </html>
