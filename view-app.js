@@ -4,7 +4,7 @@
  */
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '4.4.1';
+const APP_VERSION = '4.5.1';
 
 class CheckInViewApp {
     constructor() {
@@ -342,7 +342,14 @@ class CheckInViewApp {
             throw new Error(result.error || 'Photo upload failed');
         }
         
-        return result.url + '&_t=' + Date.now(); // Add cache-busting timestamp
+        // 🚀 FIX: Don't add cache-busting to base64 data, only to URL endpoints
+        let photoUrl = result.url;
+        if (photoUrl && !photoUrl.startsWith('data:image/')) {
+            // Only add cache-busting to API URLs, not base64 data
+            photoUrl = photoUrl + (photoUrl.includes('?') ? '&' : '?') + '_t=' + Date.now();
+        }
+        
+        return photoUrl;
     }
     
     // Utility method for file conversion (DEPRECATED - keeping for compatibility)
@@ -716,7 +723,10 @@ class CheckInViewApp {
                                 </div>
                             ` : ''}
                             <div class="members-list-full">
-                                ${selectedTeam.members.map(member => {
+                                ${selectedTeam.members
+                                    .slice()
+                                    .sort((a, b) => a.name.localeCompare(b.name))
+                                    .map(member => {
                                     // Count current season cards for this member across current season matches only
                                     let currentSeasonYellowCards = 0;
                                     let currentSeasonRedCards = 0;
@@ -1822,8 +1832,11 @@ class CheckInViewApp {
         // Update info to show total players
         paginationInfo.innerHTML = `${totalPlayers} player${totalPlayers !== 1 ? 's' : ''} • Scroll to find players`;
         
-        // Render all grid items with new structure (no pagination)
-        container.innerHTML = team.members.map(member => {
+        // Render all grid items with new structure (no pagination) - sorted alphabetically
+        container.innerHTML = team.members
+            .slice()
+            .sort((a, b) => a.name.localeCompare(b.name))
+            .map(member => {
             const isCheckedIn = attendees.some(a => a.memberId === member.id);
             
             return `
@@ -2237,8 +2250,14 @@ class CheckInViewApp {
                                 <div style="display: flex; gap: 10px; align-items: center;">
                                     <select class="form-select" style="flex: 1;" data-card-index="${index}" data-field="memberId">
                                         <option value="">Select Player</option>
-                                        ${homeTeam.members.map(m => `<option value="${m.id}" ${card.memberId === m.id ? 'selected' : ''}>${m.name} (${homeTeam.name})</option>`).join('')}
-                                        ${awayTeam.members.map(m => `<option value="${m.id}" ${card.memberId === m.id ? 'selected' : ''}>${m.name} (${awayTeam.name})</option>`).join('')}
+                                        ${homeTeam.members
+                                            .slice()
+                                            .sort((a, b) => a.name.localeCompare(b.name))
+                                            .map(m => `<option value="${m.id}" ${card.memberId === m.id ? 'selected' : ''}>${m.name} (${homeTeam.name})</option>`).join('')}
+                                        ${awayTeam.members
+                                            .slice()
+                                            .sort((a, b) => a.name.localeCompare(b.name))
+                                            .map(m => `<option value="${m.id}" ${card.memberId === m.id ? 'selected' : ''}>${m.name} (${awayTeam.name})</option>`).join('')}
                                     </select>
                                     <select class="form-select" style="width: 120px;" data-card-index="${index}" data-field="cardType">
                                         <option value="yellow" ${card.cardType === 'yellow' ? 'selected' : ''}>🟨 Yellow</option>
@@ -2301,8 +2320,14 @@ class CheckInViewApp {
                 <div style="display: flex; gap: 10px; align-items: center;">
                     <select class="form-select" style="flex: 1;" data-card-index="${newIndex}" data-field="memberId">
                         <option value="">Select Player</option>
-                        ${homeTeam?.members.map(m => `<option value="${m.id}">${m.name} (${homeTeam.name})</option>`).join('') || ''}
-                        ${awayTeam?.members.map(m => `<option value="${m.id}">${m.name} (${awayTeam.name})</option>`).join('') || ''}
+                        ${homeTeam?.members
+                            .slice()
+                            .sort((a, b) => a.name.localeCompare(b.name))
+                            .map(m => `<option value="${m.id}">${m.name} (${homeTeam.name})</option>`).join('') || ''}
+                        ${awayTeam?.members
+                            .slice()
+                            .sort((a, b) => a.name.localeCompare(b.name))
+                            .map(m => `<option value="${m.id}">${m.name} (${awayTeam.name})</option>`).join('') || ''}
                     </select>
                     <select class="form-select" style="width: 120px;" data-card-index="${newIndex}" data-field="cardType">
                         <option value="yellow">🟨 Yellow</option>

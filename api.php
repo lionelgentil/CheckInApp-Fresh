@@ -8,7 +8,7 @@
 session_start();
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '4.5.0';
+const APP_VERSION = '4.5.1';
 
 // Authentication configuration
 const ADMIN_PASSWORD = 'checkin2024'; // Change this to your desired password
@@ -692,7 +692,7 @@ function getTeams($db) {
                 // Photo exists in member_photos table - use base64 data directly
                 $photo = $row['photo_data'];
             } elseif ($row['photo_flag'] && $row['photo_flag'] !== 'has_photo') {
-                // Legacy photo stored in team_members.photo field
+                // Legacy photo stored in team_members.photo field (not the 'has_photo' flag)
                 $photoValue = $row['photo_flag'];
                 
                 // Check if it's already base64 data
@@ -733,6 +733,10 @@ function getTeams($db) {
                     
                     $photo = '/api/photos?filename=' . urlencode($photoValue);
                 }
+            } elseif ($row['photo_flag'] === 'has_photo') {
+                // Member has photo in member_photos table but photo_data was NULL
+                // This shouldn't happen, but fallback to gender default
+                $photo = getDefaultPhoto($row['gender']);
             } else {
                 $photo = getDefaultPhoto($row['gender']);
             }

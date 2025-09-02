@@ -4,7 +4,7 @@
  */
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '4.5.0';
+const APP_VERSION = '4.5.1';
 
 class CheckInApp {
     constructor() {
@@ -477,7 +477,12 @@ class CheckInApp {
             throw new Error(result.error || 'Photo upload failed');
         }
         
-        const photoUrl = result.url + '&_t=' + Date.now(); // Add cache-busting timestamp
+        // 🚀 FIX: Don't add cache-busting to base64 data, only to URL endpoints
+        let photoUrl = result.url;
+        if (photoUrl && !photoUrl.startsWith('data:image/')) {
+            // Only add cache-busting to API URLs, not base64 data
+            photoUrl = photoUrl + (photoUrl.includes('?') ? '&' : '?') + '_t=' + Date.now();
+        }
         
         // 🚀 PHOTO REFRESH FIX: Force refresh all images of this member immediately
         this.forceRefreshMemberPhoto(memberId, photoUrl);
@@ -749,7 +754,10 @@ class CheckInApp {
                                 </div>
                             ` : ''}
                             <div class="members-list-full">
-                                ${selectedTeam.members.map(member => {
+                                ${selectedTeam.members
+                                    .slice() // Create a copy to avoid mutating original array
+                                    .sort((a, b) => a.name.localeCompare(b.name)) // Sort alphabetically by name
+                                    .map(member => {
                                     // Count current season cards for this member across all matches (using new season logic)
                                     let currentYellowCards = 0;
                                     let currentRedCards = 0;
@@ -1319,7 +1327,10 @@ class CheckInApp {
                 <label class="form-label">Team Captain</label>
                 <select class="form-select" id="team-captain">
                     <option value="">Select team captain (optional)</option>
-                    ${team.members.map(member => 
+                    ${team.members
+                        .slice() // Create a copy to avoid mutating original array
+                        .sort((a, b) => a.name.localeCompare(b.name)) // Sort alphabetically by name
+                        .map(member => 
                         `<option value="${member.id}" ${team.captainId === member.id ? 'selected' : ''}>${member.name}</option>`
                     ).join('')}
                 </select>
@@ -1424,7 +1435,10 @@ Please check the browser console (F12) for more details.`);
                 <label class="form-label">Choose Captain for ${team.name} *</label>
                 <select class="form-select" id="captain-select" required>
                     <option value="">Select team captain</option>
-                    ${team.members.map(member => 
+                    ${team.members
+                        .slice() // Create a copy to avoid mutating original array  
+                        .sort((a, b) => a.name.localeCompare(b.name)) // Sort alphabetically by name
+                        .map(member => 
                         `<option value="${member.id}" ${team.captainId === member.id ? 'selected' : ''}>${member.name}${member.jerseyNumber ? ` (#${member.jerseyNumber})` : ''}</option>`
                     ).join('')}
                 </select>
@@ -3718,10 +3732,16 @@ Please check the browser console (F12) for more details.`);
                                             <select class="form-select-mobile" data-card-index="${index}" data-field="memberId">
                                                 <option value="">Select Player</option>
                                                 <optgroup label="${homeTeam.name}">
-                                                    ${homeTeam.members.map(m => `<option value="${m.id}" ${card.memberId === m.id ? 'selected' : ''}>${m.name}</option>`).join('')}
+                                                    ${homeTeam.members
+                                                        .slice()
+                                                        .sort((a, b) => a.name.localeCompare(b.name))
+                                                        .map(m => `<option value="${m.id}" ${card.memberId === m.id ? 'selected' : ''}>${m.name}</option>`).join('')}
                                                 </optgroup>
                                                 <optgroup label="${awayTeam.name}">
-                                                    ${awayTeam.members.map(m => `<option value="${m.id}" ${card.memberId === m.id ? 'selected' : ''}>${m.name}</option>`).join('')}
+                                                    ${awayTeam.members
+                                                        .slice()
+                                                        .sort((a, b) => a.name.localeCompare(b.name))
+                                                        .map(m => `<option value="${m.id}" ${card.memberId === m.id ? 'selected' : ''}>${m.name}</option>`).join('')}
                                                 </optgroup>
                                             </select>
                                         </div>
@@ -3838,12 +3858,18 @@ Please check the browser console (F12) for more details.`);
         } else {
             if (checkedInHomePlayers.length > 0) {
                 playerOptions += `<optgroup label="${homeTeam?.name || 'Home Team'} (${checkedInHomePlayers.length} checked in)">
-                    ${checkedInHomePlayers.map(m => `<option value="${m.id}">${m.name}${m.jerseyNumber ? ` (#${m.jerseyNumber})` : ''}</option>`).join('')}
+                    ${checkedInHomePlayers
+                        .slice()
+                        .sort((a, b) => a.name.localeCompare(b.name))
+                        .map(m => `<option value="${m.id}">${m.name}${m.jerseyNumber ? ` (#${m.jerseyNumber})` : ''}</option>`).join('')}
                 </optgroup>`;
             }
             if (checkedInAwayPlayers.length > 0) {
                 playerOptions += `<optgroup label="${awayTeam?.name || 'Away Team'} (${checkedInAwayPlayers.length} checked in)">
-                    ${checkedInAwayPlayers.map(m => `<option value="${m.id}">${m.name}${m.jerseyNumber ? ` (#${m.jerseyNumber})` : ''}</option>`).join('')}
+                    ${checkedInAwayPlayers
+                        .slice()
+                        .sort((a, b) => a.name.localeCompare(b.name))
+                        .map(m => `<option value="${m.id}">${m.name}${m.jerseyNumber ? ` (#${m.jerseyNumber})` : ''}</option>`).join('')}
                 </optgroup>`;
             }
         }
@@ -4274,8 +4300,11 @@ Please check the browser console (F12) for more details.`);
         // Update info to show total players
         paginationInfo.innerHTML = `${totalPlayers} player${totalPlayers !== 1 ? 's' : ''} • Scroll to find players`;
         
-        // Render all grid items with new structure (no pagination)
-        container.innerHTML = team.members.map(member => {
+        // Render all grid items with new structure (no pagination) - sorted alphabetically
+        container.innerHTML = team.members
+            .slice()
+            .sort((a, b) => a.name.localeCompare(b.name))
+            .map(member => {
             const isCheckedIn = attendees.some(a => a.memberId === member.id);
             
             return `
