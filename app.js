@@ -19,6 +19,9 @@ class CheckInApp {
         this.currentEditingReferee = null;
         this.currentModalType = null; // Track current modal type
         
+        // Chart.js charts storage
+        this.cardCharts = {};
+        
         // Performance optimization: API Cache
         this.apiCache = new Map();
         this.cacheTimeout = 5 * 60 * 1000; // 5 minutes
@@ -760,17 +763,41 @@ class CheckInApp {
             }
             this.renderStandings();
         } else if (sectionName === 'cards') {
-            // Ensure we have all data loaded for card tracking
-            if (this.teams.length === 0) {
-                await this.loadTeams();
+            // Show loading spinner for cards section
+            this.showLoadingModal('Loading all cards for all teams... This can take up to 30 seconds as we analyze every match and player.');
+            
+            try {
+                // Ensure we have all data loaded for card tracking
+                if (this.teams.length === 0) {
+                    await this.loadTeams();
+                }
+                if (this.events.length === 0) {
+                    await this.loadEvents();
+                }
+                if (this.referees.length === 0) {
+                    await this.loadReferees();
+                }
+                
+                // Add a small delay to ensure all data is processed
+                await new Promise(resolve => setTimeout(resolve, 500));
+                
+                this.renderCardTracker();
+                this.closeLoadingModal();
+            } catch (error) {
+                this.closeLoadingModal();
+                console.error('Error loading cards section:', error);
+                // Show error in cards container
+                const container = document.getElementById('cards-tracker-container');
+                if (container) {
+                    container.innerHTML = `
+                        <div style="text-align: center; padding: 40px; color: #dc3545;">
+                            <h3>Error Loading Cards</h3>
+                            <p>Failed to load card data. Please refresh the page and try again.</p>
+                            <p style="font-size: 0.9em; color: #666;">Error: ${error.message}</p>
+                        </div>
+                    `;
+                }
             }
-            if (this.events.length === 0) {
-                await this.loadEvents();
-            }
-            if (this.referees.length === 0) {
-                await this.loadReferees();
-            }
-            this.renderCardTracker();
         } else if (sectionName === 'season') {
             // Ensure we have all data loaded for season management
             if (this.teams.length === 0) {
@@ -2837,11 +2864,16 @@ Please check the browser console (F12) for more details.`);
     }
     
     renderCardTracker() {
+        console.log('🎯 renderCardTracker called');
         const container = document.getElementById('cards-tracker-container');
         const cardTypeFilter = document.getElementById('card-type-filter')?.value || 'all';
         
+        console.log('📊 Card type filter:', cardTypeFilter);
+        
         // Collect all cards from current season matches
         const cardRecords = this.collectCurrentSeasonCards();
+        
+        console.log('📊 Collected card records:', cardRecords.length);
         
         // Filter by card type if specified
         let filteredCards = cardRecords;
@@ -2849,8 +2881,11 @@ Please check the browser console (F12) for more details.`);
             filteredCards = cardRecords.filter(card => card.cardType === cardTypeFilter);
         }
         
+        console.log('📊 Filtered cards:', filteredCards.length);
+        
         if (filteredCards.length === 0) {
             const message = cardTypeFilter === 'all' ? 'No cards issued' : `No ${cardTypeFilter} cards issued`;
+            console.log('📊 No cards to display:', message);
             container.innerHTML = `
                 <div class="empty-state">
                     <h3>${message}</h3>
@@ -2859,6 +2894,8 @@ Please check the browser console (F12) for more details.`);
             `;
             return;
         }
+        
+        console.log('📊 Displaying', filteredCards.length, 'cards');
         
         // Sort by date (most recent first), then by team name
         filteredCards.sort((a, b) => {
@@ -2947,7 +2984,48 @@ Please check the browser console (F12) for more details.`);
                     </div>
                 `).join('')}
             </div>
+            
+            <!-- Card Tracking Charts Section -->
+            <div class="card-charts-section">
+                <div class="charts-header">
+                    <h3 class="charts-title">📊 Card Statistics & Analytics</h3>
+                    <p class="charts-subtitle">Visual analysis of card issuance patterns for the current season</p>
+                </div>
+                
+                <div class="charts-grid">
+                    <div class="chart-container">
+                        <h4 class="chart-title">Cards by Match Date</h4>
+                        <div class="chart-canvas">
+                            <canvas id="cards-by-date-chart"></canvas>
+                        </div>
+                    </div>
+                    
+                    <div class="chart-container">
+                        <h4 class="chart-title">Cards by Team & Division</h4>
+                        <div class="chart-canvas">
+                            <canvas id="cards-by-team-chart"></canvas>
+                        </div>
+                    </div>
+                    
+                    <div class="chart-container">
+                        <h4 class="chart-title">Cards by Infraction Reason</h4>
+                        <div class="chart-canvas">
+                            <canvas id="cards-by-reason-chart"></canvas>
+                        </div>
+                    </div>
+                    
+                    <div class="chart-container">
+                        <h4 class="chart-title">Cards by Referee</h4>
+                        <div class="chart-canvas">
+                            <canvas id="cards-by-referee-chart"></canvas>
+                        </div>
+                    </div>
+                </div>
+            </div>
         `;
+        
+        // Render the charts after the HTML is in place
+        this.waitForChartJsAndRender(cardRecords);
     }
     
     collectCurrentSeasonCards() {
@@ -3017,6 +3095,461 @@ Please check the browser console (F12) for more details.`);
         });
         
         return cardRecords;
+    }
+    
+    // Chart.js rendering methods (from view app)
+    async waitForChartJsAndRender(cardRecords) {
+        console.log('⏳ Waiting for Chart.js to load...');
+        
+        // Check if Chart.js is already available
+        if (typeof Chart !== 'undefined') {
+            console.log('✅ Chart.js is already loaded');
+            this.renderCardTrackingCharts(cardRecords);
+            return;
+        }
+        
+        // Wait for Chart.js to load with timeout
+        let attempts = 0;
+        const maxAttempts = 25; // 2.5 seconds max wait
+        
+        const checkForChart = () => {
+            attempts++;
+            console.log(`🔍 Chart.js check attempt ${attempts}/${maxAttempts}`);
+            
+            if (typeof Chart !== 'undefined') {
+                console.log('✅ Chart.js loaded successfully!');
+                this.renderCardTrackingCharts(cardRecords);
+                return;
+            }
+            
+            if (attempts >= maxAttempts) {
+                console.error('❌ Chart.js failed to load after', maxAttempts * 100, 'ms');
+                this.showChartLoadingError();
+                return;
+            }
+            
+            // Try again in 100ms
+            setTimeout(checkForChart, 100);
+        };
+        
+        checkForChart();
+    }
+    
+    showChartLoadingError() {
+        const chartsSection = document.querySelector('.card-charts-section');
+        if (chartsSection) {
+            chartsSection.innerHTML = `
+                <div class="charts-header">
+                    <h3 class="charts-title">📊 Card Statistics & Analytics</h3>
+                    <p class="charts-subtitle" style="color: #dc3545;">Chart.js library failed to load</p>
+                </div>
+                <div style="padding: 20px; text-align: center; color: #dc3545; background: #fff5f5; border-radius: 8px; margin: 20px;">
+                    <p><strong>Charts are temporarily unavailable</strong></p>
+                    <p style="font-size: 0.9em; margin-top: 10px;">The Chart.js library could not be loaded from the CDN.</p>
+                    <p style="font-size: 0.9em;">Please check your internet connection and refresh the page.</p>
+                    <button onclick="window.location.reload()" style="margin-top: 15px; padding: 8px 16px; background: #dc3545; color: white; border: none; border-radius: 4px; cursor: pointer;">
+                        Reload Page
+                    </button>
+                </div>
+            `;
+        }
+    }
+    
+    renderCardTrackingCharts(cardRecords) {
+        console.log('🎯 renderCardTrackingCharts called with', cardRecords.length, 'card records');
+        
+        // Check if charts are globally disabled
+        if (window.chartsDisabled) {
+            console.log('📊 Charts are disabled globally');
+            ['cards-by-date-chart', 'cards-by-team-chart', 'cards-by-reason-chart', 'cards-by-referee-chart'].forEach(chartId => {
+                const canvas = document.getElementById(chartId);
+                if (canvas) {
+                    canvas.parentElement.innerHTML = '<div class="chart-no-data">Charts temporarily unavailable - Chart.js library failed to load</div>';
+                }
+            });
+            return;
+        }
+        
+        // Check if Chart.js is available
+        if (typeof Chart === 'undefined') {
+            console.error('Chart.js is not loaded! Cannot render charts.');
+            ['cards-by-date-chart', 'cards-by-team-chart', 'cards-by-reason-chart', 'cards-by-referee-chart'].forEach(chartId => {
+                const canvas = document.getElementById(chartId);
+                if (canvas) {
+                    canvas.parentElement.innerHTML = '<div class="chart-no-data">Chart.js library not loaded - charts unavailable</div>';
+                }
+            });
+            return;
+        }
+        
+        // Destroy existing charts if they exist
+        if (this.cardCharts) {
+            Object.values(this.cardCharts).forEach(chart => {
+                if (chart) {
+                    try {
+                        chart.destroy();
+                    } catch (e) {
+                        console.warn('Error destroying chart:', e);
+                    }
+                }
+            });
+        }
+        this.cardCharts = {};
+        
+        if (cardRecords.length === 0) {
+            console.log('📊 No card records - showing empty state');
+            // Show no data messages for all charts
+            ['cards-by-date-chart', 'cards-by-team-chart', 'cards-by-reason-chart', 'cards-by-referee-chart'].forEach(chartId => {
+                const canvas = document.getElementById(chartId);
+                if (canvas) {
+                    canvas.parentElement.innerHTML = '<div class="chart-no-data">No card data available for the current season</div>';
+                }
+            });
+            return;
+        }
+        
+        console.log('📊 Rendering charts with card data...');
+        
+        try {
+            // 1. Cards by Match Date Chart
+            this.renderCardsByDateChart(cardRecords);
+            console.log('✅ Cards by date chart rendered');
+        } catch (error) {
+            console.error('❌ Error rendering cards by date chart:', error);
+        }
+        
+        try {
+            // 2. Cards by Team & Division Chart
+            this.renderCardsByTeamChart(cardRecords);
+            console.log('✅ Cards by team chart rendered');
+        } catch (error) {
+            console.error('❌ Error rendering cards by team chart:', error);
+        }
+        
+        try {
+            // 3. Cards by Infraction Reason Chart
+            this.renderCardsByReasonChart(cardRecords);
+            console.log('✅ Cards by reason chart rendered');
+        } catch (error) {
+            console.error('❌ Error rendering cards by reason chart:', error);
+        }
+        
+        try {
+            // 4. Cards by Referee Chart
+            this.renderCardsByRefereeChart(cardRecords);
+            console.log('✅ Cards by referee chart rendered');
+        } catch (error) {
+            console.error('❌ Error rendering cards by referee chart:', error);
+        }
+    }
+    
+    renderCardsByDateChart(cardRecords) {
+        const canvas = document.getElementById('cards-by-date-chart');
+        if (!canvas) return;
+        
+        // Group cards by date and card type
+        const dateGroups = {};
+        cardRecords.forEach(card => {
+            const date = new Date(card.eventDate).toLocaleDateString();
+            if (!dateGroups[date]) {
+                dateGroups[date] = { yellow: 0, red: 0 };
+            }
+            dateGroups[date][card.cardType]++;
+        });
+        
+        // Sort dates chronologically
+        const sortedDates = Object.keys(dateGroups).sort((a, b) => new Date(a) - new Date(b));
+        const yellowData = sortedDates.map(date => dateGroups[date].yellow);
+        const redData = sortedDates.map(date => dateGroups[date].red);
+        
+        this.cardCharts.byDate = new Chart(canvas, {
+            type: 'bar',
+            data: {
+                labels: sortedDates,
+                datasets: [
+                    {
+                        label: 'Yellow Cards',
+                        data: yellowData,
+                        backgroundColor: '#ffc107',
+                        borderColor: '#ffb000',
+                        borderWidth: 1
+                    },
+                    {
+                        label: 'Red Cards',
+                        data: redData,
+                        backgroundColor: '#dc3545',
+                        borderColor: '#c82333',
+                        borderWidth: 1
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'top'
+                    }
+                },
+                scales: {
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Match Date'
+                        }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Number of Cards'
+                        },
+                        ticks: {
+                            stepSize: 1
+                        }
+                    }
+                }
+            }
+        });
+    }
+    
+    renderCardsByTeamChart(cardRecords) {
+        const canvas = document.getElementById('cards-by-team-chart');
+        if (!canvas) return;
+        
+        // Group cards by team and card type
+        const teamGroups = {};
+        cardRecords.forEach(card => {
+            const team = this.teams.find(t => t.name === card.teamName);
+            const teamKey = team ? `${card.teamName} (${team.category || 'No Division'})` : card.teamName;
+            
+            if (!teamGroups[teamKey]) {
+                teamGroups[teamKey] = { yellow: 0, red: 0 };
+            }
+            teamGroups[teamKey][card.cardType]++;
+        });
+        
+        // Sort teams by total cards (descending)
+        const sortedTeams = Object.keys(teamGroups).sort((a, b) => {
+            const totalA = teamGroups[a].yellow + teamGroups[a].red;
+            const totalB = teamGroups[b].yellow + teamGroups[b].red;
+            return totalB - totalA;
+        });
+        
+        const yellowData = sortedTeams.map(team => teamGroups[team].yellow);
+        const redData = sortedTeams.map(team => teamGroups[team].red);
+        
+        this.cardCharts.byTeam = new Chart(canvas, {
+            type: 'bar',
+            data: {
+                labels: sortedTeams,
+                datasets: [
+                    {
+                        label: 'Yellow Cards',
+                        data: yellowData,
+                        backgroundColor: '#ffc107',
+                        borderColor: '#ffb000',
+                        borderWidth: 1
+                    },
+                    {
+                        label: 'Red Cards',
+                        data: redData,
+                        backgroundColor: '#dc3545',
+                        borderColor: '#c82333',
+                        borderWidth: 1
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'top'
+                    }
+                },
+                scales: {
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Team (Division)'
+                        },
+                        ticks: {
+                            maxRotation: 45,
+                            minRotation: 45
+                        }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Number of Cards'
+                        },
+                        ticks: {
+                            stepSize: 1
+                        }
+                    }
+                }
+            }
+        });
+    }
+    
+    renderCardsByReasonChart(cardRecords) {
+        const canvas = document.getElementById('cards-by-reason-chart');
+        if (!canvas) return;
+        
+        // Group cards by reason and card type
+        const reasonGroups = {};
+        cardRecords.forEach(card => {
+            const reason = card.reason || 'Not specified';
+            if (!reasonGroups[reason]) {
+                reasonGroups[reason] = { yellow: 0, red: 0 };
+            }
+            reasonGroups[reason][card.cardType]++;
+        });
+        
+        // Sort reasons by total cards (descending)
+        const sortedReasons = Object.keys(reasonGroups).sort((a, b) => {
+            const totalA = reasonGroups[a].yellow + reasonGroups[a].red;
+            const totalB = reasonGroups[b].yellow + reasonGroups[b].red;
+            return totalB - totalA;
+        });
+        
+        const yellowData = sortedReasons.map(reason => reasonGroups[reason].yellow);
+        const redData = sortedReasons.map(reason => reasonGroups[reason].red);
+        
+        this.cardCharts.byReason = new Chart(canvas, {
+            type: 'bar',
+            data: {
+                labels: sortedReasons,
+                datasets: [
+                    {
+                        label: 'Yellow Cards',
+                        data: yellowData,
+                        backgroundColor: '#ffc107',
+                        borderColor: '#ffb000',
+                        borderWidth: 1
+                    },
+                    {
+                        label: 'Red Cards',
+                        data: redData,
+                        backgroundColor: '#dc3545',
+                        borderColor: '#c82333',
+                        borderWidth: 1
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'top'
+                    }
+                },
+                scales: {
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Infraction Reason'
+                        },
+                        ticks: {
+                            maxRotation: 45,
+                            minRotation: 45
+                        }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Number of Cards'
+                        },
+                        ticks: {
+                            stepSize: 1
+                        }
+                    }
+                }
+            }
+        });
+    }
+    
+    renderCardsByRefereeChart(cardRecords) {
+        const canvas = document.getElementById('cards-by-referee-chart');
+        if (!canvas) return;
+        
+        // Group cards by referee and card type
+        const refereeGroups = {};
+        cardRecords.forEach(card => {
+            const referee = card.refereeName || 'Not recorded';
+            if (!refereeGroups[referee]) {
+                refereeGroups[referee] = { yellow: 0, red: 0 };
+            }
+            refereeGroups[referee][card.cardType]++;
+        });
+        
+        // Sort referees by total cards (descending)
+        const sortedReferees = Object.keys(refereeGroups).sort((a, b) => {
+            const totalA = refereeGroups[a].yellow + refereeGroups[a].red;
+            const totalB = refereeGroups[b].yellow + refereeGroups[b].red;
+            return totalB - totalA;
+        });
+        
+        const yellowData = sortedReferees.map(referee => refereeGroups[referee].yellow);
+        const redData = sortedReferees.map(referee => refereeGroups[referee].red);
+        
+        this.cardCharts.byReferee = new Chart(canvas, {
+            type: 'bar',
+            data: {
+                labels: sortedReferees,
+                datasets: [
+                    {
+                        label: 'Yellow Cards',
+                        data: yellowData,
+                        backgroundColor: '#ffc107',
+                        borderColor: '#ffb000',
+                        borderWidth: 1
+                    },
+                    {
+                        label: 'Red Cards',
+                        data: redData,
+                        backgroundColor: '#dc3545',
+                        borderColor: '#c82333',
+                        borderWidth: 1
+                    }
+                ]
+            },
+            options: {
+                responsive: true,
+                maintainAspectRatio: false,
+                plugins: {
+                    legend: {
+                        position: 'top'
+                    }
+                },
+                scales: {
+                    x: {
+                        title: {
+                            display: true,
+                            text: 'Referee'
+                        },
+                        ticks: {
+                            maxRotation: 45,
+                            minRotation: 45
+                        }
+                    },
+                    y: {
+                        beginAtZero: true,
+                        title: {
+                            display: true,
+                            text: 'Number of Cards'
+                        },
+                        ticks: {
+                            stepSize: 1
+                        }
+                    }
+                }
+            }
+        });
     }
     
     // Season Management Methods
