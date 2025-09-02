@@ -1,10 +1,10 @@
 /**
- * CheckIn App v4.7.3 - JavaScript Frontend
+ * CheckIn App v4.7.4 - JavaScript Frontend
  * Works with PHP/PostgreSQL backend
  */
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '4.7.3';
+const APP_VERSION = '4.7.4';
 
 class CheckInApp {
     constructor() {
@@ -4275,7 +4275,7 @@ Please check the browser console (F12) for more details.`);
         this.currentModalType = 'match';
         
         // LOADING SPINNER: Show loading modal immediately
-        this.showLoadingModal('Loading match details...');
+        this.showLoadingModal('Loading players and their pictures... (this can take several seconds)');
         
         // Declare variables outside try block to fix scoping issue
         let event, match, homeTeam, awayTeam, mainReferee, assistantReferee;

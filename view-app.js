@@ -1,10 +1,10 @@
 /**
- * CheckIn App v4.7.3 - View Only Mode
+ * CheckIn App v4.7.4 - View Only Mode
  * Read-only version for public viewing
  */
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '4.7.3';
+const APP_VERSION = '4.7.4';
 
 class CheckInViewApp {
     constructor() {
@@ -1751,22 +1751,29 @@ class CheckInViewApp {
     async viewMatch(eventId, matchId) {
         this.currentModalType = 'match';
         
-        const event = this.events.find(e => e.id === eventId);
-        const match = event.matches.find(m => m.id === matchId);
+        // LOADING SPINNER: Show loading modal immediately
+        this.showLoadingModal('Loading players and their pictures... (this can take several seconds)');
         
-        // Load only the specific teams needed for this match (performance optimization)
-        const requiredTeamIds = [match.homeTeamId, match.awayTeamId];
-        const matchTeams = await this.loadSpecificTeams(requiredTeamIds);
-        const homeTeam = matchTeams.find(t => t.id === match.homeTeamId);
-        const awayTeam = matchTeams.find(t => t.id === match.awayTeamId);
+        // Declare variables outside try block to fix scoping issue
+        let event, match, homeTeam, awayTeam, mainReferee, assistantReferee;
         
-        // Load referees if needed
-        if (this.referees.length === 0) {
-            await this.loadReferees();
-        }
-        
-        const mainReferee = match.mainRefereeId ? this.referees.find(r => r.id === match.mainRefereeId) : null;
-        const assistantReferee = match.assistantRefereeId ? this.referees.find(r => r.id === match.assistantRefereeId) : null;
+        try {
+            event = this.events.find(e => e.id === eventId);
+            match = event.matches.find(m => m.id === matchId);
+            
+            // Load only the specific teams needed for this match (performance optimization)
+            const requiredTeamIds = [match.homeTeamId, match.awayTeamId];
+            const matchTeams = await this.loadSpecificTeams(requiredTeamIds);
+            homeTeam = matchTeams.find(t => t.id === match.homeTeamId);
+            awayTeam = matchTeams.find(t => t.id === match.awayTeamId);
+            
+            // Load referees if needed
+            if (this.referees.length === 0) {
+                await this.loadReferees();
+            }
+            
+            mainReferee = match.mainRefereeId ? this.referees.find(r => r.id === match.mainRefereeId) : null;
+            assistantReferee = match.assistantRefereeId ? this.referees.find(r => r.id === match.assistantRefereeId) : null;
         
         // Match status display
         const statusMap = {
@@ -1875,10 +1882,19 @@ class CheckInViewApp {
             </div>
         `, 'checkin-modal');
         
+        // LOADING SPINNER: Close loading modal before showing the main modal
+        this.closeLoadingModal();
+        
         document.body.appendChild(modal);
         
         // Initialize the check-in interface
         this.initializeCheckInInterface(eventId, matchId, homeTeam, awayTeam, match);
+        
+        } catch (error) {
+            console.error('Error in viewMatch:', error);
+            this.closeLoadingModal();
+            alert('Failed to load match details. Please try again.');
+        }
     }
     
     // New helper functions for mobile check-in interface
@@ -2961,6 +2977,70 @@ class CheckInViewApp {
         });
         
         return modal;
+    }
+    
+    // LOADING SPINNER: Show loading modal
+    showLoadingModal(message = 'Loading...') {
+        // Remove any existing loading modal first
+        this.closeLoadingModal();
+        
+        const loadingModal = document.createElement('div');
+        loadingModal.id = 'loading-modal';
+        loadingModal.style.cssText = `
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.5);
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            z-index: 20000;
+            backdrop-filter: blur(2px);
+        `;
+        
+        loadingModal.innerHTML = `
+            <div style="
+                background: white;
+                border-radius: 12px;
+                padding: 30px;
+                text-align: center;
+                box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+                min-width: 200px;
+            ">
+                <div style="
+                    width: 40px;
+                    height: 40px;
+                    border: 4px solid #f3f3f3;
+                    border-top: 4px solid #2196F3;
+                    border-radius: 50%;
+                    animation: spin 1s linear infinite;
+                    margin: 0 auto 15px auto;
+                "></div>
+                <div style="
+                    color: #333;
+                    font-size: 16px;
+                    font-weight: 500;
+                ">${message}</div>
+            </div>
+            <style>
+                @keyframes spin {
+                    0% { transform: rotate(0deg); }
+                    100% { transform: rotate(360deg); }
+                }
+            </style>
+        `;
+        
+        document.body.appendChild(loadingModal);
+    }
+    
+    // LOADING SPINNER: Close loading modal
+    closeLoadingModal() {
+        const loadingModal = document.getElementById('loading-modal');
+        if (loadingModal) {
+            loadingModal.remove();
+        }
     }
     
     closeModal() {
