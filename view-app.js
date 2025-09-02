@@ -1871,11 +1871,11 @@ class CheckInViewApp {
                 
                 <!-- Team Toggle - Compact Design -->
                 <div class="team-toggle-compact">
-                    <button class="team-toggle-btn active" id="home-toggle" onclick="app.toggleGridTeam('home')" style="background-color: ${homeTeam.colorData}">
+                    <button class="team-toggle-btn active" id="home-toggle" onclick="app.toggleGridTeam('home')" style="border-left: 4px solid ${homeTeam.colorData};">
                         <span class="team-name">${homeTeam.name}</span>
                         <span class="attendance-count" id="home-attendance-count">0/0</span>
                     </button>
-                    <button class="team-toggle-btn" id="away-toggle" onclick="app.toggleGridTeam('away')" style="background-color: ${awayTeam.colorData}">
+                    <button class="team-toggle-btn" id="away-toggle" onclick="app.toggleGridTeam('away')" style="border-left: 4px solid ${awayTeam.colorData};">
                         <span class="team-name">${awayTeam.name}</span>
                         <span class="attendance-count" id="away-attendance-count">0/0</span>
                     </button>
