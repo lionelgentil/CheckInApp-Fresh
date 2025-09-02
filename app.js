@@ -767,7 +767,9 @@ class CheckInApp {
     
     renderTeams() {
         const container = document.getElementById('teams-container');
-        const selectedTeamId = document.getElementById('team-selector')?.value;
+        // TEAMS BUG FIX: Don't read from existing team-selector to avoid cross-section state pollution
+        // Instead, always render all teams by default for Teams Management section
+        const selectedTeamId = null; // Always start fresh in Teams section
         
         // Get all teams and sort alphabetically
         let teamsToShow = this.teams.slice(); // Create a copy
@@ -783,171 +785,88 @@ class CheckInApp {
             return;
         }
         
-        // Create team selector dropdown with categories
-        let selectorHtml = `
-            <div class="team-selector-container">
-                <label class="form-label">Select a team to view roster:</label>
-                <select id="team-selector" class="form-select" onchange="app.renderTeams()">
-                    <option value="">Choose a team...</option>
-                    ${(() => {
-                        const over30Teams = teamsToShow.filter(team => team.category === 'Over 30');
-                        const over40Teams = teamsToShow.filter(team => team.category === 'Over 40');
-                        
-                        let optionsHtml = '';
-                        
-                        if (over30Teams.length > 0) {
-                            optionsHtml += '<optgroup label="Over 30 Teams">';
-                            over30Teams.forEach(team => {
-                                optionsHtml += `<option value="${team.id}" ${selectedTeamId === team.id ? 'selected' : ''}>${team.name} - ${team.members.length} players</option>`;
-                            });
-                            optionsHtml += '</optgroup>';
-                        }
-                        
-                        if (over40Teams.length > 0) {
-                            optionsHtml += '<optgroup label="Over 40 Teams">';
-                            over40Teams.forEach(team => {
-                                optionsHtml += `<option value="${team.id}" ${selectedTeamId === team.id ? 'selected' : ''}>${team.name} - ${team.members.length} players</option>`;
-                            });
-                            optionsHtml += '</optgroup>';
-                        }
-                        
-                        return optionsHtml;
-                    })()}
-                </select>
-            </div>
-        `;
-        
-        // Show selected team details
-        if (selectedTeamId) {
-            const selectedTeam = this.teams.find(team => team.id === selectedTeamId);
-            if (selectedTeam) {
-                const captain = selectedTeam.captainId ? selectedTeam.members.find(m => m.id === selectedTeam.captainId) : null;
-                
-                // Calculate roster statistics
-                const totalPlayers = selectedTeam.members.length;
-                const maleCount = selectedTeam.members.filter(m => m.gender === 'male').length;
-                const femaleCount = selectedTeam.members.filter(m => m.gender === 'female').length;
-                const unknownCount = totalPlayers - maleCount - femaleCount;
-                
-                // Calculate team-wide card statistics
-                let teamCurrentSeasonYellow = 0;
-                let teamCurrentSeasonRed = 0;
-                let teamLifetimeYellow = 0; // Will be updated when lifetime cards load
-                let teamLifetimeRed = 0;     // Will be updated when lifetime cards load
-                
-                selectedTeam.members.forEach(member => {
-                    this.events.forEach(event => {
-                        // Only count cards from current season events
-                        if (this.isCurrentSeasonEvent(event.date)) {
-                            event.matches.forEach(match => {
-                                if (match.cards) {
-                                    const memberCards = match.cards.filter(card => card.memberId === member.id);
-                                    teamCurrentSeasonYellow += memberCards.filter(card => card.cardType === 'yellow').length;
-                                    teamCurrentSeasonRed += memberCards.filter(card => card.cardType === 'red').length;
-                                }
-                            });
-                        }
+        // TEAMS BUG FIX: Always show ALL teams as cards in Teams Management section
+        // No dropdown selector needed - just display team cards with basic info and actions
+        const teamsHtml = `
+            <div class="teams-grid">
+                ${teamsToShow.map(team => {
+                    const captain = team.captainId ? team.members.find(m => m.id === team.captainId) : null;
+                    
+                    // Calculate basic team stats
+                    const totalPlayers = team.members.length;
+                    const maleCount = team.members.filter(m => m.gender === 'male').length;
+                    const femaleCount = team.members.filter(m => m.gender === 'female').length;
+                    
+                    // Calculate current season cards for team
+                    let teamCurrentSeasonYellow = 0;
+                    let teamCurrentSeasonRed = 0;
+                    
+                    team.members.forEach(member => {
+                        this.events.forEach(event => {
+                            if (this.isCurrentSeasonEvent(event.date)) {
+                                event.matches.forEach(match => {
+                                    if (match.cards) {
+                                        const memberCards = match.cards.filter(card => card.memberId === member.id);
+                                        teamCurrentSeasonYellow += memberCards.filter(card => card.cardType === 'yellow').length;
+                                        teamCurrentSeasonRed += memberCards.filter(card => card.cardType === 'red').length;
+                                    }
+                                });
+                            }
+                        });
                     });
-                });
-                
-                selectorHtml += `
-                    <div class="selected-team-container">
-                        <div class="team-card-full" style="border-left-color: ${selectedTeam.colorData}">
+                    
+                    return `
+                        <div class="team-card" style="border-left-color: ${team.colorData || '#2196F3'}">
                             <div class="team-header">
                                 <div>
-                                    <div class="team-name">${selectedTeam.name}</div>
-                                    <div class="team-category">${selectedTeam.category || ''}</div>
+                                    <div class="team-name">${team.name}</div>
+                                    <div class="team-category">${team.category || ''}</div>
                                     ${captain ? `<div class="team-captain">👑 Captain: ${captain.name}</div>` : ''}
                                 </div>
                                 <div class="team-actions">
-                                    <button class="btn btn-small" onclick="app.showAddMemberModal('${selectedTeam.id}')" title="Add Member">+</button>
-                                    ${selectedTeam.members.length > 0 ? `<button class="btn btn-small btn-captain" onclick="app.showCaptainModal('${selectedTeam.id}')" title="Set Captain">👑</button>` : ''}
-                                    <button class="btn btn-small btn-secondary" onclick="app.editTeam('${selectedTeam.id}')" title="Edit Team">✏️</button>
-                                    <button class="btn btn-small btn-danger" onclick="app.deleteTeam('${selectedTeam.id}')" title="Delete Team">🗑️</button>
+                                    <button class="btn btn-small" onclick="app.showAddMemberModal('${team.id}')" title="Add Member">+</button>
+                                    ${team.members.length > 0 ? `<button class="btn btn-small btn-captain" onclick="app.showCaptainModal('${team.id}')" title="Set Captain">👑</button>` : ''}
+                                    <button class="btn btn-small btn-secondary" onclick="app.editTeam('${team.id}')" title="Edit Team">✏️</button>
+                                    <button class="btn btn-small btn-danger" onclick="app.deleteTeam('${team.id}')" title="Delete Team">🗑️</button>
                                 </div>
                             </div>
-                            <div class="team-description">${selectedTeam.description || ''}</div>
-                            ${totalPlayers > 0 ? `
-                                <div class="roster-stats" style="margin: 12px 0; padding: 10px; background: #f8f9fa; border-radius: 6px; font-size: 0.9em; color: #666;">
-                                    <div style="margin-bottom: 6px;"><strong>👥 ${totalPlayers} player${totalPlayers !== 1 ? 's' : ''}</strong></div>
-                                    ${maleCount > 0 || femaleCount > 0 ? `
-                                        <div style="margin-bottom: 6px;">👨 ${maleCount} male${maleCount !== 1 ? 's' : ''} • 👩 ${femaleCount} female${femaleCount !== 1 ? 's' : ''} ${unknownCount > 0 ? `• ❓ ${unknownCount} unspecified` : ''}</div>
-                                    ` : ''}
-                                    <div id="team-card-stats-${selectedTeam.id}" style="margin-bottom: 3px;">
-                                        <strong>📋 Team Cards:</strong> 
-                                        ${teamCurrentSeasonYellow + teamCurrentSeasonRed > 0 ? `🟨${teamCurrentSeasonYellow} 🟥${teamCurrentSeasonRed} (current season)` : 'No current season cards'}
-                                        <span id="team-lifetime-stats-${selectedTeam.id}"> • Loading disciplinary records...</span>
-                                    </div>
-                                </div>
-                            ` : ''}
-                            <div class="members-list-full">
-                                ${selectedTeam.members
-                                    .slice() // Create a copy to avoid mutating original array
-                                    .sort((a, b) => a.name.localeCompare(b.name)) // Sort alphabetically by name
-                                    .map(member => {
-                                    // Count current season cards for this member across all matches (using new season logic)
-                                    let currentYellowCards = 0;
-                                    let currentRedCards = 0;
-                                    
-                                    this.events.forEach(event => {
-                                        // Only count cards from current season events
-                                        if (this.isCurrentSeasonEvent(event.date)) {
-                                            event.matches.forEach(match => {
-                                                if (match.cards) {
-                                                    const memberCards = match.cards.filter(card => card.memberId === member.id);
-                                                    currentYellowCards += memberCards.filter(card => card.cardType === 'yellow').length;
-                                                    currentRedCards += memberCards.filter(card => card.cardType === 'red').length;
-                                                }
-                                            });
-                                        }
-                                    });
-                                    
-                                    // Note: Lifetime cards will be fetched asynchronously and updated via DOM manipulation
-                                    // This is a placeholder that will be updated once the disciplinary records are loaded
-                                    const currentCardsDisplay = [];
-                                    if (currentYellowCards > 0) currentCardsDisplay.push(`🟨${currentYellowCards}`);
-                                    if (currentRedCards > 0) currentCardsDisplay.push(`🟥${currentRedCards}`);
-                                    const currentCardsText = currentCardsDisplay.length > 0 ? ` • ${currentCardsDisplay.join(' ')} (current season)` : '';
-                                    
-                                    return `
+                            
+                            ${team.description ? `<div style="margin-bottom: 12px; color: #666; font-size: 0.9em;">${team.description}</div>` : ''}
+                            
+                            <div style="margin-bottom: 15px; padding: 10px; background: #f8f9fa; border-radius: 6px; font-size: 0.9em; color: #666;">
+                                <div><strong>👥 ${totalPlayers} player${totalPlayers !== 1 ? 's' : ''}</strong></div>
+                                ${maleCount > 0 || femaleCount > 0 ? `<div>👨 ${maleCount} • 👩 ${femaleCount}</div>` : ''}
+                                <div><strong>📋 Current Season:</strong> ${teamCurrentSeasonYellow + teamCurrentSeasonRed > 0 ? `🟨${teamCurrentSeasonYellow} 🟥${teamCurrentSeasonRed}` : 'No cards'}</div>
+                            </div>
+                            
+                            <div class="members-list">
+                                ${team.members.length > 0 ? team.members
+                                    .slice(0, 5) // Show first 5 members
+                                    .map(member => `
                                         <div class="member-item">
                                             <div class="member-info">
                                                 ${this.getLazyImageHtml(member, 'member-photo')}
                                                 <div class="member-details">
-                                                    <div class="member-name">${member.name}${member.id === selectedTeam.captainId ? ' 👑' : ''}</div>
-                                                    <div class="member-meta" id="member-meta-${member.id}">
-                                                        ${member.jerseyNumber ? `#${member.jerseyNumber}` : ''}
-                                                        ${member.gender ? ` • ${member.gender}` : ''}
-                                                        ${currentCardsText}
-                                                        <span class="lifetime-cards" id="lifetime-cards-${member.id}"> • Loading disciplinary records...</span>
-                                                    </div>
+                                                    <div class="member-name">${member.name}${member.id === team.captainId ? ' 👑' : ''}</div>
+                                                    <div class="member-meta">${member.jerseyNumber ? `#${member.jerseyNumber}` : ''}${member.gender ? ` • ${member.gender}` : ''}</div>
                                                 </div>
                                             </div>
                                             <div class="member-actions">
-                                                <button class="btn btn-small" onclick="app.viewPlayerProfile('${selectedTeam.id}', '${member.id}')" title="View Profile">👤</button>
-                                                <button class="btn btn-small btn-secondary" onclick="app.editMember('${selectedTeam.id}', '${member.id}')" title="Edit Member">✏️</button>
-                                                <button class="btn btn-small btn-danger" onclick="app.deleteMember('${selectedTeam.id}', '${member.id}')" title="Delete Member">🗑️</button>
+                                                <button class="btn btn-small" onclick="app.viewPlayerProfile('${team.id}', '${member.id}')" title="View Profile">👤</button>
+                                                <button class="btn btn-small btn-secondary" onclick="app.editMember('${team.id}', '${member.id}')" title="Edit Member">✏️</button>
+                                                <button class="btn btn-small btn-danger" onclick="app.deleteMember('${team.id}', '${member.id}')" title="Delete Member">🗑️</button>
                                             </div>
                                         </div>
-                                    `;
-                                }).join('')}
-                                ${selectedTeam.members.length === 0 ? '<div class="empty-state"><p>No members yet</p></div>' : ''}
+                                    `).join('') : '<div class="empty-state"><p>No members yet</p></div>'}
+                                ${team.members.length > 5 ? `<div style="text-align: center; padding: 10px; color: #666; font-style: italic;">... and ${team.members.length - 5} more player${team.members.length - 5 !== 1 ? 's' : ''}</div>` : ''}
                             </div>
                         </div>
-                    </div>
-                `;
-            }
-        }
-        
-        container.innerHTML = selectorHtml;
-        
-        // Load lifetime disciplinary records for displayed team members
-        if (selectedTeamId) {
-            const selectedTeam = this.teams.find(team => team.id === selectedTeamId);
-            if (selectedTeam && selectedTeam.members.length > 0) {
-                this.loadLifetimeCardsForTeam(selectedTeam);
-            }
-        }
+                    `;
+                }).join('')}
+            </div>
+        `;
+
+        container.innerHTML = teamsHtml;
         
         // 🚀 PERFORMANCE: Initialize lazy loading for newly rendered images
         this.initializeLazyImages(container);
