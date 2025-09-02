@@ -1,10 +1,10 @@
 /**
- * CheckIn App v4.7.1 - View Only Mode
+ * CheckIn App v4.7.2 - View Only Mode
  * Read-only version for public viewing
  */
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '4.7.1';
+const APP_VERSION = '4.7.2';
 
 class CheckInViewApp {
     constructor() {
@@ -129,6 +129,55 @@ class CheckInViewApp {
         } catch (error) {
             console.error('Error loading teams:', error);
             this.teams = [];
+        }
+    }
+    
+    // Load only specific teams for performance optimization
+    async loadSpecificTeams(teamIds) {
+        if (!teamIds || teamIds.length === 0) return [];
+        
+        try {
+            // Check if we already have these teams loaded
+            const missingTeamIds = teamIds.filter(teamId => 
+                !this.teams.some(t => t.id === teamId)
+            );
+            
+            if (missingTeamIds.length === 0) {
+                // All teams already loaded
+                console.log(`✅ All teams already loaded: ${teamIds.join(', ')}`);
+                return teamIds.map(teamId => this.teams.find(t => t.id === teamId));
+            }
+            
+            // Load only the missing teams using the new endpoint
+            console.log(`🎯 Loading specific teams: ${missingTeamIds.join(', ')}`);
+            const response = await fetch(`/api/teams-specific?ids=${missingTeamIds.join(',')}&_t=${Date.now()}`);
+            
+            if (response.ok) {
+                const loadedTeams = await response.json();
+                console.log(`✅ Loaded ${loadedTeams.length} specific teams with full player data`);
+                
+                // Merge loaded teams into our teams array
+                loadedTeams.forEach(loadedTeam => {
+                    const existingIndex = this.teams.findIndex(t => t.id === loadedTeam.id);
+                    if (existingIndex >= 0) {
+                        this.teams[existingIndex] = loadedTeam;
+                    } else {
+                        this.teams.push(loadedTeam);
+                    }
+                });
+                
+                // Return all requested teams
+                return teamIds.map(teamId => this.teams.find(t => t.id === teamId));
+            } else {
+                console.warn(`❌ Specific teams API failed with status ${response.status}. Falling back to full load.`);
+                await this.loadTeams();
+                return teamIds.map(teamId => this.teams.find(t => t.id === teamId));
+            }
+        } catch (error) {
+            console.error('Error loading specific teams:', error);
+            console.log('🔄 Fallback: Loading all teams');
+            await this.loadTeams();
+            return teamIds.map(teamId => this.teams.find(t => t.id === teamId));
         }
     }
     
@@ -1704,18 +1753,20 @@ class CheckInViewApp {
     async viewMatch(eventId, matchId) {
         this.currentModalType = 'match';
         
-        // Ensure full team data and referees are loaded for match view
-        if (this.teams.length === 0) {
-            await this.loadTeams(); // Need full team data for check-in interface
-        }
+        const event = this.events.find(e => e.id === eventId);
+        const match = event.matches.find(m => m.id === matchId);
+        
+        // Load only the specific teams needed for this match (performance optimization)
+        const requiredTeamIds = [match.homeTeamId, match.awayTeamId];
+        const matchTeams = await this.loadSpecificTeams(requiredTeamIds);
+        const homeTeam = matchTeams.find(t => t.id === match.homeTeamId);
+        const awayTeam = matchTeams.find(t => t.id === match.awayTeamId);
+        
+        // Load referees if needed
         if (this.referees.length === 0) {
             await this.loadReferees();
         }
         
-        const event = this.events.find(e => e.id === eventId);
-        const match = event.matches.find(m => m.id === matchId);
-        const homeTeam = this.teams.find(t => t.id === match.homeTeamId);
-        const awayTeam = this.teams.find(t => t.id === match.awayTeamId);
         const mainReferee = match.mainRefereeId ? this.referees.find(r => r.id === match.mainRefereeId) : null;
         const assistantReferee = match.assistantRefereeId ? this.referees.find(r => r.id === match.assistantRefereeId) : null;
         

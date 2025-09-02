@@ -8,7 +8,7 @@
 session_start();
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '4.7.1';
+const APP_VERSION = '4.7.2';
 
 // Authentication configuration
 const ADMIN_PASSWORD = 'checkin2024'; // Change this to your desired password
@@ -256,6 +256,13 @@ try {
             // Lightweight teams endpoint for performance optimization
             if ($method === 'GET') {
                 getTeamsBasic($db);
+            }
+            break;
+            
+        case 'teams-specific':
+            // Load specific teams by IDs for match check-in performance
+            if ($method === 'GET') {
+                getSpecificTeams($db);
             }
             break;
             
@@ -794,6 +801,148 @@ function getTeamsBasic($db) {
             'captainId' => $row['captain_id'],
             'memberCount' => (int)$row['member_count']
         ];
+    }
+    
+    echo json_encode($teams);
+}
+
+function getSpecificTeams($db) {
+    // Load specific teams by IDs for match check-in performance optimization
+    $teamIds = $_GET['ids'] ?? '';
+    
+    if (empty($teamIds)) {
+        http_response_code(400);
+        echo json_encode(['error' => 'Team IDs parameter required']);
+        return;
+    }
+    
+    // Parse comma-separated team IDs
+    $teamIdArray = array_filter(array_map('trim', explode(',', $teamIds)));
+    
+    if (empty($teamIdArray)) {
+        http_response_code(400);
+        echo json_encode(['error' => 'Valid team IDs required']);
+        return;
+    }
+    
+    // Create placeholders for prepared statement
+    $placeholders = str_repeat('?,', count($teamIdArray) - 1) . '?';
+    
+    // Optimized query similar to getTeams() but filtered by specific team IDs
+    $stmt = $db->prepare("
+        SELECT 
+            t.id as team_id,
+            t.name as team_name,
+            t.category as team_category,
+            t.color as team_color,
+            t.description as team_description,
+            t.captain_id as team_captain_id,
+            tm.id as member_id,
+            tm.name as member_name,
+            tm.jersey_number,
+            tm.gender,
+            CASE 
+                WHEN tm.photo = 'has_photo' THEN 'has_photo'
+                ELSE tm.photo
+            END AS photo_flag,
+            mp.photo_data
+        FROM teams t
+        LEFT JOIN team_members tm ON t.id = tm.team_id
+        LEFT JOIN member_photos mp ON tm.id = mp.member_id
+        WHERE t.id IN ({$placeholders})
+        ORDER BY t.name, tm.name
+    ");
+    
+    $stmt->execute($teamIdArray);
+    
+    $teams = [];
+    $currentTeam = null;
+    
+    while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+        // Start new team or continue existing team
+        if (!$currentTeam || $currentTeam['id'] !== $row['team_id']) {
+            // Save previous team if exists
+            if ($currentTeam) {
+                $teams[] = $currentTeam;
+            }
+            
+            // Start new team
+            $currentTeam = [
+                'id' => $row['team_id'],
+                'name' => $row['team_name'],
+                'category' => $row['team_category'],
+                'colorData' => $row['team_color'],
+                'description' => $row['team_description'],
+                'captainId' => $row['team_captain_id'],
+                'members' => []
+            ];
+        }
+        
+        // Add member to current team (if member exists) - using same photo logic as getTeams()
+        if ($row['member_id']) {
+            // Generate photo URL - handle new member_photos table and legacy formats
+            if ($row['photo_data']) {
+                // Photo exists in member_photos table - use base64 data directly
+                $photo = $row['photo_data'];
+            } elseif ($row['photo_flag'] && $row['photo_flag'] !== 'has_photo') {
+                // Legacy photo stored in team_members.photo field (not the 'has_photo' flag)
+                $photoValue = $row['photo_flag'];
+                
+                // Check if it's already base64 data
+                if (strpos($photoValue, 'data:image/') === 0) {
+                    // It's base64 data, use directly
+                    $photo = $photoValue;
+                } else {
+                    // Legacy file-based storage - convert to API URL
+                    // Handle different photo storage formats (same logic as getTeams)
+                    if (strpos($photoValue, '/photos/members/') === 0) {
+                        $photoValue = basename($photoValue);
+                    } elseif (strpos($photoValue, '/api/photos') === 0) {
+                        $parsedUrl = parse_url($photoValue);
+                        if ($parsedUrl && isset($parsedUrl['query'])) {
+                            parse_str($parsedUrl['query'], $query);
+                            if (isset($query['filename'])) {
+                                $photoValue = $query['filename'];
+                                // Clean recursively in case of nested URLs
+                                while (strpos($photoValue, '/api/photos') === 0) {
+                                    $nestedUrl = parse_url($photoValue);
+                                    if ($nestedUrl && isset($nestedUrl['query'])) {
+                                        parse_str($nestedUrl['query'], $nestedQuery);
+                                        if (isset($nestedQuery['filename'])) {
+                                            $photoValue = $nestedQuery['filename'];
+                                        } else {
+                                            break;
+                                        }
+                                    } else {
+                                        break;
+                                    }
+                                }
+                            }
+                        }
+                    }
+                    
+                    $photo = '/api/photos?filename=' . urlencode($photoValue);
+                }
+            } elseif ($row['photo_flag'] === 'has_photo') {
+                // Member has photo in member_photos table but photo_data was NULL
+                $photo = getDefaultPhoto($row['gender']);
+            } else {
+                $photo = getDefaultPhoto($row['gender']);
+            }
+            
+            $currentTeam['members'][] = [
+                'id' => $row['member_id'],
+                'name' => $row['member_name'],
+                'jerseyNumber' => $row['jersey_number'] ? (int)$row['jersey_number'] : null,
+                'gender' => $row['gender'],
+                'photo' => $photo
+            ];
+        }
+    }
+    
+    // Don't forget the last team
+    if ($currentTeam) {
+        $teams[] = $currentTeam;
     }
     
     echo json_encode($teams);
