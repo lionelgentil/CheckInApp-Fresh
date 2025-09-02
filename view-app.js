@@ -4,7 +4,7 @@
  */
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '4.5.1';
+const APP_VERSION = '4.6.0';
 
 class CheckInViewApp {
     constructor() {
@@ -1717,70 +1717,112 @@ class CheckInViewApp {
             </div>
         ` : '';
         
-        const modal = this.createModal(`Match: ${homeTeam.name} vs ${awayTeam.name}`, `
-            <div style="margin-bottom: 20px; padding: 15px; background: #f8f9fa; border-radius: 8px;">
-                <p><strong>Date:</strong> ${new Date(event.date).toLocaleDateString()}</p>
-                <p><strong>Status:</strong> ${statusDisplay}</p>
-                ${match.field ? `<p><strong>Field:</strong> ${match.field}</p>` : ''}
-                ${match.time ? `<p><strong>Time:</strong> ${match.time.substring(0, 5)}</p>` : ''}
-                ${mainReferee ? `<p><strong>Referee:</strong> ${mainReferee.name}${assistantReferee ? `, ${assistantReferee.name}` : ''}</p>` : ''}
-                ${match.notes ? `<p><strong>Notes:</strong> ${match.notes}</p>` : ''}
-            </div>
-            
-            ${scoreSection}
-            ${cardsSection}
-            
-            <!-- Team Selector for Grid View - Horizontal Layout -->
-            <div style="margin-bottom: 15px;">
-                <div id="grid-view-controls" style="display: flex; justify-content: center; gap: 30px; padding: 10px; background: #f8f9fa; border-radius: 8px;">
-                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-weight: 600;">
-                        <input type="radio" name="grid-team-toggle" value="home" checked onchange="app.toggleGridTeam('home')">
-                        <span>${homeTeam.name}</span>
-                    </label>
-                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-weight: 600;">
-                        <input type="radio" name="grid-team-toggle" value="away" onchange="app.toggleGridTeam('away')">
-                        <span>${awayTeam.name}</span>
-                    </label>
-                </div>
-            </div>
-            
-            <!-- ECNL-Style Grid Check-In View -->
-            <div id="grid-checkin-view" style="display: block;">
-                <div id="grid-home-team" style="display: block;">
-                    <div style="background: ${homeTeam.colorData}; color: white; padding: 8px 12px; border-radius: 6px; margin-bottom: 10px; text-align: center;">
-                        <h4 style="margin: 0; font-size: 1em; text-shadow: 1px 1px 2px rgba(0,0,0,0.3);">${homeTeam.name} Check-In</h4>
-                        <div style="font-size: 0.8em; opacity: 0.9; margin-top: 2px;">Tap players to check them in</div>
+        const modal = this.createModal(`${homeTeam.name} vs ${awayTeam.name}`, `
+            <!-- Mobile-Optimized Check-In Interface -->
+            <div class="mobile-checkin-interface">
+                <!-- Compact Header with Essential Info -->
+                <div class="checkin-header">
+                    <div class="match-essential-info">
+                        <div class="match-score-line">
+                            ${hasScore ? `<span class="score-display">${match.homeScore} - ${match.awayScore}</span>` : ''}
+                            <span class="match-status ${match.matchStatus}">${statusDisplay}</span>
+                        </div>
+                        <div class="match-details-compact">
+                            ${new Date(event.date).toLocaleDateString()} ${match.time ? `• ${match.time.substring(0, 5)}` : ''} ${match.field ? `• ${match.field}` : ''}
+                        </div>
                     </div>
-                    <div id="grid-pagination-info-home" style="text-align: center; margin-bottom: 10px; color: #666; font-size: 0.85em;"></div>
-                    <div id="grid-container-home" class="player-grid-container"></div>
-                    <div id="grid-pagination-home" style="text-align: center; margin-top: 10px;"></div>
+                    
+                    <!-- Expandable Details (optional) -->
+                    <div class="details-toggle" onclick="app.toggleMatchDetails()">
+                        <span id="details-toggle-icon">ⓘ</span>
+                    </div>
                 </div>
                 
-                <div id="grid-away-team" style="display: none;">
-                    <div style="background: ${awayTeam.colorData}; color: white; padding: 8px 12px; border-radius: 6px; margin-bottom: 10px; text-align: center;">
-                        <h4 style="margin: 0; font-size: 1em; text-shadow: 1px 1px 2px rgba(0,0,0,0.3);">${awayTeam.name} Check-In</h4>
-                        <div style="font-size: 0.8em; opacity: 0.9; margin-top: 2px;">Tap players to check them in</div>
+                <!-- Expandable Match Details (hidden by default) -->
+                <div id="match-details-expanded" class="match-details-expanded" style="display: none;">
+                    <div class="details-content">
+                        ${mainReferee ? `<p><strong>Referee:</strong> ${mainReferee.name}${assistantReferee ? `, ${assistantReferee.name}` : ''}</p>` : ''}
+                        ${match.notes ? `<p><strong>Notes:</strong> ${match.notes}</p>` : ''}
+                        ${cardsSection}
                     </div>
-                    <div id="grid-pagination-info-away" style="text-align: center; margin-bottom: 10px; color: #666; font-size: 0.85em;"></div>
-                    <div id="grid-container-away" class="player-grid-container"></div>
-                    <div id="grid-pagination-away" style="text-align: center; margin-top: 10px;"></div>
+                </div>
+                
+                <!-- Team Toggle - Compact Design -->
+                <div class="team-toggle-compact">
+                    <button class="team-toggle-btn active" id="home-toggle" onclick="app.toggleGridTeam('home')" style="background-color: ${homeTeam.colorData}">
+                        <span class="team-name">${homeTeam.name}</span>
+                        <span class="attendance-count" id="home-attendance-count">0/0</span>
+                    </button>
+                    <button class="team-toggle-btn" id="away-toggle" onclick="app.toggleGridTeam('away')" style="background-color: ${awayTeam.colorData}">
+                        <span class="team-name">${awayTeam.name}</span>
+                        <span class="attendance-count" id="away-attendance-count">0/0</span>
+                    </button>
+                </div>
+                
+                <!-- Single Scroll Player Grid (No Nested Scrolling) -->
+                <div class="checkin-grid-area">
+                    <div id="grid-home-team" class="team-grid-section active">
+                        <div id="grid-container-home" class="player-grid-container-fullscreen"></div>
+                    </div>
+                    
+                    <div id="grid-away-team" class="team-grid-section">
+                        <div id="grid-container-away" class="player-grid-container-fullscreen"></div>
+                    </div>
+                </div>
+                
+                <!-- Quick Stats Footer -->
+                <div class="checkin-footer">
+                    <div id="grid-pagination-info" class="pagination-info-compact"></div>
                 </div>
             </div>
-            
-            <div style="text-align: center; margin-top: 20px;">
-                <button class="btn btn-secondary" onclick="app.closeModal()">Close</button>
-            </div>
-        `);
+        `, 'checkin-modal');
         
         document.body.appendChild(modal);
         
-        // Initialize grid view
-        this.initializeGridView(eventId, matchId, homeTeam, awayTeam, match);
+        // Initialize the check-in interface
+        this.initializeCheckInInterface(eventId, matchId, homeTeam, awayTeam, match);
+    }
+    
+    // New helper functions for mobile check-in interface
+    toggleMatchDetails() {
+        const detailsSection = document.getElementById('match-details-expanded');
+        const toggleIcon = document.getElementById('details-toggle-icon');
         
-        // Grid view is now always active - no need for mobile detection or toggling
+        if (detailsSection.style.display === 'none') {
+            detailsSection.style.display = 'block';
+            toggleIcon.textContent = '✕';
+        } else {
+            detailsSection.style.display = 'none';
+            toggleIcon.textContent = 'ⓘ';
+        }
+    }
+    
+    initializeCheckInInterface(eventId, matchId, homeTeam, awayTeam, match) {
+        // Store current match data
+        this.currentEventId = eventId;
+        this.currentMatchId = matchId;
+        this.currentHomeTeam = homeTeam;
+        this.currentAwayTeam = awayTeam;
         
-        // Load lifetime cards for all players in the match
-        this.loadLifetimeCardsForMatch(homeTeam, awayTeam);
+        // Update attendance counts
+        this.updateAttendanceCounts(match);
+        
+        // Initialize with home team
+        this.renderGridTeam('home', homeTeam, match.homeTeamAttendees || []);
+        this.updatePaginationInfo();
+    }
+    
+    updateAttendanceCounts(match) {
+        const homeCount = match.homeTeamAttendees ? match.homeTeamAttendees.length : 0;
+        const awayCount = match.awayTeamAttendees ? match.awayTeamAttendees.length : 0;
+        const homeTotalPlayers = this.currentHomeTeam ? this.currentHomeTeam.members.length : 0;
+        const awayTotalPlayers = this.currentAwayTeam ? this.currentAwayTeam.members.length : 0;
+        
+        const homeCountElement = document.getElementById('home-attendance-count');
+        const awayCountElement = document.getElementById('away-attendance-count');
+        
+        if (homeCountElement) homeCountElement.textContent = `${homeCount}/${homeTotalPlayers}`;
+        if (awayCountElement) awayCountElement.textContent = `${awayCount}/${awayTotalPlayers}`;
     }
     
     // Initialize the grid view with data
@@ -1797,23 +1839,91 @@ class CheckInViewApp {
         this.renderGridTeam('away');
     }
     
-    // Toggle between home and away team in grid view
+    // Toggle between home and away team in new mobile interface
     toggleGridTeam(teamType) {
         this.currentGridTeam = teamType;
-        this.currentGridPage = 0; // Reset to first page
         
-        const homeTeamDiv = document.getElementById('grid-home-team');
-        const awayTeamDiv = document.getElementById('grid-away-team');
+        // Update toggle button states
+        const homeToggle = document.getElementById('home-toggle');
+        const awayToggle = document.getElementById('away-toggle');
         
         if (teamType === 'home') {
-            homeTeamDiv.style.display = 'block';
-            awayTeamDiv.style.display = 'none';
+            homeToggle.classList.add('active');
+            awayToggle.classList.remove('active');
         } else {
-            homeTeamDiv.style.display = 'none';
-            awayTeamDiv.style.display = 'block';
+            homeToggle.classList.remove('active');
+            awayToggle.classList.add('active');
         }
         
-        this.renderGridTeam(teamType);
+        // Show/hide team sections
+        const homeSection = document.getElementById('grid-home-team');
+        const awaySection = document.getElementById('grid-away-team');
+        
+        if (teamType === 'home') {
+            homeSection.classList.add('active');
+            awaySection.classList.remove('active');
+        } else {
+            homeSection.classList.remove('active');
+            awaySection.classList.add('active');
+        }
+        
+        // Render the selected team
+        const team = teamType === 'home' ? this.currentHomeTeam : this.currentAwayTeam;
+        const attendees = teamType === 'home' ? 
+            (this.currentMatch?.homeTeamAttendees || []) : 
+            (this.currentMatch?.awayTeamAttendees || []);
+            
+        this.renderGridTeamFullscreen(teamType, team, attendees);
+        this.updatePaginationInfo();
+    }
+    
+    // New function to render team grid in fullscreen mode
+    renderGridTeamFullscreen(teamType, team, attendees) {
+        const containerId = `grid-container-${teamType}`;
+        const container = document.getElementById(containerId);
+        
+        if (!container || !team) return;
+        
+        // Render all players in fullscreen grid (no pagination, just scroll)
+        container.innerHTML = team.members
+            .slice()
+            .sort((a, b) => a.name.localeCompare(b.name))
+            .map(member => {
+                const isCheckedIn = attendees.some(a => a.memberId === member.id);
+                
+                return `
+                    <div class="player-grid-item ${isCheckedIn ? 'checked-in' : ''}" 
+                         onclick="app.toggleGridPlayerAttendance('${this.currentEventId}', '${this.currentMatchId}', '${member.id}', '${teamType}')">
+                        ${member.photo ? 
+                            `<img src="${this.getMemberPhotoUrl(member)}" alt="${member.name}" class="player-grid-photo">` :
+                            `<div class="player-grid-photo" style="background: #ddd; display: flex; align-items: center; justify-content: center; color: #666; font-size: 20px;">👤</div>`
+                        }
+                        <div class="player-grid-content">
+                            <div class="player-grid-name">${member.name}</div>
+                            ${member.jerseyNumber ? `<div class="player-grid-jersey">#${member.jerseyNumber}</div>` : ''}
+                        </div>
+                        <div class="grid-check-icon">✓</div>
+                    </div>
+                `;
+            }).join('');
+    }
+    
+    // Update pagination info for new interface
+    updatePaginationInfo() {
+        const infoElement = document.getElementById('grid-pagination-info');
+        if (!infoElement) return;
+        
+        const team = this.currentGridTeam === 'home' ? this.currentHomeTeam : this.currentAwayTeam;
+        if (!team) return;
+        
+        const attendees = this.currentGridTeam === 'home' ? 
+            (this.currentMatch?.homeTeamAttendees || []) : 
+            (this.currentMatch?.awayTeamAttendees || []);
+            
+        const totalPlayers = team.members.length;
+        const checkedIn = attendees.length;
+        
+        infoElement.innerHTML = `${checkedIn}/${totalPlayers} players checked in • Tap to toggle`;
     }
     
     // Render grid for specific team with scrolling (no pagination)
@@ -2010,6 +2120,13 @@ class CheckInViewApp {
             });
         }
         
+        // Update current match reference for interface updates
+        this.currentMatch = match;
+        
+        // Update attendance counts in the interface
+        this.updateAttendanceCounts(match);
+        this.updatePaginationInfo();
+        
         // Save to server in background (don't await for UI responsiveness)
         try {
             console.log('Updating attendance via API...');
@@ -2057,11 +2174,12 @@ class CheckInViewApp {
                 }
             }
             
+            // Update attendance counts after revert
+            this.updateAttendanceCounts(match);
+            this.updatePaginationInfo();
+            
             alert(`Failed to update attendance: ${error.message}\n\nChanges have been reverted.`);
         }
-        
-        // Update current match reference
-        this.currentMatch = match;
     }
     
     // Load lifetime disciplinary cards for match check-in (optimized - team-based API calls)
@@ -2623,18 +2741,35 @@ class CheckInViewApp {
     }
     
     // Modal Management
-    createModal(title, content) {
+    createModal(title, content, modalType = 'default') {
         const modal = document.createElement('div');
-        modal.className = 'modal';
-        modal.innerHTML = `
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h2 class="modal-title">${title}</h2>
-                    <button class="close-btn" onclick="app.closeModal()">&times;</button>
+        modal.className = modalType === 'checkin-modal' ? 'modal checkin-modal' : 'modal';
+        
+        if (modalType === 'checkin-modal') {
+            // Full-screen mobile check-in modal with sticky header
+            modal.innerHTML = `
+                <div class="modal-content-fullscreen">
+                    <div class="modal-header-sticky">
+                        <h2 class="modal-title-compact">${title}</h2>
+                        <button class="close-btn-prominent" onclick="app.closeModal()">✕</button>
+                    </div>
+                    <div class="modal-body-scrollable">
+                        ${content}
+                    </div>
                 </div>
-                ${content}
-            </div>
-        `;
+            `;
+        } else {
+            // Standard modal
+            modal.innerHTML = `
+                <div class="modal-content">
+                    <div class="modal-header">
+                        <h2 class="modal-title">${title}</h2>
+                        <button class="close-btn" onclick="app.closeModal()">&times;</button>
+                    </div>
+                    ${content}
+                </div>
+            `;
+        }
         
         // Close on outside click
         modal.addEventListener('click', (e) => {
