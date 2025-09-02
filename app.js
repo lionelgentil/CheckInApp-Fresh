@@ -421,8 +421,18 @@ class CheckInApp {
         const photoUrl = this.getMemberPhotoUrl(member);
         const fallbackUrl = this.getGenderDefaultPhoto(member);
         
+        // BASE64 FIX: Skip lazy loading for base64 images as they're already embedded data
+        if (photoUrl.startsWith('data:image/')) {
+            console.log('📸 Bypassing lazy loading for base64 image:', member.name);
+            return `<img src="${photoUrl}" 
+                         alt="${member.name}" 
+                         class="${className}" 
+                         ${style ? `style="${style}"` : ''}
+                         loading="eager">`;
+        }
+        
         if (this.imageObserver) {
-            // Use lazy loading with placeholder
+            // Use lazy loading with placeholder for non-base64 images
             const placeholder = '/api/photos?filename=default&gender=' + (member.gender || 'male');
             return `<img src="${placeholder}" 
                          data-lazy-src="${photoUrl}" 
