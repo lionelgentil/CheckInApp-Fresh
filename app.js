@@ -705,9 +705,9 @@ class CheckInApp {
         
         // Lazy load data for the section if not already loaded
         if (sectionName === 'teams') {
-            if (this.teams.length === 0) {
-                await this.loadTeams(); // Need full team data for roster display
-            }
+            // TEAMS BUG FIX: Always reload full teams data for Teams section
+            // because loadSpecificTeams() might have loaded only partial data
+            await this.loadTeams(); // Always load full team data for roster display
             this.renderTeams();
         } else if (sectionName === 'events') {
             // Performance optimization: Use lightweight team data for events display
