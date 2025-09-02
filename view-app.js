@@ -4,7 +4,7 @@
  */
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '4.6.0';
+const APP_VERSION = '4.6.1';
 
 class CheckInViewApp {
     constructor() {
@@ -1727,9 +1727,6 @@ class CheckInViewApp {
                             ${hasScore ? `<span class="score-display">${match.homeScore} - ${match.awayScore}</span>` : ''}
                             <span class="match-status ${match.matchStatus}">${statusDisplay}</span>
                         </div>
-                        <div class="match-details-compact">
-                            ${new Date(event.date).toLocaleDateString()} ${match.time ? `• ${match.time.substring(0, 5)}` : ''} ${match.field ? `• ${match.field}` : ''}
-                        </div>
                     </div>
                     
                     <!-- Expandable Details (optional) -->
@@ -1741,6 +1738,9 @@ class CheckInViewApp {
                 <!-- Expandable Match Details (hidden by default) -->
                 <div id="match-details-expanded" class="match-details-expanded" style="display: none;">
                     <div class="details-content">
+                        <p><strong>Date:</strong> ${new Date(event.date).toLocaleDateString()}</p>
+                        ${match.time ? `<p><strong>Time:</strong> ${match.time.substring(0, 5)}</p>` : ''}
+                        ${match.field ? `<p><strong>Field:</strong> ${match.field}</p>` : ''}
                         ${mainReferee ? `<p><strong>Referee:</strong> ${mainReferee.name}${assistantReferee ? `, ${assistantReferee.name}` : ''}</p>` : ''}
                         ${match.notes ? `<p><strong>Notes:</strong> ${match.notes}</p>` : ''}
                         ${cardsSection}
@@ -1803,12 +1803,14 @@ class CheckInViewApp {
         this.currentMatchId = matchId;
         this.currentHomeTeam = homeTeam;
         this.currentAwayTeam = awayTeam;
+        this.currentMatch = match;
+        this.currentGridTeam = 'home'; // Default to home team
         
         // Update attendance counts
         this.updateAttendanceCounts(match);
         
-        // Initialize with home team
-        this.renderGridTeam('home', homeTeam, match.homeTeamAttendees || []);
+        // Initialize with home team displayed by default
+        this.renderGridTeamFullscreen('home', homeTeam, match.homeTeamAttendees || []);
         this.updatePaginationInfo();
     }
     
