@@ -1,10 +1,10 @@
 /**
- * CheckIn App v4.7.2 - JavaScript Frontend
+ * CheckIn App v4.7.3 - JavaScript Frontend
  * Works with PHP/PostgreSQL backend
  */
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '4.7.2';
+const APP_VERSION = '4.7.3';
 
 class CheckInApp {
     constructor() {
@@ -455,9 +455,8 @@ class CheckInApp {
                     // Check if the filename has a valid image extension
                     if (filename.includes('.jpg') || filename.includes('.jpeg') || 
                         filename.includes('.png') || filename.includes('.webp')) {
-                        // Return the full API URL with additional cache-busting
-                        // Since this already has '?filename=', we need '&' for additional params
-                        return member.photo + '&_cb=' + Date.now();
+                        // Return the full API URL without additional cache-busting to avoid corrupting the URL
+                        return member.photo;
                     }
                 }
             }
@@ -466,17 +465,16 @@ class CheckInApp {
             if ((member.photo.includes('.jpg') || member.photo.includes('.jpeg') || 
                 member.photo.includes('.png') || member.photo.includes('.webp')) &&
                 !member.photo.startsWith('/api/photos') && !member.photo.startsWith('http')) {
-                // Convert filename to API URL with cache-busting
-                return `/api/photos?filename=${member.photo}&_cb=${Date.now()}`;
+                // Convert filename to API URL without cache-busting to avoid corrupting URLs
+                return `/api/photos?filename=${encodeURIComponent(member.photo)}`;
             }
             
             // Check if it's already a full HTTP URL with valid extension
             if (member.photo.startsWith('http') && 
                 (member.photo.includes('.jpg') || member.photo.includes('.jpeg') || 
                  member.photo.includes('.png') || member.photo.includes('.webp'))) {
-                // Add cache-busting to external URLs
-                const separator = member.photo.includes('?') ? '&' : '?';
-                return member.photo + separator + '_cb=' + Date.now();
+                // Return external URLs without cache-busting to avoid corrupting them
+                return member.photo;
             }
         }
         
