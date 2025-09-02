@@ -1,14 +1,15 @@
 /**
- * CheckIn App v4.3.1 - JavaScript Frontend
+ * CheckIn App v4.7.2 - JavaScript Frontend
  * Works with PHP/PostgreSQL backend
  */
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '4.5.1';
+const APP_VERSION = '4.7.2';
 
 class CheckInApp {
     constructor() {
-        this.teams = [];
+        this.teams = []; // Full team data (loaded on demand)
+        this.teamsBasic = []; // Lightweight team data (id, name, category, colorData, memberCount)
         this.events = [];
         this.referees = [];
         this.currentEditingTeam = null;
@@ -147,10 +148,10 @@ class CheckInApp {
     }
     
     async init() {
-        // Load both events and teams on initialization since events display requires team names
+        // Load events and lightweight team data on initialization for fast startup
         await Promise.all([
             this.loadEvents(),
-            this.loadTeams()
+            this.loadTeamsBasic() // Use lightweight team data for initial load
         ]);
         this.renderEvents();
         
@@ -165,6 +166,102 @@ class CheckInApp {
         } catch (error) {
             console.error('Error loading teams:', error);
             this.teams = [];
+        }
+    }
+    
+    // Lightweight team loading (basic info only) - for performance
+    async loadTeamsBasic() {
+        try {
+            const response = await fetch(`/api/teams-basic?_t=${Date.now()}`);
+            if (response.ok) {
+                this.teamsBasic = await response.json();
+                console.log('📊 Loaded lightweight teams data:', this.teamsBasic.length, 'teams (basic info only)');
+            } else {
+                console.warn('❌ teams-basic endpoint failed, falling back to full teams load');
+                // Fallback: load full teams and extract basic info
+                await this.loadTeams();
+                this.teamsBasic = this.teams.map(team => ({
+                    id: team.id,
+                    name: team.name,
+                    category: team.category,
+                    colorData: team.colorData,
+                    memberCount: team.members ? team.members.length : 0
+                }));
+            }
+        } catch (error) {
+            console.error('Error loading basic teams data, falling back to full load:', error);
+            await this.loadTeams();
+            this.teamsBasic = this.teams.map(team => ({
+                id: team.id,
+                name: team.name,
+                category: team.category,
+                colorData: team.colorData,
+                memberCount: team.members ? team.members.length : 0
+            }));
+        }
+    }
+    
+    // Load only specific teams for performance optimization
+    async loadSpecificTeams(teamIds) {
+        if (!teamIds || teamIds.length === 0) return [];
+        
+        try {
+            // Check if we already have these teams loaded
+            const missingTeamIds = teamIds.filter(teamId => 
+                !this.teams.some(t => t.id === teamId)
+            );
+            
+            if (missingTeamIds.length === 0) {
+                // All teams already loaded
+                console.log(`✅ All teams already loaded: ${teamIds.join(', ')}`);
+                return teamIds.map(teamId => this.teams.find(t => t.id === teamId));
+            }
+            
+            // Load only the missing teams using the new endpoint
+            console.log(`🎯 Loading specific teams: ${missingTeamIds.join(', ')}`);
+            const response = await fetch(`/api/teams-specific?ids=${missingTeamIds.join(',')}&_t=${Date.now()}`);
+            
+            if (response.ok) {
+                const loadedTeams = await response.json();
+                console.log(`✅ Loaded ${loadedTeams.length} specific teams with full player data`);
+                
+                // Merge loaded teams into our teams array
+                loadedTeams.forEach(loadedTeam => {
+                    const existingIndex = this.teams.findIndex(t => t.id === loadedTeam.id);
+                    if (existingIndex >= 0) {
+                        this.teams[existingIndex] = loadedTeam;
+                    } else {
+                        this.teams.push(loadedTeam);
+                    }
+                });
+                
+                // Return all requested teams
+                return teamIds.map(teamId => this.teams.find(t => t.id === teamId));
+            } else {
+                console.warn(`❌ Specific teams API failed with status ${response.status}. Falling back to full load.`);
+                await this.loadTeams();
+                return teamIds.map(teamId => this.teams.find(t => t.id === teamId));
+            }
+        } catch (error) {
+            console.error('Error loading specific teams:', error);
+            console.log('🔄 Fallback: Loading all teams');
+            await this.loadTeams();
+            return teamIds.map(teamId => this.teams.find(t => t.id === teamId));
+        }
+    }
+    
+    // Get team info (tries basic first, loads full if needed)
+    async getTeamInfo(teamId, needsFullData = false) {
+        if (needsFullData) {
+            // Need full player data - load specific team
+            const teams = await this.loadSpecificTeams([teamId]);
+            return teams[0];
+        } else {
+            // Just need basic info
+            if (!this.teamsBasic || this.teamsBasic.length === 0) {
+                await this.loadTeamsBasic();
+            }
+            return this.teamsBasic.find(t => t.id === teamId);
         }
     }
     
@@ -579,13 +676,13 @@ class CheckInApp {
         // Lazy load data for the section if not already loaded
         if (sectionName === 'teams') {
             if (this.teams.length === 0) {
-                await this.loadTeams();
+                await this.loadTeams(); // Need full team data for roster display
             }
             this.renderTeams();
         } else if (sectionName === 'events') {
-            // Ensure we have both teams and referees loaded for events display
-            if (this.teams.length === 0) {
-                await this.loadTeams();
+            // Performance optimization: Use lightweight team data for events display
+            if (this.teamsBasic.length === 0) {
+                await this.loadTeamsBasic(); // Only load basic team info for events display
             }
             if (this.referees.length === 0) {
                 await this.loadReferees();
@@ -1122,7 +1219,7 @@ class CheckInApp {
     }
     
     renderEvents() {
-        console.log('🔍 renderEvents called - teams loaded:', this.teams.length, 'events loaded:', this.events.length);
+        console.log('🔍 renderEvents called - teamsBasic loaded:', this.teamsBasic.length, 'events loaded:', this.events.length);
         const container = document.getElementById('events-container');
         const showPastEvents = document.getElementById('show-past-events')?.checked || false;
         
@@ -1136,14 +1233,14 @@ class CheckInApp {
             return;
         }
         
-        // 🚀 PERFORMANCE OPTIMIZATION: Create lookup maps to eliminate O(n) searches
+        // 🚀 PERFORMANCE OPTIMIZATION: Create lookup maps using lightweight team data
         const teamLookup = new Map();
-        this.teams.forEach(team => teamLookup.set(team.id, team));
+        this.teamsBasic.forEach(team => teamLookup.set(team.id, team));
         
         const refereeLookup = new Map();
         this.referees.forEach(referee => refereeLookup.set(referee.id, referee));
         
-        console.log('📈 Performance: Created lookup maps for', this.teams.length, 'teams and', this.referees.length, 'referees');
+        console.log('📈 Performance: Created lookup maps for', this.teamsBasic.length, 'teams (basic) and', this.referees.length, 'referees');
         
         // Filter events based on date and toggle
         const today = new Date();
@@ -1237,8 +1334,8 @@ class CheckInApp {
                         
                         const homeAttendanceCount = match.homeTeamAttendees ? match.homeTeamAttendees.length : 0;
                         const awayAttendanceCount = match.awayTeamAttendees ? match.awayTeamAttendees.length : 0;
-                        const homeTotalPlayers = homeTeam ? homeTeam.members.length : 0;
-                        const awayTotalPlayers = awayTeam ? awayTeam.members.length : 0;
+                        const homeTotalPlayers = homeTeam ? homeTeam.memberCount : 0;
+                        const awayTotalPlayers = awayTeam ? awayTeam.memberCount : 0;
                         
                         // Match status and score display
                         const hasScore = match.homeScore !== null && match.awayScore !== null;
@@ -3657,18 +3754,29 @@ Please check the browser console (F12) for more details.`);
         }
     }
     
-    editMatchResult(eventId, matchId) {
+    async editMatchResult(eventId, matchId) {
         const event = this.events.find(e => e.id === eventId);
         const match = event.matches.find(m => m.id === matchId);
-        const homeTeam = this.teams.find(t => t.id === match.homeTeamId);
-        const awayTeam = this.teams.find(t => t.id === match.awayTeamId);
-        const mainReferee = match.mainRefereeId ? this.referees.find(r => r.id === match.mainRefereeId) : null;
-        const assistantReferee = match.assistantRefereeId ? this.referees.find(r => r.id === match.assistantRefereeId) : null;
         
         if (!match) return;
         
+        // Load only the specific teams needed for this match (performance optimization)
+        const requiredTeamIds = [match.homeTeamId, match.awayTeamId];
+        const matchTeams = await this.loadSpecificTeams(requiredTeamIds);
+        const homeTeam = matchTeams.find(t => t.id === match.homeTeamId);
+        const awayTeam = matchTeams.find(t => t.id === match.awayTeamId);
+        
+        // Load referees if needed
+        if (this.referees.length === 0) {
+            await this.loadReferees();
+        }
+        
+        const mainReferee = match.mainRefereeId ? this.referees.find(r => r.id === match.mainRefereeId) : null;
+        const assistantReferee = match.assistantRefereeId ? this.referees.find(r => r.id === match.assistantRefereeId) : null;
+        
         // Store current match for addCard function
         this.currentMatch = match;
+        this.currentMatchTeams = { homeTeam, awayTeam }; // Store loaded teams for addCard function
         
         const modal = this.createModal(`Match Result: ${homeTeam.name} vs ${awayTeam.name}`, `
             <div class="match-result-mobile">
@@ -3842,8 +3950,9 @@ Please check the browser console (F12) for more details.`);
         const noCardsMsg = container.querySelector('.no-cards-message, p');
         if (noCardsMsg) noCardsMsg.remove();
         
-        const homeTeam = this.teams.find(t => t.id === this.currentMatch?.homeTeamId);
-        const awayTeam = this.teams.find(t => t.id === this.currentMatch?.awayTeamId);
+        // Use the teams that were already loaded for the match result modal
+        const homeTeam = this.currentMatchTeams?.homeTeam;
+        const awayTeam = this.currentMatchTeams?.awayTeam;
         
         // 🚀 IMPROVEMENT: Only show players who were checked in for this match
         const homeAttendees = this.currentMatch?.homeTeamAttendees || [];
@@ -4134,15 +4243,20 @@ Please check the browser console (F12) for more details.`);
     async viewMatch(eventId, matchId) {
         this.currentModalType = 'match';
         
+        const event = this.events.find(e => e.id === eventId);
+        const match = event.matches.find(m => m.id === matchId);
+        
+        // Load only the specific teams needed for this match (performance optimization)
+        const requiredTeamIds = [match.homeTeamId, match.awayTeamId];
+        const matchTeams = await this.loadSpecificTeams(requiredTeamIds);
+        const homeTeam = matchTeams.find(t => t.id === match.homeTeamId);
+        const awayTeam = matchTeams.find(t => t.id === match.awayTeamId);
+        
         // Ensure referees are loaded before viewing match
         if (this.referees.length === 0) {
             await this.loadReferees();
         }
         
-        const event = this.events.find(e => e.id === eventId);
-        const match = event.matches.find(m => m.id === matchId);
-        const homeTeam = this.teams.find(t => t.id === match.homeTeamId);
-        const awayTeam = this.teams.find(t => t.id === match.awayTeamId);
         const mainReferee = match.mainRefereeId ? this.referees.find(r => r.id === match.mainRefereeId) : null;
         const assistantReferee = match.assistantRefereeId ? this.referees.find(r => r.id === match.assistantRefereeId) : null;
         
