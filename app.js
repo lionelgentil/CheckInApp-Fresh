@@ -10,6 +10,7 @@ class CheckInApp {
     constructor() {
         this.teams = []; // Full team data (loaded on demand)
         this.teamsBasic = []; // Lightweight team data (id, name, category, colorData, memberCount)
+        this.hasCompleteTeamsData = false; // Track if we have full teams data vs partial
         this.events = [];
         this.referees = [];
         this.currentEditingTeam = null;
@@ -163,9 +164,11 @@ class CheckInApp {
     async loadTeams() {
         try {
             this.teams = await this.cachedFetch('/api/teams');
+            this.hasCompleteTeamsData = true; // Mark that we have complete data
         } catch (error) {
             console.error('Error loading teams:', error);
             this.teams = [];
+            this.hasCompleteTeamsData = false;
         }
     }
     
@@ -244,6 +247,9 @@ class CheckInApp {
                         this.teams.push(loadedTeam);
                     }
                 });
+                
+                // Mark that we now have only partial data (not complete)
+                this.hasCompleteTeamsData = false;
                 
                 // Return all requested teams
                 return teamIds.map(teamId => this.teams.find(t => t.id === teamId));
@@ -705,9 +711,11 @@ class CheckInApp {
         
         // Lazy load data for the section if not already loaded
         if (sectionName === 'teams') {
-            // TEAMS BUG FIX: Always reload full teams data for Teams section
-            // because loadSpecificTeams() might have loaded only partial data
-            await this.loadTeams(); // Always load full team data for roster display
+            // TEAMS BUG FIX: Only reload if we don't have complete teams data
+            // (loadSpecificTeams might have loaded only partial data)
+            if (!this.hasCompleteTeamsData) {
+                await this.loadTeams(); // Load complete team data for roster display
+            }
             this.renderTeams();
         } else if (sectionName === 'events') {
             // Performance optimization: Use lightweight team data for events display

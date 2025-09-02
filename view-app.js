@@ -10,6 +10,7 @@ class CheckInViewApp {
     constructor() {
         this.teams = []; // Full team data (loaded on demand)
         this.teamsBasic = []; // Lightweight team data (loaded by default)
+        this.hasCompleteTeamsData = false; // Track if we have full teams data vs partial
         this.events = [];
         this.referees = [];
         this.currentModalType = null;
@@ -121,14 +122,17 @@ class CheckInViewApp {
             const response = await fetch(`/api/teams?_t=${Date.now()}`);
             if (response.ok) {
                 this.teams = await response.json();
+                this.hasCompleteTeamsData = true; // Mark that we have complete data
                 console.log('🔍 Loaded full teams data:', this.teams.length, 'teams with all player details');
             } else {
                 console.error('Failed to load teams');
                 this.teams = [];
+                this.hasCompleteTeamsData = false;
             }
         } catch (error) {
             console.error('Error loading teams:', error);
             this.teams = [];
+            this.hasCompleteTeamsData = false;
         }
     }
     
@@ -165,6 +169,9 @@ class CheckInViewApp {
                         this.teams.push(loadedTeam);
                     }
                 });
+                
+                // Mark that we now have only partial data (not complete)
+                this.hasCompleteTeamsData = false;
                 
                 // Return all requested teams
                 return teamIds.map(teamId => this.teams.find(t => t.id === teamId));
@@ -243,8 +250,10 @@ class CheckInViewApp {
         
         // Lazy load data for the section if not already loaded
         if (sectionName === 'teams') {
-            if (this.teams.length === 0) {
-                await this.loadTeams(); // Need full team data for roster display
+            // TEAMS BUG FIX: Only reload if we don't have complete teams data
+            // (loadSpecificTeams might have loaded only partial data)
+            if (!this.hasCompleteTeamsData) {
+                await this.loadTeams(); // Load complete team data for roster display
             }
             this.renderTeams();
         } else if (sectionName === 'events') {
