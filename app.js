@@ -4277,20 +4277,26 @@ Please check the browser console (F12) for more details.`);
         // LOADING SPINNER: Show loading modal immediately
         this.showLoadingModal('Loading match details...');
         
+        // Declare variables outside try block to fix scoping issue
+        let event, match, homeTeam, awayTeam, mainReferee, assistantReferee;
+        
         try {
-            const event = this.events.find(e => e.id === eventId);
-            const match = event.matches.find(m => m.id === matchId);
+            event = this.events.find(e => e.id === eventId);
+            match = event.matches.find(m => m.id === matchId);
             
             // Load only the specific teams needed for this match (performance optimization)
             const requiredTeamIds = [match.homeTeamId, match.awayTeamId];
             const matchTeams = await this.loadSpecificTeams(requiredTeamIds);
-            const homeTeam = matchTeams.find(t => t.id === match.homeTeamId);
-            const awayTeam = matchTeams.find(t => t.id === match.awayTeamId);
+            homeTeam = matchTeams.find(t => t.id === match.homeTeamId);
+            awayTeam = matchTeams.find(t => t.id === match.awayTeamId);
             
             // Ensure referees are loaded before viewing match
             if (this.referees.length === 0) {
                 await this.loadReferees();
             }
+            
+            mainReferee = match.mainRefereeId ? this.referees.find(r => r.id === match.mainRefereeId) : null;
+            assistantReferee = match.assistantRefereeId ? this.referees.find(r => r.id === match.assistantRefereeId) : null;
             
         
         // Match status display
