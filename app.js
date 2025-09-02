@@ -4492,7 +4492,7 @@ Please check the browser console (F12) for more details.`);
         paginationContainer.innerHTML = '';
         
         // 🚀 PERFORMANCE: Initialize lazy loading for newly rendered grid images
-        this.initializeLazyImages(gridContainer);
+        this.initializeLazyImages(container);
     }
     
     // Check if player is currently suspended
