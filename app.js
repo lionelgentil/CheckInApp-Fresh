@@ -225,6 +225,16 @@ class CheckInApp {
                 const loadedTeams = await response.json();
                 console.log(`✅ Loaded ${loadedTeams.length} specific teams with full player data`);
                 
+                // DEBUG: Log photo data for first few members to understand structure
+                if (loadedTeams.length > 0 && loadedTeams[0].members && loadedTeams[0].members.length > 0) {
+                    console.log('🔍 Sample member photo data:', loadedTeams[0].members.slice(0, 3).map(m => ({
+                        name: m.name,
+                        photo: m.photo,
+                        photoType: typeof m.photo,
+                        photoLength: m.photo ? m.photo.length : 0
+                    })));
+                }
+                
                 // Merge loaded teams into our teams array
                 loadedTeams.forEach(loadedTeam => {
                     const existingIndex = this.teams.findIndex(t => t.id === loadedTeam.id);
@@ -433,17 +443,22 @@ class CheckInApp {
     
     // Get member photo URL with gender defaults
     getMemberPhotoUrl(member) {
+        // DEBUG: Log photo data to understand what we're receiving
+        console.log('🖼️ getMemberPhotoUrl called for member:', member.name, 'photo data:', member.photo);
+        
         // Check if member has a real custom photo
         if (member.photo) {
             // Skip gender defaults
             if (member.photo.includes('male.svg') || 
                 member.photo.includes('female.svg') || 
                 member.photo.includes('default.svg')) {
+                console.log('👤 Using gender default for:', member.name);
                 return this.getGenderDefaultPhoto(member);
             }
             
             // Handle base64 images (for Railway deployment where filesystem is ephemeral)
             if (member.photo.startsWith('data:image/')) {
+                console.log('📸 Using base64 photo for:', member.name);
                 return member.photo; // Return base64 image directly
             }
             
@@ -455,6 +470,7 @@ class CheckInApp {
                     // Check if the filename has a valid image extension
                     if (filename.includes('.jpg') || filename.includes('.jpeg') || 
                         filename.includes('.png') || filename.includes('.webp')) {
+                        console.log('🔗 Using API URL photo for:', member.name, 'URL:', member.photo);
                         // Return the full API URL without additional cache-busting to avoid corrupting the URL
                         return member.photo;
                     }
@@ -465,6 +481,7 @@ class CheckInApp {
             if ((member.photo.includes('.jpg') || member.photo.includes('.jpeg') || 
                 member.photo.includes('.png') || member.photo.includes('.webp')) &&
                 !member.photo.startsWith('/api/photos') && !member.photo.startsWith('http')) {
+                console.log('📁 Converting filename to API URL for:', member.name, 'filename:', member.photo);
                 // Convert filename to API URL without cache-busting to avoid corrupting URLs
                 return `/api/photos?filename=${encodeURIComponent(member.photo)}`;
             }
@@ -473,9 +490,14 @@ class CheckInApp {
             if (member.photo.startsWith('http') && 
                 (member.photo.includes('.jpg') || member.photo.includes('.jpeg') || 
                  member.photo.includes('.png') || member.photo.includes('.webp'))) {
+                console.log('🌐 Using external URL photo for:', member.name);
                 // Return external URLs without cache-busting to avoid corrupting them
                 return member.photo;
             }
+            
+            console.log('❓ Photo data not recognized, using default for:', member.name, 'photo:', member.photo);
+        } else {
+            console.log('🚫 No photo data for:', member.name);
         }
         
         // Use gender-based defaults for everyone else
