@@ -282,17 +282,41 @@ class CheckInViewApp {
             }
             this.renderStandings();
         } else if (sectionName === 'cards') {
-            // Cards need full team data for player names
-            if (this.teams.length === 0) {
-                await this.loadTeams();
+            // Show loading spinner for cards section
+            this.showLoadingModal('Loading all cards for all teams... This can take up to 30 seconds as we analyze every match and player.');
+            
+            try {
+                // Cards need full team data for player names
+                if (this.teams.length === 0) {
+                    await this.loadTeams();
+                }
+                if (this.events.length === 0) {
+                    await this.loadEvents();
+                }
+                if (this.referees.length === 0) {
+                    await this.loadReferees();
+                }
+                
+                // Add a small delay to ensure all data is processed
+                await new Promise(resolve => setTimeout(resolve, 500));
+                
+                this.renderCardTracker();
+                this.closeLoadingModal();
+            } catch (error) {
+                this.closeLoadingModal();
+                console.error('Error loading cards section:', error);
+                // Show error in cards container
+                const container = document.getElementById('cards-tracker-container');
+                if (container) {
+                    container.innerHTML = `
+                        <div style="text-align: center; padding: 40px; color: #dc3545;">
+                            <h3>Error Loading Cards</h3>
+                            <p>Failed to load card data. Please refresh the page and try again.</p>
+                            <p style="font-size: 0.9em; color: #666;">Error: ${error.message}</p>
+                        </div>
+                    `;
+                }
             }
-            if (this.events.length === 0) {
-                await this.loadEvents();
-            }
-            if (this.referees.length === 0) {
-                await this.loadReferees();
-            }
-            this.renderCardTracker();
         } else if (sectionName === 'season') {
             // Season management needs full data
             if (this.teams.length === 0) {
