@@ -2073,10 +2073,20 @@
     <script>
         // Global flag to track Chart.js loading
         window.chartJsLoaded = false;
+        window.chartJsAttempts = 0;
+        const MAX_CHART_ATTEMPTS = 25; // 5 seconds max
         
         // Dynamic version loading to prevent cache issues
         async function loadApp() {
-            console.log('🔍 loadApp called, chartJsLoaded:', window.chartJsLoaded);
+            window.chartJsAttempts++;
+            console.log(`🔍 loadApp attempt ${window.chartJsAttempts}/${MAX_CHART_ATTEMPTS}, chartJsLoaded:`, window.chartJsLoaded, 'Chart available:', typeof Chart !== 'undefined');
+            
+            // Prevent infinite loop
+            if (window.chartJsAttempts > MAX_CHART_ATTEMPTS) {
+                console.error('❌ Max Chart.js loading attempts reached, proceeding without charts');
+                loadAppWithoutCharts();
+                return;
+            }
             
             // Wait for Chart.js to be available before loading the app
             if (!window.chartJsLoaded || typeof Chart === 'undefined') {
@@ -2087,7 +2097,17 @@
             }
             
             console.log('✅ Chart.js is loaded, proceeding with app load');
-            
+            loadAppScript();
+        }
+        
+        async function loadAppWithoutCharts() {
+            console.log('⚠️ Loading app without Chart.js functionality');
+            // Set a flag so the app knows charts are unavailable
+            window.chartsDisabled = true;
+            loadAppScript();
+        }
+        
+        async function loadAppScript() {
             try {
                 // Fetch current version from API
                 const response = await fetch('/api/version');
@@ -2120,11 +2140,11 @@
         }
     </script>
     
-    <!-- Chart.js for card tracking graphs - load with onload callback -->
+    <!-- Chart.js for card tracking graphs - try older stable version -->
     <script 
-        src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.min.js"
-        onload="console.log('📊 Chart.js loaded!'); window.chartJsLoaded = true;"
-        onerror="console.error('❌ Failed to load Chart.js from CDN'); window.chartJsLoaded = false;">
+        src="https://cdn.jsdelivr.net/npm/chart.js@3.9.1/dist/chart.min.js"
+        onload="console.log('📊 Chart.js v3.9.1 loaded!'); window.chartJsLoaded = true;"
+        onerror="console.error('❌ Failed to load Chart.js v3.9.1 from CDN'); window.chartJsLoaded = false;">
     </script>
 </body>
 </html>

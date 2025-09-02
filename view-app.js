@@ -1761,6 +1761,18 @@ class CheckInViewApp {
     renderCardTrackingCharts(cardRecords) {
         console.log('🎯 renderCardTrackingCharts called with', cardRecords.length, 'card records');
         
+        // Check if charts are globally disabled
+        if (window.chartsDisabled) {
+            console.log('📊 Charts are disabled globally');
+            ['cards-by-date-chart', 'cards-by-team-chart', 'cards-by-reason-chart', 'cards-by-referee-chart'].forEach(chartId => {
+                const canvas = document.getElementById(chartId);
+                if (canvas) {
+                    canvas.parentElement.innerHTML = '<div class="chart-no-data">Charts temporarily unavailable - Chart.js library failed to load</div>';
+                }
+            });
+            return;
+        }
+        
         // Check if Chart.js is available
         if (typeof Chart === 'undefined') {
             console.error('Chart.js is not loaded! Cannot render charts.');
