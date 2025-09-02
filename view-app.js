@@ -1,10 +1,10 @@
 /**
- * CheckIn App v4.7.4 - View Only Mode
+ * CheckIn App v4.7.5 - View Only Mode
  * Read-only version for public viewing
  */
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '4.7.4';
+const APP_VERSION = '4.7.5';
 
 class CheckInViewApp {
     constructor() {
@@ -253,7 +253,15 @@ class CheckInViewApp {
             // TEAMS BUG FIX: Only reload if we don't have complete teams data
             // (loadSpecificTeams might have loaded only partial data)
             if (!this.hasCompleteTeamsData) {
-                await this.loadTeams(); // Load complete team data for roster display
+                // Show loading spinner for teams section
+                this.showLoadingModal('Loading all teams with player photos... Please be patient, this can take several seconds.');
+                try {
+                    await this.loadTeams(); // Load complete team data for roster display
+                    this.closeLoadingModal();
+                } catch (error) {
+                    this.closeLoadingModal();
+                    console.error('Error loading teams:', error);
+                }
             }
             this.renderTeams();
         } else if (sectionName === 'events') {
