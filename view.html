@@ -2070,12 +2070,24 @@
     
     <div class="version-footer">View Only v<span id="footer-version"></span></div>
     
-    <!-- Chart.js for card tracking graphs - load BEFORE app script -->
-    <script src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.min.js"></script>
-    
     <script>
+        // Global flag to track Chart.js loading
+        window.chartJsLoaded = false;
+        
         // Dynamic version loading to prevent cache issues
         async function loadApp() {
+            console.log('🔍 loadApp called, chartJsLoaded:', window.chartJsLoaded);
+            
+            // Wait for Chart.js to be available before loading the app
+            if (!window.chartJsLoaded || typeof Chart === 'undefined') {
+                console.log('⏳ Chart.js not ready yet, waiting...');
+                // Wait a bit more for Chart.js to load
+                setTimeout(loadApp, 200);
+                return;
+            }
+            
+            console.log('✅ Chart.js is loaded, proceeding with app load');
+            
             try {
                 // Fetch current version from API
                 const response = await fetch('/api/version');
@@ -2106,6 +2118,13 @@
         } else {
             loadApp();
         }
+    </script>
+    
+    <!-- Chart.js for card tracking graphs - load with onload callback -->
+    <script 
+        src="https://cdn.jsdelivr.net/npm/chart.js@4.4.0/dist/chart.min.js"
+        onload="console.log('📊 Chart.js loaded!'); window.chartJsLoaded = true;"
+        onerror="console.error('❌ Failed to load Chart.js from CDN'); window.chartJsLoaded = false;">
     </script>
 </body>
 </html>

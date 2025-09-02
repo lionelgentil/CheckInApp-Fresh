@@ -1599,10 +1599,7 @@ class CheckInViewApp {
         `;
         
         // Render the charts after the HTML is in place
-        setTimeout(() => {
-            // Small delay to ensure DOM elements are ready
-            this.renderCardTrackingCharts(cardRecords);
-        }, 100);
+        this.waitForChartJsAndRender(cardRecords);
     }
     
     collectCurrentSeasonCards() {
