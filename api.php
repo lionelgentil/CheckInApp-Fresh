@@ -2582,7 +2582,7 @@ function executeDatabaseMaintenance($db) {
     
     // Basic security: only allow certain operations
     $query_upper = strtoupper($query);
-    $allowed_operations = ['SELECT', 'UPDATE', 'DELETE', 'INSERT'];
+    $allowed_operations = ['SELECT', 'UPDATE', 'DELETE', 'INSERT', 'CREATE INDEX'];
     $is_allowed = false;
     
     foreach ($allowed_operations as $op) {
@@ -2594,12 +2594,20 @@ function executeDatabaseMaintenance($db) {
     
     if (!$is_allowed) {
         http_response_code(400);
-        echo json_encode(['error' => 'Only SELECT, UPDATE, DELETE, and INSERT operations are allowed']);
+        echo json_encode(['error' => 'Only SELECT, UPDATE, DELETE, INSERT, and CREATE INDEX operations are allowed']);
         return;
     }
     
-    // Prevent dangerous operations
-    $dangerous_keywords = ['DROP', 'TRUNCATE', 'ALTER', 'CREATE', 'GRANT', 'REVOKE'];
+    // Prevent dangerous operations (but allow CREATE INDEX specifically)
+    $dangerous_keywords = ['DROP', 'TRUNCATE', 'ALTER', 'GRANT', 'REVOKE'];
+    
+    // Special handling for CREATE - only allow CREATE INDEX
+    if (strpos($query_upper, 'CREATE') !== false && strpos($query_upper, 'CREATE INDEX') !== 0) {
+        http_response_code(400);
+        echo json_encode(['error' => 'Only CREATE INDEX is allowed, other CREATE operations are forbidden']);
+        return;
+    }
+    
     foreach ($dangerous_keywords as $keyword) {
         if (strpos($query_upper, $keyword) !== false) {
             http_response_code(400);

@@ -4216,8 +4216,9 @@ Please check the browser console (F12) for more details.`);
         
         if (!match) return;
         
-        // Load both teams and referees if not already loaded
-        const needsTeams = this.teams.length === 0;
+        // For match editing, we only need basic team data (name, id)
+        // Use faster teams-basic endpoint instead of full teams data
+        const needsTeams = this.teamsBasic.length === 0;
         const needsReferees = this.referees.length === 0;
         
         if (needsTeams || needsReferees) {
@@ -4231,7 +4232,7 @@ Please check the browser console (F12) for more details.`);
             this.showLoadingModal(loadingMessage);
             
             const promises = [];
-            if (needsTeams) promises.push(this.loadTeams());
+            if (needsTeams) promises.push(this.loadTeamsBasic());
             if (needsReferees) promises.push(this.loadReferees());
             
             Promise.all(promises).then(() => {
@@ -4248,8 +4249,9 @@ Please check the browser console (F12) for more details.`);
     }
     
     showEditMatchModal(event, match) {
-        const homeTeam = this.teams.find(t => t.id === match.homeTeamId);
-        const awayTeam = this.teams.find(t => t.id === match.awayTeamId);
+        // Use basic teams data for match editing (faster, we only need name/id)
+        const homeTeam = this.teamsBasic.find(t => t.id === match.homeTeamId);
+        const awayTeam = this.teamsBasic.find(t => t.id === match.awayTeamId);
         
         if (!homeTeam || !awayTeam) {
             alert('Error: Could not find teams for this match. Please refresh the page and try again.');
