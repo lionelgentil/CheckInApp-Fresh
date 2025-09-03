@@ -4,7 +4,7 @@
  */
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '4.9.1';
+const APP_VERSION = '4.9.2';
 
 class CheckInApp {
     constructor() {
@@ -4216,9 +4216,16 @@ Please check the browser console (F12) for more details.`);
         
         if (!match) return;
         
-        // Load referees if not already loaded (wait for it to complete)
-        if (this.referees.length === 0) {
-            this.loadReferees().then(() => {
+        // Load both teams and referees if not already loaded
+        const needsTeams = this.teams.length === 0;
+        const needsReferees = this.referees.length === 0;
+        
+        if (needsTeams || needsReferees) {
+            const promises = [];
+            if (needsTeams) promises.push(this.loadTeams());
+            if (needsReferees) promises.push(this.loadReferees());
+            
+            Promise.all(promises).then(() => {
                 this.showEditMatchModal(event, match);
             });
         } else {
