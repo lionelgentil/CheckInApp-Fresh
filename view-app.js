@@ -4,7 +4,7 @@
  */
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '4.8.0';
+const APP_VERSION = '4.9.0';
 
 class CheckInViewApp {
     constructor() {
@@ -16,6 +16,65 @@ class CheckInViewApp {
         this.currentModalType = null;
         
         this.init();
+    }
+    
+    // Centralized API request handler with session management (same as main app)
+    async apiRequest(url, options = {}) {
+        try {
+            const response = await fetch(url, options);
+            
+            // Handle 401 Unauthorized - session expired
+            if (response.status === 401) {
+                console.warn('🔐 Session expired (401), redirecting to re-authenticate...');
+                this.handleSessionExpired();
+                return; // Don't continue processing
+            }
+            
+            if (response.ok) {
+                return await response.json();
+            }
+            
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            
+        } catch (error) {
+            // Don't handle network errors as session issues
+            if (error.name === 'TypeError' && error.message.includes('fetch')) {
+                console.error('Network error:', error);
+                throw new Error('Network error - please check your connection');
+            }
+            throw error;
+        }
+    }
+    
+    // Handle session expiration (view app version)
+    handleSessionExpired() {
+        // Close any open modals
+        this.closeModal();
+        this.closeLoadingModal();
+        
+        // Show user-friendly message
+        const message = `
+            🔐 Your session has expired for security reasons.
+            
+            You will be redirected to re-authenticate.
+            
+            Don't worry - this is normal after being idle!
+        `;
+        
+        if (confirm(message)) {
+            // Redirect to refresh the page and trigger re-authentication
+            window.location.reload();
+        } else {
+            // User cancelled, still reload to show login
+            setTimeout(() => {
+                window.location.reload();
+            }, 3000); // Give them 3 seconds then reload anyway
+        }
+    }
+    
+    // API calls with 401 handling for view app
+    async fetch(url, options = {}) {
+        return await this.apiRequest(url, options);
     }
     
     async init() {
@@ -86,25 +145,12 @@ class CheckInViewApp {
     // Lightweight team loading (just basic info for events display)
     async loadTeamsBasic() {
         try {
-            const response = await fetch(`/api/teams-basic?_t=${Date.now()}`);
-            if (response.ok) {
-                this.teamsBasic = await response.json();
-                console.log('🚀 Loaded basic teams data:', this.teamsBasic.length, 'teams');
-            } else {
-                console.warn('Teams-basic API not available, falling back to full teams API');
-                // Fallback to full API but extract only needed data
-                await this.loadTeams();
-                this.teamsBasic = this.teams.map(team => ({
-                    id: team.id,
-                    name: team.name,
-                    category: team.category,
-                    colorData: team.colorData,
-                    memberCount: team.members ? team.members.length : 0
-                }));
-            }
+            const data = await this.fetch(`/api/teams-basic?_t=${Date.now()}`);
+            this.teamsBasic = data;
+            console.log('🚀 Loaded basic teams data:', this.teamsBasic.length, 'teams');
         } catch (error) {
-            console.error('Error loading basic teams, falling back to full teams:', error);
-            // Fallback to full teams API
+            console.warn('Teams-basic API not available, falling back to full teams API:', error);
+            // Fallback to full API but extract only needed data
             await this.loadTeams();
             this.teamsBasic = this.teams.map(team => ({
                 id: team.id,
@@ -119,18 +165,12 @@ class CheckInViewApp {
     // Full team loading (with all player data) - only when needed
     async loadTeams() {
         try {
-            const response = await fetch(`/api/teams?_t=${Date.now()}`);
-            if (response.ok) {
-                this.teams = await response.json();
-                this.hasCompleteTeamsData = true; // Mark that we have complete data
-                console.log('🔍 Loaded full teams data:', this.teams.length, 'teams with all player details');
-            } else {
-                console.error('Failed to load teams');
-                this.teams = [];
-                this.hasCompleteTeamsData = false;
-            }
+            const data = await this.fetch(`/api/teams?_t=${Date.now()}`);
+            this.teams = data;
+            this.hasCompleteTeamsData = true; // Mark that we have complete data
+            console.log('🔍 Loaded full teams data:', this.teams.length, 'teams with all player details');
         } catch (error) {
-            console.error('Error loading teams:', error);
+            console.error('Failed to load teams:', error);
             this.teams = [];
             this.hasCompleteTeamsData = false;
         }
@@ -341,7 +381,7 @@ class CheckInViewApp {
     // Save Teams (for jersey number updates only)
     async saveMemberProfile(teamId, memberId, jerseyNumber) {
         try {
-            const response = await fetch('/api/teams/member-profile', {
+            const data = await this.fetch('/api/teams/member-profile', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -353,13 +393,7 @@ class CheckInViewApp {
                 })
             });
             
-            if (!response.ok) {
-                const errorText = await response.text();
-                console.error('Server response:', errorText);
-                throw new Error(`Failed to save member profile: ${response.status} ${response.statusText}`);
-            }
-            
-            return await response.json();
+            return data;
         } catch (error) {
             console.error('Error saving member profile:', error);
             throw error;
@@ -464,19 +498,12 @@ class CheckInViewApp {
         
         console.log('Sending photo upload request to /api/photos');
         
-        const response = await fetch('/api/photos', {
+        const result = await this.fetch('/api/photos', {
             method: 'POST',
             body: formData
         });
         
-        console.log('Photo upload response status:', response.status, response.ok);
-        
-        const result = await response.json();
         console.log('Photo upload result:', result);
-        
-        if (!response.ok) {
-            throw new Error(result.error || 'Photo upload failed');
-        }
         
         // 🚀 FIX: Don't add cache-busting to base64 data, only to URL endpoints
         let photoUrl = result.url;

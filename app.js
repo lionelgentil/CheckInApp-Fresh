@@ -4,7 +4,7 @@
  */
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '4.8.1';
+const APP_VERSION = '4.9.0';
 
 class CheckInApp {
     constructor() {
@@ -103,7 +103,7 @@ class CheckInApp {
         }
     }
     
-    // Performance: Smart caching system
+    // Performance: Smart caching system with 401 handling
     async cachedFetch(url, options = {}) {
         const cacheKey = url + JSON.stringify(options);
         const now = Date.now();
@@ -117,23 +117,81 @@ class CheckInApp {
             }
         }
         
-        // Fetch fresh data
+        // Fetch fresh data with 401 handling
         console.log(`🌐 Cache miss, fetching ${url}`);
-        const response = await fetch(url, options);
-        
-        if (response.ok) {
-            const data = await response.json();
+        return await this.apiRequest(url, options, cacheKey, now);
+    }
+    
+    // Centralized API request handler with session management
+    async apiRequest(url, options = {}, cacheKey = null, cacheTimestamp = null) {
+        try {
+            const response = await fetch(url, options);
             
-            // Cache the response
-            this.apiCache.set(cacheKey, {
-                data: data,
-                timestamp: now
-            });
+            // Handle 401 Unauthorized - session expired
+            if (response.status === 401) {
+                console.warn('🔐 Session expired (401), redirecting to re-authenticate...');
+                this.handleSessionExpired();
+                return; // Don't continue processing
+            }
             
-            return data;
+            if (response.ok) {
+                const data = await response.json();
+                
+                // Cache the response if caching was requested
+                if (cacheKey && cacheTimestamp) {
+                    this.apiCache.set(cacheKey, {
+                        data: data,
+                        timestamp: cacheTimestamp
+                    });
+                }
+                
+                return data;
+            }
+            
+            throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            
+        } catch (error) {
+            // Don't handle network errors as session issues
+            if (error.name === 'TypeError' && error.message.includes('fetch')) {
+                console.error('Network error:', error);
+                throw new Error('Network error - please check your connection');
+            }
+            throw error;
         }
+    }
+    
+    // Handle session expiration
+    handleSessionExpired() {
+        // Clear any cached data since session is invalid
+        this.clearCache();
         
-        throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+        // Close any open modals
+        this.closeModal();
+        this.closeLoadingModal();
+        
+        // Show user-friendly message
+        const message = `
+            🔐 Your session has expired for security reasons.
+            
+            You will be redirected to re-authenticate.
+            
+            Don't worry - your data is safe!
+        `;
+        
+        if (confirm(message)) {
+            // Redirect to refresh the page and trigger re-authentication
+            window.location.reload();
+        } else {
+            // User cancelled, still reload to show login
+            setTimeout(() => {
+                window.location.reload();
+            }, 3000); // Give them 3 seconds then reload anyway
+        }
+    }
+    
+    // Non-cached API calls with 401 handling
+    async fetch(url, options = {}) {
+        return await this.apiRequest(url, options);
     }
     
     // Clear cache when data is modified
@@ -178,24 +236,12 @@ class CheckInApp {
     // Lightweight team loading (basic info only) - for performance
     async loadTeamsBasic() {
         try {
-            const response = await fetch(`/api/teams-basic?_t=${Date.now()}`);
-            if (response.ok) {
-                this.teamsBasic = await response.json();
-                console.log('📊 Loaded lightweight teams data:', this.teamsBasic.length, 'teams (basic info only)');
-            } else {
-                console.warn('❌ teams-basic endpoint failed, falling back to full teams load');
-                // Fallback: load full teams and extract basic info
-                await this.loadTeams();
-                this.teamsBasic = this.teams.map(team => ({
-                    id: team.id,
-                    name: team.name,
-                    category: team.category,
-                    colorData: team.colorData,
-                    memberCount: team.members ? team.members.length : 0
-                }));
-            }
+            const data = await this.fetch(`/api/teams-basic?_t=${Date.now()}`);
+            this.teamsBasic = data;
+            console.log('📊 Loaded lightweight teams data:', this.teamsBasic.length, 'teams (basic info only)');
         } catch (error) {
-            console.error('Error loading basic teams data, falling back to full load:', error);
+            console.warn('❌ teams-basic endpoint failed, falling back to full teams load:', error);
+            // Fallback: load full teams and extract basic info
             await this.loadTeams();
             this.teamsBasic = this.teams.map(team => ({
                 id: team.id,
@@ -225,11 +271,9 @@ class CheckInApp {
             
             // Load only the missing teams using the new endpoint
             console.log(`🎯 Loading specific teams: ${missingTeamIds.join(', ')}`);
-            const response = await fetch(`/api/teams-specific?ids=${missingTeamIds.join(',')}&_t=${Date.now()}`);
+            const loadedTeams = await this.fetch(`/api/teams-specific?ids=${missingTeamIds.join(',')}&_t=${Date.now()}`);
             
-            if (response.ok) {
-                const loadedTeams = await response.json();
-                console.log(`✅ Loaded ${loadedTeams.length} specific teams with full player data`);
+            console.log(`✅ Loaded ${loadedTeams.length} specific teams with full player data`);
                 
                 // DEBUG: Log photo data for first few members to understand structure
                 if (loadedTeams.length > 0 && loadedTeams[0].members && loadedTeams[0].members.length > 0) {
@@ -256,11 +300,6 @@ class CheckInApp {
                 
                 // Return all requested teams
                 return teamIds.map(teamId => this.teams.find(t => t.id === teamId));
-            } else {
-                console.warn(`❌ Specific teams API failed with status ${response.status}. Falling back to full load.`);
-                await this.loadTeams();
-                return teamIds.map(teamId => this.teams.find(t => t.id === teamId));
-            }
         } catch (error) {
             console.error('Error loading specific teams:', error);
             console.log('🔄 Fallback: Loading all teams');
@@ -327,7 +366,7 @@ class CheckInApp {
         console.trace('saveTeams call stack:');
         
         try {
-            const response = await fetch('/api/teams', {
+            const response = await this.fetch('/api/teams', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -366,7 +405,7 @@ class CheckInApp {
     
     async saveEvents() {
         try {
-            const response = await fetch('/api/events', {
+            const response = await this.fetch('/api/events', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -400,7 +439,7 @@ class CheckInApp {
     
     async saveReferees() {
         try {
-            const response = await fetch('/api/referees', {
+            const response = await this.fetch('/api/referees', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -610,7 +649,7 @@ class CheckInApp {
         
         console.log('Sending photo upload request to /api/photos');
         
-        const response = await fetch('/api/photos', {
+        const response = await this.fetch('/api/photos', {
             method: 'POST',
             body: formData
         });
@@ -1886,7 +1925,7 @@ Please check the browser console (F12) for more details.`);
     
     // 🚀 NEW: Granular API methods for better performance
     async updateMemberProfile(teamId, memberId, memberData) {
-        const response = await fetch('/api/teams/member-profile', {
+        const response = await this.fetch('/api/teams/member-profile', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -1909,7 +1948,7 @@ Please check the browser console (F12) for more details.`);
     }
     
     async createMemberProfile(teamId, memberData) {
-        const response = await fetch('/api/teams/member-create', {
+        const response = await this.fetch('/api/teams/member-create', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
