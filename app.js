@@ -4216,9 +4216,14 @@ Please check the browser console (F12) for more details.`);
         
         if (!match) return;
         
+        console.log('Edit Match - Teams array length:', this.teams.length);
+        console.log('Edit Match - Match details:', { homeTeamId: match.homeTeamId, awayTeamId: match.awayTeamId });
+        
         // Load both teams and referees if not already loaded
         const needsTeams = this.teams.length === 0;
         const needsReferees = this.referees.length === 0;
+        
+        console.log('Edit Match - Loading status:', { needsTeams, needsReferees });
         
         if (needsTeams || needsReferees) {
             const promises = [];
@@ -4226,9 +4231,15 @@ Please check the browser console (F12) for more details.`);
             if (needsReferees) promises.push(this.loadReferees());
             
             Promise.all(promises).then(() => {
+                console.log('Edit Match - After loading - Teams array length:', this.teams.length);
+                console.log('Edit Match - Teams loaded:', this.teams.map(t => ({ id: t.id, name: t.name })));
                 this.showEditMatchModal(event, match);
+            }).catch(error => {
+                console.error('Edit Match - Error loading data:', error);
+                alert('Failed to load team or referee data. Please try again.');
             });
         } else {
+            console.log('Edit Match - Data already loaded, proceeding directly');
             this.showEditMatchModal(event, match);
         }
     }
