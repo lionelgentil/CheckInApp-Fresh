@@ -396,7 +396,7 @@ class CheckInApp {
     
     async saveEvents() {
         try {
-            const response = await this.fetch('/api/events', {
+            const result = await this.fetch('/api/events', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -404,15 +404,11 @@ class CheckInApp {
                 body: JSON.stringify(this.events)
             });
             
-            if (!response.ok) {
-                throw new Error('Failed to save events');
-            }
-            
             // Clear cache after successful save to ensure fresh data on next load
             this.clearCache();
             console.log('🧹 Cache cleared after events save');
             
-            return await response.json();
+            return result;
         } catch (error) {
             console.error('Error saving events:', error);
             throw error;
@@ -430,7 +426,7 @@ class CheckInApp {
     
     async saveReferees() {
         try {
-            const response = await this.fetch('/api/referees', {
+            const result = await this.fetch('/api/referees', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -438,15 +434,11 @@ class CheckInApp {
                 body: JSON.stringify(this.referees)
             });
             
-            if (!response.ok) {
-                throw new Error('Failed to save referees');
-            }
-            
             // Clear cache after successful save to ensure fresh data on next load
             this.clearCache();
             console.log('🧹 Cache cleared after referees save');
             
-            return await response.json();
+            return result;
         } catch (error) {
             console.error('Error saving referees:', error);
             throw error;
@@ -640,19 +632,12 @@ class CheckInApp {
         
         console.log('Sending photo upload request to /api/photos');
         
-        const response = await this.fetch('/api/photos', {
+        const result = await this.fetch('/api/photos', {
             method: 'POST',
             body: formData
         });
         
-        console.log('Photo upload response status:', response.status, response.ok);
-        
-        const result = await response.json();
         console.log('Photo upload result:', result);
-        
-        if (!response.ok) {
-            throw new Error(result.error || 'Photo upload failed');
-        }
         
         // 🚀 FIX: Don't add cache-busting to base64 data, only to URL endpoints
         let photoUrl = result.url;
