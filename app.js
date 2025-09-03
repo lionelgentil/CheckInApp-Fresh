@@ -4,7 +4,7 @@
  */
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '4.9.0';
+const APP_VERSION = '4.9.1';
 
 class CheckInApp {
     constructor() {
@@ -366,7 +366,7 @@ class CheckInApp {
         console.trace('saveTeams call stack:');
         
         try {
-            const response = await this.fetch('/api/teams', {
+            const data = await this.fetch('/api/teams', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
@@ -374,20 +374,11 @@ class CheckInApp {
                 body: JSON.stringify(cleanedTeams)
             });
             
-            console.log('Response status:', response.status);
-            console.log('Response ok:', response.ok);
-            
-            if (!response.ok) {
-                const errorText = await response.text();
-                console.error('Server response:', errorText);
-                throw new Error(`Failed to save teams: ${response.status} ${response.statusText}`);
-            }
-            
             // Clear cache after successful save to ensure fresh data on next load
             this.clearCache();
             console.log('🧹 Cache cleared after teams save');
             
-            return await response.json();
+            return data;
         } catch (error) {
             console.error('Error saving teams:', error);
             throw error;
@@ -1925,7 +1916,7 @@ Please check the browser console (F12) for more details.`);
     
     // 🚀 NEW: Granular API methods for better performance
     async updateMemberProfile(teamId, memberId, memberData) {
-        const response = await this.fetch('/api/teams/member-profile', {
+        const data = await this.fetch('/api/teams/member-profile', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -1939,16 +1930,11 @@ Please check the browser console (F12) for more details.`);
             })
         });
         
-        if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(`Failed to update member profile: ${response.status} ${response.statusText}`);
-        }
-        
-        return await response.json();
+        return data;
     }
     
     async createMemberProfile(teamId, memberData) {
-        const response = await this.fetch('/api/teams/member-create', {
+        const data = await this.fetch('/api/teams/member-create', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -1959,16 +1945,11 @@ Please check the browser console (F12) for more details.`);
             })
         });
         
-        if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(`Failed to create member: ${response.status} ${response.statusText}`);
-        }
-        
-        return await response.json();
+        return data;
     }
     
     async deleteMemberProfile(teamId, memberId) {
-        const response = await fetch('/api/teams/member-delete', {
+        const data = await this.fetch('/api/teams/member-delete', {
             method: 'POST',
             headers: {
                 'Content-Type': 'application/json'
@@ -1979,12 +1960,7 @@ Please check the browser console (F12) for more details.`);
             })
         });
         
-        if (!response.ok) {
-            const errorText = await response.text();
-            throw new Error(`Failed to delete member: ${response.status} ${response.statusText}`);
-        }
-        
-        return await response.json();
+        return data;
     }
     
     async showDetailedMemberModal(teamId, member) {
@@ -1994,16 +1970,11 @@ Please check the browser console (F12) for more details.`);
         // Load disciplinary records for this member
         let disciplinaryRecords = [];
         try {
-            const response = await fetch(`/api/disciplinary-records?member_id=${member.id}`);
-            if (response.ok) {
-                disciplinaryRecords = await response.json();
-                console.log('Loaded disciplinary records for member:', member.name, disciplinaryRecords);
-            } else {
-                const errorText = await response.text();
-                console.error('Failed to load disciplinary records:', response.status, errorText);
-            }
+            disciplinaryRecords = await this.fetch(`/api/disciplinary-records?member_id=${member.id}`);
+            console.log('Loaded disciplinary records for member:', member.name, disciplinaryRecords);
         } catch (error) {
             console.error('Error loading disciplinary records:', error);
+            disciplinaryRecords = [];
         }
         
         const modal = this.createModal(`Edit Player: ${member.name}`, `
@@ -2442,25 +2413,19 @@ Please check the browser console (F12) for more details.`);
     // Optimized helper method for fetching disciplinary records
     async fetchDisciplinaryRecords(memberId) {
         try {
-            const response = await fetch(`/api/disciplinary-records?member_id=${memberId}`);
-            if (response.ok) {
-                const records = await response.json();
-                return records.map(record => ({
-                    type: 'prior',
-                    eventDate: record.incidentDate || record.createdAt,
-                    matchInfo: 'External incident',
-                    cardType: record.cardType,
-                    reason: record.reason,
-                    notes: record.notes,
-                    minute: null,
-                    suspensionMatches: record.suspensionMatches,
-                    suspensionServed: record.suspensionServed,
-                    suspensionServedDate: record.suspensionServedDate
-                }));
-            } else {
-                console.error('Failed to load disciplinary records for profile:', response.status);
-                return [];
-            }
+            const records = await this.fetch(`/api/disciplinary-records?member_id=${memberId}`);
+            return records.map(record => ({
+                type: 'prior',
+                eventDate: record.incidentDate || record.createdAt,
+                matchInfo: 'External incident',
+                cardType: record.cardType,
+                reason: record.reason,
+                notes: record.notes,
+                minute: null,
+                suspensionMatches: record.suspensionMatches,
+                suspensionServed: record.suspensionServed,
+                suspensionServedDate: record.suspensionServedDate
+            }));
         } catch (error) {
             console.error('Error loading disciplinary records for profile:', error);
             return [];
