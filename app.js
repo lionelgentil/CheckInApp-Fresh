@@ -4245,8 +4245,21 @@ Please check the browser console (F12) for more details.`);
     }
     
     showEditMatchModal(event, match) {
+        console.log('showEditMatchModal - Looking for teams with IDs:', {
+            homeTeamId: match.homeTeamId,
+            awayTeamId: match.awayTeamId
+        });
+        console.log('showEditMatchModal - Available teams:', this.teams.map(t => ({ id: t.id, name: t.name })));
+        
         const homeTeam = this.teams.find(t => t.id === match.homeTeamId);
         const awayTeam = this.teams.find(t => t.id === match.awayTeamId);
+        
+        console.log('showEditMatchModal - Found teams:', { homeTeam: homeTeam?.name, awayTeam: awayTeam?.name });
+        
+        if (!homeTeam || !awayTeam) {
+            alert('Error: Could not find teams for this match. Please refresh the page and try again.');
+            return;
+        }
         
         // Debug current match values to understand the data format
         console.log('Edit Match - Current values:', {
