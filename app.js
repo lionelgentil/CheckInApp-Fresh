@@ -224,7 +224,7 @@ class CheckInApp {
     // API Methods
     async loadTeams() {
         try {
-            this.teams = await this.cachedFetch('/api/teams');
+            this.teams = await this.cachedFetch('/api/teams-no-photos');
             this.hasCompleteTeamsData = true; // Mark that we have complete data
         } catch (error) {
             console.error('Error loading teams:', error);

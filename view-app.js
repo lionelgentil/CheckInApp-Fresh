@@ -165,7 +165,7 @@ class CheckInViewApp {
     // Full team loading (with all player data) - only when needed
     async loadTeams() {
         try {
-            const data = await this.fetch(`/api/teams?_t=${Date.now()}`);
+            const data = await this.fetch(`/api/teams-no-photos?_t=${Date.now()}`);
             this.teams = data;
             this.hasCompleteTeamsData = true; // Mark that we have complete data
             console.log('🔍 Loaded full teams data:', this.teams.length, 'teams with all player details');
