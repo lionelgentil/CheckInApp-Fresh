@@ -252,6 +252,13 @@ try {
             }
             break;
             
+        case 'teams-no-photos':
+            // Teams with members but WITHOUT photo data for faster loading
+            if ($method === 'GET') {
+                getTeamsWithoutPhotos($db);
+            }
+            break;
+            
         case 'teams-basic':
             // Lightweight teams endpoint for performance optimization
             if ($method === 'GET') {
@@ -761,6 +768,77 @@ function getTeams($db) {
                 'jerseyNumber' => $row['jersey_number'] ? (int)$row['jersey_number'] : null,
                 'gender' => $row['gender'],
                 'photo' => $photo
+            ];
+        }
+    }
+    
+    // Don't forget the last team
+    if ($currentTeam) {
+        $teams[] = $currentTeam;
+    }
+    
+    echo json_encode($teams);
+}
+
+function getTeamsWithoutPhotos($db) {
+    // Fast teams endpoint with member data but NO photo data - significantly faster
+    $stmt = $db->query('
+        SELECT 
+            t.id as team_id,
+            t.name as team_name,
+            t.category as team_category,
+            t.color as team_color,
+            t.description as team_description,
+            t.captain_id as team_captain_id,
+            tm.id as member_id,
+            tm.name as member_name,
+            tm.jersey_number,
+            tm.gender,
+            CASE 
+                WHEN tm.photo = \'has_photo\' THEN \'has_photo\'
+                WHEN tm.photo IS NOT NULL AND tm.photo != \'\' THEN \'has_photo\'
+                ELSE NULL
+            END AS has_photo
+        FROM teams t
+        LEFT JOIN team_members tm ON t.id = tm.team_id
+        ORDER BY t.name, tm.name
+    ');
+    
+    $teams = [];
+    $currentTeam = null;
+    
+    while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+        // Start new team or continue existing team
+        if (!$currentTeam || $currentTeam['id'] !== $row['team_id']) {
+            // Save previous team if exists
+            if ($currentTeam) {
+                $teams[] = $currentTeam;
+            }
+            
+            // Start new team
+            $currentTeam = [
+                'id' => $row['team_id'],
+                'name' => $row['team_name'],
+                'category' => $row['team_category'],
+                'colorData' => $row['team_color'],
+                'description' => $row['team_description'],
+                'captainId' => $row['team_captain_id'],
+                'members' => []
+            ];
+        }
+        
+        // Add member to current team (if member exists)
+        if ($row['member_id']) {
+            // Use gender default for photo URL - actual photos loaded on demand
+            $photo = getDefaultPhoto($row['gender']);
+            
+            $currentTeam['members'][] = [
+                'id' => $row['member_id'],
+                'name' => $row['member_name'],
+                'jerseyNumber' => $row['jersey_number'] ? (int)$row['jersey_number'] : null,
+                'gender' => $row['gender'],
+                'photo' => $photo,
+                'hasCustomPhoto' => $row['has_photo'] ? true : false
             ];
         }
     }
