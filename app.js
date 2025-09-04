@@ -2120,6 +2120,9 @@ Please check the browser console (F12) for more details.`);
         `);
         
         document.body.appendChild(modal);
+        
+        // 🖼️ Load custom photo for the member edit modal
+        this.loadMemberPhotosLazily([member], null);
     }
     
     addDisciplinaryRecord() {
@@ -2594,6 +2597,9 @@ Please check the browser console (F12) for more details.`);
         `);
         
         document.body.appendChild(modal);
+        
+        // 🖼️ Load custom photo for the player profile
+        this.loadMemberPhotosLazily([member], null);
     }
     
     // Event Management
