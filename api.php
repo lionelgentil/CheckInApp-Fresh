@@ -252,6 +252,13 @@ try {
             }
             break;
             
+        case 'member-photo':
+            // Load individual member photo on-demand
+            if ($method === 'GET') {
+                getMemberPhoto($db);
+            }
+            break;
+            
         case 'teams-no-photos':
             // Teams with members but WITHOUT photo data for faster loading
             if ($method === 'GET') {
@@ -778,6 +785,85 @@ function getTeams($db) {
     }
     
     echo json_encode($teams);
+}
+
+function getMemberPhoto($db) {
+    $memberId = $_GET['member_id'] ?? '';
+    
+    if (empty($memberId)) {
+        http_response_code(400);
+        echo json_encode(['error' => 'Member ID required']);
+        return;
+    }
+    
+    try {
+        // First check if member has photo in member_photos table
+        $photoStmt = $db->prepare('SELECT photo_data FROM member_photos WHERE member_id = ?');
+        $photoStmt->execute([$memberId]);
+        $photoData = $photoStmt->fetchColumn();
+        
+        if ($photoData) {
+            // Return base64 photo data
+            echo json_encode([
+                'success' => true,
+                'member_id' => $memberId,
+                'photo' => $photoData,
+                'source' => 'member_photos_table'
+            ]);
+            return;
+        }
+        
+        // Fallback: check legacy photo field in team_members
+        $memberStmt = $db->prepare('SELECT photo, gender FROM team_members WHERE id = ?');
+        $memberStmt->execute([$memberId]);
+        $member = $memberStmt->fetch(PDO::FETCH_ASSOC);
+        
+        if (!$member) {
+            http_response_code(404);
+            echo json_encode(['error' => 'Member not found']);
+            return;
+        }
+        
+        if ($member['photo'] && $member['photo'] !== 'has_photo') {
+            // Legacy photo data
+            $photoValue = $member['photo'];
+            
+            if (strpos($photoValue, 'data:image/') === 0) {
+                // Base64 data in legacy field
+                echo json_encode([
+                    'success' => true,
+                    'member_id' => $memberId,
+                    'photo' => $photoValue,
+                    'source' => 'legacy_base64'
+                ]);
+                return;
+            } else {
+                // File-based photo - convert to API URL
+                $cleanFilename = basename($photoValue);
+                if (strpos($cleanFilename, '.') !== false) {
+                    echo json_encode([
+                        'success' => true,
+                        'member_id' => $memberId,
+                        'photo' => "/api/photos?filename=" . urlencode($cleanFilename),
+                        'source' => 'legacy_file'
+                    ]);
+                    return;
+                }
+            }
+        }
+        
+        // No custom photo found - return gender default
+        echo json_encode([
+            'success' => true,
+            'member_id' => $memberId,
+            'photo' => getDefaultPhoto($member['gender']),
+            'source' => 'gender_default'
+        ]);
+        
+    } catch (Exception $e) {
+        http_response_code(500);
+        echo json_encode(['error' => 'Failed to load member photo: ' . $e->getMessage()]);
+    }
 }
 
 function getTeamsWithoutPhotos($db) {

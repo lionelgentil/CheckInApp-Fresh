@@ -423,6 +423,95 @@ class CheckInApp {
             this.referees = [];
         }
     }
+
+    // =====================================
+    // LAZY PHOTO LOADING (On-demand photo loading)
+    // =====================================
+
+    /**
+     * Load custom photos for members who have them, replacing default photos
+     */
+    async loadMemberPhotosLazily(members, containerId = null) {
+        if (!members || members.length === 0) return;
+
+        // Filter members who have custom photos
+        const membersWithPhotos = members.filter(member => member.hasCustomPhoto);
+        
+        if (membersWithPhotos.length === 0) return;
+
+        console.log(`🖼️ Loading ${membersWithPhotos.length} custom photos lazily...`);
+
+        // Load photos in batches to avoid overwhelming the server
+        const batchSize = 5;
+        for (let i = 0; i < membersWithPhotos.length; i += batchSize) {
+            const batch = membersWithPhotos.slice(i, i + batchSize);
+            
+            // Load batch in parallel
+            const promises = batch.map(member => this.loadSingleMemberPhoto(member.id));
+            
+            try {
+                const results = await Promise.all(promises);
+                
+                // Update UI with loaded photos
+                results.forEach((result, index) => {
+                    if (result && result.success) {
+                        const member = batch[index];
+                        this.updateMemberPhotoInUI(member.id, result.photo, containerId);
+                    }
+                });
+                
+                // Small delay between batches to be nice to the server
+                if (i + batchSize < membersWithPhotos.length) {
+                    await new Promise(resolve => setTimeout(resolve, 100));
+                }
+                
+            } catch (error) {
+                console.warn('Some photos failed to load in batch:', error);
+            }
+        }
+    }
+
+    /**
+     * Load a single member's photo
+     */
+    async loadSingleMemberPhoto(memberId) {
+        try {
+            const response = await fetch(`/api/member-photo?member_id=${encodeURIComponent(memberId)}`);
+            if (response.ok) {
+                return await response.json();
+            }
+        } catch (error) {
+            console.warn(`Failed to load photo for member ${memberId}:`, error);
+        }
+        return null;
+    }
+
+    /**
+     * Update member photo in the UI
+     */
+    updateMemberPhotoInUI(memberId, photoUrl, containerId = null) {
+        const selector = containerId ? 
+            `#${containerId} img[data-member-id="${memberId}"]` : 
+            `img[data-member-id="${memberId}"]`;
+            
+        const imgElements = document.querySelectorAll(selector);
+        
+        imgElements.forEach(img => {
+            // Add fade effect for smooth transition
+            img.style.opacity = '0.5';
+            img.src = photoUrl;
+            
+            img.onload = () => {
+                img.style.opacity = '1';
+                img.style.transition = 'opacity 0.3s ease';
+            };
+            
+            img.onerror = () => {
+                img.style.opacity = '1';
+                // Keep the default photo if loading fails
+            };
+        });
+    }
     
     async saveReferees() {
         try {
@@ -460,37 +549,16 @@ class CheckInApp {
     
     // 🚀 PERFORMANCE: Generate lazy-loading image HTML
     getLazyImageHtml(member, className = 'member-photo', style = '') {
-        const photoUrl = this.getMemberPhotoUrl(member);
-        const fallbackUrl = this.getGenderDefaultPhoto(member);
+        // For teams-no-photos, start with gender default and add data attribute for lazy loading
+        const defaultPhotoUrl = this.getGenderDefaultPhoto(member);
         
-        // BASE64 FIX: Skip lazy loading for base64 images as they're already embedded data
-        if (photoUrl.startsWith('data:image/')) {
-            console.log('📸 Bypassing lazy loading for base64 image:', member.name);
-            return `<img src="${photoUrl}" 
-                         alt="${member.name}" 
-                         class="${className}" 
-                         ${style ? `style="${style}"` : ''}
-                         loading="eager">`;
-        }
-        
-        if (this.imageObserver) {
-            // Use lazy loading with placeholder for non-base64 images
-            const placeholder = '/api/photos?filename=default&gender=' + (member.gender || 'male');
-            return `<img src="${placeholder}" 
-                         data-lazy-src="${photoUrl}" 
-                         data-fallback="${fallbackUrl}"
-                         alt="${member.name}" 
-                         class="${className} lazy" 
-                         ${style ? `style="${style}"` : ''}
-                         loading="lazy">`;
-        } else {
-            // Fallback to immediate loading
-            return `<img src="${photoUrl}" 
-                         alt="${member.name}" 
-                         class="${className}" 
-                         ${style ? `style="${style}"` : ''}
-                         loading="lazy">`;
-        }
+        // Always start with default photo, add member ID for lazy loading
+        return `<img src="${defaultPhotoUrl}" 
+                     data-member-id="${member.id}"
+                     alt="${member.name}" 
+                     class="${className}" 
+                     ${style ? `style="${style}"` : ''}
+                     loading="lazy">`;
     }
     
     // Get member photo URL with gender defaults
@@ -1016,6 +1084,9 @@ class CheckInApp {
             const selectedTeam = this.teams.find(team => team.id === selectedTeamId);
             if (selectedTeam && selectedTeam.members.length > 0) {
                 this.loadLifetimeCardsForTeam(selectedTeam);
+                
+                // 🖼️ NEW: Load custom photos lazily for team members
+                this.loadMemberPhotosLazily(selectedTeam.members, 'teams-container');
             }
         }
         
