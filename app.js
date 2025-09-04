@@ -2053,7 +2053,7 @@ Please check the browser console (F12) for more details.`);
             <div class="form-group">
                 <label class="form-label">${photoLabel}</label>
                 <input type="file" class="form-input file-input" id="detailed-member-photo" accept="image/*" ${isMobile ? 'capture="environment"' : ''}>
-                ${member.photo ? `<img src="${member.photo}" alt="Current photo" class="preview-image">` : ''}
+                ${member.photo ? `<img src="${this.getGenderDefaultPhoto(member)}" data-member-id="${member.id}" alt="Current photo" class="preview-image">` : ''}
                 ${isMobile ? '<small style="color: #666; font-size: 0.85em; display: block; margin-top: 5px;">📸 This will open your camera</small>' : ''}
             </div>
             
