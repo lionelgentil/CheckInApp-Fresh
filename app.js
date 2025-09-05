@@ -1907,13 +1907,27 @@ Please check the browser console (F12) for more details.`);
                 team.members.push(newMember);
                 
                 console.log('🚀 Using granular API for new member creation');
-                await this.createMemberProfile(teamId, newMember);
+                
+                try {
+                    await this.createMemberProfile(teamId, newMember);
+                    console.log('✅ Member created in database:', newMember.id);
+                } catch (error) {
+                    console.error('❌ Failed to create member in database:', error);
+                    throw new Error('Failed to create member: ' + error.message);
+                }
                 
                 // Upload photo if provided
                 if (photoFile) {
                     console.log('Uploading photo for new member:', newMember.id);
-                    const photoUrl = await this.uploadPhoto(photoFile, newMember.id);
-                    newMember.photo = photoUrl;
+                    try {
+                        const photoUrl = await this.uploadPhoto(photoFile, newMember.id);
+                        newMember.photo = photoUrl;
+                        console.log('✅ Photo uploaded successfully:', photoUrl);
+                    } catch (error) {
+                        console.error('❌ Photo upload failed:', error);
+                        // Don't fail the entire member creation if photo upload fails
+                        console.warn('⚠️ Continuing without photo due to upload error');
+                    }
                 }
             }
             

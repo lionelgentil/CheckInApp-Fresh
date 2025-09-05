@@ -2145,29 +2145,44 @@ function servePhoto($db) {
 }
 
 function uploadPhoto($db) {
-    // Check if member_id is provided
-    $memberId = $_POST['member_id'] ?? '';
-    
-    error_log("uploadPhoto: Starting upload for member ID: " . $memberId);
-    
-    if (empty($memberId)) {
-        http_response_code(400);
-        echo json_encode(['error' => 'Member ID required']);
-        return;
-    }
-    
-    // Verify member exists
-    $stmt = $db->prepare('SELECT id, name FROM team_members WHERE id = ?');
-    $stmt->execute([$memberId]);
-    $member = $stmt->fetch(PDO::FETCH_ASSOC);
-    if (!$member) {
-        error_log("uploadPhoto: Member not found: " . $memberId);
-        http_response_code(404);
-        echo json_encode(['error' => 'Member not found']);
-        return;
-    }
-    
-    error_log("uploadPhoto: Found member: " . $member['name']);
+    try {
+        // Check if member_id is provided
+        $memberId = $_POST['member_id'] ?? '';
+        
+        error_log("uploadPhoto: Starting upload for member ID: " . $memberId);
+        
+        if (empty($memberId)) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Member ID required']);
+            return;
+        }
+        
+        // Verify member exists (with retry for new members)
+        $member = null;
+        $maxRetries = 3;
+        for ($retry = 0; $retry < $maxRetries; $retry++) {
+            $stmt = $db->prepare('SELECT id, name FROM team_members WHERE id = ?');
+            $stmt->execute([$memberId]);
+            $member = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            if ($member) {
+                break; // Member found
+            }
+            
+            if ($retry < $maxRetries - 1) {
+                error_log("uploadPhoto: Member not found (attempt " . ($retry + 1) . "/$maxRetries), retrying in 100ms...");
+                usleep(100000); // Wait 100ms before retry
+            }
+        }
+        
+        if (!$member) {
+            error_log("uploadPhoto: Member not found after $maxRetries attempts: " . $memberId);
+            http_response_code(404);
+            echo json_encode(['error' => 'Member not found - ensure member is created before uploading photo']);
+            return;
+        }
+        
+        error_log("uploadPhoto: Found member: " . $member['name']);
     
     // Check if file was uploaded
     if (!isset($_FILES['photo']) || $_FILES['photo']['error'] !== UPLOAD_ERR_OK) {
@@ -2284,6 +2299,16 @@ function uploadPhoto($db) {
             unlink($photoPath);
         }
         throw $e;
+    }
+    
+    } catch (Exception $e) {
+        error_log("uploadPhoto: Unexpected error: " . $e->getMessage());
+        error_log("uploadPhoto: Stack trace: " . $e->getTraceAsString());
+        http_response_code(500);
+        echo json_encode([
+            'error' => 'Photo upload failed: ' . $e->getMessage(),
+            'member_id' => $memberId ?? 'unknown'
+        ]);
     }
 }
 
