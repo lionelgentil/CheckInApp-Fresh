@@ -2044,19 +2044,23 @@ function servePhoto($db) {
             return;
         }
         
-        // Check Railway volume first, then fallback to legacy locations
+        // Check Railway volume first, then fallback, then legacy locations
         $volumePhotoPath = '/app/storage/photos/' . $filename;
+        $fallbackPhotoPath = '/tmp/photos/' . $filename;
         $legacyPhotoPath = __DIR__ . '/photos/members/' . $filename;
         
         if (file_exists($volumePhotoPath)) {
             $photoPath = $volumePhotoPath;
             error_log("servePhoto: Found in Railway volume: " . $photoPath);
+        } elseif (file_exists($fallbackPhotoPath)) {
+            $photoPath = $fallbackPhotoPath;
+            error_log("servePhoto: Found in fallback directory: " . $photoPath);
         } elseif (file_exists($legacyPhotoPath)) {
             $photoPath = $legacyPhotoPath;
             error_log("servePhoto: Found in legacy location: " . $photoPath);
         } else {
             $photoPath = null;
-            error_log("servePhoto: Photo not found in volume or legacy location");
+            error_log("servePhoto: Photo not found in any location");
         }
         
         // If the exact filename doesn't exist, try to find any photo for this member
@@ -2070,21 +2074,28 @@ function servePhoto($db) {
                 $memberId = substr($filenameWithoutExt, 0, strrpos($filenameWithoutExt, '_'));
             }
             
-            // Try to find any existing photo file for this member in volume first, then legacy
+            // Try to find any existing photo file for this member in volume, fallback, then legacy
             $volumeDir = '/app/storage/photos';
+            $fallbackDir = '/tmp/photos';
             $legacyDir = __DIR__ . '/photos/members';
             
-            $volumeFiles = glob($volumeDir . '/' . $memberId . '_*');
+            $volumeFiles = is_dir($volumeDir) ? glob($volumeDir . '/' . $memberId . '_*') : [];
+            $fallbackFiles = is_dir($fallbackDir) ? glob($fallbackDir . '/' . $memberId . '_*') : [];
             $legacyFiles = glob($legacyDir . '/' . $memberId . '*');
             
             error_log("servePhoto: Searching volume: " . $volumeDir . '/' . $memberId . '_*');
             error_log("servePhoto: Found " . count($volumeFiles) . " volume files: " . implode(', ', $volumeFiles));
+            error_log("servePhoto: Found " . count($fallbackFiles) . " fallback files: " . implode(', ', $fallbackFiles));
             error_log("servePhoto: Found " . count($legacyFiles) . " legacy files: " . implode(', ', $legacyFiles));
             
             if (!empty($volumeFiles)) {
                 // Use the most recent file from volume
                 $photoPath = end($volumeFiles);
                 error_log("servePhoto: Using volume photo for member {$memberId}: " . basename($photoPath));
+            } elseif (!empty($fallbackFiles)) {
+                // Use the most recent file from fallback
+                $photoPath = end($fallbackFiles);
+                error_log("servePhoto: Using fallback photo for member {$memberId}: " . basename($photoPath));
             } elseif (!empty($legacyFiles)) {
                 // Fallback to legacy files
                 $photoPath = end($legacyFiles);
@@ -2233,35 +2244,50 @@ function uploadPhoto($db) {
     $timestamp = time();
     $filename = $memberId . '_' . $timestamp . '.' . $extension;
     
-    // Ensure photos directory exists in Railway volume with proper permissions
+    // Ensure photos directory exists - Railway volume should be mounted at /app/storage/photos
     $photosDir = '/app/storage/photos';
+    $fallbackDir = '/tmp/photos'; // Fallback for permission issues
+    
+    // Check if Railway volume exists and is accessible
     if (!is_dir($photosDir)) {
-        error_log("uploadPhoto: Creating photos directory: " . $photosDir);
-        if (!mkdir($photosDir, 0777, true)) {
-            http_response_code(500);
-            echo json_encode(['error' => 'Failed to create photos directory in volume']);
-            return;
+        error_log("uploadPhoto: Railway volume directory not found: " . $photosDir);
+        $photosDir = $fallbackDir;
+    } else {
+        // Test write access without trying to change permissions
+        $testFile = $photosDir . '/write_test_' . time();
+        $canWrite = @file_put_contents($testFile, 'test');
+        
+        if ($canWrite === false) {
+            error_log("uploadPhoto: Railway volume not writable, using fallback directory");
+            error_log("uploadPhoto: Volume owner: " . (posix_getpwuid(fileowner($photosDir))['name'] ?? 'unknown'));
+            error_log("uploadPhoto: Volume permissions: " . substr(sprintf('%o', fileperms($photosDir)), -4));
+            $photosDir = $fallbackDir;
+        } else {
+            // Clean up test file
+            @unlink($testFile);
+            error_log("uploadPhoto: Railway volume is writable");
         }
-        // Ensure proper permissions
-        chmod($photosDir, 0777);
     }
     
-    // Check if directory is writable
+    // Ensure fallback directory exists if we're using it
+    if ($photosDir === $fallbackDir && !is_dir($photosDir)) {
+        mkdir($photosDir, 0777, true);
+    }
+    
+    // Final check that we have a writable directory
     if (!is_writable($photosDir)) {
-        error_log("uploadPhoto: Directory not writable, attempting to fix permissions: " . $photosDir);
-        chmod($photosDir, 0777);
-        
-        if (!is_writable($photosDir)) {
-            error_log("uploadPhoto: Directory still not writable after chmod: " . $photosDir);
-            http_response_code(500);
-            echo json_encode([
-                'error' => 'Photos directory is not writable',
-                'directory' => $photosDir,
-                'permissions' => substr(sprintf('%o', fileperms($photosDir)), -4),
-                'owner' => posix_getpwuid(fileowner($photosDir))['name'] ?? 'unknown'
-            ]);
-            return;
-        }
+        http_response_code(500);
+        echo json_encode([
+            'error' => 'No writable directory available for photos',
+            'tried_volume' => '/app/storage/photos',
+            'tried_fallback' => $fallbackDir,
+            'current_directory' => $photosDir,
+            'directory_exists' => is_dir($photosDir),
+            'directory_writable' => is_writable($photosDir),
+            'volume_owner' => is_dir('/app/storage/photos') ? (posix_getpwuid(fileowner('/app/storage/photos'))['name'] ?? 'unknown') : 'N/A',
+            'volume_permissions' => is_dir('/app/storage/photos') ? substr(sprintf('%o', fileperms('/app/storage/photos')), -4) : 'N/A'
+        ]);
+        return;
     }
     
     $photoPath = $photosDir . '/' . $filename;
