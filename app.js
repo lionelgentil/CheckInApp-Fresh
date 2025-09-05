@@ -2132,15 +2132,32 @@ Please check the browser console (F12) for more details.`);
             `;
         }
         
+        // Get the photo URL for the inactive player
+        const photoUrl = this.getMemberPhotoUrl(inactiveMember);
+        
         const modal = this.createModal('Player Found', `
             <div style="margin-bottom: 20px;">
                 <div style="padding: 15px; background: #e3f2fd; border-radius: 8px; border-left: 4px solid #2196f3; margin-bottom: 15px;">
-                    <h3 style="margin: 0 0 10px 0; color: #1565c0;">🔍 Inactive Player Found</h3>
-                    <p style="margin: 0; color: #1976d2;">
-                        Found an inactive player named <strong>"${inactiveMember.name}"</strong> 
-                        (last on ${inactiveMember.team_name} - ${inactiveMember.team_category}).
-                    </p>
-                    <p style="margin: 10px 0 0 0; color: #1976d2;">
+                    <h3 style="margin: 0 0 15px 0; color: #1565c0;">🔍 Inactive Player Found</h3>
+                    
+                    <div style="display: flex; align-items: flex-start; gap: 15px; margin-bottom: 15px;">
+                        <div style="flex-shrink: 0;">
+                            <img src="${photoUrl}" alt="${inactiveMember.name}" 
+                                 style="width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 3px solid #2196f3;">
+                        </div>
+                        <div style="flex: 1;">
+                            <h4 style="margin: 0 0 5px 0; color: #1565c0;">${inactiveMember.name}</h4>
+                            <p style="margin: 0 0 5px 0; color: #666; font-size: 0.9em;">
+                                Last played for: <strong>${inactiveMember.team_name}</strong>
+                            </p>
+                            <p style="margin: 0; color: #666; font-size: 0.9em;">
+                                Category: <strong>${inactiveMember.team_category}</strong>
+                            </p>
+                            ${inactiveMember.jersey_number ? `<p style="margin: 5px 0 0 0; color: #666; font-size: 0.9em;">Previous Jersey: <strong>#${inactiveMember.jersey_number}</strong></p>` : ''}
+                        </div>
+                    </div>
+                    
+                    <p style="margin: 0; color: #1976d2; font-weight: 500;">
                         Is this the same person you want to add to <strong>${targetTeam?.name || 'this team'}</strong>?
                     </p>
                 </div>
