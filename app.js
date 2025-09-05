@@ -4,7 +4,7 @@
  */
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '4.9.2';
+const APP_VERSION = '5.0.0';
 
 class CheckInApp {
     constructor() {
@@ -5147,6 +5147,9 @@ Please check the browser console (F12) for more details.`);
         
         // 🚀 PERFORMANCE: Initialize lazy loading for newly rendered grid images
         this.initializeLazyImages(container);
+        
+        // 🖼️ Load custom photos for the grid team players
+        this.loadMemberPhotosLazily(team.members, `grid-container-${teamType}`);
     }
     
     // Check if player is currently suspended

@@ -4,7 +4,7 @@
  */
 
 // Version constant - shared across all apps
-const CORE_VERSION = '4.9.2';
+const CORE_VERSION = '5.0.0';
 
 /**
  * Base class with shared functionality for CheckIn apps
