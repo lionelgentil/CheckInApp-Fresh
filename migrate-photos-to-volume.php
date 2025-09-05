@@ -242,7 +242,7 @@ function migratePhotosToVolume() {
             $photoData = $member['photo'];
             $originalPhotoData = $photoData; // Keep original for rollback
             
-            $results['debug_info'][] = "Processing {$memberName}: " . substr($photoData, 0, 50) . "...";
+            $results['debug_info'][] = "Processing {$memberName}: " . substr($photoData, 0, 50) . "... (length: " . strlen($photoData) . ", type: " . gettype($photoData) . ")";
             
             try {
                 if ($photoData === 'has_photo') {
@@ -252,13 +252,22 @@ function migratePhotosToVolume() {
                     
                 } elseif (strpos($photoData, 'data:image/') === 0) {
                     // BASE64 DATA - Extract and save to file FIRST, then prepare DB update
-                    if (preg_match('/^data:image\/(\w+);base64,(.+)$/', $photoData, $matches)) {
+                    $results['debug_info'][] = "  → Attempting to parse base64 data (length: " . strlen($photoData) . ")";
+                    
+                    // First check if it looks like a proper data URL
+                    if (!preg_match('/^data:image\/[^;]+;base64,/', $photoData)) {
+                        throw new Exception("Photo data starts with 'data:image/' but doesn't match expected data URL format. Start: " . substr($photoData, 0, 100));
+                    }
+                    
+                    if (preg_match('/^data:image\/(\w+);base64,(.+)$/s', $photoData, $matches)) {
                         $imageType = strtolower($matches[1]);
                         $imageData = base64_decode($matches[2]);
                         
                         if ($imageData === false) {
-                            throw new Exception("Failed to decode base64 data");
+                            throw new Exception("Failed to decode base64 data for image type: " . $imageType);
                         }
+                        
+                        $results['debug_info'][] = "  → Successfully decoded base64 data (" . strlen($imageData) . " bytes, type: " . $imageType . ")";
                         
                         // Map image types to file extensions
                         $extensions = [
@@ -301,7 +310,9 @@ function migratePhotosToVolume() {
                         $results['debug_info'][] = "  → File saved, prepared DB update to {$filename}";
                         
                     } else {
-                        throw new Exception("Invalid base64 format");
+                        // Show more details about why the regex failed
+                        $photoStart = substr($photoData, 0, 100);
+                        throw new Exception("Invalid base64 format - could not parse data URL. Start of data: " . $photoStart);
                     }
                     
                 } elseif (strpos($photoData, '/api/photos') === 0) {
