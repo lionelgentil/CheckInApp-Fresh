@@ -691,7 +691,7 @@ try {
 
 function getTeams($db) {
     // Optimized single query with JOIN to get all teams and members with photos from separate table
-    // Only include active members (active = TRUE or active IS NULL for backward compatibility)
+    // TEMPORARY: Removed active filter until migration is run
     $stmt = $db->query('
         SELECT 
             t.id as team_id,
@@ -710,7 +710,7 @@ function getTeams($db) {
             END AS photo_flag,
             mp.photo_data
         FROM teams t
-        LEFT JOIN team_members tm ON t.id = tm.team_id AND (tm.active IS NULL OR tm.active = TRUE)
+        LEFT JOIN team_members tm ON t.id = tm.team_id
         LEFT JOIN member_photos mp ON tm.id = mp.member_id
         ORDER BY t.name, tm.name
     ');
@@ -893,7 +893,7 @@ function getMemberPhoto($db) {
 
 function getTeamsWithoutPhotos($db) {
     // Fast teams endpoint with member data but NO photo data - significantly faster
-    // Only include active members (active = TRUE or active IS NULL for backward compatibility)
+    // TEMPORARY: Removed active filter until migration is run
     $stmt = $db->query('
         SELECT 
             t.id as team_id,
@@ -912,7 +912,7 @@ function getTeamsWithoutPhotos($db) {
                 ELSE NULL
             END AS has_photo
         FROM teams t
-        LEFT JOIN team_members tm ON t.id = tm.team_id AND (tm.active IS NULL OR tm.active = TRUE)
+        LEFT JOIN team_members tm ON t.id = tm.team_id
         ORDER BY t.name, tm.name
     ');
     
@@ -965,7 +965,7 @@ function getTeamsWithoutPhotos($db) {
 
 function getTeamsBasic($db) {
     // Lightweight teams endpoint - only essential data without player photos for performance
-    // Only count active members (active = TRUE or active IS NULL for backward compatibility)
+    // TEMPORARY: Removed active filter until migration is run
     $stmt = $db->query('
         SELECT 
             t.id,
@@ -976,7 +976,7 @@ function getTeamsBasic($db) {
             t.captain_id,
             COUNT(tm.id) as member_count
         FROM teams t
-        LEFT JOIN team_members tm ON t.id = tm.team_id AND (tm.active IS NULL OR tm.active = TRUE)
+        LEFT JOIN team_members tm ON t.id = tm.team_id
         GROUP BY t.id, t.name, t.category, t.color, t.description, t.captain_id
         ORDER BY t.name
     ');
@@ -1038,7 +1038,7 @@ function getSpecificTeams($db) {
             END AS photo_flag,
             mp.photo_data
         FROM teams t
-        LEFT JOIN team_members tm ON t.id = tm.team_id AND (tm.active IS NULL OR tm.active = TRUE)
+        LEFT JOIN team_members tm ON t.id = tm.team_id
         LEFT JOIN member_photos mp ON tm.id = mp.member_id
         WHERE t.id IN ({$placeholders})
         ORDER BY t.name, tm.name
@@ -2773,7 +2773,7 @@ function executeDatabaseMaintenance($db) {
     
     // Basic security: only allow certain operations
     $query_upper = strtoupper($query);
-    $allowed_operations = ['SELECT', 'UPDATE', 'DELETE', 'INSERT', 'CREATE INDEX'];
+    $allowed_operations = ['SELECT', 'UPDATE', 'DELETE', 'INSERT', 'CREATE INDEX', 'ALTER TABLE'];
     $is_allowed = false;
     
     foreach ($allowed_operations as $op) {
@@ -2785,17 +2785,24 @@ function executeDatabaseMaintenance($db) {
     
     if (!$is_allowed) {
         http_response_code(400);
-        echo json_encode(['error' => 'Only SELECT, UPDATE, DELETE, INSERT, and CREATE INDEX operations are allowed']);
+        echo json_encode(['error' => 'Only SELECT, UPDATE, DELETE, INSERT, CREATE INDEX, and ALTER TABLE operations are allowed']);
         return;
     }
     
-    // Prevent dangerous operations (but allow CREATE INDEX specifically)
-    $dangerous_keywords = ['DROP', 'TRUNCATE', 'ALTER', 'GRANT', 'REVOKE'];
+    // Prevent dangerous operations (but allow CREATE INDEX and ALTER TABLE specifically)
+    $dangerous_keywords = ['DROP', 'TRUNCATE', 'GRANT', 'REVOKE'];
     
     // Special handling for CREATE - only allow CREATE INDEX
     if (strpos($query_upper, 'CREATE') !== false && strpos($query_upper, 'CREATE INDEX') !== 0) {
         http_response_code(400);
         echo json_encode(['error' => 'Only CREATE INDEX is allowed, other CREATE operations are forbidden']);
+        return;
+    }
+    
+    // Special handling for ALTER - only allow ALTER TABLE
+    if (strpos($query_upper, 'ALTER') !== false && strpos($query_upper, 'ALTER TABLE') !== 0) {
+        http_response_code(400);
+        echo json_encode(['error' => 'Only ALTER TABLE is allowed, other ALTER operations are forbidden']);
         return;
     }
     
