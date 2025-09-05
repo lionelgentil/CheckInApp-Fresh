@@ -150,62 +150,108 @@ function migratePhotosToVolume() {
     try {
         $db = getDatabaseConnection();
         
-        // Ensure volume directory exists
+        // Use same volume detection logic as main API
         $volumeDir = '/app/storage/photos';
         $fallbackDir = '/tmp/photos';
         
         $photosDir = $volumeDir;
-        if (!is_dir($photosDir)) {
-            if (!mkdir($photosDir, 0755, true)) {
-                $photosDir = $fallbackDir;
-                if (!is_dir($photosDir)) {
-                    mkdir($photosDir, 0755, true);
-                }
+        $volumeStatus = 'unknown';
+        $hasBase64Photos = false;
+        
+        // First, check if we have any base64 photos that need file storage
+        foreach ($members as $member) {
+            if (strpos($member['photo'] ?? '', 'data:image/') === 0) {
+                $hasBase64Photos = true;
+                break;
             }
         }
         
-        // Test write access
-        $testFile = $photosDir . '/migration_test_' . time();
-        if (@file_put_contents($testFile, 'test') === false) {
-            $photosDir = $fallbackDir;
-            if (!is_dir($photosDir)) {
-                mkdir($photosDir, 0755, true);
+        // Check if Railway volume exists and is accessible
+        if (!is_dir($volumeDir)) {
+            error_log("migratePhotos: Railway volume directory not found: " . $volumeDir);
+            $volumeStatus = 'directory_not_found';
+            
+            // CRITICAL: If we have base64 photos but no volume, FAIL rather than use /tmp
+            if ($hasBase64Photos) {
+                throw new Exception("Railway volume not found at {$volumeDir} but base64 photos need permanent storage. Cannot use ephemeral /tmp storage.");
             }
+            
+            $photosDir = $fallbackDir;
         } else {
-            @unlink($testFile);
+            // Test write access without trying to change permissions
+            $testFile = $volumeDir . '/migration_test_' . time();
+            $canWrite = @file_put_contents($testFile, 'test');
+            
+            if ($canWrite === false) {
+                error_log("migratePhotos: Railway volume not writable, checking if we have base64 photos...");
+                error_log("migratePhotos: Volume owner: " . (posix_getpwuid(fileowner($volumeDir))['name'] ?? 'unknown'));
+                error_log("migratePhotos: Volume permissions: " . substr(sprintf('%o', fileperms($volumeDir)), -4));
+                $volumeStatus = 'not_writable';
+                
+                // CRITICAL: If we have base64 photos but volume isn't writable, FAIL rather than use /tmp
+                if ($hasBase64Photos) {
+                    throw new Exception("Railway volume at {$volumeDir} is not writable but base64 photos need permanent storage. Cannot use ephemeral /tmp storage. Check volume permissions.");
+                }
+                
+                $photosDir = $fallbackDir;
+            } else {
+                // Clean up test file
+                @unlink($testFile);
+                error_log("migratePhotos: Railway volume is writable");
+                $volumeStatus = 'writable';
+            }
+        }
+        
+        // Ensure fallback directory exists if we're using it
+        if ($photosDir === $fallbackDir && !is_dir($photosDir)) {
+            mkdir($photosDir, 0777, true);
         }
         
         $results = [
             'storage_location' => $photosDir,
+            'volume_status' => $volumeStatus,
+            'volume_directory_exists' => is_dir($volumeDir),
+            'volume_writable' => $volumeStatus === 'writable',
             'base64_migrated' => 0,
             'filenames_updated' => 0,
             'api_urls_cleaned' => 0,
             'errors' => 0,
-            'error_details' => []
+            'skipped' => 0,
+            'error_details' => [],
+            'debug_info' => []
         ];
         
-        // Get all members with photo data that needs migration
+        // Get all members with photo data that needs migration or analysis
         $stmt = $db->query("
             SELECT id, name, photo, gender
             FROM team_members 
             WHERE photo IS NOT NULL 
-            AND photo != '' 
-            AND photo != 'has_photo'
+            AND photo != ''
             ORDER BY name
         ");
         
         $members = $stmt->fetchAll(PDO::FETCH_ASSOC);
         
-        $db->beginTransaction();
+        // Track file operations for rollback safety
+        $createdFiles = [];
+        $databaseUpdates = [];
         
         foreach ($members as $member) {
             $memberId = $member['id'];
             $memberName = $member['name'];
             $photoData = $member['photo'];
+            $originalPhotoData = $photoData; // Keep original for rollback
+            
+            $results['debug_info'][] = "Processing {$memberName}: " . substr($photoData, 0, 50) . "...";
             
             try {
-                if (strpos($photoData, 'data:image/') === 0) {
-                    // BASE64 DATA - Extract and save to file
+                if ($photoData === 'has_photo') {
+                    // Skip 'has_photo' flag - this means photo is in member_photos table
+                    $results['skipped']++;
+                    $results['debug_info'][] = "  → Skipped (has_photo flag)";
+                    
+                } elseif (strpos($photoData, 'data:image/') === 0) {
+                    // BASE64 DATA - Extract and save to file FIRST, then prepare DB update
                     if (preg_match('/^data:image\/(\w+);base64,(.+)$/', $photoData, $matches)) {
                         $imageType = strtolower($matches[1]);
                         $imageData = base64_decode($matches[2]);
@@ -224,66 +270,136 @@ function migratePhotosToVolume() {
                         ];
                         
                         $extension = $extensions[$imageType] ?? 'jpg';
-                        $timestamp = time();
+                        $timestamp = time() + count($createdFiles); // Ensure unique timestamps
                         $filename = $memberId . '_' . $timestamp . '.' . $extension;
                         $filePath = $photosDir . '/' . $filename;
                         
-                        if (file_put_contents($filePath, $imageData) === false) {
+                        // SAFETY: Write file first
+                        $bytesWritten = file_put_contents($filePath, $imageData);
+                        if ($bytesWritten === false) {
                             throw new Exception("Failed to save file to " . $filePath);
                         }
                         
-                        // Update database with filename
-                        $updateStmt = $db->prepare("UPDATE team_members SET photo = ? WHERE id = ?");
-                        $updateStmt->execute([$filename, $memberId]);
+                        // SAFETY: Verify file was written correctly
+                        if (!file_exists($filePath) || filesize($filePath) !== strlen($imageData)) {
+                            throw new Exception("File verification failed for " . $filePath);
+                        }
+                        
+                        // SAFETY: Track created file for potential rollback
+                        $createdFiles[] = $filePath;
+                        
+                        // SAFETY: Prepare database update (don't execute yet)
+                        $databaseUpdates[] = [
+                            'member_id' => $memberId,
+                            'member_name' => $memberName,
+                            'new_photo' => $filename,
+                            'original_photo' => $originalPhotoData,
+                            'action' => 'base64_migrated'
+                        ];
                         
                         $results['base64_migrated']++;
+                        $results['debug_info'][] = "  → File saved, prepared DB update to {$filename}";
                         
                     } else {
                         throw new Exception("Invalid base64 format");
                     }
                     
                 } elseif (strpos($photoData, '/api/photos') === 0) {
-                    // API URL - Extract filename
+                    // API URL - Extract filename (no file operations, safer)
                     $parsedUrl = parse_url($photoData);
                     if ($parsedUrl && isset($parsedUrl['query'])) {
                         parse_str($parsedUrl['query'], $query);
                         if (isset($query['filename'])) {
                             $cleanFilename = $query['filename'];
                             
-                            // Update database with clean filename
-                            $updateStmt = $db->prepare("UPDATE team_members SET photo = ? WHERE id = ?");
-                            $updateStmt->execute([$cleanFilename, $memberId]);
+                            // SAFETY: Prepare database update (don't execute yet)
+                            $databaseUpdates[] = [
+                                'member_id' => $memberId,
+                                'member_name' => $memberName,
+                                'new_photo' => $cleanFilename,
+                                'original_photo' => $originalPhotoData,
+                                'action' => 'api_urls_cleaned'
+                            ];
                             
                             $results['api_urls_cleaned']++;
+                            $results['debug_info'][] = "  → Prepared DB update to clean API URL to {$cleanFilename}";
+                        } else {
+                            throw new Exception("Could not extract filename from API URL");
                         }
+                    } else {
+                        throw new Exception("Could not parse API URL");
                     }
                     
                 } elseif (strpos($photoData, '/photos/members/') === 0) {
-                    // FULL PATH - Extract filename
+                    // FULL PATH - Extract filename (no file operations, safer)
                     $cleanFilename = basename($photoData);
                     
-                    // Update database with clean filename
-                    $updateStmt = $db->prepare("UPDATE team_members SET photo = ? WHERE id = ?");
-                    $updateStmt->execute([$cleanFilename, $memberId]);
+                    // SAFETY: Prepare database update (don't execute yet)
+                    $databaseUpdates[] = [
+                        'member_id' => $memberId,
+                        'member_name' => $memberName,
+                        'new_photo' => $cleanFilename,
+                        'original_photo' => $originalPhotoData,
+                        'action' => 'filenames_updated'
+                    ];
                     
                     $results['filenames_updated']++;
+                    $results['debug_info'][] = "  → Prepared DB update to clean path to {$cleanFilename}";
                     
                 } elseif (preg_match('/^[a-zA-Z0-9\-_.]+\.(jpg|jpeg|png|webp|svg)$/i', $photoData)) {
                     // Already a clean filename - no action needed
-                    $results['filenames_updated']++;
+                    $results['skipped']++;
+                    $results['debug_info'][] = "  → Already clean filename: {$photoData}";
                     
                 } else {
                     // Unknown format - log but don't fail
-                    $results['error_details'][] = "Unknown photo format for {$memberName}: " . substr($photoData, 0, 50);
+                    $results['skipped']++;
+                    $results['debug_info'][] = "  → Unknown format, skipped: " . substr($photoData, 0, 100);
                 }
                 
             } catch (Exception $e) {
                 $results['errors']++;
                 $results['error_details'][] = "Error processing {$memberName}: " . $e->getMessage();
+                $results['debug_info'][] = "  → ERROR: " . $e->getMessage();
+                
+                // SAFETY: If this was a base64 operation and we created a file, clean it up
+                if (isset($filePath) && file_exists($filePath)) {
+                    unlink($filePath);
+                    $results['debug_info'][] = "  → Cleaned up failed file: " . basename($filePath);
+                }
             }
         }
         
-        $db->commit();
+        // SAFETY: Now execute all database updates in a transaction
+        $results['debug_info'][] = "\n🔒 Starting database transaction for " . count($databaseUpdates) . " updates...";
+        
+        $db->beginTransaction();
+        
+        try {
+            foreach ($databaseUpdates as $update) {
+                $updateStmt = $db->prepare("UPDATE team_members SET photo = ? WHERE id = ?");
+                $updateStmt->execute([$update['new_photo'], $update['member_id']]);
+                
+                $results['debug_info'][] = "  ✅ DB updated: {$update['member_name']}";
+            }
+            
+            $db->commit();
+            $results['debug_info'][] = "🔒 Database transaction committed successfully";
+            
+        } catch (Exception $e) {
+            $db->rollBack();
+            $results['debug_info'][] = "🔒 Database transaction failed, rolling back...";
+            
+            // SAFETY: Clean up any files we created since DB update failed
+            foreach ($createdFiles as $filePath) {
+                if (file_exists($filePath)) {
+                    unlink($filePath);
+                    $results['debug_info'][] = "  🧹 Cleaned up file: " . basename($filePath);
+                }
+            }
+            
+            throw new Exception("Database transaction failed: " . $e->getMessage());
+        }
         
         $results['success'] = true;
         $results['total_processed'] = count($members);
@@ -519,10 +635,14 @@ function migratePhotosToVolume() {
                 if (result.success) {
                     let output = `✅ Migration completed successfully!\n\n`;
                     output += `📍 Storage Location: ${result.storage_location}\n`;
+                    output += `🔧 Volume Status: ${result.volume_status}\n`;
+                    output += `📁 Volume Directory Exists: ${result.volume_directory_exists}\n`;
+                    output += `✍️  Volume Writable: ${result.volume_writable}\n\n`;
                     output += `📊 Total Processed: ${result.total_processed}\n`;
                     output += `📸 Base64 Photos Migrated: ${result.base64_migrated}\n`;
                     output += `🔧 API URLs Cleaned: ${result.api_urls_cleaned}\n`;
                     output += `📁 Filenames Updated: ${result.filenames_updated}\n`;
+                    output += `⏭️  Skipped: ${result.skipped}\n`;
                     output += `❌ Errors: ${result.errors}\n\n`;
                     
                     if (result.error_details && result.error_details.length > 0) {
@@ -530,6 +650,17 @@ function migratePhotosToVolume() {
                         result.error_details.forEach(error => {
                             output += `  • ${error}\n`;
                         });
+                        output += `\n`;
+                    }
+                    
+                    if (result.debug_info && result.debug_info.length > 0) {
+                        output += `Debug Info (first 20 entries):\n`;
+                        result.debug_info.slice(0, 20).forEach(debug => {
+                            output += `  ${debug}\n`;
+                        });
+                        if (result.debug_info.length > 20) {
+                            output += `  ... and ${result.debug_info.length - 20} more entries\n`;
+                        }
                     }
                     
                     resultsDiv.innerHTML = `<span class="success">${output}</span>`;
