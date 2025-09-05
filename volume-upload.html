@@ -1,0 +1,156 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Railway Volume File Upload</title>
+    <style>
+        body { font-family: Arial, sans-serif; max-width: 600px; margin: 50px auto; padding: 20px; }
+        .upload-area { border: 2px dashed #ccc; padding: 40px; text-align: center; margin: 20px 0; }
+        .upload-area:hover { border-color: #2196F3; background: #f9f9f9; }
+        button { background: #2196F3; color: white; padding: 10px 20px; border: none; border-radius: 5px; cursor: pointer; }
+        button:hover { background: #1976D2; }
+        .file-list { margin-top: 20px; }
+        .file-item { padding: 10px; border: 1px solid #ddd; margin: 5px 0; border-radius: 5px; }
+        .success { color: green; }
+        .error { color: red; }
+    </style>
+</head>
+<body>
+    <h1>🚂 Railway Volume File Upload</h1>
+    <p>Upload files directly to your Railway volume at <code>/app/storage/photos/</code></p>
+    
+    <div class="upload-area" onclick="document.getElementById('fileInput').click()">
+        <p>📁 Click here or drag files to upload</p>
+        <input type="file" id="fileInput" multiple accept="image/*" style="display: none;">
+    </div>
+    
+    <button onclick="uploadFiles()">Upload Selected Files</button>
+    
+    <div id="results" class="file-list"></div>
+    
+    <h3>Volume File Management</h3>
+    <button onclick="listVolumeFiles()">📋 List Files in Volume</button>
+    <button onclick="testVolumeAccess()">🔧 Test Volume Access</button>
+    
+    <div id="fileList" class="file-list"></div>
+
+    <script>
+        let selectedFiles = [];
+
+        document.getElementById('fileInput').addEventListener('change', function(e) {
+            selectedFiles = Array.from(e.target.files);
+            updateFileDisplay();
+        });
+
+        function updateFileDisplay() {
+            const results = document.getElementById('results');
+            results.innerHTML = '<h3>Selected Files:</h3>' + 
+                selectedFiles.map(file => `
+                    <div class="file-item">
+                        📄 ${file.name} (${(file.size/1024/1024).toFixed(2)} MB)
+                    </div>
+                `).join('');
+        }
+
+        async function uploadFiles() {
+            if (selectedFiles.length === 0) {
+                alert('Please select files first');
+                return;
+            }
+
+            const results = document.getElementById('results');
+            results.innerHTML = '<p>Uploading files...</p>';
+
+            for (const file of selectedFiles) {
+                try {
+                    // Create a fake member ID for testing (you can change this)
+                    const testMemberId = 'test_' + Date.now();
+                    
+                    const formData = new FormData();
+                    formData.append('photo', file);
+                    formData.append('member_id', testMemberId);
+
+                    const response = await fetch('/api/photos', {
+                        method: 'POST',
+                        body: formData
+                    });
+
+                    const result = await response.json();
+                    
+                    if (result.success) {
+                        results.innerHTML += `<div class="file-item success">✅ ${file.name} → ${result.filename}</div>`;
+                    } else {
+                        results.innerHTML += `<div class="file-item error">❌ ${file.name}: ${result.error}</div>`;
+                    }
+                } catch (error) {
+                    results.innerHTML += `<div class="file-item error">❌ ${file.name}: ${error.message}</div>`;
+                }
+            }
+        }
+
+        async function listVolumeFiles() {
+            const fileList = document.getElementById('fileList');
+            fileList.innerHTML = '<p>📋 Listing volume files...</p>';
+            
+            try {
+                const response = await fetch('/api/volume-files');
+                const result = await response.json();
+                
+                if (result.success) {
+                    fileList.innerHTML = '<h3>📁 Files in Volume:</h3>' +
+                        result.files.map(file => `
+                            <div class="file-item">
+                                📄 ${file.name} (${file.size} bytes) - ${file.modified}
+                            </div>
+                        `).join('');
+                } else {
+                    fileList.innerHTML = `<div class="error">❌ ${result.error}</div>`;
+                }
+            } catch (error) {
+                fileList.innerHTML = `<div class="error">❌ Error: ${error.message}</div>`;
+            }
+        }
+
+        async function testVolumeAccess() {
+            const fileList = document.getElementById('fileList');
+            fileList.innerHTML = '<p>🔧 Testing volume access...</p>';
+            
+            try {
+                const response = await fetch('/api/volume-test');
+                const result = await response.json();
+                
+                fileList.innerHTML = `<div class="${result.success ? 'success' : 'error'}">
+                    ${result.success ? '✅' : '❌'} ${result.message}
+                    ${result.details ? '<br><small>' + JSON.stringify(result.details, null, 2) + '</small>' : ''}
+                </div>`;
+            } catch (error) {
+                fileList.innerHTML = `<div class="error">❌ Error: ${error.message}</div>`;
+            }
+        }
+
+        // Drag and drop support
+        const uploadArea = document.querySelector('.upload-area');
+        
+        uploadArea.addEventListener('dragover', (e) => {
+            e.preventDefault();
+            uploadArea.style.borderColor = '#2196F3';
+            uploadArea.style.background = '#f9f9f9';
+        });
+        
+        uploadArea.addEventListener('dragleave', (e) => {
+            uploadArea.style.borderColor = '#ccc';
+            uploadArea.style.background = '';
+        });
+        
+        uploadArea.addEventListener('drop', (e) => {
+            e.preventDefault();
+            uploadArea.style.borderColor = '#ccc';
+            uploadArea.style.background = '';
+            
+            selectedFiles = Array.from(e.dataTransfer.files);
+            updateFileDisplay();
+        });
+    </script>
+</body>
+</html>

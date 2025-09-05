@@ -663,6 +663,20 @@ try {
             }
             break;
             
+        case 'volume-files':
+            // List files in Railway volume
+            if ($method === 'GET') {
+                listVolumeFiles($db);
+            }
+            break;
+            
+        case 'volume-test':
+            // Test Railway volume access
+            if ($method === 'GET') {
+                testVolumeAccess($db);
+            }
+            break;
+            
         case 'db-maintenance':
             // Database maintenance endpoint for SQL execution
             if ($method === 'POST') {
@@ -3365,6 +3379,114 @@ function addPlayerCards($db) {
         $db->rollback();
         http_response_code(500);
         echo json_encode(['error' => 'Failed to add cards: ' . $e->getMessage()]);
+    }
+}
+
+// List files in Railway volume
+function listVolumeFiles($db) {
+    try {
+        $volumeDir = '/app/storage/photos';
+        
+        if (!is_dir($volumeDir)) {
+            echo json_encode([
+                'success' => false,
+                'error' => 'Volume directory does not exist',
+                'path' => $volumeDir
+            ]);
+            return;
+        }
+        
+        $files = [];
+        $iterator = new DirectoryIterator($volumeDir);
+        
+        foreach ($iterator as $fileInfo) {
+            if ($fileInfo->isFile()) {
+                $files[] = [
+                    'name' => $fileInfo->getFilename(),
+                    'size' => $fileInfo->getSize(),
+                    'modified' => date('Y-m-d H:i:s', $fileInfo->getMTime()),
+                    'path' => $fileInfo->getPathname()
+                ];
+            }
+        }
+        
+        // Sort by modification time (newest first)
+        usort($files, function($a, $b) {
+            return strtotime($b['modified']) - strtotime($a['modified']);
+        });
+        
+        echo json_encode([
+            'success' => true,
+            'files' => $files,
+            'count' => count($files),
+            'volume_path' => $volumeDir
+        ]);
+        
+    } catch (Exception $e) {
+        echo json_encode([
+            'success' => false,
+            'error' => 'Failed to list volume files: ' . $e->getMessage()
+        ]);
+    }
+}
+
+// Test Railway volume access
+function testVolumeAccess($db) {
+    try {
+        $volumeDir = '/app/storage/photos';
+        $testFile = $volumeDir . '/test_' . time() . '.txt';
+        
+        $results = [];
+        
+        // Test 1: Check if volume directory exists
+        $results['directory_exists'] = is_dir($volumeDir);
+        
+        // Test 2: Check if volume is writable
+        $results['directory_writable'] = is_writable($volumeDir);
+        
+        // Test 3: Try to create directory if it doesn't exist
+        if (!$results['directory_exists']) {
+            $results['create_directory'] = mkdir($volumeDir, 0755, true);
+        }
+        
+        // Test 4: Try to write a test file
+        $testContent = 'Railway volume test - ' . date('Y-m-d H:i:s');
+        $results['write_test'] = file_put_contents($testFile, $testContent) !== false;
+        
+        // Test 5: Try to read the test file
+        if ($results['write_test']) {
+            $readContent = file_get_contents($testFile);
+            $results['read_test'] = ($readContent === $testContent);
+            
+            // Clean up test file
+            $results['cleanup_test'] = unlink($testFile);
+        }
+        
+        // Test 6: Check disk space
+        $results['disk_free'] = disk_free_space($volumeDir);
+        $results['disk_total'] = disk_total_space($volumeDir);
+        
+        $allTestsPassed = $results['directory_exists'] && 
+                          $results['directory_writable'] && 
+                          $results['write_test'] && 
+                          $results['read_test'] && 
+                          $results['cleanup_test'];
+        
+        echo json_encode([
+            'success' => $allTestsPassed,
+            'message' => $allTestsPassed ? 
+                'Railway volume is working correctly!' : 
+                'Some volume tests failed - check details',
+            'details' => $results,
+            'volume_path' => $volumeDir
+        ]);
+        
+    } catch (Exception $e) {
+        echo json_encode([
+            'success' => false,
+            'message' => 'Volume test failed: ' . $e->getMessage(),
+            'volume_path' => $volumeDir ?? 'unknown'
+        ]);
     }
 }
 ?>
