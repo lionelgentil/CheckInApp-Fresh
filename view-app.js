@@ -1,10 +1,10 @@
 /**
- * CheckIn App v5.1.1 - View Only Mode
+ * CheckIn App v5.1.2 - View Only Mode
  * Read-only version for public viewing
  */
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '5.1.1';
+const APP_VERSION = '5.1.2';
 
 class CheckInViewApp {
     constructor() {

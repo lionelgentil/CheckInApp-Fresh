@@ -8,7 +8,7 @@
 session_start();
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '5.1.1';
+const APP_VERSION = '5.1.2';
 
 // Authentication configuration
 const ADMIN_PASSWORD = 'checkin2024'; // Change this to your desired password
@@ -2030,12 +2030,23 @@ function servePhoto($db) {
             return;
         }
         
-        $photoPath = __DIR__ . '/photos/members/' . $filename;
-        error_log("servePhoto: Constructed photo path: " . $photoPath);
-        error_log("servePhoto: File exists check: " . (file_exists($photoPath) ? 'YES' : 'NO'));
+        // Check Railway volume first, then fallback to legacy locations
+        $volumePhotoPath = '/app/storage/photos/' . $filename;
+        $legacyPhotoPath = __DIR__ . '/photos/members/' . $filename;
+        
+        if (file_exists($volumePhotoPath)) {
+            $photoPath = $volumePhotoPath;
+            error_log("servePhoto: Found in Railway volume: " . $photoPath);
+        } elseif (file_exists($legacyPhotoPath)) {
+            $photoPath = $legacyPhotoPath;
+            error_log("servePhoto: Found in legacy location: " . $photoPath);
+        } else {
+            $photoPath = null;
+            error_log("servePhoto: Photo not found in volume or legacy location");
+        }
         
         // If the exact filename doesn't exist, try to find any photo for this member
-        if (!file_exists($photoPath)) {
+        if (!$photoPath) {
             $filenameWithoutExt = pathinfo($filename, PATHINFO_FILENAME);
             
             // Handle both old format (memberId.ext) and new format (memberId_timestamp.ext)
@@ -2045,17 +2056,25 @@ function servePhoto($db) {
                 $memberId = substr($filenameWithoutExt, 0, strrpos($filenameWithoutExt, '_'));
             }
             
-            // Try to find any existing photo file for this member (old or new format)
-            $photosDir = __DIR__ . '/photos/members';
-            $existingFiles = glob($photosDir . '/' . $memberId . '*');
+            // Try to find any existing photo file for this member in volume first, then legacy
+            $volumeDir = '/app/storage/photos';
+            $legacyDir = __DIR__ . '/photos/members';
             
-            error_log("servePhoto: Searching for files matching pattern: " . $photosDir . '/' . $memberId . '*');
-            error_log("servePhoto: Found " . count($existingFiles) . " matching files: " . implode(', ', $existingFiles));
+            $volumeFiles = glob($volumeDir . '/' . $memberId . '_*');
+            $legacyFiles = glob($legacyDir . '/' . $memberId . '*');
             
-            if (!empty($existingFiles)) {
-                // Use the most recent file (in case there are multiple)
-                $photoPath = end($existingFiles);
-                error_log("servePhoto: Using existing photo for member {$memberId}: " . basename($photoPath));
+            error_log("servePhoto: Searching volume: " . $volumeDir . '/' . $memberId . '_*');
+            error_log("servePhoto: Found " . count($volumeFiles) . " volume files: " . implode(', ', $volumeFiles));
+            error_log("servePhoto: Found " . count($legacyFiles) . " legacy files: " . implode(', ', $legacyFiles));
+            
+            if (!empty($volumeFiles)) {
+                // Use the most recent file from volume
+                $photoPath = end($volumeFiles);
+                error_log("servePhoto: Using volume photo for member {$memberId}: " . basename($photoPath));
+            } elseif (!empty($legacyFiles)) {
+                // Fallback to legacy files
+                $photoPath = end($legacyFiles);
+                error_log("servePhoto: Using legacy photo for member {$memberId}: " . basename($photoPath));
             } else {
                 // No photo file found, fall back to gender-appropriate default
                 error_log("servePhoto: No files found for member {$memberId}, looking up gender for fallback");
@@ -2071,7 +2090,7 @@ function servePhoto($db) {
         }
     }
     
-    if (!file_exists($photoPath)) {
+    if (!$photoPath || !file_exists($photoPath)) {
         http_response_code(404);
         echo json_encode(['error' => 'Photo not found']);
         return;
@@ -2185,88 +2204,71 @@ function uploadPhoto($db) {
     $timestamp = time();
     $filename = $memberId . '_' . $timestamp . '.' . $extension;
     
-    // Ensure photos directory exists
-    $photosDir = __DIR__ . '/photos/members';
+    // Ensure photos directory exists in Railway volume
+    $photosDir = '/app/storage/photos';
     if (!is_dir($photosDir)) {
         if (!mkdir($photosDir, 0755, true)) {
             http_response_code(500);
-            echo json_encode(['error' => 'Failed to create photos directory']);
+            echo json_encode(['error' => 'Failed to create photos directory in volume']);
             return;
         }
     }
     
-    // Convert uploaded file to base64 for database storage (Railway-compatible)
-    $imageData = file_get_contents($file['tmp_name']);
-    if ($imageData === false) {
+    $filename = $memberId . '_' . $timestamp . '.' . $extension;
+    $photoPath = $photosDir . '/' . $filename;
+    
+    // Move uploaded file to Railway volume
+    if (!move_uploaded_file($file['tmp_name'], $photoPath)) {
         http_response_code(500);
-        echo json_encode(['error' => 'Failed to read uploaded file']);
+        echo json_encode(['error' => 'Failed to save photo to volume']);
         return;
     }
     
-    $base64Image = 'data:' . $file['type'] . ';base64,' . base64_encode($imageData);
+    error_log("uploadPhoto: Saved file to volume: " . $photoPath);
     
-    error_log("uploadPhoto: Converted to base64, size: " . strlen($base64Image) . " characters");
-    
-    // Remove any existing photo files for this member (cleanup old files)
-    $photosDir = __DIR__ . '/photos/members';
-    if (is_dir($photosDir)) {
-        $existingFiles = glob($photosDir . '/' . $memberId . '.*');
-        foreach ($existingFiles as $existingFile) {
+    // Remove any existing photo files for this member (cleanup old files from volume)
+    $existingFiles = glob($photosDir . '/' . $memberId . '_*');
+    foreach ($existingFiles as $existingFile) {
+        if ($existingFile !== $photoPath) { // Don't delete the file we just created
             unlink($existingFile);
         }
     }
     
-    // Update database with base64 image data in separate photos table
+    // Update database - store filename only (not base64)
     try {
-        error_log("uploadPhoto: Storing base64 data in member_photos table for member: " . $memberId);
+        error_log("uploadPhoto: Storing filename in database: " . $filename);
         
-        // Get content type and file size
-        $contentType = $file['type'];
-        $fileSize = strlen($base64Image);
+        // Remove old photo data from member_photos table (if exists)
+        $deleteStmt = $db->prepare('DELETE FROM member_photos WHERE member_id = ?');
+        $deleteStmt->execute([$memberId]);
         
-        // Insert/update in member_photos table
-        $stmt = $db->prepare('
-            INSERT INTO member_photos (member_id, photo_data, content_type, file_size, uploaded_at)
-            VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
-            ON CONFLICT (member_id) DO UPDATE SET
-                photo_data = EXCLUDED.photo_data,
-                content_type = EXCLUDED.content_type,
-                file_size = EXCLUDED.file_size,
-                uploaded_at = CURRENT_TIMESTAMP
-        ');
-        $result = $stmt->execute([$memberId, $base64Image, $contentType, $fileSize]);
+        // Update team_members table with filename
+        $stmt = $db->prepare('UPDATE team_members SET photo = ? WHERE id = ?');
+        $result = $stmt->execute([$filename, $memberId]);
         
         if ($result) {
-            $rowsAffected = $stmt->rowCount();
-            error_log("uploadPhoto: member_photos table updated successfully. Rows affected: " . $rowsAffected);
+            error_log("uploadPhoto: Database updated successfully");
         } else {
-            throw new Exception("Failed to update member_photos table");
+            throw new Exception("Failed to update team_members table");
         }
-        
-        // Also set a flag in team_members table to indicate photo exists
-        $flagStmt = $db->prepare('UPDATE team_members SET photo = ? WHERE id = ?');
-        $flagStmt->execute(['has_photo', $memberId]);
-        
-        // Verify the update worked
-        $verifyStmt = $db->prepare('SELECT photo_data FROM member_photos WHERE member_id = ?');
-        $verifyStmt->execute([$memberId]);
-        $photoExists = $verifyStmt->fetchColumn();
-        error_log("uploadPhoto: Verified photo exists in member_photos table: " . ($photoExists ? 'YES' : 'NO'));
         
         $responseData = [
             'success' => true,
             'member_id' => $memberId,
-            'url' => $base64Image, // Return the base64 data directly
-            'storage_type' => 'base64_database',
-            'data_size' => strlen($base64Image)
+            'url' => '/api/photos?filename=' . urlencode($filename),
+            'storage_type' => 'railway_volume',
+            'filename' => $filename
         ];
         
-        error_log("uploadPhoto: Success response (base64 storage)");
+        error_log("uploadPhoto: Success response (volume storage)");
         echo json_encode($responseData);
         
     } catch (Exception $e) {
         error_log("uploadPhoto: Database error: " . $e->getMessage());
-        // No file to clean up since we're using base64
+        // Clean up the uploaded file if database update fails
+        if (file_exists($photoPath)) {
+            unlink($photoPath);
+        }
         throw $e;
     }
 }
