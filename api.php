@@ -8,7 +8,7 @@
 session_start();
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '5.0.0';
+const APP_VERSION = '5.1.0';
 
 // Authentication configuration
 const ADMIN_PASSWORD = 'checkin2024'; // Change this to your desired password
@@ -333,6 +333,30 @@ try {
             if ($method === 'POST') {
                 requireAuth();
                 deleteMemberProfile($db);
+            }
+            break;
+            
+        case 'teams/member-deactivate':
+            // Deactivate team member (soft delete) - requires admin auth
+            if ($method === 'POST') {
+                requireAuth();
+                deactivateMemberProfile($db);
+            }
+            break;
+            
+        case 'teams/member-search-inactive':
+            // Search for inactive members by name - requires admin auth
+            if ($method === 'GET') {
+                requireAuth();
+                searchInactiveMembers($db);
+            }
+            break;
+            
+        case 'teams/member-reactivate':
+            // Reactivate inactive member and add to team - requires admin auth
+            if ($method === 'POST') {
+                requireAuth();
+                reactivateMemberProfile($db);
             }
             break;
             
@@ -667,6 +691,7 @@ try {
 
 function getTeams($db) {
     // Optimized single query with JOIN to get all teams and members with photos from separate table
+    // Only include active members (active = TRUE or active IS NULL for backward compatibility)
     $stmt = $db->query('
         SELECT 
             t.id as team_id,
@@ -685,7 +710,7 @@ function getTeams($db) {
             END AS photo_flag,
             mp.photo_data
         FROM teams t
-        LEFT JOIN team_members tm ON t.id = tm.team_id
+        LEFT JOIN team_members tm ON t.id = tm.team_id AND (tm.active IS NULL OR tm.active = TRUE)
         LEFT JOIN member_photos mp ON tm.id = mp.member_id
         ORDER BY t.name, tm.name
     ');
@@ -868,6 +893,7 @@ function getMemberPhoto($db) {
 
 function getTeamsWithoutPhotos($db) {
     // Fast teams endpoint with member data but NO photo data - significantly faster
+    // Only include active members (active = TRUE or active IS NULL for backward compatibility)
     $stmt = $db->query('
         SELECT 
             t.id as team_id,
@@ -886,7 +912,7 @@ function getTeamsWithoutPhotos($db) {
                 ELSE NULL
             END AS has_photo
         FROM teams t
-        LEFT JOIN team_members tm ON t.id = tm.team_id
+        LEFT JOIN team_members tm ON t.id = tm.team_id AND (tm.active IS NULL OR tm.active = TRUE)
         ORDER BY t.name, tm.name
     ');
     
@@ -939,6 +965,7 @@ function getTeamsWithoutPhotos($db) {
 
 function getTeamsBasic($db) {
     // Lightweight teams endpoint - only essential data without player photos for performance
+    // Only count active members (active = TRUE or active IS NULL for backward compatibility)
     $stmt = $db->query('
         SELECT 
             t.id,
@@ -949,7 +976,7 @@ function getTeamsBasic($db) {
             t.captain_id,
             COUNT(tm.id) as member_count
         FROM teams t
-        LEFT JOIN team_members tm ON t.id = tm.team_id
+        LEFT JOIN team_members tm ON t.id = tm.team_id AND (tm.active IS NULL OR tm.active = TRUE)
         GROUP BY t.id, t.name, t.category, t.color, t.description, t.captain_id
         ORDER BY t.name
     ');
@@ -1011,7 +1038,7 @@ function getSpecificTeams($db) {
             END AS photo_flag,
             mp.photo_data
         FROM teams t
-        LEFT JOIN team_members tm ON t.id = tm.team_id
+        LEFT JOIN team_members tm ON t.id = tm.team_id AND (tm.active IS NULL OR tm.active = TRUE)
         LEFT JOIN member_photos mp ON tm.id = mp.member_id
         WHERE t.id IN ({$placeholders})
         ORDER BY t.name, tm.name
@@ -2998,6 +3025,134 @@ function deleteMemberProfile($db) {
     } catch (Exception $e) {
         http_response_code(500);
         echo json_encode(['error' => 'Failed to delete member: ' . $e->getMessage()]);
+    }
+}
+
+// Deactivate team member (soft delete) - for admin app
+function deactivateMemberProfile($db) {
+    try {
+        $input = json_decode(file_get_contents('php://input'), true);
+        
+        $teamId = $input['teamId'] ?? null;
+        $memberId = $input['memberId'] ?? null;
+        
+        if (!$teamId || !$memberId) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Team ID and Member ID are required']);
+            return;
+        }
+        
+        // Mark member as inactive instead of deleting
+        $stmt = $db->prepare('UPDATE team_members SET active = FALSE WHERE id = ? AND team_id = ?');
+        $result = $stmt->execute([$memberId, $teamId]);
+        
+        if ($result) {
+            echo json_encode(['success' => true, 'message' => 'Member deactivated successfully']);
+        } else {
+            http_response_code(500);
+            echo json_encode(['error' => 'Failed to deactivate member']);
+        }
+        
+    } catch (Exception $e) {
+        http_response_code(500);
+        echo json_encode(['error' => 'Failed to deactivate member: ' . $e->getMessage()]);
+    }
+}
+
+// Search for inactive members by name
+function searchInactiveMembers($db) {
+    try {
+        $name = $_GET['name'] ?? '';
+        
+        if (empty($name)) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Name parameter is required']);
+            return;
+        }
+        
+        // Search for inactive members with similar names
+        $stmt = $db->prepare('
+            SELECT tm.id, tm.name, tm.jersey_number, tm.gender, tm.team_id, 
+                   t.name as team_name, t.category as team_category
+            FROM team_members tm 
+            JOIN teams t ON tm.team_id = t.id
+            WHERE tm.active = FALSE AND LOWER(tm.name) = LOWER(?)
+            ORDER BY tm.name
+        ');
+        $stmt->execute([$name]);
+        $inactiveMembers = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        // Get disciplinary records for each inactive member
+        foreach ($inactiveMembers as &$member) {
+            $recordsStmt = $db->prepare('
+                SELECT card_type, reason, notes, incident_date, 
+                       suspension_matches, suspension_served, suspension_served_date, created_at
+                FROM player_disciplinary_records 
+                WHERE member_id = ?
+                ORDER BY incident_date DESC, created_at DESC
+            ');
+            $recordsStmt->execute([$member['id']]);
+            $member['disciplinary_records'] = $recordsStmt->fetchAll(PDO::FETCH_ASSOC);
+        }
+        
+        echo json_encode([
+            'success' => true,
+            'inactive_members' => $inactiveMembers
+        ]);
+        
+    } catch (Exception $e) {
+        http_response_code(500);
+        echo json_encode(['error' => 'Failed to search inactive members: ' . $e->getMessage()]);
+    }
+}
+
+// Reactivate member and add to team
+function reactivateMemberProfile($db) {
+    try {
+        $input = json_decode(file_get_contents('php://input'), true);
+        
+        $memberId = $input['memberId'] ?? null;
+        $newTeamId = $input['newTeamId'] ?? null;
+        $newJerseyNumber = $input['newJerseyNumber'] ?? null;
+        
+        if (!$memberId || !$newTeamId) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Member ID and new team ID are required']);
+            return;
+        }
+        
+        // Update member: reactivate, move to new team, update jersey number
+        $stmt = $db->prepare('
+            UPDATE team_members 
+            SET active = TRUE, team_id = ?, jersey_number = ? 
+            WHERE id = ?
+        ');
+        $result = $stmt->execute([$newTeamId, $newJerseyNumber, $memberId]);
+        
+        if ($result) {
+            // Get updated member info
+            $memberStmt = $db->prepare('
+                SELECT tm.*, t.name as team_name 
+                FROM team_members tm 
+                JOIN teams t ON tm.team_id = t.id 
+                WHERE tm.id = ?
+            ');
+            $memberStmt->execute([$memberId]);
+            $member = $memberStmt->fetch(PDO::FETCH_ASSOC);
+            
+            echo json_encode([
+                'success' => true, 
+                'message' => 'Member reactivated successfully',
+                'member' => $member
+            ]);
+        } else {
+            http_response_code(500);
+            echo json_encode(['error' => 'Failed to reactivate member']);
+        }
+        
+    } catch (Exception $e) {
+        http_response_code(500);
+        echo json_encode(['error' => 'Failed to reactivate member: ' . $e->getMessage()]);
     }
 }
 

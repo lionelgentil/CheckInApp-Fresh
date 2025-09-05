@@ -4,7 +4,7 @@
  */
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '5.0.0';
+const APP_VERSION = '5.1.0';
 
 class CheckInApp {
     constructor() {
@@ -1871,6 +1871,29 @@ Please check the browser console (F12) for more details.`);
                 }
                 
             } else {
+                // 🔍 NEW: Check for inactive players with the same name before creating new member
+                console.log('🔍 Checking for inactive players with name:', name);
+                
+                try {
+                    const searchResult = await this.searchInactiveMembers(name);
+                    if (searchResult.success && searchResult.inactive_members && searchResult.inactive_members.length > 0) {
+                        // Found inactive player(s) with the same name
+                        console.log('📋 Found inactive players:', searchResult.inactive_members);
+                        
+                        // Show reactivation modal
+                        this.showReactivationModal(searchResult.inactive_members, teamId, {
+                            name: name,
+                            jerseyNumber: jerseyNumber,
+                            gender: gender,
+                            photoFile: photoFile
+                        });
+                        return; // Exit early - reactivation modal will handle the rest
+                    }
+                } catch (error) {
+                    console.warn('Error checking for inactive members:', error);
+                    // Continue with normal member creation if search fails
+                }
+                
                 // ✅ OPTIMIZED: Add new member using granular API
                 const newMember = {
                     id: this.generateUUID(),
@@ -1907,6 +1930,20 @@ Please check the browser console (F12) for more details.`);
             }
             this.renderTeams();
             
+            // 🖼️ PHOTO FIX: Trigger lazy loading for newly added member's photo
+            if (photoFile && !this.currentEditingMember) {
+                // For new members with photos, ensure the photo loads if this team is currently selected
+                const selectedTeamId = document.getElementById('teams-team-selector')?.value;
+                if (selectedTeamId === teamId) {
+                    console.log('📸 Triggering photo loading for newly added member with photo');
+                    // Find the newly added member and load their photo
+                    const newMember = team.members.find(m => m.name === name);
+                    if (newMember) {
+                        this.loadMemberPhotosLazily([newMember], 'teams-container');
+                    }
+                }
+            }
+            
             // Handle modal state
             if (!this.currentEditingMember) {
                 // Keep modal open for adding more members
@@ -1935,11 +1972,7 @@ Please check the browser console (F12) for more details.`);
     
     async deleteMember(teamId, memberId) {
         console.log('🗑️ deleteMember called with:', { teamId, memberId });
-        console.log('📍 This should use granular API - if you see saveTeams() call, something is wrong!');
-        
-        if (!confirm('Are you sure you want to delete this member?')) {
-            return;
-        }
+        console.log('📍 This will now DEACTIVATE the member instead of permanent deletion');
         
         const team = this.teams.find(t => t.id === teamId);
         if (!team) {
@@ -1947,26 +1980,30 @@ Please check the browser console (F12) for more details.`);
             return;
         }
         
-        const memberToDelete = team.members.find(m => m.id === memberId);
-        console.log('🎯 Found member to delete:', memberToDelete);
+        const memberToDeactivate = team.members.find(m => m.id === memberId);
+        console.log('🎯 Found member to deactivate:', memberToDeactivate);
+        
+        if (!confirm(`Are you sure you want to remove "${memberToDeactivate?.name || 'this player'}" from the team?\n\nNote: This will hide them from the roster but preserve their history. They can be reactivated later if they return.`)) {
+            return;
+        }
         
         try {
-            // ✅ OPTIMIZED: Use granular API for deletion
-            console.log('🚀 Using granular API for member deletion');
-            await this.deleteMemberProfile(teamId, memberId);
+            // ✅ OPTIMIZED: Use granular API for deactivation (soft delete)
+            console.log('🚀 Using granular API for member deactivation');
+            await this.deactivateMemberProfile(teamId, memberId);
             
-            // Update local data
+            // Update local data - remove from current team display
             const originalLength = team.members.length;
             team.members = team.members.filter(m => m.id !== memberId);
-            console.log(`✅ Member removed from local array: ${originalLength} → ${team.members.length}`);
+            console.log(`✅ Member removed from local display: ${originalLength} → ${team.members.length}`);
             
             // Refresh UI
             this.renderTeams();
-            console.log('✅ UI refreshed after deletion');
+            console.log('✅ UI refreshed after deactivation');
             
         } catch (error) {
-            console.error('❌ Error deleting member:', error);
-            alert('Failed to delete member: ' + error.message);
+            console.error('❌ Error deactivating member:', error);
+            alert('Failed to remove member: ' + error.message);
         }
     }
     
@@ -2017,6 +2054,197 @@ Please check the browser console (F12) for more details.`);
         });
         
         return data;
+    }
+    
+    async deactivateMemberProfile(teamId, memberId) {
+        const data = await this.fetch('/api/teams/member-deactivate', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                teamId: teamId,
+                memberId: memberId
+            })
+        });
+        
+        return data;
+    }
+    
+    async searchInactiveMembers(name) {
+        const data = await this.fetch(`/api/teams/member-search-inactive?name=${encodeURIComponent(name)}`);
+        return data;
+    }
+    
+    async reactivateMemberProfile(memberId, newTeamId, newJerseyNumber) {
+        const data = await this.fetch('/api/teams/member-reactivate', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                memberId: memberId,
+                newTeamId: newTeamId,
+                newJerseyNumber: newJerseyNumber
+            })
+        });
+        
+        return data;
+    }
+    
+    // 🔄 NEW: Show reactivation modal when inactive player with same name is found
+    showReactivationModal(inactiveMembers, targetTeamId, newMemberData) {
+        // Find the target team for display
+        const targetTeam = this.teams.find(t => t.id === targetTeamId);
+        
+        // For now, just handle the first match (most common case)
+        const inactiveMember = inactiveMembers[0];
+        
+        // Format disciplinary records for display
+        let disciplinaryHtml = '';
+        if (inactiveMember.disciplinary_records && inactiveMember.disciplinary_records.length > 0) {
+            disciplinaryHtml = `
+                <div style="margin-top: 15px; padding: 15px; background: #fff8e1; border-radius: 8px; border-left: 4px solid #ff9800;">
+                    <h4 style="margin: 0 0 10px 0; color: #e65100;">⚠️ Disciplinary History</h4>
+                    <div style="max-height: 200px; overflow-y: auto;">
+                        ${inactiveMember.disciplinary_records.map(record => `
+                            <div style="display: flex; justify-content: space-between; padding: 8px 0; border-bottom: 1px solid #ffcc80;">
+                                <div>
+                                    <span style="background: ${record.card_type === 'red' ? '#ffcdd2' : '#fff3e0'}; color: ${record.card_type === 'red' ? '#c62828' : '#ef6c00'}; padding: 2px 8px; border-radius: 4px; font-size: 0.8em; font-weight: bold;">
+                                        ${record.card_type.toUpperCase()} CARD
+                                    </span>
+                                    ${record.reason ? `<span style="margin-left: 10px; color: #666;">${record.reason}</span>` : ''}
+                                    ${record.suspension_matches ? `<span style="margin-left: 10px; color: #d32f2f; font-weight: bold;">${record.suspension_matches} match suspension</span>` : ''}
+                                </div>
+                                <div style="color: #666; font-size: 0.85em;">
+                                    ${record.incident_date || new Date(record.created_at).toLocaleDateString()}
+                                </div>
+                            </div>
+                        `).join('')}
+                    </div>
+                </div>
+            `;
+        } else {
+            disciplinaryHtml = `
+                <div style="margin-top: 15px; padding: 15px; background: #e8f5e8; border-radius: 8px; border-left: 4px solid #4caf50;">
+                    <span style="color: #2e7d32;">✅ No disciplinary records found</span>
+                </div>
+            `;
+        }
+        
+        const modal = this.createModal('Player Found', `
+            <div style="margin-bottom: 20px;">
+                <div style="padding: 15px; background: #e3f2fd; border-radius: 8px; border-left: 4px solid #2196f3; margin-bottom: 15px;">
+                    <h3 style="margin: 0 0 10px 0; color: #1565c0;">🔍 Inactive Player Found</h3>
+                    <p style="margin: 0; color: #1976d2;">
+                        Found an inactive player named <strong>"${inactiveMember.name}"</strong> 
+                        (last on ${inactiveMember.team_name} - ${inactiveMember.team_category}).
+                    </p>
+                    <p style="margin: 10px 0 0 0; color: #1976d2;">
+                        Is this the same person you want to add to <strong>${targetTeam?.name || 'this team'}</strong>?
+                    </p>
+                </div>
+                
+                ${disciplinaryHtml}
+                
+                <div style="margin-top: 20px; padding: 15px; background: #f5f5f5; border-radius: 8px;">
+                    <h4 style="margin: 0 0 10px 0;">Jersey Number for ${targetTeam?.name || 'this team'}:</h4>
+                    <input type="number" id="reactivation-jersey" class="form-input" 
+                           value="${newMemberData.jerseyNumber || ''}" 
+                           placeholder="Jersey number (optional)" min="1" max="99" style="width: 150px;">
+                </div>
+            </div>
+            
+            <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                <button class="btn btn-secondary" onclick="app.closeReactivationModal('${targetTeamId}', ${JSON.stringify(newMemberData).replace(/"/g, '&quot;')})">
+                    No, Create New Player
+                </button>
+                <button class="btn" onclick="app.reactivatePlayer('${inactiveMember.id}', '${targetTeamId}')">
+                    Yes, Reactivate This Player
+                </button>
+            </div>
+        `);
+        
+        document.body.appendChild(modal);
+    }
+    
+    // Handle reactivation modal close - proceed with new member creation
+    closeReactivationModal(targetTeamId, newMemberData) {
+        this.closeModal();
+        
+        // Proceed with creating a new member using the original data
+        const team = this.teams.find(t => t.id === targetTeamId);
+        if (!team) return;
+        
+        // Create the new member as originally intended
+        this.createNewMemberDirectly(targetTeamId, newMemberData);
+    }
+    
+    // Handle player reactivation
+    async reactivatePlayer(memberId, targetTeamId) {
+        const jerseyNumber = document.getElementById('reactivation-jersey').value;
+        
+        try {
+            // Reactivate the player and move to new team
+            await this.reactivateMemberProfile(memberId, targetTeamId, jerseyNumber ? parseInt(jerseyNumber) : null);
+            
+            // Refresh teams to show the reactivated player
+            await this.loadTeams();
+            this.renderTeams();
+            
+            this.closeModal();
+            
+            // Show success message
+            alert('Player reactivated successfully! They are now active on the selected team.');
+            
+        } catch (error) {
+            console.error('Error reactivating player:', error);
+            alert('Failed to reactivate player: ' + error.message);
+        }
+    }
+    
+    // Create new member directly (used when user chooses not to reactivate)
+    async createNewMemberDirectly(teamId, memberData) {
+        const team = this.teams.find(t => t.id === teamId);
+        if (!team) return;
+        
+        try {
+            const newMember = {
+                id: this.generateUUID(),
+                name: memberData.name,
+                jerseyNumber: memberData.jerseyNumber ? parseInt(memberData.jerseyNumber) : null,
+                gender: memberData.gender || null,
+                photo: null
+            };
+            
+            // Add to local array first
+            team.members.push(newMember);
+            
+            console.log('🚀 Creating new member directly (user chose not to reactivate)');
+            await this.createMemberProfile(teamId, newMember);
+            
+            // Upload photo if provided
+            if (memberData.photoFile) {
+                console.log('Uploading photo for new member:', newMember.id);
+                const photoUrl = await this.uploadPhoto(memberData.photoFile, newMember.id);
+                newMember.photo = photoUrl;
+            }
+            
+            this.renderTeams();
+            
+            // Show success message
+            alert('New player created successfully!');
+            
+        } catch (error) {
+            console.error('Error creating new member:', error);
+            alert('Failed to create new player: ' + error.message);
+            
+            // Remove from local array on error
+            const index = team.members.findIndex(m => m.name === memberData.name);
+            if (index !== -1) {
+                team.members.splice(index, 1);
+            }
+        }
     }
     
     async showDetailedMemberModal(teamId, member) {
@@ -2407,6 +2635,17 @@ Please check the browser console (F12) for more details.`);
             }
             
             this.renderTeams();
+            
+            // 🖼️ PHOTO FIX: Trigger lazy loading for edited member's photo
+            if (photoFile) {
+                // For edited members with new photos, ensure the photo loads if this team is currently selected
+                const selectedTeamId = document.getElementById('teams-team-selector')?.value;
+                if (selectedTeamId === teamId) {
+                    console.log('📸 Triggering photo loading for edited member with new photo');
+                    this.loadMemberPhotosLazily([member], 'teams-container');
+                }
+            }
+            
             this.closeModal();
         } catch (error) {
             console.error('Error in saveDetailedMember:', error);
