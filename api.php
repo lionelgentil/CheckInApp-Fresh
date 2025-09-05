@@ -8,7 +8,7 @@
 session_start();
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '5.1.0';
+const APP_VERSION = '5.1.1';
 
 // Authentication configuration
 const ADMIN_PASSWORD = 'checkin2024'; // Change this to your desired password
@@ -691,7 +691,7 @@ try {
 
 function getTeams($db) {
     // Optimized single query with JOIN to get all teams and members with photos from separate table
-    // TEMPORARY: Removed active filter until migration is run
+    // Only include active members (active = TRUE or active IS NULL for backward compatibility)
     $stmt = $db->query('
         SELECT 
             t.id as team_id,
@@ -710,7 +710,7 @@ function getTeams($db) {
             END AS photo_flag,
             mp.photo_data
         FROM teams t
-        LEFT JOIN team_members tm ON t.id = tm.team_id
+        LEFT JOIN team_members tm ON t.id = tm.team_id AND (tm.active IS NULL OR tm.active = TRUE)
         LEFT JOIN member_photos mp ON tm.id = mp.member_id
         ORDER BY t.name, tm.name
     ');
@@ -893,7 +893,7 @@ function getMemberPhoto($db) {
 
 function getTeamsWithoutPhotos($db) {
     // Fast teams endpoint with member data but NO photo data - significantly faster
-    // TEMPORARY: Removed active filter until migration is run
+    // Only include active members (active = TRUE or active IS NULL for backward compatibility)
     $stmt = $db->query('
         SELECT 
             t.id as team_id,
@@ -912,7 +912,7 @@ function getTeamsWithoutPhotos($db) {
                 ELSE NULL
             END AS has_photo
         FROM teams t
-        LEFT JOIN team_members tm ON t.id = tm.team_id
+        LEFT JOIN team_members tm ON t.id = tm.team_id AND (tm.active IS NULL OR tm.active = TRUE)
         ORDER BY t.name, tm.name
     ');
     
@@ -965,7 +965,7 @@ function getTeamsWithoutPhotos($db) {
 
 function getTeamsBasic($db) {
     // Lightweight teams endpoint - only essential data without player photos for performance
-    // TEMPORARY: Removed active filter until migration is run
+    // Only count active members (active = TRUE or active IS NULL for backward compatibility)
     $stmt = $db->query('
         SELECT 
             t.id,
@@ -976,7 +976,7 @@ function getTeamsBasic($db) {
             t.captain_id,
             COUNT(tm.id) as member_count
         FROM teams t
-        LEFT JOIN team_members tm ON t.id = tm.team_id
+        LEFT JOIN team_members tm ON t.id = tm.team_id AND (tm.active IS NULL OR tm.active = TRUE)
         GROUP BY t.id, t.name, t.category, t.color, t.description, t.captain_id
         ORDER BY t.name
     ');
@@ -1038,7 +1038,7 @@ function getSpecificTeams($db) {
             END AS photo_flag,
             mp.photo_data
         FROM teams t
-        LEFT JOIN team_members tm ON t.id = tm.team_id
+        LEFT JOIN team_members tm ON t.id = tm.team_id AND (tm.active IS NULL OR tm.active = TRUE)
         LEFT JOIN member_photos mp ON tm.id = mp.member_id
         WHERE t.id IN ({$placeholders})
         ORDER BY t.name, tm.name
