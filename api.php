@@ -2233,24 +2233,63 @@ function uploadPhoto($db) {
     $timestamp = time();
     $filename = $memberId . '_' . $timestamp . '.' . $extension;
     
-    // Ensure photos directory exists in Railway volume
+    // Ensure photos directory exists in Railway volume with proper permissions
     $photosDir = '/app/storage/photos';
     if (!is_dir($photosDir)) {
-        if (!mkdir($photosDir, 0755, true)) {
+        error_log("uploadPhoto: Creating photos directory: " . $photosDir);
+        if (!mkdir($photosDir, 0777, true)) {
             http_response_code(500);
             echo json_encode(['error' => 'Failed to create photos directory in volume']);
             return;
         }
+        // Ensure proper permissions
+        chmod($photosDir, 0777);
     }
     
-    $filename = $memberId . '_' . $timestamp . '.' . $extension;
+    // Check if directory is writable
+    if (!is_writable($photosDir)) {
+        error_log("uploadPhoto: Directory not writable, attempting to fix permissions: " . $photosDir);
+        chmod($photosDir, 0777);
+        
+        if (!is_writable($photosDir)) {
+            error_log("uploadPhoto: Directory still not writable after chmod: " . $photosDir);
+            http_response_code(500);
+            echo json_encode([
+                'error' => 'Photos directory is not writable',
+                'directory' => $photosDir,
+                'permissions' => substr(sprintf('%o', fileperms($photosDir)), -4),
+                'owner' => posix_getpwuid(fileowner($photosDir))['name'] ?? 'unknown'
+            ]);
+            return;
+        }
+    }
+    
     $photoPath = $photosDir . '/' . $filename;
     
     // Move uploaded file to Railway volume
     if (!move_uploaded_file($file['tmp_name'], $photoPath)) {
-        http_response_code(500);
-        echo json_encode(['error' => 'Failed to save photo to volume']);
-        return;
+        error_log("uploadPhoto: Failed to move file to volume, trying with different permissions");
+        error_log("uploadPhoto: Source: " . $file['tmp_name']);
+        error_log("uploadPhoto: Destination: " . $photoPath);
+        error_log("uploadPhoto: Volume permissions: " . substr(sprintf('%o', fileperms($photosDir)), -4));
+        
+        // Try creating the file with different approach
+        $tempData = file_get_contents($file['tmp_name']);
+        if ($tempData !== false && file_put_contents($photoPath, $tempData) !== false) {
+            error_log("uploadPhoto: Successfully saved using file_put_contents instead of move_uploaded_file");
+        } else {
+            http_response_code(500);
+            echo json_encode([
+                'error' => 'Failed to save photo to volume',
+                'details' => 'Both move_uploaded_file and file_put_contents failed',
+                'volume_path' => $photosDir,
+                'file_path' => $photoPath,
+                'volume_exists' => is_dir($photosDir),
+                'volume_writable' => is_writable($photosDir),
+                'volume_permissions' => is_dir($photosDir) ? substr(sprintf('%o', fileperms($photosDir)), -4) : 'N/A'
+            ]);
+            return;
+        }
     }
     
     error_log("uploadPhoto: Saved file to volume: " . $photoPath);
