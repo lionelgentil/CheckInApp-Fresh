@@ -1036,6 +1036,11 @@ function getSpecificTeams($db) {
                 WHEN tm.photo = 'has_photo' THEN 'has_photo'
                 ELSE tm.photo
             END AS photo_flag,
+            CASE 
+                WHEN tm.photo = 'has_photo' THEN 'has_photo'
+                WHEN tm.photo IS NOT NULL AND tm.photo != '' THEN 'has_photo'
+                ELSE NULL
+            END AS has_photo,
             mp.photo_data
         FROM teams t
         LEFT JOIN team_members tm ON t.id = tm.team_id AND (tm.active IS NULL OR tm.active = TRUE)
@@ -1126,7 +1131,8 @@ function getSpecificTeams($db) {
                 'name' => $row['member_name'],
                 'jerseyNumber' => $row['jersey_number'] ? (int)$row['jersey_number'] : null,
                 'gender' => $row['gender'],
-                'photo' => $photo
+                'photo' => $photo,
+                'hasCustomPhoto' => $row['has_photo'] ? true : false
             ];
         }
     }
