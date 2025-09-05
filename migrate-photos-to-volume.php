@@ -388,10 +388,18 @@ function migratePhotosToVolume() {
         
         try {
             foreach ($databaseUpdates as $update) {
-                $updateStmt = $db->prepare("UPDATE team_members SET photo = ? WHERE id = ?");
-                $updateStmt->execute([$update['new_photo'], $update['member_id']]);
-                
-                $results['debug_info'][] = "  ✅ DB updated: {$update['member_name']}";
+                try {
+                    $updateStmt = $db->prepare("UPDATE team_members SET photo = ? WHERE id = ?");
+                    $updateStmt->execute([$update['new_photo'], $update['member_id']]);
+                    
+                    $results['debug_info'][] = "  ✅ DB updated: {$update['member_name']} → {$update['new_photo']}";
+                } catch (PDOException $dbError) {
+                    // Catch individual database errors with more detail
+                    $results['debug_info'][] = "  ❌ DB error for {$update['member_name']}: " . $dbError->getMessage();
+                    $results['debug_info'][] = "      Trying to set photo = '{$update['new_photo']}' for member_id = '{$update['member_id']}'";
+                    $results['debug_info'][] = "      Original photo was: '{$update['original_photo']}'";
+                    throw $dbError; // Re-throw to trigger rollback
+                }
             }
             
             $db->commit();
