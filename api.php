@@ -3079,10 +3079,12 @@ function searchInactiveMembers($db) {
         
         // Search for inactive members with similar names
         $stmt = $db->prepare('
-            SELECT tm.id, tm.name, tm.jersey_number, tm.gender, tm.team_id, 
-                   t.name as team_name, t.category as team_category
+            SELECT tm.id, tm.name, tm.jersey_number, tm.gender, tm.team_id, tm.photo,
+                   t.name as team_name, t.category as team_category,
+                   mp.photo_data
             FROM team_members tm 
             JOIN teams t ON tm.team_id = t.id
+            LEFT JOIN member_photos mp ON tm.id = mp.member_id
             WHERE tm.active = FALSE AND LOWER(tm.name) = LOWER(?)
             ORDER BY tm.name
         ');
@@ -3091,6 +3093,43 @@ function searchInactiveMembers($db) {
         
         // Get disciplinary records for each inactive member
         foreach ($inactiveMembers as &$member) {
+            // Process photo data similar to getTeams() function
+            if ($member['photo_data']) {
+                // Photo exists in member_photos table - use base64 data directly
+                $member['photo'] = $member['photo_data'];
+            } elseif ($member['photo'] && $member['photo'] !== 'has_photo') {
+                // Legacy photo stored in team_members.photo field
+                $photoValue = $member['photo'];
+                
+                // Check if it's already base64 data
+                if (strpos($photoValue, 'data:image/') === 0) {
+                    // It's base64 data, use directly
+                    $member['photo'] = $photoValue;
+                } else {
+                    // Legacy file-based storage - convert to API URL
+                    if (strpos($photoValue, '/photos/members/') === 0) {
+                        $photoValue = basename($photoValue);
+                    } elseif (strpos($photoValue, '/api/photos') === 0) {
+                        $parsedUrl = parse_url($photoValue);
+                        if ($parsedUrl && isset($parsedUrl['query'])) {
+                            parse_str($parsedUrl['query'], $query);
+                            if (isset($query['filename'])) {
+                                $photoValue = $query['filename'];
+                            }
+                        }
+                    }
+                    $member['photo'] = '/api/photos?filename=' . urlencode($photoValue);
+                }
+            } elseif ($member['photo'] === 'has_photo') {
+                // Member has photo in member_photos table but photo_data was NULL
+                $member['photo'] = getDefaultPhoto($member['gender']);
+            } else {
+                $member['photo'] = getDefaultPhoto($member['gender']);
+            }
+            
+            // Remove photo_data from response to keep it clean
+            unset($member['photo_data']);
+            
             $recordsStmt = $db->prepare('
                 SELECT card_type, reason, notes, incident_date, 
                        suspension_matches, suspension_served, suspension_served_date, created_at
