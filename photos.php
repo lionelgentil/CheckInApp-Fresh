@@ -88,6 +88,7 @@ header('Last-Modified: ' . gmdate('D, d M Y H:i:s', $lastModified) . ' GMT');
 header('ETag: ' . $etag);
 header('Cache-Control: public, max-age=31536000, immutable');
 header('Expires: ' . gmdate('D, d M Y H:i:s', time + 31536000) . ' GMT');
+header('X-Photo-Source: PHP-Fallback'); // Indicates fallback was used
 
 // Check if client has cached version
 $clientETag = $_SERVER['HTTP_IF_NONE_MATCH'] ?? '';
