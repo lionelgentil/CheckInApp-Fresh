@@ -4,7 +4,7 @@
 echo "<h1>Railway Volume Diagnostic</h1>";
 echo "<pre>";
 
-$volumeDir = '/app/storage/photos';
+$volumeDir = '/app/storage/';
 
 echo "=== Volume Directory Info ===\n";
 echo "Directory: {$volumeDir}\n";
@@ -24,7 +24,7 @@ echo "Current User: " . (posix_getpwuid(posix_getuid())['name'] ?? 'unknown') . 
 echo "Current Group: " . (posix_getgrgid(posix_getgid())['name'] ?? 'unknown') . "\n";
 
 echo "\n=== Environment Variables ===\n";
-$envVars = ['RAILWAY_RUN_UID', 'USER', 'HOME', 'RAILWAY_ENVIRONMENT'];
+$envVars = ['RAILWAY_RUN_UID', 'RAILWAY_VOLUME_NAME', 'RAILWAY_VOLUME_PATH', 'USER', 'HOME', 'RAILWAY_ENVIRONMENT'];
 foreach ($envVars as $var) {
     echo "{$var}: " . ($_ENV[$var] ?? 'not set') . "\n";
 }
