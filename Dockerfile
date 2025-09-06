@@ -6,6 +6,9 @@ RUN apt-get update && apt-get install -y \
     postgresql-client \
     && rm -rf /var/lib/apt/lists/*
 
+# COPY SCRIPT
+COPY --chmod=755 ./starting-hook.sh /etc/entrypoint.d/starting-hook.sh
+
 # Install PostgreSQL PHP extensions with explicit configuration
 RUN docker-php-ext-configure pgsql -with-pgsql=/usr/local/pgsql \
     && docker-php-ext-install pdo pdo_pgsql pgsql
