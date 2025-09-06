@@ -7,7 +7,7 @@ RUN apt-get update && apt-get install -y \
     && rm -rf /var/lib/apt/lists/*
 
 # COPY SCRIPT
-COPY --chmod=755 ./starting-hook.sh /etc/entrypoint.d/starting-hook.sh
+COPY --chmod=755 ./99-starting-hook.sh /etc/entrypoint.d/99-starting-hook.sh
 
 # Install PostgreSQL PHP extensions with explicit configuration
 RUN docker-php-ext-configure pgsql -with-pgsql=/usr/local/pgsql \
