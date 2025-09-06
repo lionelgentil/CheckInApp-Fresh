@@ -5,15 +5,15 @@ RewriteEngine On
 RewriteCond %{REQUEST_URI} ^/api/
 RewriteRule ^api/(.*)$ api.php?path=$1 [QSA,L]
 
-# Photos directory - serve directly via symbolic link (ZERO PHP overhead!)
-# Map /photos/* to /volume-photos/* for pure static serving by Apache
+# Photos directory - intelligent serving (static when possible, PHP fallback)
+# First try direct symlink serving, then fall back to PHP
 RewriteCond %{REQUEST_URI} ^/photos/(.+)$
 RewriteCond %{DOCUMENT_ROOT}/volume-photos/%1 -f
 RewriteRule ^photos/(.+)$ volume-photos/$1 [L]
 
-# Handle default avatars via photos.php (only for non-existent files)
-RewriteCond %{REQUEST_URI} ^/photos/default-(male|female)\.svg$
-RewriteRule ^photos/(default-(?:male|female)\.svg)$ photos.php/$1 [L]
+# Fallback to PHP serving for all photo requests (with symlink auto-creation)
+RewriteCond %{REQUEST_URI} ^/photos/
+RewriteRule ^photos/(.+)$ photos.php/$1 [L]
 
 # Frontend routing - serve index.html for non-existing files (SPA support)
 # BUT exclude photos and API directories from SPA routing

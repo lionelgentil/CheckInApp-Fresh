@@ -1,8 +1,19 @@
 <?php
 /**
- * Optimized Photo Serving Script
- * Direct file serving with minimal PHP overhead and proper caching headers
+ * Smart Photo Serving Script
+ * Auto-creates symlink for static serving, serves files efficiently
  */
+
+// Try to create symlink for future static serving (one-time operation)
+$symlinkPath = __DIR__ . '/volume-photos';
+$volumeDir = '/app/storage/photos';
+
+if (!is_link($symlinkPath) && is_dir($volumeDir)) {
+    if (@symlink($volumeDir, $symlinkPath)) {
+        // Symlink created successfully - future requests will be static!
+        error_log("Photo symlink created successfully for static serving");
+    }
+}
 
 // Get the photo filename from URL path
 $pathInfo = $_SERVER['PATH_INFO'] ?? '';
@@ -38,7 +49,7 @@ if ($filename === 'default-male.svg' || $filename === 'default-female.svg') {
 }
 
 // Photo paths for custom photos
-$volumePath = '/app/storage/photos/' . $filename;
+$volumePath = $volumeDir . '/' . $filename;
 $fallbackPath = '/tmp/photos/' . $filename;
 
 // Find the photo file
@@ -76,7 +87,7 @@ header('Content-Length: ' . $fileSize);
 header('Last-Modified: ' . gmdate('D, d M Y H:i:s', $lastModified) . ' GMT');
 header('ETag: ' . $etag);
 header('Cache-Control: public, max-age=31536000, immutable');
-header('Expires: ' . gmdate('D, d M Y H:i:s', time() + 31536000) . ' GMT');
+header('Expires: ' . gmdate('D, d M Y H:i:s', time + 31536000) . ' GMT');
 
 // Check if client has cached version
 $clientETag = $_SERVER['HTTP_IF_NONE_MATCH'] ?? '';
