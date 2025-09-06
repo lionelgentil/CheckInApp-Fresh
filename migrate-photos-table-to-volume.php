@@ -165,7 +165,7 @@ function migratePhotosFromTableToVolume() {
             'storage_location' => $volumeDir,
             'photos_migrated' => 0,
             'database_updates' => 0,
-            'cleanup_count' => 0,
+            'files_created' => 0,
             'errors' => 0,
             'error_details' => [],
             'debug_info' => []
@@ -255,10 +255,11 @@ function migratePhotosFromTableToVolume() {
                     'member_id' => $memberId,
                     'member_name' => $memberName,
                     'new_photo' => $filename,
-                    'remove_from_table' => true
+                    'remove_from_table' => false  // CHANGED: Keep data in member_photos table for now
                 ];
                 
                 $results['photos_migrated']++;
+                $results['files_created']++;
                 $results['debug_info'][] = "  → File saved: {$filename} (" . strlen($imageData) . " bytes)";
                 
             } catch (Exception $e) {
@@ -285,13 +286,13 @@ function migratePhotosFromTableToVolume() {
                 $updateStmt = $db->prepare("UPDATE team_members SET photo = ? WHERE id = ?");
                 $updateStmt->execute([$update['new_photo'], $update['member_id']]);
                 
-                // Remove from member_photos table
-                $deleteStmt = $db->prepare("DELETE FROM member_photos WHERE member_id = ?");
-                $deleteStmt->execute([$update['member_id']]);
+                // CHANGED: Do NOT remove from member_photos table yet - keep data as backup
+                // $deleteStmt = $db->prepare("DELETE FROM member_photos WHERE member_id = ?");
+                // $deleteStmt->execute([$update['member_id']]);
                 
                 $results['database_updates']++;
-                $results['cleanup_count']++;
-                $results['debug_info'][] = "  ✅ Updated: {$update['member_name']} → {$update['new_photo']}";
+                // $results['cleanup_count']++; // Not cleaning up table data
+                $results['debug_info'][] = "  ✅ Updated: {$update['member_name']} → {$update['new_photo']} (kept data in table)";
             }
             
             $db->commit();
@@ -314,7 +315,7 @@ function migratePhotosFromTableToVolume() {
         
         $results['success'] = true;
         $results['total_processed'] = count($photos);
-        $results['message'] = "Migration from member_photos table to Railway volume completed successfully";
+        $results['message'] = "Migration from member_photos table to Railway volume completed successfully (data kept in table as backup)";
         
         echo json_encode($results);
         
@@ -383,9 +384,10 @@ function migratePhotosFromTableToVolume() {
         <ul>
             <li><strong>Source:</strong> Photos stored in <code>member_photos</code> table (database)</li>
             <li><strong>Destination:</strong> Files in <code>/app/storage/photos</code> (Railway volume)</li>
-            <li><strong>Database Changes:</strong> Updates <code>team_members.photo</code> to filenames, removes data from <code>member_photos</code></li>
+            <li><strong>Database Changes:</strong> Updates <code>team_members.photo</code> to filenames</li>
+            <li><strong>Data Preservation:</strong> <span style="color:green">Original data kept in <code>member_photos</code> table as backup</span></li>
             <li><strong>Benefits:</strong> HTTP caching, smaller database responses, better performance</li>
-            <li><strong>Backup Recommended:</strong> Ensure you have a database backup before proceeding</li>
+            <li><strong>Safety:</strong> Atomic operation with full rollback if anything fails</li>
         </ul>
     </div>
 
@@ -521,8 +523,9 @@ function migratePhotosFromTableToVolume() {
                     output += `📍 Storage Location: ${result.storage_location}\n`;
                     output += `📊 Total Processed: ${result.total_processed}\n`;
                     output += `📸 Photos Migrated: ${result.photos_migrated}\n`;
+                    output += `📁 Files Created: ${result.files_created}\n`;
                     output += `🔄 Database Updates: ${result.database_updates}\n`;
-                    output += `🧹 Cleaned from Table: ${result.cleanup_count}\n`;
+                    output += `💾 Data Kept in Table: YES (backup preserved)\n`;
                     output += `❌ Errors: ${result.errors}\n\n`;
                     
                     if (result.error_details && result.error_details.length > 0) {
