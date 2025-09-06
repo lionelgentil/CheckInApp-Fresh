@@ -2456,6 +2456,11 @@ Please check the browser console (F12) for more details.`);
         const member = team.members.find(m => m.id === memberId);
         if (!team || !member) return;
         
+        // Capture original values BEFORE updating member object
+        const originalName = member.name;
+        const originalJerseyNumber = member.jerseyNumber;
+        const originalGender = member.gender;
+        
         let photo = member.photo;
         if (photoFile) {
             try {
@@ -2470,10 +2475,8 @@ Please check the browser console (F12) for more details.`);
             }
         }
         
-        // Update member data
-        member.name = name;
-        member.jerseyNumber = jerseyNumber ? parseInt(jerseyNumber) : null;
-        member.gender = gender || null;
+        // Photo update is handled immediately above (uploaded to server and member.photo updated)
+        // Basic member info (name, jersey, gender) will be updated after database save
         if (photo) {
             member.photo = photo;
             console.log('saveDetailedMember: Updated member photo to:', photo);
@@ -2543,10 +2546,6 @@ Please check the browser console (F12) for more details.`);
         
         try {
             // Check if basic member info actually changed
-            const originalName = this.currentEditingMember?.name;
-            const originalJerseyNumber = this.currentEditingMember?.jerseyNumber;
-            const originalGender = this.currentEditingMember?.gender;
-            
             const basicInfoChanged = (
                 originalName !== name ||
                 (originalJerseyNumber || null) !== (jerseyNumber ? parseInt(jerseyNumber) : null) ||
@@ -2556,11 +2555,24 @@ Please check the browser console (F12) for more details.`);
             // Save basic member info if changed (using granular API for better performance)
             if (basicInfoChanged) {
                 console.log('💾 saveDetailedMember: Basic member info changed, using granular API');
+                console.log('Changes:', {
+                    name: originalName + ' → ' + name,
+                    jersey: originalJerseyNumber + ' → ' + (jerseyNumber || 'null'),
+                    gender: originalGender + ' → ' + (gender || 'null')
+                });
+                
                 await this.updateMemberProfile(teamId, memberId, {
                     name: name,
                     jerseyNumber: jerseyNumber ? parseInt(jerseyNumber) : null,
                     gender: gender || null
                 });
+                
+                // Update local member object after successful database update
+                member.name = name;
+                member.jerseyNumber = jerseyNumber ? parseInt(jerseyNumber) : null;
+                member.gender = gender || null;
+                
+                console.log('✅ Member profile saved and local object updated');
             } else {
                 console.log('✅ saveDetailedMember: No basic info changes, skipping member profile update');
             }
