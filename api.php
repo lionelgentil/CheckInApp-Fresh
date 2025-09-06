@@ -8,7 +8,7 @@
 session_start();
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '5.1.2';
+const APP_VERSION = '5.2.0';
 
 // Authentication configuration
 const ADMIN_PASSWORD = 'checkin2024'; // Change this to your desired password
@@ -253,9 +253,15 @@ try {
             break;
             
         case 'member-photo':
-            // Load individual member photo on-demand
+            // DEPRECATED: This endpoint is deprecated after photo migration
+            // Use /api/photos?filename= instead for direct file serving with HTTP caching
             if ($method === 'GET') {
-                getMemberPhoto($db);
+                http_response_code(410); // Gone
+                echo json_encode([
+                    'error' => 'This endpoint is deprecated after photo migration',
+                    'message' => 'Use /api/photos?filename= instead for direct file serving with HTTP caching',
+                    'migration_info' => 'Photos are now stored as files with direct URLs for better performance'
+                ]);
             }
             break;
             
@@ -826,6 +832,8 @@ function getTeams($db) {
     echo json_encode($teams);
 }
 
+// DEPRECATED: This function is deprecated after photo migration to Railway volume
+// Photos are now served directly via servePhoto() with /api/photos?filename= URLs
 function getMemberPhoto($db) {
     $memberId = $_GET['member_id'] ?? '';
     

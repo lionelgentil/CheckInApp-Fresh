@@ -34,7 +34,7 @@ class CheckInApp {
         this.init();
     }
     
-    // 🚀 PERFORMANCE OPTIMIZATION: Initialize lazy loading system
+    // 🚀 PERFORMANCE OPTIMIZATION: Photo system now uses direct URLs with HTTP caching
     initializeLazyLoading() {
         if ('IntersectionObserver' in window) {
             this.imageObserver = new IntersectionObserver((entries, observer) => {
@@ -69,7 +69,7 @@ class CheckInApp {
                 threshold: 0.1
             });
             
-            console.log('📈 Performance: Lazy loading initialized with IntersectionObserver');
+            console.log('📈 Performance: Lazy loading initialized with IntersectionObserver (legacy system)');
         } else {
             console.log('⚠️ IntersectionObserver not supported, falling back to immediate loading');
         }
@@ -429,88 +429,32 @@ class CheckInApp {
     // =====================================
 
     /**
-     * Load custom photos for members who have them, replacing default photos
+     * DEPRECATED: No longer needed after photo migration to filenames
+     * Photos are now loaded directly via getMemberPhotoUrl() with direct URLs
      */
     async loadMemberPhotosLazily(members, containerId = null) {
-        if (!members || members.length === 0) return;
-
-        // Filter members who have custom photos
-        const membersWithPhotos = members.filter(member => member.hasCustomPhoto);
-        
-        if (membersWithPhotos.length === 0) return;
-
-        console.log(`🖼️ Loading ${membersWithPhotos.length} custom photos lazily...`);
-
-        // Load photos in batches to avoid overwhelming the server
-        const batchSize = 5;
-        for (let i = 0; i < membersWithPhotos.length; i += batchSize) {
-            const batch = membersWithPhotos.slice(i, i + batchSize);
-            
-            // Load batch in parallel
-            const promises = batch.map(member => this.loadSingleMemberPhoto(member.id));
-            
-            try {
-                const results = await Promise.all(promises);
-                
-                // Update UI with loaded photos
-                results.forEach((result, index) => {
-                    if (result && result.success) {
-                        const member = batch[index];
-                        this.updateMemberPhotoInUI(member.id, result.photo, containerId);
-                    }
-                });
-                
-                // Small delay between batches to be nice to the server
-                if (i + batchSize < membersWithPhotos.length) {
-                    await new Promise(resolve => setTimeout(resolve, 100));
-                }
-                
-            } catch (error) {
-                console.warn('Some photos failed to load in batch:', error);
-            }
-        }
+        // DEPRECATED: This function is no longer needed
+        // Photos now use direct URLs from getMemberPhotoUrl() with HTTP caching
+        console.log('📸 Photo loading: Using direct URLs (lazy loading deprecated)');
     }
 
     /**
-     * Load a single member's photo
+     * DEPRECATED: This function is completely removed
+     * Photos now use direct /api/photos?filename= URLs with HTTP caching
      */
     async loadSingleMemberPhoto(memberId) {
-        try {
-            const response = await fetch(`/api/member-photo?member_id=${encodeURIComponent(memberId)}`);
-            if (response.ok) {
-                return await response.json();
-            }
-        } catch (error) {
-            console.warn(`Failed to load photo for member ${memberId}:`, error);
-        }
-        return null;
+        // DEPRECATED: This endpoint is deprecated
+        console.warn('loadSingleMemberPhoto is deprecated - use getMemberPhotoUrl() instead');
+        return { success: false, deprecated: true };
     }
 
     /**
-     * Update member photo in the UI
+     * DEPRECATED: No longer needed after photo migration
+     * Photos now use direct URLs with no need for UI updates
      */
     updateMemberPhotoInUI(memberId, photoUrl, containerId = null) {
-        const selector = containerId ? 
-            `#${containerId} img[data-member-id="${memberId}"]` : 
-            `img[data-member-id="${memberId}"]`;
-            
-        const imgElements = document.querySelectorAll(selector);
-        
-        imgElements.forEach(img => {
-            // Add fade effect for smooth transition
-            img.style.opacity = '0.5';
-            img.src = photoUrl;
-            
-            img.onload = () => {
-                img.style.opacity = '1';
-                img.style.transition = 'opacity 0.3s ease';
-            };
-            
-            img.onerror = () => {
-                img.style.opacity = '1';
-                // Keep the default photo if loading fails
-            };
-        });
+        // DEPRECATED: This function is no longer needed
+        console.warn('updateMemberPhotoInUI is deprecated - photos now use direct URLs');
     }
     
     async saveReferees() {
@@ -547,14 +491,12 @@ class CheckInApp {
         });
     }
     
-    // 🚀 PERFORMANCE: Generate lazy-loading image HTML
+    // 🚀 PERFORMANCE: Generate image HTML (no longer lazy loading since we have direct filenames)
     getLazyImageHtml(member, className = 'member-photo', style = '') {
-        // For teams-no-photos, start with gender default and add data attribute for lazy loading
-        const defaultPhotoUrl = this.getGenderDefaultPhoto(member);
+        // After photo migration, we can use direct photo URLs instead of lazy loading
+        const photoUrl = this.getMemberPhotoUrl(member);
         
-        // Always start with default photo, add member ID for lazy loading
-        return `<img src="${defaultPhotoUrl}" 
-                     data-member-id="${member.id}"
+        return `<img src="${photoUrl}" 
                      alt="${member.name}" 
                      class="${className}" 
                      ${style ? `style="${style}"` : ''}
@@ -1085,8 +1027,8 @@ class CheckInApp {
             if (selectedTeam && selectedTeam.members.length > 0) {
                 this.loadLifetimeCardsForTeam(selectedTeam);
                 
-                // 🖼️ NEW: Load custom photos lazily for team members
-                this.loadMemberPhotosLazily(selectedTeam.members, 'teams-container');
+                // 🖼️ Photos now use direct URLs (no lazy loading needed)
+                console.log('🖼️ Team photos use direct URLs with HTTP caching');
             }
         }
         
@@ -1950,11 +1892,8 @@ Please check the browser console (F12) for more details.`);
                 const selectedTeamId = document.getElementById('teams-team-selector')?.value;
                 if (selectedTeamId === teamId) {
                     console.log('📸 Triggering photo loading for newly added member with photo');
-                    // Find the newly added member and load their photo
-                    const newMember = team.members.find(m => m.name === name);
-                    if (newMember) {
-                        this.loadMemberPhotosLazily([newMember], 'teams-container');
-                    }
+                    // 🖼️ Photos now use direct URLs (no lazy loading needed)
+                    console.log('🖼️ New member photo uses direct URL');
                 }
             }
             
@@ -2380,8 +2319,8 @@ Please check the browser console (F12) for more details.`);
         
         document.body.appendChild(modal);
         
-        // 🖼️ Load custom photo for the member edit modal
-        this.loadMemberPhotosLazily([member], null);
+        // 🖼️ Photos now use direct URLs (no lazy loading needed)
+        console.log('🖼️ Edit modal photo uses direct URL');
     }
     
     addDisciplinaryRecord() {
@@ -2671,10 +2610,8 @@ Please check the browser console (F12) for more details.`);
             if (photoFile) {
                 // For edited members with new photos, ensure the photo loads if this team is currently selected
                 const selectedTeamId = document.getElementById('teams-team-selector')?.value;
-                if (selectedTeamId === teamId) {
-                    console.log('📸 Triggering photo loading for edited member with new photo');
-                    this.loadMemberPhotosLazily([member], 'teams-container');
-                }
+                // 🖼️ Photos now use direct URLs (no lazy loading needed)
+                console.log('🖼️ Updated member photo uses direct URL');
             }
             
             this.closeModal();
@@ -2868,8 +2805,8 @@ Please check the browser console (F12) for more details.`);
         
         document.body.appendChild(modal);
         
-        // 🖼️ Load custom photo for the player profile
-        this.loadMemberPhotosLazily([member], null);
+        // 🖼️ Photos now use direct URLs (no lazy loading needed)
+        console.log('🖼️ Player profile photo uses direct URL');
     }
     
     // Event Management
@@ -5418,8 +5355,8 @@ Please check the browser console (F12) for more details.`);
         // 🚀 PERFORMANCE: Initialize lazy loading for newly rendered grid images
         this.initializeLazyImages(container);
         
-        // 🖼️ Load custom photos for the grid team players
-        this.loadMemberPhotosLazily(team.members, `grid-container-${teamType}`);
+        // 🖼️ Photos now use direct URLs with HTTP caching (no lazy loading needed)
+        console.log('🖼️ Match grid photos use direct URLs');
     }
     
     // Check if player is currently suspended

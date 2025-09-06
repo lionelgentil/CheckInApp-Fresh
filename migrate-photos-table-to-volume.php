@@ -172,18 +172,39 @@ function migratePhotosFromTableToVolume() {
             $photosDir = $volumeDir;
             $results['debug_info'][] = "✅ Using Railway volume: {$volumeDir}";
         } else {
-            // Try fallback directories
-            foreach ($fallbackDirs as $fallbackDir) {
-                if (!is_dir($fallbackDir)) {
-                    mkdir($fallbackDir, 0777, true);
-                }
+            $results['debug_info'][] = "⚠️ Railway volume not writable, attempting permission fix...";
+            
+            // Try to fix permissions (will only work if running as root or with sudo)
+            $chownResult = @exec('chown -R 33:33 /app/storage/photos 2>&1', $output, $returnCode);
+            if ($returnCode === 0) {
+                $results['debug_info'][] = "✅ Permission fix successful, retrying...";
                 
-                $testFile = $fallbackDir . '/migration_test_' . time();
+                // Test again after permission fix
                 if (@file_put_contents($testFile, 'test') !== false) {
                     @unlink($testFile);
-                    $photosDir = $fallbackDir;
-                    $results['debug_info'][] = "⚠️ Using fallback directory: {$fallbackDir} (Railway volume not writable)";
-                    break;
+                    $photosDir = $volumeDir;
+                    $results['debug_info'][] = "✅ Railway volume now accessible after permission fix";
+                } else {
+                    $results['debug_info'][] = "❌ Railway volume still not writable after permission fix";
+                }
+            } else {
+                $results['debug_info'][] = "❌ Permission fix failed (not running as root): " . implode(' ', $output);
+            }
+            
+            // If still not working, try fallback directories
+            if (!$photosDir) {
+                foreach ($fallbackDirs as $fallbackDir) {
+                    if (!is_dir($fallbackDir)) {
+                        mkdir($fallbackDir, 0777, true);
+                    }
+                    
+                    $testFile = $fallbackDir . '/migration_test_' . time();
+                    if (@file_put_contents($testFile, 'test') !== false) {
+                        @unlink($testFile);
+                        $photosDir = $fallbackDir;
+                        $results['debug_info'][] = "⚠️ Using fallback directory: {$fallbackDir} (Railway volume not writable)";
+                        break;
+                    }
                 }
             }
         }
