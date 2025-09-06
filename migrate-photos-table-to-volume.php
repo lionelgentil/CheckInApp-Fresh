@@ -147,22 +147,14 @@ function migratePhotosFromTableToVolume() {
     try {
         $db = getDatabaseConnection();
         
-        // Ensure Railway volume is accessible
+        // Try Railway volume first, then fallback to working directories
         $volumeDir = '/app/storage/photos';
-        $testFile = $volumeDir . '/migration_test_' . time();
+        $fallbackDirs = ['/var/tmp/photos', '/tmp/photos'];
         
-        if (!is_dir($volumeDir)) {
-            throw new Exception("Railway volume directory not found: {$volumeDir}");
-        }
-        
-        $canWrite = @file_put_contents($testFile, 'test');
-        if ($canWrite === false) {
-            throw new Exception("Railway volume is not writable: {$volumeDir}. Check permissions.");
-        }
-        @unlink($testFile);
-        
+        // Initialize results first
         $results = [
-            'storage_location' => $volumeDir,
+            'storage_location' => null,
+            'volume_attempted' => $volumeDir,
             'photos_migrated' => 0,
             'database_updates' => 0,
             'files_created' => 0,
@@ -170,6 +162,37 @@ function migratePhotosFromTableToVolume() {
             'error_details' => [],
             'debug_info' => []
         ];
+        
+        $photosDir = null;
+        $testFile = $volumeDir . '/migration_test_' . time();
+        
+        // Test Railway volume first
+        if (is_dir($volumeDir) && @file_put_contents($testFile, 'test') !== false) {
+            @unlink($testFile);
+            $photosDir = $volumeDir;
+            $results['debug_info'][] = "✅ Using Railway volume: {$volumeDir}";
+        } else {
+            // Try fallback directories
+            foreach ($fallbackDirs as $fallbackDir) {
+                if (!is_dir($fallbackDir)) {
+                    mkdir($fallbackDir, 0777, true);
+                }
+                
+                $testFile = $fallbackDir . '/migration_test_' . time();
+                if (@file_put_contents($testFile, 'test') !== false) {
+                    @unlink($testFile);
+                    $photosDir = $fallbackDir;
+                    $results['debug_info'][] = "⚠️ Using fallback directory: {$fallbackDir} (Railway volume not writable)";
+                    break;
+                }
+            }
+        }
+        
+        if (!$photosDir) {
+            throw new Exception("No writable directory found. Railway volume: {$volumeDir} not writable, fallback directories also failed.");
+        }
+        
+        $results['storage_location'] = $photosDir;
         
         // Get all photos from member_photos table
         $stmt = $db->query("
