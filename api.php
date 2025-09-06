@@ -8,16 +8,16 @@
 session_start();
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '5.2.1';
+const APP_VERSION = '5.3.0';
 
 // Authentication configuration
 const ADMIN_PASSWORD = 'checkin2024'; // Change this to your desired password
 const SESSION_TIMEOUT = 3600; // 1 hour in seconds
 
-// Default photos - fallback to API serving for SVG compatibility
+// Default photos - use direct URLs for better performance (bypass PHP)
 function getDefaultPhoto($gender) {
-    // Use API serving for SVG files to ensure proper MIME type in all browsers
-    return '/api/photos?filename=default&gender=' . ($gender === 'female' ? 'female' : 'male');
+    // Use direct static URLs - served by Apache without PHP overhead
+    return '/photos/default-' . ($gender === 'female' ? 'female' : 'male') . '.svg';
 }
 
 // Performance optimization: Cache for database queries
@@ -772,8 +772,8 @@ function getTeams($db) {
                 } else {
                     // Check if it's a filename with valid extension (post-migration format)
                     if (preg_match('/\.(jpg|jpeg|png|webp)$/i', $photoValue)) {
-                        // It's a filename - convert to API URL
-                        $photo = '/api/photos?filename=' . urlencode($photoValue);
+                        // It's a filename - use direct static URL (bypass PHP for better performance)
+                        $photo = '/photos/' . $photoValue;
                     } else {
                         // Legacy file-based storage - convert to API URL
                         // Handle different photo storage formats
@@ -806,7 +806,7 @@ function getTeams($db) {
                         }
                         // If it's already just a filename (preferred), use as-is
                         
-                        $photo = '/api/photos?filename=' . urlencode($photoValue);
+                        $photo = '/photos/' . $photoValue;
                     }
                 }
             } elseif ($row['photo_data']) {
@@ -1116,8 +1116,8 @@ function getSpecificTeams($db) {
                 } else {
                     // Check if it's a filename with valid extension (post-migration format)
                     if (preg_match('/\.(jpg|jpeg|png|webp)$/i', $photoValue)) {
-                        // It's a filename - convert to API URL
-                        $photo = '/api/photos?filename=' . urlencode($photoValue);
+                        // It's a filename - use direct static URL (bypass PHP for better performance)
+                        $photo = '/photos/' . $photoValue;
                     } else {
                         // Legacy file-based storage - convert to API URL
                         // Handle different photo storage formats (same logic as getTeams)
@@ -1147,7 +1147,7 @@ function getSpecificTeams($db) {
                             }
                         }
                         
-                        $photo = '/api/photos?filename=' . urlencode($photoValue);
+                        $photo = '/photos/' . $photoValue;
                     }
                 }
             } elseif ($row['photo_data']) {

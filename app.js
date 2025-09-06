@@ -511,20 +511,26 @@ class CheckInApp {
         // Check if member has a real custom photo
         if (member.photo) {
             // Skip gender defaults
-            if (member.photo.includes('male.svg') || 
-                member.photo.includes('female.svg') || 
+            if (member.photo.includes('default-male.svg') || 
+                member.photo.includes('default-female.svg') || 
                 member.photo.includes('default.svg')) {
                 console.log('👤 Using gender default for:', member.name);
                 return this.getGenderDefaultPhoto(member);
             }
             
-            // Handle base64 images (for Railway deployment where filesystem is ephemeral)
+            // Handle base64 images (legacy format)
             if (member.photo.startsWith('data:image/')) {
                 console.log('📸 Using base64 photo for:', member.name);
                 return member.photo; // Return base64 image directly
             }
             
-            // Check if it's an API URL with filename parameter
+            // Handle direct photo URLs (new optimized format)
+            if (member.photo.startsWith('/photos/')) {
+                console.log('⚡ Using direct photo URL for:', member.name, 'URL:', member.photo);
+                return member.photo; // Direct static file serving (fastest)
+            }
+            
+            // Check if it's an API URL with filename parameter (legacy)
             if (member.photo.includes('/api/photos?filename=')) {
                 const match = member.photo.match(/filename=([^&]+)/);
                 if (match) {
@@ -532,9 +538,9 @@ class CheckInApp {
                     // Check if the filename has a valid image extension
                     if (filename.includes('.jpg') || filename.includes('.jpeg') || 
                         filename.includes('.png') || filename.includes('.webp')) {
-                        console.log('🔗 Using API URL photo for:', member.name, 'URL:', member.photo);
-                        // Return the full API URL without additional cache-busting to avoid corrupting the URL
-                        return member.photo;
+                        console.log('🔗 Converting API URL to direct URL for:', member.name, 'filename:', filename);
+                        // Convert to direct URL for better performance
+                        return `/photos/${filename}`;
                     }
                 }
             }
@@ -542,10 +548,10 @@ class CheckInApp {
             // Check if it's a direct filename with valid extension
             if ((member.photo.includes('.jpg') || member.photo.includes('.jpeg') || 
                 member.photo.includes('.png') || member.photo.includes('.webp')) &&
-                !member.photo.startsWith('/api/photos') && !member.photo.startsWith('http')) {
-                console.log('📁 Converting filename to API URL for:', member.name, 'filename:', member.photo);
-                // Convert filename to API URL without cache-busting to avoid corrupting URLs
-                return `/api/photos?filename=${encodeURIComponent(member.photo)}`;
+                !member.photo.startsWith('/photos/') && !member.photo.startsWith('/api/photos') && !member.photo.startsWith('http')) {
+                console.log('📁 Converting filename to direct URL for:', member.name, 'filename:', member.photo);
+                // Convert filename to direct URL (bypass PHP)
+                return `/photos/${member.photo}`;
             }
             
             // Check if it's already a full HTTP URL with valid extension
@@ -553,7 +559,6 @@ class CheckInApp {
                 (member.photo.includes('.jpg') || member.photo.includes('.jpeg') || 
                  member.photo.includes('.png') || member.photo.includes('.webp'))) {
                 console.log('🌐 Using external URL photo for:', member.name);
-                // Return external URLs without cache-busting to avoid corrupting them
                 return member.photo;
             }
             
@@ -569,12 +574,12 @@ class CheckInApp {
     // Helper method for gender defaults
     getGenderDefaultPhoto(member) {
         if (member.gender === 'male') {
-            return '/api/photos?filename=default&gender=male';
+            return '/photos/default-male.svg';
         } else if (member.gender === 'female') {
-            return '/api/photos?filename=default&gender=female';
+            return '/photos/default-female.svg';
         } else {
             // No gender specified, use male as default
-            return '/api/photos?filename=default&gender=male';
+            return '/photos/default-male.svg';
         }
     }
     
