@@ -569,12 +569,12 @@ class CheckInApp {
     // Helper method for gender defaults
     getGenderDefaultPhoto(member) {
         if (member.gender === 'male') {
-            return 'photos/defaults/male.svg';
+            return '/api/photos?filename=default&gender=male';
         } else if (member.gender === 'female') {
-            return 'photos/defaults/female.svg';
+            return '/api/photos?filename=default&gender=female';
         } else {
             // No gender specified, use male as default
-            return 'photos/defaults/male.svg';
+            return '/api/photos?filename=default&gender=male';
         }
     }
     

@@ -8,7 +8,7 @@
 session_start();
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '5.2.0';
+const APP_VERSION = '5.2.1';
 
 // Authentication configuration
 const ADMIN_PASSWORD = 'checkin2024'; // Change this to your desired password
@@ -760,52 +760,58 @@ function getTeams($db) {
         
         // Add member to current team (if member exists)
         if ($row['member_id']) {
-            // Generate photo URL - handle new member_photos table and legacy formats
-            if ($row['photo_data']) {
-                // Photo exists in member_photos table - use base64 data directly
-                $photo = $row['photo_data'];
-            } elseif ($row['photo_flag'] && $row['photo_flag'] !== 'has_photo') {
-                // Legacy photo stored in team_members.photo field (not the 'has_photo' flag)
+            // Generate photo URL - prioritize migrated filenames over backup data
+            if ($row['photo_flag'] && $row['photo_flag'] !== 'has_photo') {
+                // After migration: team_members.photo field contains filenames (preferred)
                 $photoValue = $row['photo_flag'];
                 
-                // Check if it's already base64 data
+                // Check if it's already base64 data (legacy)
                 if (strpos($photoValue, 'data:image/') === 0) {
                     // It's base64 data, use directly
                     $photo = $photoValue;
                 } else {
-                    // Legacy file-based storage - convert to API URL
-                    // Handle different photo storage formats
-                    if (strpos($photoValue, '/photos/members/') === 0) {
-                        // Full path format: /photos/members/filename.ext
-                        $photoValue = basename($photoValue);
-                    } elseif (strpos($photoValue, '/api/photos') === 0) {
-                        // Already a URL format: /api/photos?filename=xyz - extract filename
-                        $parsedUrl = parse_url($photoValue);
-                        if ($parsedUrl && isset($parsedUrl['query'])) {
-                            parse_str($parsedUrl['query'], $query);
-                            if (isset($query['filename'])) {
-                                $photoValue = $query['filename'];
-                                // Clean recursively in case of nested URLs
-                                while (strpos($photoValue, '/api/photos') === 0) {
-                                    $nestedUrl = parse_url($photoValue);
-                                    if ($nestedUrl && isset($nestedUrl['query'])) {
-                                        parse_str($nestedUrl['query'], $nestedQuery);
-                                        if (isset($nestedQuery['filename'])) {
-                                            $photoValue = $nestedQuery['filename'];
+                    // Check if it's a filename with valid extension (post-migration format)
+                    if (preg_match('/\.(jpg|jpeg|png|webp)$/i', $photoValue)) {
+                        // It's a filename - convert to API URL
+                        $photo = '/api/photos?filename=' . urlencode($photoValue);
+                    } else {
+                        // Legacy file-based storage - convert to API URL
+                        // Handle different photo storage formats
+                        if (strpos($photoValue, '/photos/members/') === 0) {
+                            // Full path format: /photos/members/filename.ext
+                            $photoValue = basename($photoValue);
+                        } elseif (strpos($photoValue, '/api/photos') === 0) {
+                            // Already a URL format: /api/photos?filename=xyz - extract filename
+                            $parsedUrl = parse_url($photoValue);
+                            if ($parsedUrl && isset($parsedUrl['query'])) {
+                                parse_str($parsedUrl['query'], $query);
+                                if (isset($query['filename'])) {
+                                    $photoValue = $query['filename'];
+                                    // Clean recursively in case of nested URLs
+                                    while (strpos($photoValue, '/api/photos') === 0) {
+                                        $nestedUrl = parse_url($photoValue);
+                                        if ($nestedUrl && isset($nestedUrl['query'])) {
+                                            parse_str($nestedUrl['query'], $nestedQuery);
+                                            if (isset($nestedQuery['filename'])) {
+                                                $photoValue = $nestedQuery['filename'];
+                                            } else {
+                                                break;
+                                            }
                                         } else {
                                             break;
                                         }
-                                    } else {
-                                        break;
                                     }
                                 }
                             }
                         }
+                        // If it's already just a filename (preferred), use as-is
+                        
+                        $photo = '/api/photos?filename=' . urlencode($photoValue);
                     }
-                    // If it's already just a filename (preferred), use as-is
-                    
-                    $photo = '/api/photos?filename=' . urlencode($photoValue);
                 }
+            } elseif ($row['photo_data']) {
+                // Fallback to member_photos table data (backup) only if no filename in team_members
+                $photo = $row['photo_data'];
             } elseif ($row['photo_flag'] === 'has_photo') {
                 // Member has photo in member_photos table but photo_data was NULL
                 // This shouldn't happen, but fallback to gender default
@@ -1098,49 +1104,55 @@ function getSpecificTeams($db) {
         
         // Add member to current team (if member exists) - using same photo logic as getTeams()
         if ($row['member_id']) {
-            // Generate photo URL - handle new member_photos table and legacy formats
-            if ($row['photo_data']) {
-                // Photo exists in member_photos table - use base64 data directly
-                $photo = $row['photo_data'];
-            } elseif ($row['photo_flag'] && $row['photo_flag'] !== 'has_photo') {
-                // Legacy photo stored in team_members.photo field (not the 'has_photo' flag)
+            // Generate photo URL - prioritize migrated filenames over backup data
+            if ($row['photo_flag'] && $row['photo_flag'] !== 'has_photo') {
+                // After migration: team_members.photo field contains filenames (preferred)
                 $photoValue = $row['photo_flag'];
                 
-                // Check if it's already base64 data
+                // Check if it's already base64 data (legacy)
                 if (strpos($photoValue, 'data:image/') === 0) {
                     // It's base64 data, use directly
                     $photo = $photoValue;
                 } else {
-                    // Legacy file-based storage - convert to API URL
-                    // Handle different photo storage formats (same logic as getTeams)
-                    if (strpos($photoValue, '/photos/members/') === 0) {
-                        $photoValue = basename($photoValue);
-                    } elseif (strpos($photoValue, '/api/photos') === 0) {
-                        $parsedUrl = parse_url($photoValue);
-                        if ($parsedUrl && isset($parsedUrl['query'])) {
-                            parse_str($parsedUrl['query'], $query);
-                            if (isset($query['filename'])) {
-                                $photoValue = $query['filename'];
-                                // Clean recursively in case of nested URLs
-                                while (strpos($photoValue, '/api/photos') === 0) {
-                                    $nestedUrl = parse_url($photoValue);
-                                    if ($nestedUrl && isset($nestedUrl['query'])) {
-                                        parse_str($nestedUrl['query'], $nestedQuery);
-                                        if (isset($nestedQuery['filename'])) {
-                                            $photoValue = $nestedQuery['filename'];
+                    // Check if it's a filename with valid extension (post-migration format)
+                    if (preg_match('/\.(jpg|jpeg|png|webp)$/i', $photoValue)) {
+                        // It's a filename - convert to API URL
+                        $photo = '/api/photos?filename=' . urlencode($photoValue);
+                    } else {
+                        // Legacy file-based storage - convert to API URL
+                        // Handle different photo storage formats (same logic as getTeams)
+                        if (strpos($photoValue, '/photos/members/') === 0) {
+                            $photoValue = basename($photoValue);
+                        } elseif (strpos($photoValue, '/api/photos') === 0) {
+                            $parsedUrl = parse_url($photoValue);
+                            if ($parsedUrl && isset($parsedUrl['query'])) {
+                                parse_str($parsedUrl['query'], $query);
+                                if (isset($query['filename'])) {
+                                    $photoValue = $query['filename'];
+                                    // Clean recursively in case of nested URLs
+                                    while (strpos($photoValue, '/api/photos') === 0) {
+                                        $nestedUrl = parse_url($photoValue);
+                                        if ($nestedUrl && isset($nestedUrl['query'])) {
+                                            parse_str($nestedUrl['query'], $nestedQuery);
+                                            if (isset($nestedQuery['filename'])) {
+                                                $photoValue = $nestedQuery['filename'];
+                                            } else {
+                                                break;
+                                            }
                                         } else {
                                             break;
                                         }
-                                    } else {
-                                        break;
                                     }
                                 }
                             }
                         }
+                        
+                        $photo = '/api/photos?filename=' . urlencode($photoValue);
                     }
-                    
-                    $photo = '/api/photos?filename=' . urlencode($photoValue);
                 }
+            } elseif ($row['photo_data']) {
+                // Fallback to member_photos table data (backup) only if no filename in team_members
+                $photo = $row['photo_data'];
             } elseif ($row['photo_flag'] === 'has_photo') {
                 // Member has photo in member_photos table but photo_data was NULL
                 $photo = getDefaultPhoto($row['gender']);
