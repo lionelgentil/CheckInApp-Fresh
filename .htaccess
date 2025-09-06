@@ -5,16 +5,10 @@ RewriteEngine On
 RewriteCond %{REQUEST_URI} ^/api/
 RewriteRule ^api/(.*)$ api.php?path=$1 [QSA,L]
 
-# Photos directory - serve directly from Railway volume (bypass PHP for better performance)
-# Map /photos/* URLs to /app/storage/photos/* for static file serving
+# Photos directory - serve via optimized PHP script with proper caching
+# Route /photos/* to photos.php with PATH_INFO for efficient serving
 RewriteCond %{REQUEST_URI} ^/photos/
-RewriteCond /app/storage/photos%{REQUEST_URI} -f
-RewriteRule ^photos/(.*)$ /app/storage/photos/$1 [L]
-
-# Handle default avatar requests 
-RewriteCond %{REQUEST_URI} ^/photos/default-(male|female)\.svg$
-RewriteCond %{DOCUMENT_ROOT}/photos/defaults/%1.svg -f  
-RewriteRule ^photos/default-(male|female)\.svg$ photos/defaults/$1.svg [L]
+RewriteRule ^photos/(.+)$ photos.php/$1 [L]
 
 # Frontend routing - serve index.html for non-existing files (SPA support)
 # BUT exclude photos and API directories from SPA routing
