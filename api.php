@@ -8,7 +8,7 @@
 session_start();
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '5.4.0';
+const APP_VERSION = '5.4.1';
 
 // Authentication configuration
 const ADMIN_PASSWORD = 'checkin2024'; // Change this to your desired password
@@ -920,7 +920,7 @@ function getMemberPhoto($db) {
 }
 
 function getTeamsWithoutPhotos($db) {
-    // Fast teams endpoint with member data but NO photo data - significantly faster
+    // Fast teams endpoint optimized for static photo serving
     // Only include active members (active = TRUE or active IS NULL for backward compatibility)
     $stmt = $db->query('
         SELECT 
@@ -934,11 +934,7 @@ function getTeamsWithoutPhotos($db) {
             tm.name as member_name,
             tm.jersey_number,
             tm.gender,
-            CASE 
-                WHEN tm.photo = \'has_photo\' THEN \'has_photo\'
-                WHEN tm.photo IS NOT NULL AND tm.photo != \'\' THEN \'has_photo\'
-                ELSE NULL
-            END AS has_photo
+            tm.photo
         FROM teams t
         LEFT JOIN team_members tm ON t.id = tm.team_id AND (tm.active IS NULL OR tm.active = TRUE)
         ORDER BY t.name, tm.name
@@ -969,16 +965,44 @@ function getTeamsWithoutPhotos($db) {
         
         // Add member to current team (if member exists)
         if ($row['member_id']) {
-            // Use gender default for photo URL - actual photos loaded on demand
-            $photo = getDefaultPhoto($row['gender']);
+            // Generate photo URL - same logic as getTeams() for consistency
+            if ($row['photo']) {
+                // Check if it's already base64 data (legacy)
+                if (strpos($row['photo'], 'data:image/') === 0) {
+                    // It's base64 data, use directly
+                    $photo = $row['photo'];
+                } else {
+                    // Check if it's a filename with valid extension (post-migration format)
+                    if (preg_match('/\.(jpg|jpeg|png|webp)$/i', $row['photo'])) {
+                        // It's a filename - use direct static URL (bypass PHP for better performance)
+                        $photo = '/photos/' . $row['photo'];
+                    } else {
+                        // Legacy file-based storage - convert to API URL
+                        $photoValue = $row['photo'];
+                        if (strpos($photoValue, '/photos/members/') === 0) {
+                            $photoValue = basename($photoValue);
+                        } elseif (strpos($photoValue, '/api/photos') === 0) {
+                            $parsedUrl = parse_url($photoValue);
+                            if ($parsedUrl && isset($parsedUrl['query'])) {
+                                parse_str($parsedUrl['query'], $query);
+                                if (isset($query['filename'])) {
+                                    $photoValue = $query['filename'];
+                                }
+                            }
+                        }
+                        $photo = '/photos/' . $photoValue;
+                    }
+                }
+            } else {
+                $photo = getDefaultPhoto($row['gender']);
+            }
             
             $currentTeam['members'][] = [
                 'id' => $row['member_id'],
                 'name' => $row['member_name'],
                 'jerseyNumber' => $row['jersey_number'] ? (int)$row['jersey_number'] : null,
                 'gender' => $row['gender'],
-                'photo' => $photo,
-                'hasCustomPhoto' => $row['has_photo'] ? true : false
+                'photo' => $photo
             ];
         }
     }
