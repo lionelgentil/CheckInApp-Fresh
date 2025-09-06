@@ -1781,13 +1781,7 @@ Please check the browser console (F12) for more details.`);
                 const originalJerseyNumber = this.currentEditingMember.jerseyNumber;
                 const originalGender = this.currentEditingMember.gender;
                 
-                const basicInfoChanged = (
-                    originalName !== name ||
-                    (originalJerseyNumber || null) !== (jerseyNumber ? parseInt(jerseyNumber) : null) ||
-                    (originalGender || null) !== (gender || null)
-                );
-                
-                // Update local data first
+                // Update local data first (database update happens later with disciplinary records)
                 this.currentEditingMember.name = name;
                 this.currentEditingMember.jerseyNumber = jerseyNumber ? parseInt(jerseyNumber) : null;
                 this.currentEditingMember.gender = gender || null;
@@ -1807,15 +1801,7 @@ Please check the browser console (F12) for more details.`);
                     console.log('Photo uploaded successfully');
                 }
                 
-                // Use granular endpoint for basic info updates (much faster!)
-                if (basicInfoChanged) {
-                    console.log('🚀 Using granular API for member profile update');
-                    await this.updateMemberProfile(teamId, this.currentEditingMember.id, {
-                        name: name,
-                        jerseyNumber: jerseyNumber ? parseInt(jerseyNumber) : null,
-                        gender: gender || null
-                    });
-                }
+                // Member profile will be updated later in the function with disciplinary records
                 
             } else {
                 // 🔍 NEW: Check for inactive players with the same name before creating new member
@@ -2256,7 +2242,7 @@ Please check the browser console (F12) for more details.`);
             <div class="form-group">
                 <label class="form-label">${photoLabel}</label>
                 <input type="file" class="form-input file-input" id="detailed-member-photo" accept="image/*" ${isMobile ? 'capture="environment"' : ''}>
-                ${member.photo ? `<img src="${this.getGenderDefaultPhoto(member)}" data-member-id="${member.id}" alt="Current photo" class="preview-image">` : ''}
+                ${member.photo ? `<img src="${this.getMemberPhotoUrl(member)}" data-member-id="${member.id}" alt="Current photo" class="preview-image">` : ''}
                 ${isMobile ? '<small style="color: #666; font-size: 0.85em; display: block; margin-top: 5px;">📸 This will open your camera</small>' : ''}
             </div>
             
@@ -2561,18 +2547,22 @@ Please check the browser console (F12) for more details.`);
             const originalJerseyNumber = this.currentEditingMember?.jerseyNumber;
             const originalGender = this.currentEditingMember?.gender;
             
-            const basicInfoChanged = !photoFile && ( // Only check if no photo was uploaded
+            const basicInfoChanged = (
                 originalName !== name ||
                 (originalJerseyNumber || null) !== (jerseyNumber ? parseInt(jerseyNumber) : null) ||
                 (originalGender || null) !== (gender || null)
             );
             
-            // Only save teams if basic member info actually changed AND no photo was uploaded
+            // Save basic member info if changed (using granular API for better performance)
             if (basicInfoChanged) {
-                console.log('💾 saveDetailedMember: Basic member info changed, calling saveTeams()');
-                await this.saveTeams();
+                console.log('💾 saveDetailedMember: Basic member info changed, using granular API');
+                await this.updateMemberProfile(teamId, memberId, {
+                    name: name,
+                    jerseyNumber: jerseyNumber ? parseInt(jerseyNumber) : null,
+                    gender: gender || null
+                });
             } else {
-                console.log('✅ saveDetailedMember: No basic info changes or photo uploaded, skipping expensive saveTeams() call');
+                console.log('✅ saveDetailedMember: No basic info changes, skipping member profile update');
             }
             
             // Save disciplinary records (this should be fast)
