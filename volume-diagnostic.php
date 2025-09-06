@@ -4,7 +4,7 @@
 echo "<h1>Railway Volume Diagnostic</h1>";
 echo "<pre>";
 
-$volumeDir = '/app/storage/';
+$volumeDir = '/app/storage/photos';
 
 echo "=== Volume Directory Info ===\n";
 echo "Directory: {$volumeDir}\n";
