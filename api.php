@@ -8,7 +8,7 @@
 session_start();
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '5.5.2';
+const APP_VERSION = '5.5.3';
 
 // Authentication configuration
 const ADMIN_PASSWORD = 'checkin2024'; // Change this to your desired password
@@ -3039,16 +3039,17 @@ function updateAttendanceOnly($db) {
     error_log('Processing attendance: eventId=' . $eventId . ', matchId=' . $matchId . ', memberId=' . $memberId . ', teamType=' . $teamType . ', action=' . $action);
     
     try {
+        error_log('Starting match lookup...');
         // First check if check-in is locked for this match
         // Get match details to check lock status
         $stmt = $db->prepare('
-            SELECT e.event_date, m.match_time 
+            SELECT e.date as event_date, m.match_time 
             FROM events e 
             JOIN matches m ON e.id = m.event_id 
             WHERE e.id = ? AND m.id = ?
         ');
         $stmt->execute([$eventId, $matchId]);
-        $matchInfo = $stmt->fetch();
+        $matchInfo = $stmt->fetch(PDO::FETCH_ASSOC);
         
         error_log('Match info: ' . json_encode($matchInfo));
         
@@ -3070,33 +3071,41 @@ function updateAttendanceOnly($db) {
             return;
         }
         
+        error_log('Starting database transaction...');
         $db->beginTransaction();
+        error_log('Transaction started successfully');
         
         // Check if attendee already exists
+        error_log('Checking existing attendance...');
         $stmt = $db->prepare('
             SELECT id FROM match_attendees 
             WHERE match_id = ? AND member_id = ? AND team_type = ?
         ');
         $stmt->execute([$matchId, $memberId, $teamType]);
         $existingAttendee = $stmt->fetch();
+        error_log('Existing attendee: ' . json_encode($existingAttendee));
         
         if ($action === 'toggle') {
             if ($existingAttendee) {
                 // Remove attendance
+                error_log('Removing attendance...');
                 $stmt = $db->prepare('
                     DELETE FROM match_attendees 
                     WHERE match_id = ? AND member_id = ? AND team_type = ?
                 ');
                 $stmt->execute([$matchId, $memberId, $teamType]);
                 $result = ['action' => 'removed', 'success' => true];
+                error_log('Attendance removed successfully');
             } else {
                 // Add attendance
+                error_log('Adding attendance...');
                 $stmt = $db->prepare('
                     INSERT INTO match_attendees (match_id, member_id, team_type, checked_in_at)
                     VALUES (?, ?, ?, CURRENT_TIMESTAMP)
                 ');
                 $stmt->execute([$matchId, $memberId, $teamType]);
                 $result = ['action' => 'added', 'success' => true];
+                error_log('Attendance added successfully');
             }
         } elseif ($action === 'add' && !$existingAttendee) {
             // Add attendance
@@ -3118,19 +3127,32 @@ function updateAttendanceOnly($db) {
             $result = ['action' => 'none', 'success' => true, 'message' => 'No change needed'];
         }
         
+        error_log('Committing transaction...');
         $db->commit();
         error_log('Attendance update successful: ' . json_encode($result));
         echo json_encode($result);
         
     } catch (Exception $e) {
-        $db->rollBack();
+        error_log('Exception caught: ' . $e->getMessage());
+        error_log('Exception file: ' . $e->getFile() . ' line: ' . $e->getLine());
+        
+        // Only rollback if there's an active transaction
+        if ($db->inTransaction()) {
+            error_log('Rolling back transaction...');
+            $db->rollBack();
+            error_log('Transaction rolled back');
+        } else {
+            error_log('No active transaction to rollback');
+        }
+        
         error_log('Attendance update failed: ' . $e->getMessage());
         error_log('Stack trace: ' . $e->getTraceAsString());
         http_response_code(500);
         echo json_encode([
             'error' => 'Failed to update attendance: ' . $e->getMessage(),
             'file' => $e->getFile(),
-            'line' => $e->getLine()
+            'line' => $e->getLine(),
+            'has_transaction' => $db->inTransaction()
         ]);
     }
 }
