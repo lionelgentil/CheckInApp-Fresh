@@ -5597,9 +5597,10 @@ Please check the browser console (F12) for more details.`);
                 <div class="player-grid-item ${isCheckedIn ? 'checked-in' : ''}" 
                      onclick="app.toggleGridPlayerAttendance('${this.currentEventId}', '${this.currentMatchId}', '${member.id}', '${teamType}')">
                     <div class="grid-check-icon">✓</div>
+                    ${member.id === team.captainId ? '<div class="grid-captain-icon">👑</div>' : ''}
                     ${this.getLazyImageHtml(member, 'player-grid-photo')}
                     <div class="player-grid-content">
-                        <div class="player-grid-name">${member.name}${member.id === team.captainId ? ' 👑' : ''}</div>
+                        <div class="player-grid-name">${member.name}</div>
                         ${member.jerseyNumber ? `<div class="player-grid-jersey">#${member.jerseyNumber}</div>` : ''}
                     </div>
                 </div>
@@ -5776,7 +5777,7 @@ Please check the browser console (F12) for more details.`);
                 action: 'toggle',
                 bypass_lock: true // Main app has admin privileges to bypass lock
             })
-        }).then(response => {
+        }).then(async response => {
             if (!response.ok) {
                 // Handle specific error cases
                 if (response.status === 423) {
