@@ -1715,10 +1715,16 @@ class CheckInViewApp {
         // Filter by status
         if (statusFilter !== 'all') {
             if (statusFilter === 'incomplete') {
-                // Show games that are not completed or cancelled
-                filteredGames = filteredGames.filter(game => 
-                    game.status !== 'completed' && game.status !== 'cancelled'
-                );
+                // Show games that are not completed or cancelled AND are in the past
+                const today = new Date();
+                today.setHours(23, 59, 59, 999); // End of today
+                
+                filteredGames = filteredGames.filter(game => {
+                    const gameDate = new Date(game.eventDate);
+                    return game.status !== 'completed' && 
+                           game.status !== 'cancelled' && 
+                           gameDate < today; // Only past games
+                });
             } else {
                 filteredGames = filteredGames.filter(game => game.status === statusFilter);
             }
@@ -1742,11 +1748,11 @@ class CheckInViewApp {
         
         console.log('📊 Displaying', filteredGames.length, 'games');
         
-        // Sort by date (most recent first), then by time
+        // REQUESTED CHANGE: Sort by date ascending (oldest first), then by time
         filteredGames.sort((a, b) => {
             const dateA = new Date(a.eventDate);
             const dateB = new Date(b.eventDate);
-            if (dateB - dateA !== 0) return dateB - dateA;
+            if (dateA - dateB !== 0) return dateA - dateB; // Changed to ascending order
             
             // Then sort by time if same date
             if (a.time && b.time) {
@@ -1785,9 +1791,9 @@ class CheckInViewApp {
                             <th>Date/Time</th>
                             <th>Event</th>
                             <th>Match</th>
+                            <th>Score</th>
                             <th>Field</th>
                             <th>Status</th>
-                            <th>Score</th>
                             <th>Referee(s)</th>
                             <th>Actions</th>
                         </tr>
@@ -1805,18 +1811,18 @@ class CheckInViewApp {
                                 <td class="match-cell">
                                     <div class="match-teams">${game.homeTeam} vs ${game.awayTeam}</div>
                                 </td>
+                                <td class="score-cell">
+                                    ${game.hasScore ? `${game.homeScore} - ${game.awayScore}` : '—'}
+                                </td>
                                 <td class="field-cell">
                                     ${game.field ? `Field ${game.field}` : '—'}
                                 </td>
                                 <td class="status-cell">
                                     <span class="status-badge status-${game.status}">${this.getStatusDisplay(game.status)}</span>
                                 </td>
-                                <td class="score-cell">
-                                    ${game.hasScore ? `${game.homeScore} - ${game.awayScore}` : '—'}
-                                </td>
                                 <td class="referee-cell">
                                     ${game.referees.length > 0 ? 
-                                        game.referees.map(ref => `<span class="referee-bubble">${ref}</span>`).join(' ') 
+                                        game.referees.map(ref => `<span class="referee-bubble">${ref}</span>`).join('<br>') 
                                         : '—'}
                                 </td>
                                 <td class="actions-cell">
