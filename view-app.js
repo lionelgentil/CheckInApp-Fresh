@@ -4,7 +4,7 @@
  */
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '5.1.2';
+const APP_VERSION = '5.4.3';
 
 class CheckInViewApp {
     constructor() {
@@ -83,7 +83,7 @@ class CheckInViewApp {
             this.loadEvents(),
             this.loadTeamsBasic() // Much faster - no player photos or details
         ]);
-        this.renderEvents();
+        await this.renderEvents();
         
         // Ensure Events section is shown by default
         this.showSection('events');
@@ -306,7 +306,7 @@ class CheckInViewApp {
             this.renderTeams();
         } else if (sectionName === 'events') {
             // Events already loaded with basic team info in init()
-            this.renderEvents();
+            await this.renderEvents();
         } else if (sectionName === 'referees') {
             if (this.referees.length === 0) {
                 await this.loadReferees();
@@ -541,26 +541,29 @@ class CheckInViewApp {
                 return member.photo; // Return base64 image directly
             }
             
-            // Check if it's an API URL with filename parameter
+            // Check if it's an API URL with filename parameter (legacy format)
             if (member.photo.includes('/api/photos?filename=')) {
                 const match = member.photo.match(/filename=([^&]+)/);
                 if (match) {
-                    const filename = match[1];
-                    // Check if the filename has a valid image extension
-                    if (filename.includes('.jpg') || filename.includes('.jpeg') || 
-                        filename.includes('.png') || filename.includes('.webp')) {
-                        // Return the full API URL without additional cache-busting to avoid corrupting the URL
-                        return member.photo;
-                    }
+                    const filename = decodeURIComponent(match[1]);
+                    // Convert to direct static URL for better performance
+                    return `/photos/${filename}`;
+                } else {
+                    return member.photo;
                 }
+            }
+            
+            // Check if it's a direct /photos/ URL (optimized format)
+            if (member.photo.startsWith('/photos/')) {
+                return member.photo; // Direct static URL (fastest)
             }
             
             // Check if it's a direct filename with valid extension
             if ((member.photo.includes('.jpg') || member.photo.includes('.jpeg') || 
                 member.photo.includes('.png') || member.photo.includes('.webp')) &&
                 !member.photo.startsWith('/api/photos') && !member.photo.startsWith('http')) {
-                // Convert filename to API URL without cache-busting to avoid corrupting URLs
-                return `/api/photos?filename=${encodeURIComponent(member.photo)}`;
+                // Convert filename to direct static URL for better performance
+                return `/photos/${member.photo}`;
             }
             
             // Check if it's already a full HTTP URL with valid extension
@@ -579,12 +582,12 @@ class CheckInViewApp {
     // Helper method for gender defaults
     getGenderDefaultPhoto(member) {
         if (member.gender === 'male') {
-            return 'photos/defaults/male.svg';
+            return '/photos/default-male.svg';
         } else if (member.gender === 'female') {
-            return 'photos/defaults/female.svg';
+            return '/photos/default-female.svg';
         } else {
             // No gender specified, use male as default
-            return 'photos/defaults/male.svg';
+            return '/photos/default-male.svg';
         }
     }
     
@@ -1105,8 +1108,15 @@ class CheckInViewApp {
         }
     }
     
-    renderEvents() {
-        console.log('🔍 renderEvents called - teams loaded:', this.teams.length, 'events loaded:', this.events.length);
+    async renderEvents() {
+        console.log('🔍 renderEvents called - teams loaded:', this.teams.length, 'events loaded:', this.events.length, 'referees loaded:', this.referees.length);
+        
+        // Ensure referees are loaded for referee name display
+        if (this.referees.length === 0) {
+            console.log('📋 Loading referees for events display...');
+            await this.loadReferees();
+        }
+        
         const container = document.getElementById('events-container');
         const showPastEvents = document.getElementById('show-past-events')?.checked || false;
         
@@ -2873,7 +2883,7 @@ class CheckInViewApp {
             console.log('Attendance updated successfully:', result);
             
             // Update the events display in the background (no modal refresh)
-            this.renderEvents();
+            await this.renderEvents();
         } catch (error) {
             console.error('Failed to update attendance:', error);
             
@@ -3376,7 +3386,7 @@ class CheckInViewApp {
             match.matchNotes = matchNotes;
             match.cards = cards;
             
-            this.renderEvents();
+            await this.renderEvents();
             this.closeModal();
         } catch (error) {
             console.error('Error saving match result:', error);
