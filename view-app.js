@@ -3167,19 +3167,14 @@ class CheckInViewApp {
         try {
             console.log('Updating attendance via API...');
             
-            // Use the new attendance-only endpoint (no admin auth required)
-            const response = await fetch('/api/attendance', {
+            // Use the same approach as main app - send full events data
+            // This is inefficient but ensures consistency between apps
+            const response = await fetch('/api/events', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({
-                    eventId: eventId,
-                    matchId: matchId,
-                    memberId: memberId,
-                    teamType: teamType,
-                    action: 'toggle'
-                })
+                body: JSON.stringify(this.events)
             });
             
             if (!response.ok) {
@@ -3821,19 +3816,14 @@ class CheckInViewApp {
         try {
             console.log('Updating attendance via API...');
             
-            // Use the new attendance-only endpoint (no admin auth required)
-            const response = await fetch('/api/attendance', {
+            // Use the same approach as main app - send full events data
+            // This is inefficient but ensures consistency between apps
+            const response = await fetch('/api/events', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({
-                    eventId: eventId,
-                    matchId: matchId,
-                    memberId: memberId,
-                    teamType: teamType,
-                    action: 'toggle'
-                })
+                body: JSON.stringify(this.events)
             });
             
             if (!response.ok) {

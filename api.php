@@ -3016,11 +3016,17 @@ function executeDatabaseMaintenance($db) {
 
 // Attendance-only update function for view.html (no admin auth required)
 function updateAttendanceOnly($db) {
-    $input = json_decode(file_get_contents('php://input'), true);
+    $rawInput = file_get_contents('php://input');
+    $input = json_decode($rawInput, true);
+    
+    error_log('=== ATTENDANCE UPDATE DEBUG ===');
+    error_log('Raw input: ' . $rawInput);
+    error_log('Parsed input: ' . json_encode($input));
     
     if (!$input || !isset($input['eventId']) || !isset($input['matchId']) || !isset($input['memberId']) || !isset($input['teamType'])) {
+        error_log('Missing required parameters');
         http_response_code(400);
-        echo json_encode(['error' => 'Missing required parameters']);
+        echo json_encode(['error' => 'Missing required parameters', 'received' => $input]);
         return;
     }
     
@@ -3029,6 +3035,8 @@ function updateAttendanceOnly($db) {
     $memberId = $input['memberId'];
     $teamType = $input['teamType'];
     $action = $input['action'] ?? 'toggle'; // 'add', 'remove', or 'toggle'
+    
+    error_log('Processing attendance: eventId=' . $eventId . ', matchId=' . $matchId . ', memberId=' . $memberId . ', teamType=' . $teamType . ', action=' . $action);
     
     try {
         // First check if check-in is locked for this match
@@ -3042,9 +3050,12 @@ function updateAttendanceOnly($db) {
         $stmt->execute([$eventId, $matchId]);
         $matchInfo = $stmt->fetch();
         
+        error_log('Match info: ' . json_encode($matchInfo));
+        
         if ($matchInfo) {
             // Check if check-in is locked - helper function defined later
             if (isCheckInLockedForMatch($matchInfo['event_date'], $matchInfo['match_time'])) {
+                error_log('Check-in is locked for this match');
                 http_response_code(403);
                 echo json_encode([
                     'error' => 'Check-in is locked for this match',
@@ -3052,6 +3063,11 @@ function updateAttendanceOnly($db) {
                 ]);
                 return;
             }
+        } else {
+            error_log('Match not found in database');
+            http_response_code(404);
+            echo json_encode(['error' => 'Match not found']);
+            return;
         }
         
         $db->beginTransaction();
@@ -3103,12 +3119,19 @@ function updateAttendanceOnly($db) {
         }
         
         $db->commit();
+        error_log('Attendance update successful: ' . json_encode($result));
         echo json_encode($result);
         
     } catch (Exception $e) {
         $db->rollBack();
+        error_log('Attendance update failed: ' . $e->getMessage());
+        error_log('Stack trace: ' . $e->getTraceAsString());
         http_response_code(500);
-        echo json_encode(['error' => 'Failed to update attendance: ' . $e->getMessage()]);
+        echo json_encode([
+            'error' => 'Failed to update attendance: ' . $e->getMessage(),
+            'file' => $e->getFile(),
+            'line' => $e->getLine()
+        ]);
     }
 }
 
