@@ -4,7 +4,7 @@
  */
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '5.4.6';
+const APP_VERSION = '5.4.7';
 
 class CheckInViewApp {
     constructor() {
@@ -2487,8 +2487,7 @@ class CheckInViewApp {
                     <div class="match-info-right">
                         ${match.field ? `<div class="match-field">🏟️ Field ${match.field}</div>` : ''}
                         ${mainReferee ? `<div class="match-referee">
-                            <span class="referee-icon">👨‍⚖️</span>
-                            <span class="referee-names">${mainReferee.name}${assistantReferee ? `, ${assistantReferee.name}` : ''}</span>
+                            <span class="referee-bubble">👨‍⚖️ ${mainReferee.name}${assistantReferee ? `, ${assistantReferee.name}` : ''}</span>
                         </div>` : ''}
                         ${cardsSummary ? `<div class="cards-summary">📋 ${cardsSummary}</div>` : ''}
                         ${lockStatusDisplay ? `<div class="lock-status">${lockStatusDisplay}</div>` : ''}
