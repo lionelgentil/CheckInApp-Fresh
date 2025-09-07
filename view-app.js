@@ -1860,7 +1860,7 @@ class CheckInViewApp {
                                     <div class="match-teams">${game.homeTeam} vs ${game.awayTeam}</div>
                                 </td>
                                 <td class="score-cell">
-                                    ${game.hasScore ? `${game.homeScore} - ${game.awayScore}` : '—'}
+                                    ${game.status === 'completed' && game.hasScore ? `${game.homeScore} - ${game.awayScore}` : '—'}
                                 </td>
                                 <td class="field-cell">
                                     ${game.field ? `Field ${game.field}` : '—'}
@@ -1906,7 +1906,7 @@ class CheckInViewApp {
                             
                             <div class="game-details-grid">
                                 ${game.field ? `<div class="detail-item"><span class="detail-label">Field:</span> ${game.field}</div>` : ''}
-                                <div class="detail-item"><span class="detail-label">Score:</span> ${game.hasScore ? `${game.homeScore} - ${game.awayScore}` : 'Not entered'}</div>
+                                <div class="detail-item"><span class="detail-label">Score:</span> ${game.status === 'completed' && game.hasScore ? `${game.homeScore} - ${game.awayScore}` : 'Not entered'}</div>
                                 ${game.referees.length > 0 ? `
                                     <div class="detail-item">
                                         <span class="detail-label">Referee(s):</span>

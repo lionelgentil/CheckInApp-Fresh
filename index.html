@@ -2363,6 +2363,19 @@
             .stat-number {
                 font-size: 1.5em;
             }
+            
+            /* Mobile layout fix for Game Tracker filters */
+            .mobile-first-toggle {
+                order: -1;
+                width: 100%;
+                margin-bottom: 10px;
+            }
+            
+            #game-tracker-section .header-controls {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 10px;
+            }
         }
         
     </style>
@@ -2481,7 +2494,7 @@
             <div class="section-header">
                 <h2 class="section-title">Game Tracker (All Games)</h2>
                 <div class="header-controls">
-                    <div class="filter-toggle">
+                    <div class="filter-toggle mobile-first-toggle">
                         <label class="toggle-label">
                             <input type="checkbox" id="show-current-season-games" onchange="app.renderGameTracker()" checked>
                             <span>Current Season Only</span>

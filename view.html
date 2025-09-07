@@ -1323,6 +1323,19 @@
             .stat-number {
                 font-size: 1.5em;
             }
+            
+            /* Mobile layout fix for Game Tracker filters */
+            .mobile-first-toggle {
+                order: -1;
+                width: 100%;
+                margin-bottom: 10px;
+            }
+            
+            #game-tracker-section .header-controls {
+                flex-direction: column;
+                align-items: stretch;
+                gap: 10px;
+            }
         }
         
         .referee-icon {
@@ -2458,7 +2471,7 @@
                             </select>
                         </label>
                     </div>
-                    <div class="filter-toggle">
+                    <div class="filter-toggle mobile-first-toggle">
                         <label class="toggle-label">
                             <input type="checkbox" id="show-current-season-games" checked onchange="app.renderGameTracker()">
                             Current Season Only
