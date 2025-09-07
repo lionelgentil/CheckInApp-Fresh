@@ -4,7 +4,7 @@
  */
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '5.4.4';
+const APP_VERSION = '5.4.5';
 
 class CheckInViewApp {
     constructor() {
@@ -2425,7 +2425,17 @@ class CheckInViewApp {
             </div>
         ` : '';
         
-        // Cards display
+        // Cards summary for header (simple count)
+        const cardsSummary = match.cards && match.cards.length > 0 ? (() => {
+            const yellowCount = match.cards.filter(card => card.cardType === 'yellow').length;
+            const redCount = match.cards.filter(card => card.cardType === 'red').length;
+            const parts = [];
+            if (yellowCount > 0) parts.push(`🟨${yellowCount}`);
+            if (redCount > 0) parts.push(`🟥${redCount}`);
+            return parts.join(' ');
+        })() : '';
+        
+        // Detailed cards display for separate section
         const cardsSection = match.cards && match.cards.length > 0 ? `
             <div style="margin-bottom: 20px; padding: 15px; background: #fff3cd; border-radius: 8px;">
                 <h4 style="margin: 0 0 15px 0; color: #856404;">Cards & Disciplinary Actions</h4>
@@ -2455,30 +2465,26 @@ class CheckInViewApp {
         const modal = this.createModal(`${homeTeam.name} vs ${awayTeam.name}`, `
             <!-- Mobile-Optimized Check-In Interface -->
             <div class="mobile-checkin-interface">
-                <!-- Compact Header with Essential Info -->
+                <!-- Optimized Header with All Match Details Inline -->
                 <div class="checkin-header">
-                    <div class="match-essential-info">
+                    <div class="match-info-left">
                         <div class="match-score-line">
                             ${hasScore ? `<span class="score-display">${match.homeScore} - ${match.awayScore}</span>` : ''}
                             <span class="match-status ${match.matchStatus}">${statusDisplay}</span>
                         </div>
+                        <div class="match-details-inline">
+                            <span class="match-date">${new Date(event.date).toLocaleDateString()}</span>
+                            ${match.time ? `<span class="match-time">${match.time.substring(0, 5)}</span>` : ''}
+                        </div>
                     </div>
                     
-                    <!-- Expandable Details (optional) -->
-                    <div class="details-toggle" onclick="app.toggleMatchDetails()">
-                        <span id="details-toggle-icon">ⓘ</span>
-                    </div>
-                </div>
-                
-                <!-- Expandable Match Details (hidden by default) -->
-                <div id="match-details-expanded" class="match-details-expanded" style="display: none;">
-                    <div class="details-content">
-                        <p><strong>Date:</strong> ${new Date(event.date).toLocaleDateString()}</p>
-                        ${match.time ? `<p><strong>Time:</strong> ${match.time.substring(0, 5)}</p>` : ''}
-                        ${match.field ? `<p><strong>Field:</strong> ${match.field}</p>` : ''}
-                        ${mainReferee ? `<p><strong>Referee:</strong> ${mainReferee.name}${assistantReferee ? `, ${assistantReferee.name}` : ''}</p>` : ''}
-                        ${match.notes ? `<p><strong>Notes:</strong> ${match.notes}</p>` : ''}
-                        ${cardsSection}
+                    <div class="match-info-right">
+                        ${match.field ? `<div class="match-field">🏟️ Field ${match.field}</div>` : ''}
+                        ${mainReferee ? `<div class="match-referee">
+                            <span class="referee-icon">👨‍⚖️</span>
+                            <span class="referee-names">${mainReferee.name}${assistantReferee ? `, ${assistantReferee.name}` : ''}</span>
+                        </div>` : ''}
+                        ${cardsSummary ? `<div class="cards-summary">📋 ${cardsSummary}</div>` : ''}
                     </div>
                 </div>
                 
@@ -2493,6 +2499,9 @@ class CheckInViewApp {
                         <span class="attendance-count" id="away-attendance-count">0/0</span>
                     </button>
                 </div>
+                
+                <!-- Detailed Cards Section (if any) -->
+                ${cardsSection ? `<div class="detailed-cards-section" style="padding: 0 20px;">${cardsSection}</div>` : ''}
                 
                 <!-- Single Scroll Player Grid (No Nested Scrolling) -->
                 <div class="checkin-grid-area">
@@ -2528,18 +2537,6 @@ class CheckInViewApp {
     }
     
     // New helper functions for mobile check-in interface
-    toggleMatchDetails() {
-        const detailsSection = document.getElementById('match-details-expanded');
-        const toggleIcon = document.getElementById('details-toggle-icon');
-        
-        if (detailsSection.style.display === 'none') {
-            detailsSection.style.display = 'block';
-            toggleIcon.textContent = '✕';
-        } else {
-            detailsSection.style.display = 'none';
-            toggleIcon.textContent = 'ⓘ';
-        }
-    }
     
     initializeCheckInInterface(eventId, matchId, homeTeam, awayTeam, match) {
         // Store current match data

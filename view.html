@@ -1043,13 +1043,91 @@
             border-bottom: 1px solid #e9ecef;
             display: flex;
             justify-content: space-between;
-            align-items: center;
+            align-items: flex-start;
+            gap: 20px;
         }
         
-        .match-essential-info {
+        .match-info-left {
             flex: 1;
+            min-width: 0; /* Allow text to wrap */
         }
         
+        .match-info-right {
+            flex: 1;
+            text-align: right;
+            font-size: 0.85em;
+            color: #495057;
+        }
+        
+        .match-details-inline {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            margin-top: 4px;
+            font-size: 0.85em;
+            color: #666;
+        }
+        
+        .match-date {
+            background: #e3f2fd;
+            color: #1976d2;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-weight: 500;
+        }
+        
+        .match-time {
+            background: #fff3e0;
+            color: #f57c00;
+            padding: 2px 8px;
+            border-radius: 12px;
+            font-weight: 500;
+        }
+        
+        .match-field {
+            background: #e8f5e8;
+            color: #388e3c;
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-weight: 500;
+            margin-bottom: 4px;
+            display: inline-block;
+        }
+        
+        .match-referee {
+            display: flex;
+            align-items: center;
+            justify-content: flex-end;
+            gap: 6px;
+            margin-bottom: 4px;
+        }
+        
+        .referee-icon {
+            font-size: 1.1em;
+        }
+        
+        .cards-summary {
+            background: #fff3cd;
+            color: #856404;
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-weight: 500;
+            font-size: 0.8em;
+            display: inline-block;
+            margin-bottom: 4px;
+        }
+        
+        .referee-names {
+            font-weight: 500;
+            color: #495057;
+        }
+        
+        .match-cards-summary {
+            font-size: 0.8em;
+            color: #6c757d;
+        }
+        
+        /* Essential match display styles */
         .match-score-line {
             display: flex;
             align-items: center;
@@ -1088,47 +1166,6 @@
         .match-status.cancelled {
             background: #ffebee;
             color: #d32f2f;
-        }
-        
-        .match-details-compact {
-            font-size: 0.85em;
-            color: #666;
-        }
-        
-        .details-toggle {
-            width: 32px;
-            height: 32px;
-            border-radius: 50%;
-            background: #e9ecef;
-            display: flex;
-            align-items: center;
-            justify-content: center;
-            cursor: pointer;
-            transition: all 0.2s;
-        }
-        
-        .details-toggle:hover {
-            background: #dee2e6;
-        }
-        
-        .match-details-expanded {
-            padding: 15px 20px;
-            background: #f8f9fa;
-            border-bottom: 1px solid #e9ecef;
-        }
-        
-        .details-content p {
-            margin: 8px 0;
-            font-size: 0.9em;
-            color: #495057;
-        }
-        
-        .details-content p:first-child {
-            margin-top: 0;
-        }
-        
-        .details-content p:last-child {
-            margin-bottom: 0;
         }
         
         .team-toggle-compact {
