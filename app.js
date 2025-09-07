@@ -5773,10 +5773,17 @@ Please check the browser console (F12) for more details.`);
                 matchId: matchId,
                 memberId: memberId,
                 teamType: teamType,
-                action: 'toggle'
+                action: 'toggle',
+                bypass_lock: true // Main app has admin privileges to bypass lock
             })
         }).then(response => {
             if (!response.ok) {
+                // Handle specific error cases
+                if (response.status === 423) {
+                    // 423 Locked - attendance is locked for this match
+                    const errorData = await response.json().catch(() => ({}));
+                    throw new Error(errorData.message || 'Check-in is locked for this match');
+                }
                 throw new Error(`HTTP ${response.status}: ${response.statusText}`);
             }
             return response.json();
@@ -5911,6 +5918,12 @@ Please check the browser console (F12) for more details.`);
             });
             
             if (!response.ok) {
+                // Handle specific error cases
+                if (response.status === 423) {
+                    // 423 Locked - attendance is locked for this match
+                    const errorData = await response.json().catch(() => ({}));
+                    throw new Error(errorData.message || 'Check-in is locked for this match');
+                }
                 throw new Error(`HTTP ${response.status}: ${response.statusText}`);
             }
             

@@ -3183,6 +3183,12 @@ class CheckInViewApp {
             });
             
             if (!response.ok) {
+                // Handle specific error cases
+                if (response.status === 423) {
+                    // 423 Locked - attendance is locked for this match
+                    const errorData = await response.json().catch(() => ({}));
+                    throw new Error(errorData.message || 'Check-in is locked for this match');
+                }
                 throw new Error(`HTTP ${response.status}: ${response.statusText}`);
             }
             
@@ -3837,6 +3843,12 @@ class CheckInViewApp {
             });
             
             if (!response.ok) {
+                // Handle specific error cases
+                if (response.status === 423) {
+                    // 423 Locked - attendance is locked for this match
+                    const errorData = await response.json().catch(() => ({}));
+                    throw new Error(errorData.message || 'Check-in is locked for this match');
+                }
                 throw new Error(`HTTP ${response.status}: ${response.statusText}`);
             }
             

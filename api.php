@@ -3035,8 +3035,9 @@ function updateAttendanceOnly($db) {
     $memberId = $input['memberId'];
     $teamType = $input['teamType'];
     $action = $input['action'] ?? 'toggle'; // 'add', 'remove', or 'toggle'
+    $bypassLock = $input['bypass_lock'] ?? false; // Allow main app to bypass lock
     
-    error_log('Processing attendance: eventId=' . $eventId . ', matchId=' . $matchId . ', memberId=' . $memberId . ', teamType=' . $teamType . ', action=' . $action);
+    error_log('Processing attendance: eventId=' . $eventId . ', matchId=' . $matchId . ', memberId=' . $memberId . ', teamType=' . $teamType . ', action=' . $action . ', bypassLock=' . ($bypassLock ? 'true' : 'false'));
     
     try {
         error_log('Starting match lookup...');
@@ -3054,15 +3055,18 @@ function updateAttendanceOnly($db) {
         error_log('Match info: ' . json_encode($matchInfo));
         
         if ($matchInfo) {
-            // Check if check-in is locked - helper function defined later
-            if (isCheckInLockedForMatch($matchInfo['event_date'], $matchInfo['match_time'])) {
-                error_log('Check-in is locked for this match');
-                http_response_code(403);
+            // Check if check-in is locked - but allow bypass for main app (admin privileges)
+            if (!$bypassLock && isCheckInLockedForMatch($matchInfo['event_date'], $matchInfo['match_time'])) {
+                error_log('Check-in is locked for this match (no bypass)');
+                http_response_code(423); // 423 Locked (more appropriate than 403)
                 echo json_encode([
                     'error' => 'Check-in is locked for this match',
-                    'message' => 'This match check-in was automatically locked 1 hour after the game ended.'
+                    'message' => 'This match check-in was automatically locked 1 hour after the game ended.',
+                    'locked' => true
                 ]);
                 return;
+            } elseif ($bypassLock) {
+                error_log('Check-in lock bypassed (admin privileges)');
             }
         } else {
             error_log('Match not found in database');
@@ -3699,14 +3703,25 @@ function isCheckInLockedForMatch($eventDate, $matchTime) {
     }
     
     try {
-        // Parse game start time
-        $gameStart = new DateTime($eventDate . 'T' . $matchTime);
+        // Set timezone to Pacific Time (PDT/PST) since all times in the app are Pacific
+        $pacificTimezone = new DateTimeZone('America/Los_Angeles');
         
-        // Calculate lock time: game start + 1h 40m (game) + 1h (grace) = 2h 40m total
+        // Parse game start time in Pacific timezone
+        $gameStart = new DateTime($eventDate . 'T' . $matchTime, $pacificTimezone);
+        
+        // Calculate lock time: game start + 1h 40m (game duration) + 1h (grace period) = 2h 40m total
+        // But you mentioned it should be 1 hour after game ended, so: game + 1h 40m + 1h = 2h 40m
+        // Actually, let me make it exactly 1 hour after game end (1h 40m game + 1h = 2h 40m)
         $lockTime = clone $gameStart;
-        $lockTime->add(new DateInterval('PT2H40M')); // 2 hours 40 minutes
+        $lockTime->add(new DateInterval('PT1H40M')); // Game duration (1h 40m)
+        $lockTime->add(new DateInterval('PT1H'));    // Grace period (1 hour after game ends)
         
-        $now = new DateTime();
+        // Current time in Pacific timezone
+        $now = new DateTime('now', $pacificTimezone);
+        
+        error_log("Lock check: Game start: " . $gameStart->format('Y-m-d H:i:s T') . 
+                  ", Lock time: " . $lockTime->format('Y-m-d H:i:s T') . 
+                  ", Current time: " . $now->format('Y-m-d H:i:s T'));
         
         return $now > $lockTime;
     } catch (Exception $e) {
