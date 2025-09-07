@@ -4,7 +4,7 @@
  */
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '5.5.0';
+const APP_VERSION = '5.5.1';
 
 class CheckInViewApp {
     constructor() {
@@ -1692,6 +1692,75 @@ class CheckInViewApp {
         this.waitForChartJsAndRender(cardRecords);
     }
     
+    collectCurrentSeasonCards() {
+        const cardRecords = [];
+        
+        // Create lookup maps for efficiency
+        const teamLookup = new Map();
+        const refereeLookup = new Map();
+        
+        this.teams.forEach(team => teamLookup.set(team.id, team));
+        this.referees.forEach(referee => refereeLookup.set(referee.id, referee));
+        
+        // Process all events and matches
+        this.events.forEach(event => {
+            // Only include current season events
+            if (!this.isCurrentSeasonEvent(event.date)) {
+                return;
+            }
+            
+            event.matches.forEach(match => {
+                if (!match.cards || match.cards.length === 0) {
+                    return;
+                }
+                
+                const homeTeam = teamLookup.get(match.homeTeamId);
+                const awayTeam = teamLookup.get(match.awayTeamId);
+                const mainReferee = refereeLookup.get(match.mainRefereeId);
+                
+                // Process each card in the match
+                match.cards.forEach(card => {
+                    // Determine which team the player belongs to
+                    let playerTeam = null;
+                    let playerName = 'Unknown Player';
+                    
+                    // Check home team first
+                    if (homeTeam) {
+                        const homePlayer = homeTeam.members.find(m => m.id === card.memberId);
+                        if (homePlayer) {
+                            playerTeam = homeTeam;
+                            playerName = homePlayer.name;
+                        }
+                    }
+                    
+                    // Check away team if not found in home team
+                    if (!playerTeam && awayTeam) {
+                        const awayPlayer = awayTeam.members.find(m => m.id === card.memberId);
+                        if (awayPlayer) {
+                            playerTeam = awayTeam;
+                            playerName = awayPlayer.name;
+                        }
+                    }
+                    
+                    cardRecords.push({
+                        eventDate: event.date,
+                        eventName: event.name,
+                        matchInfo: `${homeTeam?.name || 'Unknown'} vs ${awayTeam?.name || 'Unknown'}`,
+                        teamName: playerTeam?.name || 'Unknown Team',
+                        playerName: playerName,
+                        cardType: card.cardType,
+                        reason: card.reason,
+                        notes: card.notes,
+                        minute: card.minute,
+                        refereeName: mainReferee?.name
+                    });
+                });
+            });
+        });
+        
+        return cardRecords;
+    }
+    
     renderGameTracker() {
         console.log('🎯 renderGameTracker called');
         const container = document.getElementById('game-tracker-container');
@@ -1827,7 +1896,7 @@ class CheckInViewApp {
                                 </td>
                                 <td class="actions-cell">
                                     ${game.status !== 'completed' && game.status !== 'cancelled' ? 
-                                        `<button class="btn btn-small" onclick="app.viewMatch('${game.eventId}', '${game.matchId}')" title="Edit Match">✏️</button>` 
+                                        `<button class="btn btn-small" onclick="(async () => await app.editMatchResult('${game.eventId}', '${game.matchId}'))()" title="Edit Result">🏆</button>` 
                                         : ''}
                                 </td>
                             </tr>
@@ -1870,7 +1939,7 @@ class CheckInViewApp {
                                 
                                 ${game.status !== 'completed' && game.status !== 'cancelled' ? `
                                     <div class="detail-item">
-                                        <button class="btn btn-small" onclick="app.viewMatch('${game.eventId}', '${game.matchId}')">Edit Match</button>
+                                        <button class="btn btn-small" onclick="(async () => await app.editMatchResult('${game.eventId}', '${game.matchId}'))()">Edit Result 🏆</button>
                                     </div>
                                 ` : ''}
                             </div>

@@ -4426,7 +4426,7 @@ Please check the browser console (F12) for more details.`);
                                 </td>
                                 <td class="actions-cell">
                                     ${game.status !== 'completed' && game.status !== 'cancelled' ? 
-                                        `<button class="btn btn-small" onclick="app.viewMatch('${game.eventId}', '${game.matchId}')" title="Edit Match">✏️</button>` 
+                                        `<button class="btn btn-small" onclick="app.editMatchResult('${game.eventId}', '${game.matchId}')" title="Edit Result">🏆</button>` 
                                         : ''}
                                 </td>
                             </tr>
@@ -4469,7 +4469,7 @@ Please check the browser console (F12) for more details.`);
                                 
                                 ${game.status !== 'completed' && game.status !== 'cancelled' ? `
                                     <div class="detail-item">
-                                        <button class="btn btn-small" onclick="app.viewMatch('${game.eventId}', '${game.matchId}')">Edit Match</button>
+                                        <button class="btn btn-small" onclick="app.editMatchResult('${game.eventId}', '${game.matchId}')">Edit Result 🏆</button>
                                     </div>
                                 ` : ''}
                             </div>
