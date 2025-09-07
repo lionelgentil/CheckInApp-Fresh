@@ -4,7 +4,7 @@
  */
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '5.4.8';
+const APP_VERSION = '5.5.0';
 
 class CheckInViewApp {
     constructor() {
@@ -357,6 +357,15 @@ class CheckInViewApp {
                     `;
                 }
             }
+        } else if (sectionName === 'game-tracker') {
+            // Game tracker needs events and referees for display
+            if (this.events.length === 0) {
+                await this.loadEvents();
+            }
+            if (this.referees.length === 0) {
+                await this.loadReferees();
+            }
+            this.renderGameTracker();
         } else if (sectionName === 'season') {
             // Season management needs full data
             if (this.teams.length === 0) {
@@ -1683,32 +1692,207 @@ class CheckInViewApp {
         this.waitForChartJsAndRender(cardRecords);
     }
     
-    collectCurrentSeasonCards() {
-        console.log('🔍 collectCurrentSeasonCards called');
+    renderGameTracker() {
+        console.log('🎯 renderGameTracker called');
+        const container = document.getElementById('game-tracker-container');
+        const statusFilter = document.getElementById('game-status-filter')?.value || 'all';
+        const showCurrentSeasonOnly = document.getElementById('show-current-season-games')?.checked ?? true;
+        
+        console.log('📊 Game status filter:', statusFilter);
+        console.log('📅 Current season only:', showCurrentSeasonOnly);
+        
+        // Collect all matches from all events
+        const gameRecords = this.collectAllGameRecords();
+        
+        console.log('📊 Collected game records:', gameRecords.length);
+        
+        // Filter by season if specified
+        let filteredGames = gameRecords;
+        if (showCurrentSeasonOnly) {
+            filteredGames = gameRecords.filter(game => this.isCurrentSeasonEvent(game.eventDate));
+        }
+        
+        // Filter by status
+        if (statusFilter !== 'all') {
+            if (statusFilter === 'incomplete') {
+                // Show games that are not completed or cancelled
+                filteredGames = filteredGames.filter(game => 
+                    game.status !== 'completed' && game.status !== 'cancelled'
+                );
+            } else {
+                filteredGames = filteredGames.filter(game => game.status === statusFilter);
+            }
+        }
+        
+        console.log('📊 Filtered games:', filteredGames.length);
+        
+        if (filteredGames.length === 0) {
+            const message = statusFilter === 'all' ? 'No games found' : 
+                           statusFilter === 'incomplete' ? 'No incomplete games' : 
+                           `No ${statusFilter} games found`;
+            console.log('📊 No games to display:', message);
+            container.innerHTML = `
+                <div class="empty-state">
+                    <h3>${message}</h3>
+                    <p>Game records will appear here when available</p>
+                </div>
+            `;
+            return;
+        }
+        
+        console.log('📊 Displaying', filteredGames.length, 'games');
+        
+        // Sort by date (most recent first), then by time
+        filteredGames.sort((a, b) => {
+            const dateA = new Date(a.eventDate);
+            const dateB = new Date(b.eventDate);
+            if (dateB - dateA !== 0) return dateB - dateA;
+            
+            // Then sort by time if same date
+            if (a.time && b.time) {
+                return a.time.localeCompare(b.time);
+            }
+            return 0;
+        });
+        
+        // Calculate summary stats
+        const totalGames = filteredGames.length;
+        const completedGames = filteredGames.filter(game => game.status === 'completed').length;
+        const incompleteGames = totalGames - completedGames;
+        
+        container.innerHTML = `
+            <!-- Summary Stats -->
+            <div class="game-tracker-summary">
+                <div class="summary-stat">
+                    <div class="stat-number">${totalGames}</div>
+                    <div class="stat-label">Total Games</div>
+                </div>
+                <div class="summary-stat">
+                    <div class="stat-number">${completedGames}</div>
+                    <div class="stat-label">Completed</div>
+                </div>
+                <div class="summary-stat ${incompleteGames > 0 ? 'highlight' : ''}">
+                    <div class="stat-number">${incompleteGames}</div>
+                    <div class="stat-label">Incomplete</div>
+                </div>
+            </div>
+            
+            <!-- Desktop Table View -->
+            <div class="game-tracker-table-container">
+                <table class="game-tracker-table">
+                    <thead>
+                        <tr>
+                            <th>Date/Time</th>
+                            <th>Event</th>
+                            <th>Match</th>
+                            <th>Field</th>
+                            <th>Status</th>
+                            <th>Score</th>
+                            <th>Referee(s)</th>
+                            <th>Actions</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${filteredGames.map(game => `
+                            <tr class="game-row ${game.status}">
+                                <td class="date-time-cell">
+                                    <div class="game-date">${new Date(game.eventDate).toLocaleDateString()}</div>
+                                    ${game.time ? `<div class="game-time">${game.time.substring(0, 5)}</div>` : ''}
+                                </td>
+                                <td class="event-cell">
+                                    <div class="event-name">${game.eventName}</div>
+                                </td>
+                                <td class="match-cell">
+                                    <div class="match-teams">${game.homeTeam} vs ${game.awayTeam}</div>
+                                </td>
+                                <td class="field-cell">
+                                    ${game.field ? `Field ${game.field}` : '—'}
+                                </td>
+                                <td class="status-cell">
+                                    <span class="status-badge status-${game.status}">${this.getStatusDisplay(game.status)}</span>
+                                </td>
+                                <td class="score-cell">
+                                    ${game.hasScore ? `${game.homeScore} - ${game.awayScore}` : '—'}
+                                </td>
+                                <td class="referee-cell">
+                                    ${game.referees.length > 0 ? 
+                                        game.referees.map(ref => `<span class="referee-bubble">${ref}</span>`).join(' ') 
+                                        : '—'}
+                                </td>
+                                <td class="actions-cell">
+                                    ${game.status !== 'completed' && game.status !== 'cancelled' ? 
+                                        `<button class="btn btn-small" onclick="app.viewMatch('${game.eventId}', '${game.matchId}')" title="Edit Match">✏️</button>` 
+                                        : ''}
+                                </td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Mobile Card View -->
+            <div class="game-tracker-mobile">
+                ${filteredGames.map(game => `
+                    <div class="game-record-item">
+                        <div class="game-record-header">
+                            <div class="game-info-section">
+                                <div class="game-date-large">${new Date(game.eventDate).toLocaleDateString()}</div>
+                                ${game.time ? `<div class="game-time-large">${game.time.substring(0, 5)}</div>` : ''}
+                            </div>
+                            <div class="game-status-section">
+                                <span class="status-badge status-${game.status}">${this.getStatusDisplay(game.status)}</span>
+                            </div>
+                        </div>
+                        
+                        <div class="game-record-details">
+                            <div class="event-info">
+                                <div class="event-name-large">${game.eventName}</div>
+                                <div class="match-teams-large">${game.homeTeam} vs ${game.awayTeam}</div>
+                            </div>
+                            
+                            <div class="game-details-grid">
+                                ${game.field ? `<div class="detail-item"><span class="detail-label">Field:</span> ${game.field}</div>` : ''}
+                                <div class="detail-item"><span class="detail-label">Score:</span> ${game.hasScore ? `${game.homeScore} - ${game.awayScore}` : 'Not entered'}</div>
+                                ${game.referees.length > 0 ? `
+                                    <div class="detail-item">
+                                        <span class="detail-label">Referee(s):</span>
+                                        <div class="mobile-referees">
+                                            ${game.referees.map(ref => `<span class="referee-bubble">${ref}</span>`).join(' ')}
+                                        </div>
+                                    </div>
+                                ` : ''}
+                                
+                                ${game.status !== 'completed' && game.status !== 'cancelled' ? `
+                                    <div class="detail-item">
+                                        <button class="btn btn-small" onclick="app.viewMatch('${game.eventId}', '${game.matchId}')">Edit Match</button>
+                                    </div>
+                                ` : ''}
+                            </div>
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+        `;
+    }
+    
+    collectAllGameRecords() {
+        console.log('🔍 collectAllGameRecords called');
         console.log('📊 Available events:', this.events.length);
-        console.log('👥 Available teams:', this.teams.length);
+        console.log('👥 Available teams basic:', this.teamsBasic.length);
         console.log('👨‍⚖️ Available referees:', this.referees.length);
         
-        const cardRecords = [];
+        const gameRecords = [];
         
         // Create lookup maps for efficiency
         const teamLookup = new Map();
         const refereeLookup = new Map();
         
-        this.teams.forEach(team => teamLookup.set(team.id, team));
+        this.teamsBasic.forEach(team => teamLookup.set(team.id, team));
         this.referees.forEach(referee => refereeLookup.set(referee.id, referee));
         
         // Process all events and matches
         this.events.forEach((event, eventIndex) => {
             console.log(`📅 Processing event ${eventIndex + 1}/${this.events.length}: ${event.name} (${event.date})`);
-            
-            // Only include current season events
-            if (!this.isCurrentSeasonEvent(event.date)) {
-                console.log(`⏭️ Skipping event ${event.name} - not current season`);
-                return;
-            }
-            
-            console.log(`✅ Event ${event.name} is current season, processing ${event.matches?.length || 0} matches`);
             
             if (!event.matches || event.matches.length === 0) {
                 console.log(`⚠️ Event ${event.name} has no matches`);
@@ -1718,68 +1902,49 @@ class CheckInViewApp {
             event.matches.forEach((match, matchIndex) => {
                 console.log(`🏆 Processing match ${matchIndex + 1}/${event.matches.length}: ${match.homeTeamId} vs ${match.awayTeamId}`);
                 
-                if (!match.cards || match.cards.length === 0) {
-                    console.log(`⚠️ Match has no cards`);
-                    return;
-                }
-                
-                console.log(`🟨🟥 Match has ${match.cards.length} cards`);
-                
                 const homeTeam = teamLookup.get(match.homeTeamId);
                 const awayTeam = teamLookup.get(match.awayTeamId);
                 const mainReferee = refereeLookup.get(match.mainRefereeId);
+                const assistantReferee = refereeLookup.get(match.assistantRefereeId);
                 
-                console.log(`🏠 Home team: ${homeTeam?.name || 'Unknown'}`);
-                console.log(`✈️ Away team: ${awayTeam?.name || 'Unknown'}`);
-                console.log(`👨‍⚖️ Referee: ${mainReferee?.name || 'Not recorded'}`);
+                // Build referees array
+                const referees = [];
+                if (mainReferee) referees.push(`👨‍⚖️ ${mainReferee.name}`);
+                if (assistantReferee) referees.push(`👨‍⚖️ ${assistantReferee.name}`);
                 
-                // Process each card in the match
-                match.cards.forEach((card, cardIndex) => {
-                    console.log(`📇 Processing card ${cardIndex + 1}/${match.cards.length}:`, card);
-                    
-                    // Determine which team the player belongs to
-                    let playerTeam = null;
-                    let playerName = 'Unknown Player';
-                    
-                    // Check home team first
-                    if (homeTeam) {
-                        const homePlayer = homeTeam.members.find(m => m.id === card.memberId);
-                        if (homePlayer) {
-                            playerTeam = homeTeam;
-                            playerName = homePlayer.name;
-                        }
-                    }
-                    
-                    // Check away team if not found in home team
-                    if (!playerTeam && awayTeam) {
-                        const awayPlayer = awayTeam.members.find(m => m.id === card.memberId);
-                        if (awayPlayer) {
-                            playerTeam = awayTeam;
-                            playerName = awayPlayer.name;
-                        }
-                    }
-                    
-                    const cardRecord = {
-                        eventDate: event.date,
-                        eventName: event.name,
-                        matchInfo: `${homeTeam?.name || 'Unknown'} vs ${awayTeam?.name || 'Unknown'}`,
-                        teamName: playerTeam?.name || 'Unknown Team',
-                        playerName: playerName,
-                        cardType: card.cardType,
-                        reason: card.reason,
-                        notes: card.notes,
-                        minute: card.minute,
-                        refereeName: mainReferee?.name
-                    };
-                    
-                    console.log(`✅ Card record created:`, cardRecord);
-                    cardRecords.push(cardRecord);
-                });
+                const gameRecord = {
+                    eventId: event.id,
+                    matchId: match.id,
+                    eventDate: event.date,
+                    eventName: event.name,
+                    homeTeam: homeTeam?.name || 'Unknown Team',
+                    awayTeam: awayTeam?.name || 'Unknown Team',
+                    field: match.field,
+                    time: match.time,
+                    status: match.matchStatus || 'scheduled',
+                    hasScore: match.homeScore !== null && match.awayScore !== null,
+                    homeScore: match.homeScore,
+                    awayScore: match.awayScore,
+                    referees: referees
+                };
+                
+                console.log(`✅ Game record created:`, gameRecord);
+                gameRecords.push(gameRecord);
             });
         });
         
-        console.log(`🎯 Final result: ${cardRecords.length} card records collected`);
-        return cardRecords;
+        console.log(`🎯 Final result: ${gameRecords.length} game records collected`);
+        return gameRecords;
+    }
+    
+    getStatusDisplay(status) {
+        const statusMap = {
+            'scheduled': '📅 Scheduled',
+            'in_progress': '⏱️ In Progress',
+            'completed': '✅ Completed',
+            'cancelled': '❌ Cancelled'
+        };
+        return statusMap[status] || '📅 Scheduled';
     }
     
     async waitForChartJsAndRender(cardRecords) {
