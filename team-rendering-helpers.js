@@ -1,5 +1,5 @@
 /**
- * CheckIn App v4.9.2 - Refactored Team Rendering Methods
+ * CheckIn App v5.5.2 - Refactored Team Rendering Methods
  * Smaller, focused functions extracted from large renderTeams method
  */
 
