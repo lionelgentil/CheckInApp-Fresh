@@ -3165,16 +3165,21 @@ class CheckInViewApp {
         
         // Save to server in background (don't await for UI responsiveness)
         try {
-            console.log('Updating attendance via API...');
+            console.log('Updating attendance via optimized API...');
             
-            // Use the same approach as main app - send full events data
-            // This is inefficient but ensures consistency between apps
-            const response = await fetch('/api/events', {
+            // Use efficient attendance-only endpoint (no admin auth required)
+            const response = await fetch('/api/attendance', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify(this.events)
+                body: JSON.stringify({
+                    eventId: eventId,
+                    matchId: matchId,
+                    memberId: memberId,
+                    teamType: teamType,
+                    action: 'toggle'
+                })
             });
             
             if (!response.ok) {
@@ -3814,16 +3819,21 @@ class CheckInViewApp {
         }
         
         try {
-            console.log('Updating attendance via API...');
+            console.log('Updating attendance via optimized API...');
             
-            // Use the same approach as main app - send full events data
-            // This is inefficient but ensures consistency between apps
-            const response = await fetch('/api/events', {
+            // Use efficient attendance-only endpoint (no admin auth required)
+            const response = await fetch('/api/attendance', {
                 method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify(this.events)
+                body: JSON.stringify({
+                    eventId: eventId,
+                    matchId: matchId,
+                    memberId: memberId,
+                    teamType: teamType,
+                    action: 'toggle'
+                })
             });
             
             if (!response.ok) {

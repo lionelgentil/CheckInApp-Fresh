@@ -5763,8 +5763,25 @@ Please check the browser console (F12) for more details.`);
         }
         
         // Save to server in background (don't await for UI responsiveness)
-        this.saveEvents().then(() => {
-            console.log('Events saved successfully');
+        fetch('/api/attendance', {
+            method: 'POST',
+            headers: {
+                'Content-Type': 'application/json'
+            },
+            body: JSON.stringify({
+                eventId: eventId,
+                matchId: matchId,
+                memberId: memberId,
+                teamType: teamType,
+                action: 'toggle'
+            })
+        }).then(response => {
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            return response.json();
+        }).then(result => {
+            console.log('Attendance updated successfully:', result);
             // Update the events display in the background (no modal refresh)
             this.renderEvents();
         }).catch(error => {
@@ -5876,9 +5893,29 @@ Please check the browser console (F12) for more details.`);
         }
         
         try {
-            console.log('Saving events...');
-            await this.saveEvents();
-            console.log('Events saved successfully');
+            console.log('Updating attendance via optimized API...');
+            
+            // Use efficient attendance-only endpoint
+            const response = await fetch('/api/attendance', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    eventId: eventId,
+                    matchId: matchId,
+                    memberId: memberId,
+                    teamType: teamType,
+                    action: 'toggle'
+                })
+            });
+            
+            if (!response.ok) {
+                throw new Error(`HTTP ${response.status}: ${response.statusText}`);
+            }
+            
+            const result = await response.json();
+            console.log('Attendance updated successfully:', result);
             
             // Update the events display in the background (no modal refresh)
             this.renderEvents();
