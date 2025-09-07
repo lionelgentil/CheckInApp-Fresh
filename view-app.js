@@ -1764,7 +1764,7 @@ class CheckInViewApp {
     renderGameTracker() {
         console.log('🎯 renderGameTracker called');
         const container = document.getElementById('game-tracker-container');
-        const statusFilter = document.getElementById('game-status-filter')?.value || 'all';
+        const statusFilter = document.getElementById('game-status-filter')?.value || 'incomplete';
         const showCurrentSeasonOnly = document.getElementById('show-current-season-games')?.checked ?? true;
         
         console.log('📊 Game status filter:', statusFilter);
@@ -1830,28 +1830,7 @@ class CheckInViewApp {
             return 0;
         });
         
-        // Calculate summary stats
-        const totalGames = filteredGames.length;
-        const completedGames = filteredGames.filter(game => game.status === 'completed').length;
-        const incompleteGames = totalGames - completedGames;
-        
         container.innerHTML = `
-            <!-- Summary Stats -->
-            <div class="game-tracker-summary">
-                <div class="summary-stat">
-                    <div class="stat-number">${totalGames}</div>
-                    <div class="stat-label">Total Games</div>
-                </div>
-                <div class="summary-stat">
-                    <div class="stat-number">${completedGames}</div>
-                    <div class="stat-label">Completed</div>
-                </div>
-                <div class="summary-stat ${incompleteGames > 0 ? 'highlight' : ''}">
-                    <div class="stat-number">${incompleteGames}</div>
-                    <div class="stat-label">Incomplete</div>
-                </div>
-            </div>
-            
             <!-- Desktop Table View -->
             <div class="game-tracker-table-container">
                 <table class="game-tracker-table">
