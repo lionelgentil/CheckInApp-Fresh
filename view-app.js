@@ -4,7 +4,7 @@
  */
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '5.4.7';
+const APP_VERSION = '5.4.8';
 
 class CheckInViewApp {
     constructor() {
@@ -1264,7 +1264,10 @@ class CheckInViewApp {
                                 </div>
                                 ${match.field ? `<div class="match-field">Field: ${match.field}</div>` : ''}
                                 ${match.time ? `<div class="match-time">Time: ${match.time.substring(0, 5)}</div>` : ''}
-                                ${mainReferee ? `<div class="match-referee">Referee: ${mainReferee.name}${assistantReferee ? `, ${assistantReferee.name}` : ''}</div>` : ''}
+                                ${mainReferee ? `<div class="match-referee-events">
+                                    <span class="referee-bubble">👨‍⚖️ ${mainReferee.name}</span>
+                                    ${assistantReferee ? `<span class="referee-bubble">👨‍⚖️ ${assistantReferee.name}</span>` : ''}
+                                </div>` : ''}
                                 ${cardsDisplay ? `<div class="match-cards">Cards: ${cardsDisplay}</div>` : ''}
                                 <div class="match-actions">
                                     <button class="btn btn-small" onclick="app.viewMatch('${event.id}', '${match.id}')" title="View Match">👁️</button>
@@ -2487,7 +2490,8 @@ class CheckInViewApp {
                     <div class="match-info-right">
                         ${match.field ? `<div class="match-field">🏟️ Field ${match.field}</div>` : ''}
                         ${mainReferee ? `<div class="match-referee">
-                            <span class="referee-bubble">👨‍⚖️ ${mainReferee.name}${assistantReferee ? `, ${assistantReferee.name}` : ''}</span>
+                            <span class="referee-bubble">👨‍⚖️ ${mainReferee.name}</span>
+                            ${assistantReferee ? `<span class="referee-bubble">👨‍⚖️ ${assistantReferee.name}</span>` : ''}
                         </div>` : ''}
                         ${cardsSummary ? `<div class="cards-summary">📋 ${cardsSummary}</div>` : ''}
                         ${lockStatusDisplay ? `<div class="lock-status">${lockStatusDisplay}</div>` : ''}
