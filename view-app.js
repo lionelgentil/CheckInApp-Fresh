@@ -4,7 +4,7 @@
  */
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '5.4.3';
+const APP_VERSION = '5.4.4';
 
 class CheckInViewApp {
     constructor() {
@@ -589,6 +589,23 @@ class CheckInViewApp {
             // No gender specified, use male as default
             return '/photos/default-male.svg';
         }
+    }
+    
+    // iOS-style score adjustment for mobile
+    adjustScore(inputId, delta) {
+        const input = document.getElementById(inputId);
+        if (!input) return;
+        
+        let currentValue = parseInt(input.value) || 0;
+        let newValue = Math.max(0, Math.min(99, currentValue + delta)); // Keep between 0-99
+        
+        input.value = newValue;
+        
+        // Add visual feedback
+        input.style.transform = 'scale(1.05)';
+        setTimeout(() => {
+            input.style.transform = 'scale(1)';
+        }, 150);
     }
     
     // Player Profile Management  
@@ -3076,12 +3093,24 @@ class CheckInViewApp {
                     <div class="score-input-container">
                         <div class="team-score-input">
                             <div class="team-name-label">${homeTeam.name}</div>
-                            <input type="number" class="score-input" id="home-score" value="${match.homeScore !== null ? match.homeScore : ''}" min="0" placeholder="0">
+                            <div class="score-input-wrapper">
+                                <input type="number" class="score-input" id="home-score" value="${match.homeScore !== null ? match.homeScore : ''}" min="0" max="99" placeholder="0" readonly>
+                                <div class="score-stepper">
+                                    <button type="button" class="score-stepper-btn" onclick="app.adjustScore('home-score', 1)">+</button>
+                                    <button type="button" class="score-stepper-btn" onclick="app.adjustScore('home-score', -1)">−</button>
+                                </div>
+                            </div>
                         </div>
                         <div class="vs-divider">VS</div>
                         <div class="team-score-input">
                             <div class="team-name-label">${awayTeam.name}</div>
-                            <input type="number" class="score-input" id="away-score" value="${match.awayScore !== null ? match.awayScore : ''}" min="0" placeholder="0">
+                            <div class="score-input-wrapper">
+                                <input type="number" class="score-input" id="away-score" value="${match.awayScore !== null ? match.awayScore : ''}" min="0" max="99" placeholder="0" readonly>
+                                <div class="score-stepper">
+                                    <button type="button" class="score-stepper-btn" onclick="app.adjustScore('away-score', 1)">+</button>
+                                    <button type="button" class="score-stepper-btn" onclick="app.adjustScore('away-score', -1)">−</button>
+                                </div>
+                            </div>
                         </div>
                     </div>
                 </div>

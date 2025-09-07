@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>CheckIn App v5.4.3 - View Only</title>
+    <title>CheckIn App v5.4.4 - View Only</title>
     <meta name="theme-color" content="#2196F3">
     <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/x-icon" href="favicon.ico">
@@ -1751,14 +1751,21 @@
             }
             
             .score-input-container {
-                flex-direction: column;
-                gap: 20px;
+                /* Keep side-by-side layout on mobile for better UX */
+                flex-direction: row;
+                gap: 12px;
+                align-items: stretch;
             }
             
             .vs-divider {
-                order: -1;
-                margin-bottom: 12px;
-                font-size: 1em;
+                order: 0; /* Reset order to normal flow */
+                margin: 0;
+                font-size: 1.2em;
+                font-weight: bold;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                min-width: 40px;
             }
             
             .team-score-input {
@@ -1766,8 +1773,77 @@
             }
             
             .score-input {
-                font-size: 2.5em;
-                padding: 20px;
+                font-size: 2em;
+                padding: 12px 40px 12px 12px; /* Add right padding for stepper buttons */
+                /* iOS-style number picker appearance */
+                -webkit-appearance: none;
+                -moz-appearance: textfield;
+                appearance: none;
+                background: linear-gradient(145deg, #f8f9fa, #e9ecef);
+                border: 1px solid #ced4da;
+                border-radius: 12px;
+                position: relative;
+                transition: transform 0.15s ease, box-shadow 0.15s ease;
+                text-align: center;
+                font-weight: bold;
+                color: #495057;
+            }
+            
+            .score-input:focus {
+                border-color: #2196F3;
+                outline: none;
+                box-shadow: 0 0 0 3px rgba(33, 150, 243, 0.1);
+            }
+            
+            /* Add iOS-style increment/decrement buttons */
+            .score-input-wrapper {
+                position: relative;
+                display: flex;
+                flex-direction: column;
+            }
+            
+            .score-stepper {
+                display: flex;
+                flex-direction: column;
+                position: absolute;
+                right: 4px;
+                top: 4px;
+                bottom: 4px;
+                width: 30px;
+                z-index: 2;
+            }
+            
+            .score-stepper-btn {
+                flex: 1;
+                background: rgba(0, 0, 0, 0.1);
+                border: none;
+                font-size: 16px;
+                font-weight: bold;
+                color: #495057;
+                cursor: pointer;
+                user-select: none;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                transition: background-color 0.15s ease;
+            }
+            
+            .score-stepper-btn:first-child {
+                border-radius: 8px 8px 0 0;
+                border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+            }
+            
+            .score-stepper-btn:last-child {
+                border-radius: 0 0 8px 8px;
+            }
+            
+            .score-stepper-btn:active {
+                background: rgba(0, 0, 0, 0.2);
+                transform: scale(0.95);
+            }
+            
+            .score-stepper-btn:hover {
+                background: rgba(0, 0, 0, 0.15);
             }
         }
         
