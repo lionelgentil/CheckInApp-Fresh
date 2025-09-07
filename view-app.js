@@ -2923,7 +2923,7 @@ class CheckInViewApp {
                             `<div class="player-grid-photo" style="background: #ddd; display: flex; align-items: center; justify-content: center; color: #666; font-size: 20px;">👤</div>`
                         }
                         <div class="player-grid-content">
-                            <div class="player-grid-name">${member.name}</div>
+                            <div class="player-grid-name">${member.name}${member.id === team.captainId ? ' 👑' : ''}</div>
                             ${member.jerseyNumber ? `<div class="player-grid-jersey">#${member.jerseyNumber}</div>` : ''}
                         </div>
                         <div class="grid-check-icon">${isLocked ? '🔒' : '✓'}</div>
@@ -2979,7 +2979,7 @@ class CheckInViewApp {
                     <div class="grid-check-icon">✓</div>
                     <img src="${this.getMemberPhotoUrl(member)}" alt="${member.name}" class="player-grid-photo">
                     <div class="player-grid-content">
-                        <div class="player-grid-name">${member.name}</div>
+                        <div class="player-grid-name">${member.name}${member.id === team.captainId ? ' 👑' : ''}</div>
                         ${member.jerseyNumber ? `<div class="player-grid-jersey">#${member.jerseyNumber}</div>` : ''}
                     </div>
                 </div>

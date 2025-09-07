@@ -5599,7 +5599,7 @@ Please check the browser console (F12) for more details.`);
                     <div class="grid-check-icon">✓</div>
                     ${this.getLazyImageHtml(member, 'player-grid-photo')}
                     <div class="player-grid-content">
-                        <div class="player-grid-name">${member.name}</div>
+                        <div class="player-grid-name">${member.name}${member.id === team.captainId ? ' 👑' : ''}</div>
                         ${member.jerseyNumber ? `<div class="player-grid-jersey">#${member.jerseyNumber}</div>` : ''}
                     </div>
                 </div>
