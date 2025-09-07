@@ -4,7 +4,7 @@
  */
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '5.4.5';
+const APP_VERSION = '5.4.6';
 
 class CheckInViewApp {
     constructor() {
@@ -2462,6 +2462,12 @@ class CheckInViewApp {
             </div>
         ` : '';
         
+        // Check if check-in is locked
+        const isLocked = this.isCheckInLocked(event, match);
+        const lockInfo = this.getLockTimeInfo(event, match);
+        const lockStatusDisplay = isLocked && lockInfo ? 
+            `🔒 Locked since ${lockInfo.lockDate} at ${lockInfo.lockTimeFormatted}` : '';
+        
         const modal = this.createModal(`${homeTeam.name} vs ${awayTeam.name}`, `
             <!-- Mobile-Optimized Check-In Interface -->
             <div class="mobile-checkin-interface">
@@ -2485,6 +2491,7 @@ class CheckInViewApp {
                             <span class="referee-names">${mainReferee.name}${assistantReferee ? `, ${assistantReferee.name}` : ''}</span>
                         </div>` : ''}
                         ${cardsSummary ? `<div class="cards-summary">📋 ${cardsSummary}</div>` : ''}
+                        ${lockStatusDisplay ? `<div class="lock-status">${lockStatusDisplay}</div>` : ''}
                     </div>
                 </div>
                 
@@ -2536,6 +2543,50 @@ class CheckInViewApp {
         }
     }
     
+    // Check-in lock system
+    isCheckInLocked(event, match) {
+        if (!match.time || !event.date) return false;
+        
+        try {
+            // Parse game start time
+            const gameStart = new Date(`${event.date}T${match.time}`);
+            if (isNaN(gameStart.getTime())) return false;
+            
+            // Calculate lock time: game start + 1h 40m (game) + 1h (grace) = 2h 40m total
+            const lockTime = new Date(gameStart.getTime() + (2 * 60 + 40) * 60 * 1000);
+            const now = new Date();
+            
+            return now > lockTime;
+        } catch (error) {
+            console.error('Error calculating lock time:', error);
+            return false; // Don't lock on error
+        }
+    }
+    
+    getLockTimeInfo(event, match) {
+        if (!match.time || !event.date) return null;
+        
+        try {
+            const gameStart = new Date(`${event.date}T${match.time}`);
+            if (isNaN(gameStart.getTime())) return null;
+            
+            const lockTime = new Date(gameStart.getTime() + (2 * 60 + 40) * 60 * 1000);
+            
+            return {
+                lockTime: lockTime,
+                lockDate: lockTime.toLocaleDateString('en-US'), // mm/dd/yyyy format
+                lockTimeFormatted: lockTime.toLocaleTimeString('en-US', { 
+                    hour: 'numeric', 
+                    minute: '2-digit',
+                    hour12: true 
+                }).toLowerCase() // hh:mm am/pm
+            };
+        } catch (error) {
+            console.error('Error getting lock time info:', error);
+            return null;
+        }
+    }
+    
     // New helper functions for mobile check-in interface
     
     initializeCheckInInterface(eventId, matchId, homeTeam, awayTeam, match) {
@@ -2546,6 +2597,12 @@ class CheckInViewApp {
         this.currentAwayTeam = awayTeam;
         this.currentMatch = match;
         this.currentGridTeam = 'home'; // Default to home team
+        
+        // Check if check-in is locked
+        const event = this.events.find(e => e.id === eventId);
+        this.currentCheckInLocked = this.isCheckInLocked(event, match);
+        
+        console.log('Check-in lock status:', this.currentCheckInLocked);
         
         // Update attendance counts
         this.updateAttendanceCounts(match);
@@ -2633,10 +2690,12 @@ class CheckInViewApp {
             .sort((a, b) => a.name.localeCompare(b.name))
             .map(member => {
                 const isCheckedIn = attendees.some(a => a.memberId === member.id);
+                const isLocked = this.currentCheckInLocked || false;
                 
                 return `
-                    <div class="player-grid-item ${isCheckedIn ? 'checked-in' : ''}" 
-                         onclick="app.toggleGridPlayerAttendance('${this.currentEventId}', '${this.currentMatchId}', '${member.id}', '${teamType}')">
+                    <div class="player-grid-item ${isCheckedIn ? 'checked-in' : ''} ${isLocked ? 'locked' : ''}" 
+                         ${!isLocked ? `onclick="app.toggleGridPlayerAttendance('${this.currentEventId}', '${this.currentMatchId}', '${member.id}', '${teamType}')"` : ''}
+                         ${isLocked ? 'title="Check-in is locked for this match"' : ''}>
                         ${member.photo ? 
                             `<img src="${this.getMemberPhotoUrl(member)}" alt="${member.name}" class="player-grid-photo">` :
                             `<div class="player-grid-photo" style="background: #ddd; display: flex; align-items: center; justify-content: center; color: #666; font-size: 20px;">👤</div>`
@@ -2645,7 +2704,7 @@ class CheckInViewApp {
                             <div class="player-grid-name">${member.name}</div>
                             ${member.jerseyNumber ? `<div class="player-grid-jersey">#${member.jerseyNumber}</div>` : ''}
                         </div>
-                        <div class="grid-check-icon">✓</div>
+                        <div class="grid-check-icon">${isLocked ? '🔒' : '✓'}</div>
                     </div>
                 `;
             }).join('');
@@ -2780,12 +2839,24 @@ class CheckInViewApp {
 
     // Toggle player attendance in grid view
     async toggleGridPlayerAttendance(eventId, matchId, memberId, teamType) {
+        // Check if check-in is locked first
         const event = this.events.find(e => e.id === eventId);
         const match = event?.matches.find(m => m.id === matchId);
         
         if (!event || !match) {
             console.error('Event or match not found');
             alert('Event or match not found. Please refresh and try again.');
+            return;
+        }
+        
+        // Lock check - prevent any modifications if locked
+        if (this.isCheckInLocked(event, match)) {
+            const lockInfo = this.getLockTimeInfo(event, match);
+            const lockMessage = lockInfo ? 
+                `🔒 Check-in is locked for this match.\n\nLocked since ${lockInfo.lockDate} at ${lockInfo.lockTimeFormatted}.\n\nCheck-in was automatically locked 1 hour after the game ended (game duration: 1h 40m + 1h grace period).` :
+                `🔒 Check-in is locked for this match.\n\nModifications are no longer allowed.`;
+            
+            alert(lockMessage);
             return;
         }
         

@@ -3031,6 +3031,29 @@ function updateAttendanceOnly($db) {
     $action = $input['action'] ?? 'toggle'; // 'add', 'remove', or 'toggle'
     
     try {
+        // First check if check-in is locked for this match
+        // Get match details to check lock status
+        $stmt = $db->prepare('
+            SELECT e.event_date, m.match_time 
+            FROM events e 
+            JOIN matches m ON e.id = m.event_id 
+            WHERE e.id = ? AND m.id = ?
+        ');
+        $stmt->execute([$eventId, $matchId]);
+        $matchInfo = $stmt->fetch();
+        
+        if ($matchInfo) {
+            // Check if check-in is locked - helper function defined later
+            if (isCheckInLockedForMatch($matchInfo['event_date'], $matchInfo['match_time'])) {
+                http_response_code(403);
+                echo json_encode([
+                    'error' => 'Check-in is locked for this match',
+                    'message' => 'This match check-in was automatically locked 1 hour after the game ended.'
+                ]);
+                return;
+            }
+        }
+        
         $db->beginTransaction();
         
         // Check if attendee already exists
@@ -3621,6 +3644,29 @@ function testVolumeAccess($db) {
             'message' => 'Volume test failed: ' . $e->getMessage(),
             'volume_path' => $volumeDir ?? 'unknown'
         ]);
+    }
+}
+
+// Helper function to check if check-in is locked for a match
+function isCheckInLockedForMatch($eventDate, $matchTime) {
+    if (!$matchTime || !$eventDate) {
+        return false; // Don't lock if we don't have time info
+    }
+    
+    try {
+        // Parse game start time
+        $gameStart = new DateTime($eventDate . 'T' . $matchTime);
+        
+        // Calculate lock time: game start + 1h 40m (game) + 1h (grace) = 2h 40m total
+        $lockTime = clone $gameStart;
+        $lockTime->add(new DateInterval('PT2H40M')); // 2 hours 40 minutes
+        
+        $now = new DateTime();
+        
+        return $now > $lockTime;
+    } catch (Exception $e) {
+        error_log('Error calculating lock time: ' . $e->getMessage());
+        return false; // Don't lock on error
     }
 }
 ?>

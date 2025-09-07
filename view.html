@@ -1117,6 +1117,17 @@
             margin-bottom: 4px;
         }
         
+        .lock-status {
+            background: #f8d7da;
+            color: #721c24;
+            padding: 3px 10px;
+            border-radius: 12px;
+            font-weight: 500;
+            font-size: 0.8em;
+            display: inline-block;
+            margin-bottom: 4px;
+        }
+        
         .referee-names {
             font-weight: 500;
             color: #495057;
@@ -2094,6 +2105,33 @@
             .chart-canvas {
                 height: 200px;
             }
+        }
+        
+        /* Locked state for player grid items */
+        .player-grid-item.locked {
+            background: #f8f9fa;
+            border-color: #dee2e6;
+            color: #6c757d;
+            cursor: not-allowed;
+            opacity: 0.7;
+        }
+        
+        .player-grid-item.locked:hover {
+            transform: none;
+            box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+            border-color: #dee2e6;
+        }
+        
+        .player-grid-item.locked .grid-check-icon {
+            background: #6c757d;
+            opacity: 1;
+            transform: scale(1);
+        }
+        
+        .player-grid-item.locked.checked-in {
+            background: #e9ecef;
+            border-color: #ced4da;
+            color: #495057;
         }
         
     </style>
