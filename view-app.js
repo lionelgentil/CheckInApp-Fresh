@@ -2918,12 +2918,13 @@ class CheckInViewApp {
                     <div class="player-grid-item ${isCheckedIn ? 'checked-in' : ''} ${isLocked ? 'locked' : ''}" 
                          ${!isLocked ? `onclick="app.toggleGridPlayerAttendance('${this.currentEventId}', '${this.currentMatchId}', '${member.id}', '${teamType}')"` : ''}
                          ${isLocked ? 'title="Check-in is locked for this match"' : ''}>
+                        ${member.id === team.captainId ? '<div class="grid-captain-icon">👑</div>' : ''}
                         ${member.photo ? 
                             `<img src="${this.getMemberPhotoUrl(member)}" alt="${member.name}" class="player-grid-photo">` :
                             `<div class="player-grid-photo" style="background: #ddd; display: flex; align-items: center; justify-content: center; color: #666; font-size: 20px;">👤</div>`
                         }
                         <div class="player-grid-content">
-                            <div class="player-grid-name">${member.name}${member.id === team.captainId ? ' 👑' : ''}</div>
+                            <div class="player-grid-name">${member.name}</div>
                             ${member.jerseyNumber ? `<div class="player-grid-jersey">#${member.jerseyNumber}</div>` : ''}
                         </div>
                         <div class="grid-check-icon">${isLocked ? '🔒' : '✓'}</div>
@@ -2977,9 +2978,10 @@ class CheckInViewApp {
                 <div class="player-grid-item ${isCheckedIn ? 'checked-in' : ''}" 
                      onclick="app.toggleGridPlayerAttendance('${this.currentEventId}', '${this.currentMatchId}', '${member.id}', '${teamType}')">
                     <div class="grid-check-icon">✓</div>
+                    ${member.id === team.captainId ? '<div class="grid-captain-icon">👑</div>' : ''}
                     <img src="${this.getMemberPhotoUrl(member)}" alt="${member.name}" class="player-grid-photo">
                     <div class="player-grid-content">
-                        <div class="player-grid-name">${member.name}${member.id === team.captainId ? ' 👑' : ''}</div>
+                        <div class="player-grid-name">${member.name}</div>
                         ${member.jerseyNumber ? `<div class="player-grid-jersey">#${member.jerseyNumber}</div>` : ''}
                     </div>
                 </div>
