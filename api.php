@@ -776,6 +776,13 @@ try {
             }
             break;
             
+        case 'debug-indexes':
+            // Debug index usage and statistics
+            if ($method === 'GET') {
+                debugIndexUsage($db);
+            }
+            break;
+            
         case 'db-indexes':
             // List all database indexes for optimization analysis
             if ($method === 'GET') {
@@ -4821,6 +4828,123 @@ function deleteSingleMatch($db) {
     } catch (Exception $e) {
         http_response_code(500);
         echo json_encode(['error' => 'Failed to delete match: ' . $e->getMessage()]);
+    }
+}
+
+// Debug index usage and PostgreSQL statistics
+function debugIndexUsage($db) {
+    try {
+        $results = [];
+        
+        // 1. Check if our indexes actually exist
+        $stmt = $db->query("
+            SELECT indexname, indexdef 
+            FROM pg_indexes 
+            WHERE tablename = 'player_disciplinary_records'
+            ORDER BY indexname
+        ");
+        $disciplinaryIndexes = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $results['disciplinary_indexes'] = $disciplinaryIndexes;
+        
+        // 2. Check index statistics (usage)
+        $stmt = $db->query("
+            SELECT 
+                schemaname,
+                tablename,
+                indexname,
+                idx_tup_read,
+                idx_tup_fetch
+            FROM pg_stat_user_indexes 
+            WHERE tablename = 'player_disciplinary_records'
+            ORDER BY indexname
+        ");
+        $indexStats = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $results['index_usage_stats'] = $indexStats;
+        
+        // 3. Force PostgreSQL to analyze the table (update statistics)
+        $db->exec('ANALYZE player_disciplinary_records');
+        $results['analyze_completed'] = true;
+        
+        // 4. Check table statistics
+        $stmt = $db->query("
+            SELECT 
+                attname,
+                n_distinct,
+                correlation
+            FROM pg_stats 
+            WHERE tablename = 'player_disciplinary_records' 
+            AND attname IN ('member_id', 'incident_date_epoch', 'created_at_epoch')
+        ");
+        $tableStats = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $results['column_statistics'] = $tableStats;
+        
+        // 5. Test a simple index-only query
+        $testMemberId = $_GET['member_id'] ?? '40a5da1f-269e-4f4b-8062-2d5b9358bbb9';
+        $stmt = $db->prepare("
+            EXPLAIN (FORMAT JSON, ANALYZE, BUFFERS) 
+            SELECT member_id, incident_date_epoch 
+            FROM player_disciplinary_records 
+            WHERE member_id = ?
+        ");
+        $stmt->execute([$testMemberId]);
+        $simpleQueryPlan = $stmt->fetch(PDO::FETCH_ASSOC);
+        $results['simple_query_plan'] = json_decode($simpleQueryPlan['QUERY PLAN'], true);
+        
+        // 6. Check PostgreSQL settings that might affect index usage
+        $stmt = $db->query("
+            SELECT name, setting, unit, short_desc 
+            FROM pg_settings 
+            WHERE name IN ('random_page_cost', 'seq_page_cost', 'enable_indexscan', 'enable_seqscan')
+        ");
+        $pgSettings = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $results['postgresql_settings'] = $pgSettings;
+        
+        // 7. Manual index hint test (force index usage)
+        try {
+            $stmt = $db->prepare("
+                SET enable_seqscan = off;
+                EXPLAIN (FORMAT JSON, ANALYZE, BUFFERS) 
+                SELECT pdr.*, tm.name as member_name, t.name as team_name
+                FROM player_disciplinary_records pdr
+                JOIN team_members tm ON pdr.member_id = tm.id
+                JOIN teams t ON tm.team_id = t.id
+                WHERE pdr.member_id = ?
+                ORDER BY pdr.incident_date_epoch DESC, pdr.created_at_epoch DESC;
+                SET enable_seqscan = on;
+            ");
+            $stmt->execute([$testMemberId]);
+            
+            // Get results from each statement
+            $forcedResults = [];
+            do {
+                $result = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                if (!empty($result)) {
+                    foreach ($result as $row) {
+                        if (isset($row['QUERY PLAN'])) {
+                            $forcedResults[] = json_decode($row['QUERY PLAN'], true);
+                        }
+                    }
+                }
+            } while ($stmt->nextRowset());
+            
+            $results['forced_index_plan'] = $forcedResults;
+            
+        } catch (Exception $e) {
+            $results['forced_index_error'] = $e->getMessage();
+        }
+        
+        echo json_encode([
+            'success' => true,
+            'debug_results' => $results,
+            'timestamp' => date('c')
+        ]);
+        
+    } catch (Exception $e) {
+        http_response_code(500);
+        echo json_encode([
+            'error' => 'Index debugging failed: ' . $e->getMessage(),
+            'timestamp' => date('c')
+        ]);
     }
 }
 
