@@ -4860,8 +4860,8 @@ function migratePerformanceIndexes($db) {
                 preg_match('/idx_[a-zA-Z_]+/', $indexSql, $matches);
                 $indexName = $matches[0] ?? 'unknown_index';
                 
-                $results[] = "✅ Created index: $indexName (${createTime}ms)";
-                error_log("INDEX MIGRATION: Created $indexName in ${createTime}ms");
+                $results[] = "✅ Created index: $indexName ({$createTime}ms)";
+                error_log("INDEX MIGRATION: Created $indexName in {$createTime}ms");
                 
             } catch (Exception $e) {
                 $error = "❌ Failed to create index: " . $e->getMessage();
