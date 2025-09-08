@@ -2856,9 +2856,31 @@ class CheckInViewApp {
         if (!match.time_epoch) return false;
         
         try {
-            // Calculate lock time: game start + 1h 40m (game) + 1h (grace) = 2h 40m total
-            const lockTimeEpoch = match.time_epoch + (2 * 60 + 40) * 60; // 2h 40m in seconds
+            // Debug logging to track epoch conversion issues
+            const matchEpoch = match.time_epoch;
+            const matchDate = new Date(matchEpoch * 1000);
             const currentEpoch = getCurrentEpochTimestamp();
+            const currentDate = new Date(currentEpoch * 1000);
+            
+            console.log('🕐 Lock check debug:', {
+                matchId: match.id,
+                match_time_epoch: matchEpoch,
+                calculated_match_date: matchDate.toLocaleString('en-US', {timeZone: 'America/Los_Angeles'}),
+                current_epoch: currentEpoch,
+                current_date: currentDate.toLocaleString('en-US', {timeZone: 'America/Los_Angeles'}),
+                event_date_epoch: event.date_epoch,
+                event_date: new Date(event.date_epoch * 1000).toLocaleString('en-US', {timeZone: 'America/Los_Angeles'})
+            });
+            
+            // Calculate lock time: game start + 1h 40m (game) + 1h (grace) = 2h 40m total
+            const lockTimeEpoch = matchEpoch + (2 * 60 + 40) * 60; // 2h 40m in seconds
+            const lockDate = new Date(lockTimeEpoch * 1000);
+            
+            console.log('🔒 Lock calculation:', {
+                lock_time_epoch: lockTimeEpoch,
+                lock_date: lockDate.toLocaleString('en-US', {timeZone: 'America/Los_Angeles'}),
+                is_locked: currentEpoch > lockTimeEpoch
+            });
             
             return currentEpoch > lockTimeEpoch;
         } catch (error) {
