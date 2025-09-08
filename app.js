@@ -5170,31 +5170,78 @@ Please check the browser console (F12) for more details.`);
         
         if (!match) return;
         
-        // Update match data
-        match.field = field || null;
+        // Prepare update data with only changed fields
+        const updateData = {};
         
-        // Convert time string to epoch timestamp by combining with event date
-        if (time) {
-            const eventDate = epochToPacificDate(event.date_epoch, { 
-                year: 'numeric', 
-                month: '2-digit', 
-                day: '2-digit' 
-            }).split('/');
-            const eventDateString = `${eventDate[2]}-${eventDate[0].padStart(2, '0')}-${eventDate[1].padStart(2, '0')}`; // Convert MM/DD/YYYY to YYYY-MM-DD
-            match.time_epoch = this.matchTimeStringToEpoch(eventDateString, time);
-        } else {
-            match.time_epoch = null;
+        // Update field
+        const newField = field || null;
+        if (match.field !== newField) {
+            updateData.field = newField;
         }
         
-        match.mainRefereeId = mainRefereeId || null;
-        match.assistantRefereeId = assistantRefereeId || null;
-        match.notes = notes;
+        // Update time_epoch
+        let newTimeEpoch = null;
+        if (time) {
+            const eventDateString = new Date(event.date_epoch * 1000).toISOString().split('T')[0];
+            newTimeEpoch = this.matchTimeStringToEpoch(eventDateString, time);
+        }
+        if (match.time_epoch !== newTimeEpoch) {
+            updateData.time_epoch = newTimeEpoch;
+        }
+        
+        // Update referees
+        const newMainReferee = mainRefereeId || null;
+        const newAssistantReferee = assistantRefereeId || null;
+        if (match.mainRefereeId !== newMainReferee) {
+            updateData.mainRefereeId = newMainReferee;
+        }
+        if (match.assistantRefereeId !== newAssistantReferee) {
+            updateData.assistantRefereeId = newAssistantReferee;
+        }
+        
+        // Update notes
+        if (match.notes !== notes) {
+            updateData.notes = notes;
+        }
+        
+        if (Object.keys(updateData).length === 0) {
+            // No changes to save
+            this.closeModal();
+            return;
+        }
         
         try {
-            await this.saveEvents();
+            // Use efficient single-match update endpoint
+            const response = await fetch(`/api/match?match_id=${matchId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(updateData)
+            });
+            
+            if (!response.ok) {
+                throw new Error(`Failed to update match: ${response.status} ${response.statusText}`);
+            }
+            
+            const result = await response.json();
+            if (!result.success) {
+                throw new Error(result.error || 'Failed to update match');
+            }
+            
+            // Update local data after successful API call
+            Object.assign(match, {
+                field: newField,
+                time_epoch: newTimeEpoch,
+                mainRefereeId: newMainReferee,
+                assistantRefereeId: newAssistantReferee,
+                notes: notes
+            });
+            
             this.renderEvents();
             this.closeModal();
         } catch (error) {
+            console.error('Failed to update match:', error);
             alert('Failed to update match. Please try again.');
         }
     }
@@ -5677,10 +5724,35 @@ Please check the browser console (F12) for more details.`);
         match.cards = cards;
         
         try {
-            await this.saveEvents();
+            // Use efficient single-match update endpoint for match results
+            const updateData = {
+                matchStatus: match.matchStatus,
+                homeScore: match.homeScore,
+                awayScore: match.awayScore,
+                notes: match.matchNotes
+            };
+            
+            const response = await fetch(`/api/match?match_id=${matchId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(updateData)
+            });
+            
+            if (!response.ok) {
+                throw new Error(`Failed to update match result: ${response.status} ${response.statusText}`);
+            }
+            
+            const result = await response.json();
+            if (!result.success) {
+                throw new Error(result.error || 'Failed to update match result');
+            }
+            
             this.renderEvents();
             this.closeModal();
         } catch (error) {
+            console.error('Failed to save match result:', error);
             alert('Failed to save match result. Please try again.');
         }
     }
