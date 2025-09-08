@@ -627,6 +627,20 @@ class CheckInApp {
         const pacificDate = new Date(date.toLocaleString('en-US', {timeZone: 'America/Los_Angeles'}));
         return Math.floor(pacificDate.getTime() / 1000);
     }
+    
+    // Helper function to convert date string to epoch timestamp (at midnight Pacific time)
+    dateStringToEpoch(dateString) {
+        if (!dateString) return null;
+        
+        // Convert date string (YYYY-MM-DD) to epoch timestamp at midnight Pacific time
+        // Use the same approach as matchTimeStringToEpoch but for midnight
+        const dateTimeString = `${dateString}T00:00:00`;
+        const date = new Date(dateTimeString);
+        
+        // Convert to Pacific timezone epoch (midnight Pacific time)
+        const pacificDate = new Date(date.toLocaleString('en-US', {timeZone: 'America/Los_Angeles'}));
+        return Math.floor(pacificDate.getTime() / 1000);
+    }
 
     generateUUID() {
         return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
