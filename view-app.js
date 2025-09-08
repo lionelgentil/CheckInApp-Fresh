@@ -191,10 +191,10 @@ class CheckInViewApp {
         }
     }
     
-    isCurrentSeasonEvent(eventDate) {
+    isCurrentSeasonEvent(eventEpoch) {
         const currentSeason = this.getCurrentSeason();
-        const event = new Date(eventDate);
-        return event >= currentSeason.startDate && event <= currentSeason.endDate;
+        const eventEpochTime = eventEpoch * 1000; // Convert to milliseconds
+        return eventEpochTime >= currentSeason.startDate.getTime() && eventEpochTime <= currentSeason.endDate.getTime();
     }
     
     // Lightweight team loading (just basic info for events display)
@@ -703,7 +703,12 @@ class CheckInViewApp {
                     matchCards.push({
                         type: 'match',
                         eventName: event.name,
-                        eventDate: event.date,
+                        eventDate: new Date(event.date_epoch * 1000).toLocaleDateString('en-US', { 
+                            timeZone: 'America/Los_Angeles', 
+                            year: 'numeric', 
+                            month: '2-digit', 
+                            day: '2-digit' 
+                        }),
                         matchInfo,
                         cardType: card.cardType,
                         reason: card.reason,
@@ -931,7 +936,7 @@ class CheckInViewApp {
                 selectedTeam.members.forEach(member => {
                     this.events.forEach(event => {
                         // Only count cards from current season events
-                        if (this.isCurrentSeasonEvent(event.date)) {
+                        if (this.isCurrentSeasonEvent(event.date_epoch)) {
                             event.matches.forEach(match => {
                                 if (match.cards) {
                                     const memberCards = match.cards.filter(card => card.memberId === member.id);
@@ -978,7 +983,7 @@ class CheckInViewApp {
                                     
                                     this.events.forEach(event => {
                                         // Only count cards from current season events
-                                        if (this.isCurrentSeasonEvent(event.date)) {
+                                        if (this.isCurrentSeasonEvent(event.date_epoch)) {
                                             event.matches.forEach(match => {
                                                 if (match.cards) {
                                                     const memberCards = match.cards.filter(card => card.memberId === member.id);
@@ -1212,25 +1217,23 @@ class CheckInViewApp {
         }
         
         // Filter events based on date and toggle
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
+        const todayEpoch = Math.floor(new Date().setHours(0, 0, 0, 0) / 1000); // Convert to epoch seconds
         
         let eventsToShow = this.events.filter(event => {
-            const eventDate = new Date(event.date);
-            eventDate.setHours(0, 0, 0, 0);
+            // Use epoch timestamp for comparison (much simpler!)
+            const eventEpoch = event.date_epoch;
             
             if (showPastEvents) {
-                return eventDate < today; // Show only past events
+                return eventEpoch < todayEpoch; // Show only past events
             } else {
-                return eventDate >= today; // Show only future events
+                return eventEpoch >= todayEpoch; // Show only future events
             }
         });
         
         // Sort chronologically (future events ascending, past events descending)
         eventsToShow.sort((a, b) => {
-            const dateA = new Date(a.date);
-            const dateB = new Date(b.date);
-            return showPastEvents ? dateB - dateA : dateA - dateB;
+            // Simple epoch comparison - no Date object creation needed!
+            return showPastEvents ? b.date_epoch - a.date_epoch : a.date_epoch - b.date_epoch;
         });
         
         if (eventsToShow.length === 0) {
@@ -1257,14 +1260,14 @@ class CheckInViewApp {
                 <div class="matches-container">
                     ${event.matches
                         .sort((a, b) => {
-                            // Sort by time first
-                            if (a.time && b.time) {
-                                if (a.time !== b.time) {
-                                    return a.time.localeCompare(b.time);
+                            // Sort by time first (using epoch timestamps)
+                            if (a.time_epoch && b.time_epoch) {
+                                if (a.time_epoch !== b.time_epoch) {
+                                    return a.time_epoch - b.time_epoch;
                                 }
-                            } else if (a.time && !b.time) {
+                            } else if (a.time_epoch && !b.time_epoch) {
                                 return -1;
-                            } else if (!a.time && b.time) {
+                            } else if (!a.time_epoch && b.time_epoch) {
                                 return 1;
                             }
                             
@@ -1327,7 +1330,7 @@ class CheckInViewApp {
                                     </div>
                                 </div>
                                 ${match.field ? `<div class="match-field">Field: ${match.field}</div>` : ''}
-                                ${match.time ? `<div class="match-time">Time: ${match.time.substring(0, 5)}</div>` : ''}
+                                ${match.time_epoch ? `<div class="match-time">Time: ${epochToPacificTime(match.time_epoch)}</div>` : ''}
                                 ${mainReferee ? `<div class="match-referee-events">
                                     <span class="referee-bubble">👨‍⚖️ ${mainReferee.name}</span>
                                     ${assistantReferee ? `<span class="referee-bubble">👨‍⚖️ ${assistantReferee.name}</span>` : ''}
@@ -1501,7 +1504,7 @@ class CheckInViewApp {
         // Process completed matches
         this.events.forEach(event => {
             // Filter by season if requested
-            if (currentSeasonOnly && !this.isCurrentSeasonEvent(event.date)) {
+            if (currentSeasonOnly && !this.isCurrentSeasonEvent(event.date_epoch)) {
                 return;
             }
             
@@ -1760,7 +1763,7 @@ class CheckInViewApp {
         // Process all events and matches
         this.events.forEach(event => {
             // Only include current season events
-            if (!this.isCurrentSeasonEvent(event.date)) {
+            if (!this.isCurrentSeasonEvent(event.date_epoch)) {
                 return;
             }
             
@@ -1798,7 +1801,12 @@ class CheckInViewApp {
                     }
                     
                     cardRecords.push({
-                        eventDate: event.date,
+                        eventDate: new Date(event.date_epoch * 1000).toLocaleDateString('en-US', { 
+                            timeZone: 'America/Los_Angeles', 
+                            year: 'numeric', 
+                            month: '2-digit', 
+                            day: '2-digit' 
+                        }),
                         eventName: event.name,
                         matchInfo: `${homeTeam?.name || 'Unknown'} vs ${awayTeam?.name || 'Unknown'}`,
                         teamName: playerTeam?.name || 'Unknown Team',
@@ -1833,7 +1841,7 @@ class CheckInViewApp {
         // Filter by season if specified
         let filteredGames = gameRecords;
         if (showCurrentSeasonOnly) {
-            filteredGames = gameRecords.filter(game => this.isCurrentSeasonEvent(game.eventDate));
+            filteredGames = gameRecords.filter(game => this.isCurrentSeasonEvent(game.eventEpoch));
         }
         
         // Filter by status
@@ -1874,13 +1882,16 @@ class CheckInViewApp {
         
         // REQUESTED CHANGE: Sort by date ascending (oldest first), then by time
         filteredGames.sort((a, b) => {
-            const dateA = new Date(a.eventDate);
-            const dateB = new Date(b.eventDate);
-            if (dateA - dateB !== 0) return dateA - dateB; // Changed to ascending order
+            // Sort by event epoch first
+            if (a.eventEpoch - b.eventEpoch !== 0) return a.eventEpoch - b.eventEpoch; // Changed to ascending order
             
-            // Then sort by time if same date
-            if (a.time && b.time) {
-                return a.time.localeCompare(b.time);
+            // Then sort by time epoch if same date
+            if (a.timeEpoch && b.timeEpoch) {
+                return a.timeEpoch - b.timeEpoch;
+            } else if (a.timeEpoch && !b.timeEpoch) {
+                return -1;
+            } else if (!a.timeEpoch && b.timeEpoch) {
+                return 1;
             }
             return 0;
         });
@@ -2001,7 +2012,7 @@ class CheckInViewApp {
         
         // Process all events and matches
         this.events.forEach((event, eventIndex) => {
-            console.log(`📅 Processing event ${eventIndex + 1}/${this.events.length}: ${event.name} (${event.date})`);
+            console.log(`📅 Processing event ${eventIndex + 1}/${this.events.length}: ${event.name} (${new Date(event.date_epoch * 1000).toLocaleDateString('en-US', { timeZone: 'America/Los_Angeles' })})`);
             
             if (!event.matches || event.matches.length === 0) {
                 console.log(`⚠️ Event ${event.name} has no matches`);
@@ -2024,12 +2035,19 @@ class CheckInViewApp {
                 const gameRecord = {
                     eventId: event.id,
                     matchId: match.id,
-                    eventDate: event.date,
+                    eventDate: new Date(event.date_epoch * 1000).toLocaleDateString('en-US', { 
+                        timeZone: 'America/Los_Angeles', 
+                        year: 'numeric', 
+                        month: '2-digit', 
+                        day: '2-digit' 
+                    }),
+                    eventEpoch: event.date_epoch,
+                    timeEpoch: match.time_epoch,
                     eventName: event.name,
                     homeTeam: homeTeam?.name || 'Unknown Team',
                     awayTeam: awayTeam?.name || 'Unknown Team',
                     field: match.field,
-                    time: match.time,
+                    time: match.time_epoch ? epochToPacificTime(match.time_epoch) : null,
                     status: match.matchStatus || 'scheduled',
                     hasScore: match.homeScore !== null && match.awayScore !== null,
                     homeScore: match.homeScore,
@@ -2573,7 +2591,7 @@ class CheckInViewApp {
         
         // Count current season events and matches
         this.events.forEach(event => {
-            if (this.isCurrentSeasonEvent(event.date)) {
+            if (this.isCurrentSeasonEvent(event.date_epoch)) {
                 stats.totalEvents++;
                 stats.totalMatches += event.matches.length;
                 
@@ -3204,7 +3222,12 @@ class CheckInViewApp {
                                 !card.suspensionServed) {
                                 activeMatchCards.push({
                                     eventName: event.name,
-                                    eventDate: event.date,
+                                    eventDate: new Date(event.date_epoch * 1000).toLocaleDateString('en-US', { 
+                            timeZone: 'America/Los_Angeles', 
+                            year: 'numeric', 
+                            month: '2-digit', 
+                            day: '2-digit' 
+                        }),
                                     suspensionMatches: card.suspensionMatches,
                                     reason: card.reason
                                 });
@@ -3294,7 +3317,7 @@ class CheckInViewApp {
                 attendeesArray.push({
                     memberId: memberId,
                     name: member.name,
-                    checkedInAt: new Date().toISOString()
+                    checkedInAt_epoch: Math.floor(Date.now() / 1000)
                 });
                 gridItem.classList.add('checked-in');
                 console.log('Added attendance for member:', memberId);
