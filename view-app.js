@@ -1,10 +1,65 @@
 /**
  * CheckIn App v5.1.2 - View Only Mode
  * Read-only version for public viewing
+ * Enhanced with pure epoch timestamp support for reliable timezone handling
  */
 
 // Version constant - update this single location to change version everywhere
 const APP_VERSION = '5.5.3';
+
+// Utility function to convert epoch timestamp to Pacific timezone display
+function epochToPacificDate(epochTimestamp, options = {}) {
+    if (!epochTimestamp) return 'No date';
+    
+    const date = new Date(epochTimestamp * 1000); // Convert seconds to milliseconds
+    
+    const defaultOptions = {
+        timeZone: 'America/Los_Angeles',
+        year: 'numeric',
+        month: 'short', 
+        day: 'numeric'
+    };
+    
+    return date.toLocaleDateString('en-US', { ...defaultOptions, ...options });
+}
+
+// Utility function to convert epoch timestamp to Pacific timezone time display  
+function epochToPacificTime(epochTimestamp, options = {}) {
+    if (!epochTimestamp) return 'No time';
+    
+    const date = new Date(epochTimestamp * 1000); // Convert seconds to milliseconds
+    
+    const defaultOptions = {
+        timeZone: 'America/Los_Angeles',
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true
+    };
+    
+    return date.toLocaleTimeString('en-US', { ...defaultOptions, ...options });
+}
+
+// Utility function to convert epoch timestamp to Pacific timezone date and time
+function epochToPacificDateTime(epochTimestamp) {
+    if (!epochTimestamp) return 'No date/time';
+    
+    const date = new Date(epochTimestamp * 1000);
+    
+    return date.toLocaleString('en-US', {
+        timeZone: 'America/Los_Angeles',
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true
+    });
+}
+
+// Utility function to get current epoch timestamp
+function getCurrentEpochTimestamp() {
+    return Math.floor(Date.now() / 1000); // Convert milliseconds to seconds
+}
 
 class CheckInViewApp {
     constructor() {
@@ -726,7 +781,7 @@ class CheckInViewApp {
                         ${card.minute ? `<span style="color: #666; font-size: 0.8em;"> - ${card.minute}'</span>` : ''}
                         <span style="margin-left: 8px; background: ${card.type === 'match' ? '#e3f2fd' : '#fff3e0'}; color: #666; padding: 1px 4px; border-radius: 3px; font-size: 0.7em;">${typeIcon} ${typeLabel}</span>
                     </div>
-                    <small style="color: #666; font-size: 0.75em;">${new Date(card.eventDate).toLocaleDateString()}</small>
+                    <small style="color: #666; font-size: 0.75em;">${epochToPacificDate(card.eventDate_epoch || card.eventDate)}</small>
                 </div>
                 ${card.type === 'match' ? `
                     <div style="font-size: 0.8em; color: #666; margin-bottom: 3px;">
@@ -747,7 +802,7 @@ class CheckInViewApp {
                     <div style="font-size: 0.75em; color: #856404; margin-top: 5px; padding: 4px 6px; background: #fff3cd; border-radius: 3px; display: inline-block;">
                         ⚖️ ${card.suspensionMatches} match suspension ${
                             card.suspensionServed 
-                                ? `(✅ Served${card.suspensionServedDate ? ` on ${new Date(card.suspensionServedDate).toLocaleDateString()}` : ''})` 
+                                ? `(✅ Served${card.suspensionServedDate ? ` on ${epochToPacificDate(card.suspensionServedDate_epoch || card.suspensionServedDate)}` : ''})` 
                                 : '(⏳ Pending)'
                         }
                     </div>
@@ -1195,7 +1250,7 @@ class CheckInViewApp {
                 <div class="event-header">
                     <div>
                         <div class="event-name">${event.name}</div>
-                        <div class="event-date">${new Date(event.date).toLocaleDateString()}</div>
+                        <div class="event-date">${epochToPacificDate(event.date_epoch)}</div>
                     </div>
                 </div>
                 <div class="event-description">${event.description || ''}</div>
@@ -1597,7 +1652,7 @@ class CheckInViewApp {
                             <td class="notes-cell" title="${card.notes || ''}">${card.notes || '—'}</td>
                             <td class="match-info-cell">
                                 <div><strong>${card.matchInfo}</strong></div>
-                                <div style="font-size: 0.8em; color: #888;">${new Date(card.eventDate).toLocaleDateString()}</div>
+                                <div style="font-size: 0.8em; color: #888;">${epochToPacificDate(card.eventDate_epoch || card.eventDate)}</div>
                                 ${card.minute ? `<div style="font-size: 0.8em; color: #888;">${card.minute}'</div>` : ''}
                             </td>
                             <td class="referee-cell">${card.refereeName || 'Not recorded'}</td>
@@ -1617,7 +1672,7 @@ class CheckInViewApp {
                                 </span>
                                 ${card.minute ? `<span class="card-minute">${card.minute}'</span>` : ''}
                             </div>
-                            <div class="card-date">${new Date(card.eventDate).toLocaleDateString()}</div>
+                            <div class="card-date">${epochToPacificDate(card.eventDate_epoch || card.eventDate)}</div>
                         </div>
                         
                         <div class="card-record-details">
@@ -1850,8 +1905,8 @@ class CheckInViewApp {
                         ${filteredGames.map(game => `
                             <tr class="game-row ${game.status}">
                                 <td class="date-time-cell">
-                                    <div class="game-date">${new Date(game.eventDate).toLocaleDateString()}</div>
-                                    ${game.time ? `<div class="game-time">${game.time.substring(0, 5)}</div>` : ''}
+                                    <div class="game-date">${epochToPacificDate(game.eventDate_epoch || game.eventDate)}</div>
+                                    ${game.time_epoch ? `<div class="game-time">${epochToPacificTime(game.time_epoch)}</div>` : ''}
                                 </td>
                                 <td class="event-cell">
                                     <div class="event-name">${game.eventName}</div>
@@ -1890,8 +1945,8 @@ class CheckInViewApp {
                     <div class="game-record-item">
                         <div class="game-record-header">
                             <div class="game-info-section">
-                                <div class="game-date-large">${new Date(game.eventDate).toLocaleDateString()}</div>
-                                ${game.time ? `<div class="game-time-large">${game.time.substring(0, 5)}</div>` : ''}
+                                <div class="game-date-large">${epochToPacificDate(game.eventDate_epoch || game.eventDate)}</div>
+                                ${game.time_epoch ? `<div class="game-time-large">${epochToPacificTime(game.time_epoch)}</div>` : ''}
                             </div>
                             <div class="game-status-section">
                                 <span class="status-badge status-${game.status}">${this.getStatusDisplay(game.status)}</span>
@@ -2153,7 +2208,7 @@ class CheckInViewApp {
         // Group cards by date and card type
         const dateGroups = {};
         cardRecords.forEach(card => {
-            const date = new Date(card.eventDate).toLocaleDateString();
+            const date = epochToPacificDate(card.eventDate_epoch || card.eventDate);
             if (!dateGroups[date]) {
                 dateGroups[date] = { yellow: 0, red: 0 };
             }
@@ -2701,8 +2756,8 @@ class CheckInViewApp {
                             <span class="match-status ${match.matchStatus}">${statusDisplay}</span>
                         </div>
                         <div class="match-details-inline">
-                            <span class="match-date">${new Date(event.date).toLocaleDateString()}</span>
-                            ${match.time ? `<span class="match-time">${match.time.substring(0, 5)}</span>` : ''}
+                            <span class="match-date">${epochToPacificDate(event.date_epoch)}</span>
+                            ${match.time_epoch ? `<span class="match-time">${epochToPacificTime(match.time_epoch)}</span>` : ''}
                         </div>
                     </div>
                     
@@ -2779,44 +2834,36 @@ class CheckInViewApp {
     
     // Check-in lock system
     isCheckInLocked(event, match) {
-        if (!match.time || !event.date) return false;
+        // Use epoch-based lock calculation for reliability
+        if (!match.time_epoch) return false;
         
         try {
-            // Parse game start time
-            const gameStart = new Date(`${event.date}T${match.time}`);
-            if (isNaN(gameStart.getTime())) return false;
-            
             // Calculate lock time: game start + 1h 40m (game) + 1h (grace) = 2h 40m total
-            const lockTime = new Date(gameStart.getTime() + (2 * 60 + 40) * 60 * 1000);
-            const now = new Date();
+            const lockTimeEpoch = match.time_epoch + (2 * 60 + 40) * 60; // 2h 40m in seconds
+            const currentEpoch = getCurrentEpochTimestamp();
             
-            return now > lockTime;
+            return currentEpoch > lockTimeEpoch;
         } catch (error) {
-            console.error('Error calculating lock time:', error);
+            console.error('Error calculating epoch lock time:', error);
             return false; // Don't lock on error
         }
     }
     
     getLockTimeInfo(event, match) {
-        if (!match.time || !event.date) return null;
+        // Use epoch-based lock calculation for reliability
+        if (!match.time_epoch) return null;
         
         try {
-            const gameStart = new Date(`${event.date}T${match.time}`);
-            if (isNaN(gameStart.getTime())) return null;
-            
-            const lockTime = new Date(gameStart.getTime() + (2 * 60 + 40) * 60 * 1000);
+            const lockTimeEpoch = match.time_epoch + (2 * 60 + 40) * 60; // 2h 40m in seconds
             
             return {
-                lockTime: lockTime,
-                lockDate: lockTime.toLocaleDateString('en-US'), // mm/dd/yyyy format
-                lockTimeFormatted: lockTime.toLocaleTimeString('en-US', { 
-                    hour: 'numeric', 
-                    minute: '2-digit',
-                    hour12: true 
-                }).toLowerCase() // hh:mm am/pm
+                lockTime: new Date(lockTimeEpoch * 1000), // For backward compatibility
+                lockDate: epochToPacificDate(lockTimeEpoch, { month: 'numeric', day: 'numeric', year: 'numeric' }),
+                lockTimeFormatted: epochToPacificTime(lockTimeEpoch, { hour12: true }).toLowerCase(),
+                lockTimeEpoch: lockTimeEpoch
             };
         } catch (error) {
-            console.error('Error getting lock time info:', error);
+            console.error('Error getting epoch lock time info:', error);
             return null;
         }
     }
@@ -3273,7 +3320,7 @@ class CheckInViewApp {
                         // Create detailed suspension message
                         const suspensionDetails = suspensionStatus.records.map(record => {
                             const incidentDate = record.incidentDate || record.eventDate;
-                            const displayDate = incidentDate ? new Date(incidentDate).toLocaleDateString() : 'Unknown date';
+                            const displayDate = incidentDate ? epochToPacificDate(incidentDate_epoch || incidentDate) : 'Unknown date';
                             const reason = record.reason ? ` (${record.reason})` : '';
                             return `• ${record.suspensionMatches} match${record.suspensionMatches !== 1 ? 'es' : ''} - ${displayDate}${reason}`;
                         }).join('\n');

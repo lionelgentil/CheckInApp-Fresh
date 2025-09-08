@@ -1,10 +1,65 @@
 /**
  * CheckIn App v5.1.2 - JavaScript Frontend
  * Works with PHP/PostgreSQL backend
+ * Enhanced with pure epoch timestamp support for reliable timezone handling
  */
 
 // Version constant - update this single location to change version everywhere
 const APP_VERSION = '5.5.3';
+
+// Utility function to convert epoch timestamp to Pacific timezone display
+function epochToPacificDate(epochTimestamp, options = {}) {
+    if (!epochTimestamp) return 'No date';
+    
+    const date = new Date(epochTimestamp * 1000); // Convert seconds to milliseconds
+    
+    const defaultOptions = {
+        timeZone: 'America/Los_Angeles',
+        year: 'numeric',
+        month: 'short', 
+        day: 'numeric'
+    };
+    
+    return date.toLocaleDateString('en-US', { ...defaultOptions, ...options });
+}
+
+// Utility function to convert epoch timestamp to Pacific timezone time display  
+function epochToPacificTime(epochTimestamp, options = {}) {
+    if (!epochTimestamp) return 'No time';
+    
+    const date = new Date(epochTimestamp * 1000); // Convert seconds to milliseconds
+    
+    const defaultOptions = {
+        timeZone: 'America/Los_Angeles',
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true
+    };
+    
+    return date.toLocaleTimeString('en-US', { ...defaultOptions, ...options });
+}
+
+// Utility function to convert epoch timestamp to Pacific timezone date and time
+function epochToPacificDateTime(epochTimestamp) {
+    if (!epochTimestamp) return 'No date/time';
+    
+    const date = new Date(epochTimestamp * 1000);
+    
+    return date.toLocaleString('en-US', {
+        timeZone: 'America/Los_Angeles',
+        year: 'numeric',
+        month: 'short',
+        day: 'numeric',
+        hour: 'numeric',
+        minute: '2-digit',
+        hour12: true
+    });
+}
+
+// Utility function to get current epoch timestamp
+function getCurrentEpochTimestamp() {
+    return Math.floor(Date.now() / 1000); // Convert milliseconds to seconds
+}
 
 class CheckInApp {
     constructor() {
@@ -1408,7 +1463,7 @@ class CheckInApp {
                 <div class="event-header">
                     <div>
                         <div class="event-name">${event.name}</div>
-                        <div class="event-date">${new Date(event.date).toLocaleDateString()}</div>
+                        <div class="event-date">${epochToPacificDate(event.date_epoch)}</div>
                     </div>
                     <div class="team-actions">
                         <button class="btn btn-small" onclick="app.showAddMatchModal('${event.id}')" title="Add Match">+</button>
@@ -2108,7 +2163,7 @@ Please check the browser console (F12) for more details.`);
                                     ${record.suspension_matches ? `<span style="margin-left: 10px; color: #d32f2f; font-weight: bold;">${record.suspension_matches} match suspension</span>` : ''}
                                 </div>
                                 <div style="color: #666; font-size: 0.85em;">
-                                    ${record.incident_date || new Date(record.created_at).toLocaleDateString()}
+                                    ${record.incident_date || epochToPacificDate(record.created_at_epoch || record.created_at)}
                                 </div>
                             </div>
                         `).join('')}
@@ -2783,7 +2838,7 @@ Please check the browser console (F12) for more details.`);
                         ${card.minute ? `<span style="color: #666; font-size: 0.8em;"> - ${card.minute}'</span>` : ''}
                         <span style="margin-left: 8px; background: ${card.type === 'match' ? '#e3f2fd' : '#fff3e0'}; color: #666; padding: 1px 4px; border-radius: 3px; font-size: 0.7em;">${typeIcon} ${typeLabel}</span>
                     </div>
-                    <small style="color: #666; font-size: 0.75em;">${new Date(card.eventDate).toLocaleDateString()}</small>
+                    <small style="color: #666; font-size: 0.75em;">${epochToPacificDate(card.eventDate_epoch || card.eventDate)}</small>
                 </div>
                 ${card.type === 'match' ? `
                     <div style="font-size: 0.8em; color: #666; margin-bottom: 3px;">
@@ -2804,7 +2859,7 @@ Please check the browser console (F12) for more details.`);
                     <div style="font-size: 0.75em; color: #856404; margin-top: 5px; padding: 4px 6px; background: #fff3cd; border-radius: 3px; display: inline-block;">
                         ⚖️ ${card.suspensionMatches} match suspension ${
                             card.suspensionServed 
-                                ? `(✅ Served${card.suspensionServedDate ? ` on ${new Date(card.suspensionServedDate).toLocaleDateString()}` : ''})` 
+                                ? `(✅ Served${card.suspensionServedDate ? ` on ${epochToPacificDate(card.suspensionServedDate_epoch || card.suspensionServedDate)}` : ''})` 
                                 : '(⏳ Pending)'
                         }
                     </div>
@@ -3260,7 +3315,7 @@ Please check the browser console (F12) for more details.`);
                             <td class="notes-cell" title="${card.notes || ''}">${card.notes || '—'}</td>
                             <td class="match-info-cell">
                                 <div><strong>${card.matchInfo}</strong></div>
-                                <div style="font-size: 0.8em; color: #888;">${new Date(card.eventDate).toLocaleDateString()}</div>
+                                <div style="font-size: 0.8em; color: #888;">${epochToPacificDate(card.eventDate_epoch || card.eventDate)}</div>
                                 ${card.minute ? `<div style="font-size: 0.8em; color: #888;">${card.minute}'</div>` : ''}
                             </td>
                             <td class="referee-cell">${card.refereeName || 'Not recorded'}</td>
@@ -3280,7 +3335,7 @@ Please check the browser console (F12) for more details.`);
                                 </span>
                                 ${card.minute ? `<span class="card-minute">${card.minute}'</span>` : ''}
                             </div>
-                            <div class="card-date">${new Date(card.eventDate).toLocaleDateString()}</div>
+                            <div class="card-date">${epochToPacificDate(card.eventDate_epoch || card.eventDate)}</div>
                         </div>
                         
                         <div class="card-record-details">
@@ -3577,7 +3632,7 @@ Please check the browser console (F12) for more details.`);
         // Group cards by date and card type
         const dateGroups = {};
         cardRecords.forEach(card => {
-            const date = new Date(card.eventDate).toLocaleDateString();
+            const date = epochToPacificDate(card.eventDate_epoch || card.eventDate);
             if (!dateGroups[date]) {
                 dateGroups[date] = { yellow: 0, red: 0 };
             }
@@ -4078,7 +4133,7 @@ Please check the browser console (F12) for more details.`);
                                 <strong>${card.playerName}</strong> (${card.teamName})
                                 <br>
                                 <small style="color: #666;">
-                                    ${card.cardType === 'yellow' ? '🟨' : '🟥'} ${card.cardType} card • ${card.eventName} • ${new Date(card.eventDate).toLocaleDateString()}
+                                    ${card.cardType === 'yellow' ? '🟨' : '🟥'} ${card.cardType} card • ${card.eventName} • ${epochToPacificDate(card.eventDate_epoch || card.eventDate)}
                                 </small>
                             </div>
                             <div style="font-size: 0.8em; color: #666;">
@@ -4418,8 +4473,8 @@ Please check the browser console (F12) for more details.`);
                         ${filteredGames.map(game => `
                             <tr class="game-row ${game.status}">
                                 <td class="date-time-cell">
-                                    <div class="game-date">${new Date(game.eventDate).toLocaleDateString()}</div>
-                                    ${game.time ? `<div class="game-time">${game.time.substring(0, 5)}</div>` : ''}
+                                    <div class="game-date">${epochToPacificDate(game.eventDate_epoch || game.eventDate)}</div>
+                                    ${game.time_epoch ? `<div class="game-time">${epochToPacificTime(game.time_epoch)}</div>` : ''}
                                 </td>
                                 <td class="event-cell">
                                     <div class="event-name">${game.eventName}</div>
@@ -4458,8 +4513,8 @@ Please check the browser console (F12) for more details.`);
                     <div class="game-record-item">
                         <div class="game-record-header">
                             <div class="game-info-section">
-                                <div class="game-date-large">${new Date(game.eventDate).toLocaleDateString()}</div>
-                                ${game.time ? `<div class="game-time-large">${game.time.substring(0, 5)}</div>` : ''}
+                                <div class="game-date-large">${epochToPacificDate(game.eventDate_epoch || game.eventDate)}</div>
+                                ${game.time_epoch ? `<div class="game-time-large">${epochToPacificTime(game.time_epoch)}</div>` : ''}
                             </div>
                             <div class="game-status-section">
                                 <span class="status-badge status-${game.status}">${this.getStatusDisplay(game.status)}</span>
@@ -5504,10 +5559,10 @@ Please check the browser console (F12) for more details.`);
         
         const modal = this.createModal(`Match: ${homeTeam.name} vs ${awayTeam.name}`, `
             <div style="margin-bottom: 20px; padding: 15px; background: #f8f9fa; border-radius: 8px;">
-                <p><strong>Date:</strong> ${new Date(event.date).toLocaleDateString()}</p>
+                <p><strong>Date:</strong> ${epochToPacificDate(event.date_epoch)}</p>
                 <p><strong>Status:</strong> ${statusDisplay}</p>
                 ${match.field ? `<p><strong>Field:</strong> ${match.field}</p>` : ''}
-                ${match.time ? `<p><strong>Time:</strong> ${match.time.substring(0, 5)}</p>` : ''}
+                ${match.time_epoch ? `<p><strong>Time:</strong> ${epochToPacificTime(match.time_epoch)}</p>` : ''}
                 ${mainReferee ? `<p><strong>Referee:</strong> ${mainReferee.name}${assistantReferee ? `, ${assistantReferee.name}` : ''}</p>` : ''}
                 ${match.notes ? `<p><strong>Notes:</strong> ${match.notes}</p>` : ''}
             </div>
