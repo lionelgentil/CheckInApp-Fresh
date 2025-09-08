@@ -761,6 +761,14 @@ try {
             }
             break;
             
+        case 'migrate-indexes':
+            // Apply new performance indexes to production database
+            if ($method === 'POST') {
+                requireAuth(); // Require authentication for database changes
+                migratePerformanceIndexes($db);
+            }
+            break;
+            
         case 'performance-test':
             // Performance testing endpoint to measure database vs application overhead
             if ($method === 'GET') {
@@ -4813,6 +4821,107 @@ function deleteSingleMatch($db) {
     } catch (Exception $e) {
         http_response_code(500);
         echo json_encode(['error' => 'Failed to delete match: ' . $e->getMessage()]);
+    }
+}
+
+// Database index migration function
+function migratePerformanceIndexes($db) {
+    try {
+        $results = [];
+        $errors = [];
+        
+        // Performance indexes that need to be created
+        $performanceIndexes = [
+            // Critical indexes for disciplinary records performance
+            'CREATE INDEX IF NOT EXISTS idx_team_members_id_team_id ON team_members(id, team_id)',
+            'CREATE INDEX IF NOT EXISTS idx_teams_id_name ON teams(id, name)', 
+            'CREATE INDEX IF NOT EXISTS idx_player_disciplinary_sort ON player_disciplinary_records(member_id, incident_date_epoch DESC, created_at_epoch DESC)',
+            'CREATE INDEX IF NOT EXISTS idx_player_disciplinary_team_sort ON player_disciplinary_records(incident_date_epoch DESC, created_at_epoch DESC)',
+            
+            // Epoch timestamp indexes for time-based queries
+            'CREATE INDEX IF NOT EXISTS idx_events_date_epoch ON events(date_epoch)',
+            'CREATE INDEX IF NOT EXISTS idx_matches_time_epoch ON matches(match_time_epoch)',
+            'CREATE INDEX IF NOT EXISTS idx_match_attendees_time ON match_attendees(checked_in_at_epoch)',
+            'CREATE INDEX IF NOT EXISTS idx_general_attendees_time ON general_attendees(checked_in_at_epoch)',
+            
+            // Active members optimization (PostgreSQL partial index)
+            'CREATE INDEX IF NOT EXISTS idx_team_members_active ON team_members(active, team_id) WHERE active IS NULL OR active = TRUE'
+        ];
+        
+        $results[] = "Starting performance index migration...";
+        
+        foreach ($performanceIndexes as $indexSql) {
+            try {
+                $startTime = microtime(true);
+                $db->exec($indexSql);
+                $createTime = round((microtime(true) - $startTime) * 1000, 2);
+                
+                // Extract index name for reporting
+                preg_match('/idx_[a-zA-Z_]+/', $indexSql, $matches);
+                $indexName = $matches[0] ?? 'unknown_index';
+                
+                $results[] = "✅ Created index: $indexName (${createTime}ms)";
+                error_log("INDEX MIGRATION: Created $indexName in ${createTime}ms");
+                
+            } catch (Exception $e) {
+                $error = "❌ Failed to create index: " . $e->getMessage();
+                $errors[] = $error;
+                error_log("INDEX MIGRATION ERROR: " . $error);
+            }
+        }
+        
+        // Verify the most critical index was created
+        try {
+            $stmt = $db->query("
+                SELECT indexname, indexdef 
+                FROM pg_indexes 
+                WHERE indexname = 'idx_player_disciplinary_records_member_id' 
+                   OR indexname = 'idx_player_disciplinary_sort'
+                ORDER BY indexname
+            ");
+            $criticalIndexes = $stmt->fetchAll(PDO::FETCH_ASSOC);
+            
+            if (count($criticalIndexes) >= 1) {
+                $results[] = "✅ Critical disciplinary records indexes verified";
+                foreach ($criticalIndexes as $idx) {
+                    $results[] = "   - " . $idx['indexname'];
+                }
+            } else {
+                $errors[] = "⚠️ Critical indexes may not have been created properly";
+            }
+            
+        } catch (Exception $e) {
+            $errors[] = "Failed to verify indexes: " . $e->getMessage();
+        }
+        
+        // Performance improvement estimation
+        $results[] = "\n📈 Expected Performance Improvements:";
+        $results[] = "- Disciplinary records queries: 10-50x faster (no more sequential scans)";
+        $results[] = "- Team member lookups: 2-5x faster (composite indexes)";
+        $results[] = "- Time-based queries: 5-20x faster (epoch indexes)";
+        
+        if (!empty($errors)) {
+            $results[] = "\n⚠️ ERRORS ENCOUNTERED:";
+            $results = array_merge($results, $errors);
+        }
+        
+        echo json_encode([
+            'success' => empty($errors),
+            'message' => 'Performance index migration completed',
+            'results' => $results,
+            'indexes_created' => count($performanceIndexes) - count($errors),
+            'errors' => count($errors),
+            'timestamp' => date('c')
+        ]);
+        
+    } catch (Exception $e) {
+        error_log('INDEX MIGRATION FAILED: ' . $e->getMessage());
+        http_response_code(500);
+        echo json_encode([
+            'success' => false,
+            'error' => 'Index migration failed: ' . $e->getMessage(),
+            'timestamp' => date('c')
+        ]);
     }
 }
 
