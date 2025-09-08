@@ -601,6 +601,33 @@ class CheckInApp {
         return /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
     }
     
+    // Helper function to convert match epoch timestamp to time string for form display
+    matchTimeEpochToString(epochTimestamp) {
+        if (!epochTimestamp) return '';
+        
+        const date = new Date(epochTimestamp * 1000);
+        // Extract just the time portion in HH:MM format
+        return date.toLocaleTimeString('en-US', {
+            timeZone: 'America/Los_Angeles',
+            hour12: false,
+            hour: '2-digit',
+            minute: '2-digit'
+        });
+    }
+    
+    // Helper function to convert date string and time string to epoch timestamp
+    matchTimeStringToEpoch(dateString, timeString) {
+        if (!dateString || !timeString) return null;
+        
+        // Combine date and time strings, then convert to epoch
+        const dateTimeString = `${dateString}T${timeString}:00`;
+        const date = new Date(dateTimeString);
+        
+        // Convert to Pacific timezone epoch
+        const pacificDate = new Date(date.toLocaleString('en-US', {timeZone: 'America/Los_Angeles'}));
+        return Math.floor(pacificDate.getTime() / 1000);
+    }
+
     generateUUID() {
         return 'xxxxxxxx-xxxx-4xxx-yxxx-xxxxxxxxxxxx'.replace(/[xy]/g, function(c) {
             const r = Math.random() * 16 | 0;
@@ -1488,25 +1515,23 @@ class CheckInApp {
         console.log('📈 Performance: Created lookup maps for', this.teamsBasic.length, 'teams (basic) and', this.referees.length, 'referees');
         
         // Filter events based on date and toggle
-        const today = new Date();
-        today.setHours(0, 0, 0, 0);
+        const todayEpoch = Math.floor(new Date().setHours(0, 0, 0, 0) / 1000); // Convert to epoch seconds
         
         let eventsToShow = this.events.filter(event => {
-            const eventDate = new Date(event.date);
-            eventDate.setHours(0, 0, 0, 0);
+            // Use epoch timestamp for comparison (much simpler!)
+            const eventEpoch = event.date_epoch;
             
             if (showPastEvents) {
-                return eventDate < today; // Show only past events
+                return eventEpoch < todayEpoch; // Show only past events
             } else {
-                return eventDate >= today; // Show only future events
+                return eventEpoch >= todayEpoch; // Show only future events
             }
         });
         
         // Sort chronologically (future events ascending, past events descending)
         eventsToShow.sort((a, b) => {
-            const dateA = new Date(a.date);
-            const dateB = new Date(b.date);
-            return showPastEvents ? dateB - dateA : dateA - dateB;
+            // Simple epoch comparison - no Date object creation needed!
+            return showPastEvents ? b.date_epoch - a.date_epoch : a.date_epoch - b.date_epoch;
         });
         
         if (eventsToShow.length === 0) {
@@ -1538,14 +1563,14 @@ class CheckInApp {
                 <div class="matches-container">
                     ${event.matches
                         .sort((a, b) => {
-                            // Sort by time first
-                            if (a.time && b.time) {
-                                if (a.time !== b.time) {
-                                    return a.time.localeCompare(b.time);
+                            // Sort by epoch time first (much simpler!)
+                            if (a.time_epoch && b.time_epoch) {
+                                if (a.time_epoch !== b.time_epoch) {
+                                    return a.time_epoch - b.time_epoch; // Simple numeric comparison
                                 }
-                            } else if (a.time && !b.time) {
+                            } else if (a.time_epoch && !b.time_epoch) {
                                 return -1;
-                            } else if (!a.time && b.time) {
+                            } else if (!a.time_epoch && b.time_epoch) {
                                 return 1;
                             }
                             
@@ -1657,7 +1682,7 @@ class CheckInApp {
                                     </div>
                                 </div>
                                 ${match.field ? `<div class="match-field">Field: ${match.field}</div>` : ''}
-                                ${match.time ? `<div class="match-time">Time: ${match.time.substring(0, 5)}</div>` : ''}
+                                ${match.time_epoch ? `<div class="match-time">Time: ${epochToPacificTime(match.time_epoch)}</div>` : ''}
                                 ${mainReferee ? `<div class="match-referee">Referee: ${mainReferee.name}${assistantReferee ? `, ${assistantReferee.name}` : ''}</div>` : ''}
                                 ${cardsDisplay ? `<div class="match-cards">Cards: ${cardsDisplay}</div>` : ''}
                                 <div class="match-actions">
@@ -4881,7 +4906,14 @@ Please check the browser console (F12) for more details.`);
             homeTeamId: homeTeamId,
             awayTeamId: awayTeamId,
             field: field || null,
-            time: time || null,
+            time_epoch: time ? this.matchTimeStringToEpoch(
+                epochToPacificDate(event.date_epoch, { 
+                    year: 'numeric', 
+                    month: '2-digit', 
+                    day: '2-digit' 
+                }).split('/').map(x => x.padStart(2, '0')).reverse().join('-'), // Convert MM/DD/YYYY to YYYY-MM-DD
+                time
+            ) : null,
             mainRefereeId: mainRefereeId || null,
             assistantRefereeId: assistantRefereeId || null,
             notes: notes,
@@ -5009,9 +5041,9 @@ Please check the browser console (F12) for more details.`);
                 <label class="form-label">Match Time</label>
                 <select class="form-select" id="edit-match-time">
                     <option value="">Select time</option>
-                    <option value="09:00" ${(match.time === '09:00:00' || match.time === '09:00' || match.time === '9:00') ? 'selected' : ''}>9:00 AM</option>
-                    <option value="11:00" ${(match.time === '11:00:00' || match.time === '11:00') ? 'selected' : ''}>11:00 AM</option>
-                    <option value="13:00" ${(match.time === '13:00:00' || match.time === '13:00' || match.time === '1:00') ? 'selected' : ''}>1:00 PM</option>
+                    <option value="09:00" ${this.matchTimeEpochToString(match.time_epoch) === '09:00' ? 'selected' : ''}>9:00 AM</option>
+                    <option value="11:00" ${this.matchTimeEpochToString(match.time_epoch) === '11:00' ? 'selected' : ''}>11:00 AM</option>
+                    <option value="13:00" ${this.matchTimeEpochToString(match.time_epoch) === '13:00' ? 'selected' : ''}>1:00 PM</option>
                 </select>
             </div>
             <div class="form-group">
@@ -5060,7 +5092,20 @@ Please check the browser console (F12) for more details.`);
         
         // Update match data
         match.field = field || null;
-        match.time = time || null;
+        
+        // Convert time string to epoch timestamp by combining with event date
+        if (time) {
+            const eventDate = epochToPacificDate(event.date_epoch, { 
+                year: 'numeric', 
+                month: '2-digit', 
+                day: '2-digit' 
+            }).split('/');
+            const eventDateString = `${eventDate[2]}-${eventDate[0].padStart(2, '0')}-${eventDate[1].padStart(2, '0')}`; // Convert MM/DD/YYYY to YYYY-MM-DD
+            match.time_epoch = this.matchTimeStringToEpoch(eventDateString, time);
+        } else {
+            match.time_epoch = null;
+        }
+        
         match.mainRefereeId = mainRefereeId || null;
         match.assistantRefereeId = assistantRefereeId || null;
         match.notes = notes;
