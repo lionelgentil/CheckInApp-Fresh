@@ -312,6 +312,20 @@ try {
             }
             break;
             
+        case 'event':
+            // Individual event operations (more efficient)
+            if ($method === 'POST') {
+                requireAuth();
+                createSingleEvent($db);
+            } elseif ($method === 'PUT') {
+                requireAuth();
+                updateSingleEvent($db);
+            } elseif ($method === 'DELETE') {
+                requireAuth();
+                deleteSingleEvent($db);
+            }
+            break;
+            
         case 'attendance':
             // Attendance-only endpoint for view.html (no admin auth required)
             if ($method === 'POST') {
@@ -869,6 +883,242 @@ function cleanupStringDateColumns($db) {
             'results' => $results ?? [],
             'timestamp' => date('c')
         ]);
+    }
+}
+
+// Individual event operations for efficiency (replaces bulk operations)
+function createSingleEvent($db) {
+    $input = json_decode(file_get_contents('php://input'), true);
+    if (!$input || !isset($input['id']) || !isset($input['name'])) {
+        http_response_code(400);
+        echo json_encode(['error' => 'Event ID and name are required']);
+        return;
+    }
+    
+    $db->beginTransaction();
+    
+    try {
+        // Use epoch timestamp directly (no more string date conversion)
+        $dateEpoch = $input['date_epoch'] ?? time();
+        
+        // Create the event with pure epoch format
+        $stmt = $db->prepare('
+            INSERT INTO events (id, name, date_epoch, description)
+            VALUES (?, ?, ?, ?)
+        ');
+        $stmt->execute([
+            $input['id'],
+            $input['name'],
+            $dateEpoch, // Pure epoch storage
+            $input['description'] ?? ''
+        ]);
+        
+        // Create matches if provided
+        if (isset($input['matches']) && is_array($input['matches'])) {
+            foreach ($input['matches'] as $match) {
+                // Use epoch timestamp directly (no more string time conversion)
+                $matchTimeEpoch = $match['time_epoch'] ?? time();
+                
+                // Store pure epoch format
+                $stmt = $db->prepare('
+                    INSERT INTO matches (id, event_id, home_team_id, away_team_id, field, match_time_epoch, main_referee_id, assistant_referee_id, notes, home_score, away_score, match_status)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ');
+                $stmt->execute([
+                    $match['id'],
+                    $input['id'],
+                    $match['homeTeamId'],
+                    $match['awayTeamId'],
+                    $match['field'] ?? null,
+                    $matchTimeEpoch, // Pure epoch storage
+                    $match['mainRefereeId'] ?? null,
+                    $match['assistantRefereeId'] ?? null,
+                    $match['notes'] ?? null,
+                    $match['homeScore'] ?? null,
+                    $match['awayScore'] ?? null,
+                    $match['matchStatus'] ?? 'scheduled'
+                ]);
+            }
+        }
+        
+        $db->commit();
+        echo json_encode(['success' => true, 'message' => 'Event created successfully']);
+        
+    } catch (Exception $e) {
+        $db->rollBack();
+        throw $e;
+    }
+}
+
+function updateSingleEvent($db) {
+    $input = json_decode(file_get_contents('php://input'), true);
+    $eventId = $_GET['id'] ?? $input['id'] ?? null;
+    
+    if (!$eventId) {
+        http_response_code(400);
+        echo json_encode(['error' => 'Event ID is required']);
+        return;
+    }
+    
+    $db->beginTransaction();
+    
+    try {
+        // Update event basic info
+        if (isset($input['name']) || isset($input['date_epoch']) || isset($input['description'])) {
+            $updates = [];
+            $params = [];
+            
+            if (isset($input['name'])) {
+                $updates[] = 'name = ?';
+                $params[] = $input['name'];
+            }
+            
+            if (isset($input['date_epoch'])) {
+                $updates[] = 'date_epoch = ?';
+                $params[] = $input['date_epoch'];
+            }
+            
+            if (isset($input['description'])) {
+                $updates[] = 'description = ?';
+                $params[] = $input['description'];
+            }
+            
+            $params[] = $eventId;
+            $sql = 'UPDATE events SET ' . implode(', ', $updates) . ' WHERE id = ?';
+            $stmt = $db->prepare($sql);
+            $stmt->execute($params);
+        }
+        
+        // Update matches if provided (replace all matches for this event)
+        if (isset($input['matches'])) {
+            // Remove existing matches for this event
+            $db->prepare('DELETE FROM match_cards WHERE match_id IN (SELECT id FROM matches WHERE event_id = ?)')->execute([$eventId]);
+            $db->prepare('DELETE FROM match_attendees WHERE match_id IN (SELECT id FROM matches WHERE event_id = ?)')->execute([$eventId]);
+            $db->prepare('DELETE FROM matches WHERE event_id = ?')->execute([$eventId]);
+            
+            // Add new matches
+            foreach ($input['matches'] as $match) {
+                $matchTimeEpoch = $match['time_epoch'] ?? time();
+                
+                $stmt = $db->prepare('
+                    INSERT INTO matches (id, event_id, home_team_id, away_team_id, field, match_time_epoch, main_referee_id, assistant_referee_id, notes, home_score, away_score, match_status)
+                    VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                ');
+                $stmt->execute([
+                    $match['id'],
+                    $eventId,
+                    $match['homeTeamId'],
+                    $match['awayTeamId'],
+                    $match['field'] ?? null,
+                    $matchTimeEpoch,
+                    $match['mainRefereeId'] ?? null,
+                    $match['assistantRefereeId'] ?? null,
+                    $match['notes'] ?? null,
+                    $match['homeScore'] ?? null,
+                    $match['awayScore'] ?? null,
+                    $match['matchStatus'] ?? 'scheduled'
+                ]);
+                
+                // Add attendees if provided
+                if (isset($match['homeTeamAttendees'])) {
+                    foreach ($match['homeTeamAttendees'] as $attendee) {
+                        $checkedInEpoch = $attendee['checkedInAt_epoch'] ?? time();
+                        $stmt = $db->prepare('
+                            INSERT INTO match_attendees (match_id, member_id, team_type, checked_in_at, checked_in_at_epoch)
+                            VALUES (?, ?, ?, CURRENT_TIMESTAMP, ?)
+                        ');
+                        $stmt->execute([$match['id'], $attendee['memberId'], 'home', $checkedInEpoch]);
+                    }
+                }
+                
+                if (isset($match['awayTeamAttendees'])) {
+                    foreach ($match['awayTeamAttendees'] as $attendee) {
+                        $checkedInEpoch = $attendee['checkedInAt_epoch'] ?? time();
+                        $stmt = $db->prepare('
+                            INSERT INTO match_attendees (match_id, member_id, team_type, checked_in_at, checked_in_at_epoch)
+                            VALUES (?, ?, ?, CURRENT_TIMESTAMP, ?)
+                        ');
+                        $stmt->execute([$match['id'], $attendee['memberId'], 'away', $checkedInEpoch]);
+                    }
+                }
+                
+                // Add cards if provided
+                if (isset($match['cards']) && is_array($match['cards'])) {
+                    foreach ($match['cards'] as $card) {
+                        $stmt = $db->prepare('
+                            INSERT INTO match_cards (match_id, member_id, team_type, card_type, reason, notes, minute)
+                            VALUES (?, ?, ?, ?, ?, ?, ?)
+                        ');
+                        $stmt->execute([
+                            $match['id'],
+                            $card['memberId'],
+                            $card['teamType'],
+                            $card['cardType'],
+                            $card['reason'] ?? null,
+                            $card['notes'] ?? null,
+                            $card['minute'] ?? null
+                        ]);
+                    }
+                }
+            }
+        }
+        
+        // Update general attendees if provided
+        if (isset($input['attendees'])) {
+            // Remove existing attendees
+            $db->prepare('DELETE FROM general_attendees WHERE event_id = ?')->execute([$eventId]);
+            
+            // Add new attendees
+            foreach ($input['attendees'] as $attendee) {
+                $checkedInEpoch = $attendee['checkedInAt_epoch'] ?? time();
+                $stmt = $db->prepare('
+                    INSERT INTO general_attendees (event_id, member_id, name, team_name, status, checked_in_at_epoch)
+                    VALUES (?, ?, ?, ?, ?, ?)
+                ');
+                $stmt->execute([
+                    $eventId,
+                    $attendee['memberId'],
+                    $attendee['name'],
+                    $attendee['team'] ?? null,
+                    $attendee['status'] ?? 'present',
+                    $checkedInEpoch
+                ]);
+            }
+        }
+        
+        $db->commit();
+        echo json_encode(['success' => true, 'message' => 'Event updated successfully']);
+        
+    } catch (Exception $e) {
+        $db->rollBack();
+        throw $e;
+    }
+}
+
+function deleteSingleEvent($db) {
+    $eventId = $_GET['id'] ?? null;
+    
+    if (!$eventId) {
+        http_response_code(400);
+        echo json_encode(['error' => 'Event ID is required']);
+        return;
+    }
+    
+    try {
+        // Delete event (cascades to matches, attendees, cards due to foreign key constraints)
+        $stmt = $db->prepare('DELETE FROM events WHERE id = ?');
+        $result = $stmt->execute([$eventId]);
+        
+        if ($result && $stmt->rowCount() > 0) {
+            echo json_encode(['success' => true, 'message' => 'Event deleted successfully']);
+        } else {
+            http_response_code(404);
+            echo json_encode(['error' => 'Event not found']);
+        }
+        
+    } catch (Exception $e) {
+        http_response_code(500);
+        echo json_encode(['error' => 'Failed to delete event: ' . $e->getMessage()]);
     }
 }
 

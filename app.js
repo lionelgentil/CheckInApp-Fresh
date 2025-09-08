@@ -469,6 +469,69 @@ class CheckInApp {
             throw error;
         }
     }
+
+    // =====================================
+    // EFFICIENT INDIVIDUAL EVENT OPERATIONS (New)
+    // =====================================
+    
+    async createSingleEvent(eventData) {
+        try {
+            const result = await this.fetch('/api/event', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(eventData)
+            });
+            
+            // Clear cache after successful creation to ensure fresh data on next load
+            this.clearCache();
+            console.log('🧹 Cache cleared after event creation');
+            
+            return result;
+        } catch (error) {
+            console.error('Error creating event:', error);
+            throw error;
+        }
+    }
+    
+    async updateSingleEvent(eventId, eventData) {
+        try {
+            const result = await this.fetch(`/api/event?id=${encodeURIComponent(eventId)}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(eventData)
+            });
+            
+            // Clear cache after successful update to ensure fresh data on next load
+            this.clearCache();
+            console.log('🧹 Cache cleared after event update');
+            
+            return result;
+        } catch (error) {
+            console.error('Error updating event:', error);
+            throw error;
+        }
+    }
+    
+    async deleteSingleEvent(eventId) {
+        try {
+            const result = await this.fetch(`/api/event?id=${encodeURIComponent(eventId)}`, {
+                method: 'DELETE'
+            });
+            
+            // Clear cache after successful deletion to ensure fresh data on next load
+            this.clearCache();
+            console.log('🧹 Cache cleared after event deletion');
+            
+            return result;
+        } catch (error) {
+            console.error('Error deleting event:', error);
+            throw error;
+        }
+    }
     
     async loadReferees() {
         try {
@@ -2964,29 +3027,44 @@ Please check the browser console (F12) for more details.`);
         }
         
         if (this.currentEditingEvent) {
-            // Edit existing event
+            // Update existing event
             this.currentEditingEvent.name = name;
-            this.currentEditingEvent.date = date;
+            this.currentEditingEvent.date_epoch = this.dateStringToEpoch(date);
             this.currentEditingEvent.description = description;
+            
+            try {
+                // Use efficient single-event update
+                await this.updateSingleEvent(this.currentEditingEvent.id, {
+                    name: name,
+                    date_epoch: this.dateStringToEpoch(date),
+                    description: description
+                });
+                await this.loadEvents(); // Reload events to get fresh data
+                this.renderEvents();
+                this.closeModal();
+            } catch (error) {
+                alert('Failed to update event. Please try again.');
+            }
         } else {
             // Add new event
             const newEvent = {
                 id: this.generateUUID(),
                 name: name,
-                date: date,
+                date_epoch: this.dateStringToEpoch(date), // Use epoch timestamp
                 description: description,
                 matches: [],
                 attendees: []
             };
-            this.events.push(newEvent);
-        }
-        
-        try {
-            await this.saveEvents();
-            this.renderEvents();
-            this.closeModal();
-        } catch (error) {
-            alert('Failed to save event. Please try again.');
+            
+            try {
+                // Use efficient single-event creation
+                await this.createSingleEvent(newEvent);
+                await this.loadEvents(); // Reload events to get fresh data
+                this.renderEvents();
+                this.closeModal();
+            } catch (error) {
+                alert('Failed to create event. Please try again.');
+            }
         }
     }
     
@@ -2995,10 +3073,10 @@ Please check the browser console (F12) for more details.`);
             return;
         }
         
-        this.events = this.events.filter(e => e.id !== eventId);
-        
         try {
-            await this.saveEvents();
+            // Use efficient single-event deletion
+            await this.deleteSingleEvent(eventId);
+            await this.loadEvents(); // Reload events to get fresh data
             this.renderEvents();
         } catch (error) {
             alert('Failed to delete event. Please try again.');
