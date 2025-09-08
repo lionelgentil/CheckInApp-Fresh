@@ -2876,6 +2876,8 @@ class CheckInViewApp {
                 if (member) {
                     if (member.gender === 'male') homeMalePresent++;
                     else if (member.gender === 'female') homeFemalePresent++;
+                } else {
+                    console.log('❌ Home attendee not found in roster:', attendeeId);
                 }
             });
             
@@ -2885,7 +2887,8 @@ class CheckInViewApp {
                 femaleTotal: homeFemaleTotal,
                 malePresent: homeMalePresent,
                 femalePresent: homeFemalePresent,
-                attendeesIds: homeAttendees
+                attendeesIds: homeAttendees,
+                firstFewMemberIds: homeMembers.slice(0, 3).map(m => ({id: m.id, name: m.name}))
             });
             
             const femaleCountEl = homeCountElement.querySelector('.female-count');
@@ -2929,6 +2932,8 @@ class CheckInViewApp {
                 if (member) {
                     if (member.gender === 'male') awayMalePresent++;
                     else if (member.gender === 'female') awayFemalePresent++;
+                } else {
+                    console.log('❌ Away attendee not found in roster:', attendeeId);
                 }
             });
             
@@ -2938,7 +2943,8 @@ class CheckInViewApp {
                 femaleTotal: awayFemaleTotal,
                 malePresent: awayMalePresent,
                 femalePresent: awayFemalePresent,
-                attendeesIds: awayAttendees
+                attendeesIds: awayAttendees,
+                firstFewMemberIds: awayMembers.slice(0, 3).map(m => ({id: m.id, name: m.name}))
             });
             
             const femaleCountEl = awayCountElement.querySelector('.female-count');
