@@ -761,6 +761,20 @@ try {
             }
             break;
             
+        case 'performance-test':
+            // Performance testing endpoint to measure database vs application overhead
+            if ($method === 'GET') {
+                performanceTest($db);
+            }
+            break;
+            
+        case 'db-indexes':
+            // List all database indexes for optimization analysis
+            if ($method === 'GET') {
+                getDatabaseIndexes($db);
+            }
+            break;
+            
         default:
             http_response_code(404);
             echo json_encode(['error' => 'Endpoint not found']);
@@ -3242,6 +3256,22 @@ function initializeDatabase($db) {
         $db->exec('CREATE INDEX IF NOT EXISTS idx_match_cards_match_id ON match_cards(match_id)');
         $db->exec('CREATE INDEX IF NOT EXISTS idx_matches_event_time ON matches(event_id, match_time)');
         $db->exec('CREATE INDEX IF NOT EXISTS idx_team_members_name ON team_members(team_id, name)');
+        
+        // NEW: Critical indexes for disciplinary records performance
+        $db->exec('CREATE INDEX IF NOT EXISTS idx_team_members_id_team_id ON team_members(id, team_id)'); // For JOIN optimization
+        $db->exec('CREATE INDEX IF NOT EXISTS idx_teams_id_name ON teams(id, name)'); // For team lookup optimization
+        $db->exec('CREATE INDEX IF NOT EXISTS idx_player_disciplinary_sort ON player_disciplinary_records(member_id, incident_date_epoch DESC, created_at_epoch DESC)'); // For sorted queries
+        $db->exec('CREATE INDEX IF NOT EXISTS idx_player_disciplinary_team_sort ON player_disciplinary_records(incident_date_epoch DESC, created_at_epoch DESC)'); // For team-based queries
+        
+        // NEW: Epoch timestamp indexes for time-based queries
+        $db->exec('CREATE INDEX IF NOT EXISTS idx_events_date_epoch ON events(date_epoch)');
+        $db->exec('CREATE INDEX IF NOT EXISTS idx_matches_time_epoch ON matches(match_time_epoch)');
+        $db->exec('CREATE INDEX IF NOT EXISTS idx_match_attendees_time ON match_attendees(checked_in_at_epoch)');
+        $db->exec('CREATE INDEX IF NOT EXISTS idx_general_attendees_time ON general_attendees(checked_in_at_epoch)');
+        
+        // NEW: Active members optimization
+        $db->exec('CREATE INDEX IF NOT EXISTS idx_team_members_active ON team_members(active, team_id) WHERE active IS NULL OR active = TRUE');
+        
     } catch (Exception $e) {
         // Indexes might already exist, ignore errors
     }
@@ -4784,5 +4814,224 @@ function deleteSingleMatch($db) {
         http_response_code(500);
         echo json_encode(['error' => 'Failed to delete match: ' . $e->getMessage()]);
     }
+}
+
+// Performance testing functions
+function performanceTest($db) {
+    try {
+        $results = [];
+        $testMemberId = $_GET['member_id'] ?? null;
+        
+        // Test 1: Basic connection test
+        $start = microtime(true);
+        $db->query('SELECT 1')->fetch();
+        $connectionTime = (microtime(true) - $start) * 1000;
+        $results['connection_test_ms'] = round($connectionTime, 2);
+        
+        // Test 2: Simple query without joins
+        $start = microtime(true);
+        $stmt = $db->prepare('SELECT COUNT(*) FROM player_disciplinary_records WHERE member_id = ?');
+        $stmt->execute([$testMemberId ?: 'test']);
+        $simpleQueryTime = (microtime(true) - $start) * 1000;
+        $results['simple_query_ms'] = round($simpleQueryTime, 2);
+        
+        // Test 3: Complex join query (same as your disciplinary records endpoint)
+        $start = microtime(true);
+        $stmt = $db->prepare('
+            SELECT pdr.*, tm.name as member_name, t.name as team_name
+            FROM player_disciplinary_records pdr
+            JOIN team_members tm ON pdr.member_id = tm.id
+            JOIN teams t ON tm.team_id = t.id
+            WHERE pdr.member_id = ?
+            ORDER BY pdr.incident_date_epoch DESC, pdr.created_at_epoch DESC
+        ');
+        $stmt->execute([$testMemberId ?: 'test']);
+        $records = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        $complexQueryTime = (microtime(true) - $start) * 1000;
+        $results['complex_query_ms'] = round($complexQueryTime, 2);
+        $results['records_found'] = count($records);
+        
+        // Test 4: Multiple simple queries to test connection overhead
+        $start = microtime(true);
+        for ($i = 0; $i < 5; $i++) {
+            $db->query('SELECT 1')->fetch();
+        }
+        $multipleConnectionTime = (microtime(true) - $start) * 1000;
+        $results['multiple_connections_ms'] = round($multipleConnectionTime, 2);
+        $results['avg_connection_overhead_ms'] = round($multipleConnectionTime / 5, 2);
+        
+        // Test 5: Table stats for optimization analysis
+        $tableStats = [];
+        $tables = ['player_disciplinary_records', 'team_members', 'teams'];
+        foreach ($tables as $table) {
+            $stmt = $db->prepare("SELECT COUNT(*) as count FROM $table");
+            $stmt->execute();
+            $tableStats[$table] = $stmt->fetch(PDO::FETCH_ASSOC)['count'];
+        }
+        $results['table_sizes'] = $tableStats;
+        
+        // Test 6: Query plan analysis (PostgreSQL EXPLAIN)
+        if ($testMemberId) {
+            try {
+                $stmt = $db->prepare('
+                    EXPLAIN (FORMAT JSON, ANALYZE, BUFFERS) 
+                    SELECT pdr.*, tm.name as member_name, t.name as team_name
+                    FROM player_disciplinary_records pdr
+                    JOIN team_members tm ON pdr.member_id = tm.id
+                    JOIN teams t ON tm.team_id = t.id
+                    WHERE pdr.member_id = ?
+                    ORDER BY pdr.incident_date_epoch DESC, pdr.created_at_epoch DESC
+                ');
+                $stmt->execute([$testMemberId]);
+                $queryPlan = $stmt->fetch(PDO::FETCH_ASSOC);
+                $results['query_plan'] = json_decode($queryPlan['QUERY PLAN'], true);
+            } catch (Exception $e) {
+                $results['query_plan_error'] = $e->getMessage();
+            }
+        }
+        
+        // Summary and recommendations
+        $results['performance_analysis'] = [
+            'total_test_time_ms' => round((microtime(true) - $start) * 1000, 2),
+            'recommendations' => []
+        ];
+        
+        if ($complexQueryTime > 100) {
+            $results['performance_analysis']['recommendations'][] = 'Complex query is slow (>100ms) - check indexes';
+        }
+        if ($connectionTime > 50) {
+            $results['performance_analysis']['recommendations'][] = 'Database connection is slow (>50ms) - possible network latency';
+        }
+        if ($simpleQueryTime > 20) {
+            $results['performance_analysis']['recommendations'][] = 'Simple queries are slow (>20ms) - possible database load';
+        }
+        
+        echo json_encode([
+            'success' => true,
+            'test_timestamp' => date('c'),
+            'test_member_id' => $testMemberId,
+            'results' => $results
+        ]);
+        
+    } catch (Exception $e) {
+        http_response_code(500);
+        echo json_encode([
+            'error' => 'Performance test failed: ' . $e->getMessage(),
+            'timestamp' => date('c')
+        ]);
+    }
+}
+
+function getDatabaseIndexes($db) {
+    try {
+        // Get all indexes for our main tables
+        $stmt = $db->query("
+            SELECT 
+                schemaname,
+                tablename,
+                indexname,
+                indexdef
+            FROM pg_indexes 
+            WHERE schemaname = 'public'
+            AND tablename IN ('player_disciplinary_records', 'team_members', 'teams', 'events', 'matches', 'match_attendees', 'general_attendees')
+            ORDER BY tablename, indexname
+        ");
+        
+        $indexes = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        // Also get table sizes
+        $stmt = $db->query("
+            SELECT 
+                schemaname,
+                tablename,
+                pg_size_pretty(pg_total_relation_size(schemaname||'.'||tablename)) as size,
+                pg_total_relation_size(schemaname||'.'||tablename) as size_bytes
+            FROM pg_tables 
+            WHERE schemaname = 'public'
+            AND tablename IN ('player_disciplinary_records', 'team_members', 'teams', 'events', 'matches', 'match_attendees', 'general_attendees')
+            ORDER BY pg_total_relation_size(schemaname||'.'||tablename) DESC
+        ");
+        
+        $tableSizes = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        echo json_encode([
+            'success' => true,
+            'indexes' => $indexes,
+            'table_sizes' => $tableSizes,
+            'timestamp' => date('c')
+        ]);
+        
+    } catch (Exception $e) {
+        http_response_code(500);
+        echo json_encode([
+            'error' => 'Failed to get database indexes: ' . $e->getMessage(),
+            'timestamp' => date('c')
+        ]);
+    }
+}
+
+// Enhanced getDisciplinaryRecords with performance logging
+function getDisciplinaryRecordsWithLogging($db) {
+    $startTime = microtime(true);
+    $memberId = $_GET['member_id'] ?? null;
+    $teamId = $_GET['team_id'] ?? null;
+    
+    error_log("=== DISCIPLINARY RECORDS PERFORMANCE TEST ===");
+    error_log("Member ID: " . ($memberId ?: 'null'));
+    error_log("Team ID: " . ($teamId ?: 'null'));
+    
+    if ($memberId) {
+        // Log query execution time
+        $queryStart = microtime(true);
+        $stmt = $db->prepare('
+            SELECT pdr.*, tm.name as member_name, t.name as team_name
+            FROM player_disciplinary_records pdr
+            JOIN team_members tm ON pdr.member_id = tm.id
+            JOIN teams t ON tm.team_id = t.id
+            WHERE pdr.member_id = ?
+            ORDER BY pdr.incident_date_epoch DESC, pdr.created_at_epoch DESC
+        ');
+        $stmt->execute([$memberId]);
+        $queryTime = (microtime(true) - $queryStart) * 1000;
+        error_log("Query execution time: " . round($queryTime, 2) . "ms");
+        
+        // Log fetch time
+        $fetchStart = microtime(true);
+        $records = [];
+        while ($record = $stmt->fetch(PDO::FETCH_ASSOC)) {
+            $records[] = [
+                'id' => $record['id'],
+                'memberId' => $record['member_id'],
+                'memberName' => $record['member_name'],
+                'teamName' => $record['team_name'],
+                'cardType' => $record['card_type'],
+                'reason' => $record['reason'],
+                'notes' => $record['notes'],
+                'incidentDate_epoch' => $record['incident_date_epoch'],
+                'suspensionMatches' => $record['suspension_matches'] ? (int)$record['suspension_matches'] : null,
+                'suspensionServed' => $record['suspension_served'] ? true : false,
+                'suspensionServedDate_epoch' => $record['suspension_served_date_epoch'],
+                'createdAt_epoch' => $record['created_at_epoch']
+            ];
+        }
+        $fetchTime = (microtime(true) - $fetchStart) * 1000;
+        error_log("Fetch and transform time: " . round($fetchTime, 2) . "ms");
+        error_log("Records found: " . count($records));
+        
+    } else {
+        // Handle other cases (team_id or all records)
+        $records = [];
+        error_log("Non-member query - using original function");
+        
+        // Call original function logic here for consistency
+        getDisciplinaryRecords($db);
+        return;
+    }
+    
+    $totalTime = (microtime(true) - $startTime) * 1000;
+    error_log("Total response time: " . round($totalTime, 2) . "ms");
+    error_log("=== END DISCIPLINARY RECORDS PERFORMANCE TEST ===");
+    
+    echo json_encode($records);
 }
 ?>
