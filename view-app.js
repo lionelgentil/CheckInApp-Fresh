@@ -2844,9 +2844,10 @@ class CheckInViewApp {
         const homeAttendees = match.homeTeamAttendees || [];
         const awayAttendees = match.awayTeamAttendees || [];
         
-        // Calculate gender-based attendance for home team
-        let homeAttendanceText = '';
-        if (this.currentHomeTeam) {
+        const homeCountElement = document.getElementById('home-attendance-count');
+        const awayCountElement = document.getElementById('away-attendance-count');
+        
+        if (homeCountElement && this.currentHomeTeam) {
             const homeMembers = this.currentHomeTeam.members;
             const homeMaleTotal = homeMembers.filter(m => m.gender === 'male').length;
             const homeFemaleTotal = homeMembers.filter(m => m.gender === 'female').length;
@@ -2860,15 +2861,27 @@ class CheckInViewApp {
                 }
             });
             
-            const parts = [];
-            if (homeFemaleTotal > 0) parts.push(`${homeFemalePresent}/${homeFemaleTotal} Female`);
-            if (homeMaleTotal > 0) parts.push(`${homeMalePresent}/${homeMaleTotal} Male`);
-            homeAttendanceText = parts.join(', ') || '0/0';
+            const femaleCountEl = homeCountElement.querySelector('.female-count');
+            const maleCountEl = homeCountElement.querySelector('.male-count');
+            if (femaleCountEl) {
+                if (homeFemaleTotal > 0) {
+                    femaleCountEl.textContent = `${homeFemalePresent}/${homeFemaleTotal} Female`;
+                    femaleCountEl.style.display = 'block';
+                } else {
+                    femaleCountEl.style.display = 'none';
+                }
+            }
+            if (maleCountEl) {
+                if (homeMaleTotal > 0) {
+                    maleCountEl.textContent = `${homeMalePresent}/${homeMaleTotal} Male`;
+                    maleCountEl.style.display = 'block';
+                } else {
+                    maleCountEl.style.display = 'none';
+                }
+            }
         }
         
-        // Calculate gender-based attendance for away team
-        let awayAttendanceText = '';
-        if (this.currentAwayTeam) {
+        if (awayCountElement && this.currentAwayTeam) {
             const awayMembers = this.currentAwayTeam.members;
             const awayMaleTotal = awayMembers.filter(m => m.gender === 'male').length;
             const awayFemaleTotal = awayMembers.filter(m => m.gender === 'female').length;
@@ -2882,17 +2895,25 @@ class CheckInViewApp {
                 }
             });
             
-            const parts = [];
-            if (awayFemaleTotal > 0) parts.push(`${awayFemalePresent}/${awayFemaleTotal} Female`);
-            if (awayMaleTotal > 0) parts.push(`${awayMalePresent}/${awayMaleTotal} Male`);
-            awayAttendanceText = parts.join(', ') || '0/0';
+            const femaleCountEl = awayCountElement.querySelector('.female-count');
+            const maleCountEl = awayCountElement.querySelector('.male-count');
+            if (femaleCountEl) {
+                if (awayFemaleTotal > 0) {
+                    femaleCountEl.textContent = `${awayFemalePresent}/${awayFemaleTotal} Female`;
+                    femaleCountEl.style.display = 'block';
+                } else {
+                    femaleCountEl.style.display = 'none';
+                }
+            }
+            if (maleCountEl) {
+                if (awayMaleTotal > 0) {
+                    maleCountEl.textContent = `${awayMalePresent}/${awayMaleTotal} Male`;
+                    maleCountEl.style.display = 'block';
+                } else {
+                    maleCountEl.style.display = 'none';
+                }
+            }
         }
-        
-        const homeCountElement = document.getElementById('home-attendance-count');
-        const awayCountElement = document.getElementById('away-attendance-count');
-        
-        if (homeCountElement) homeCountElement.textContent = homeAttendanceText;
-        if (awayCountElement) awayCountElement.textContent = awayAttendanceText;
     }
     
     // Initialize the grid view with data
