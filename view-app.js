@@ -2835,16 +2835,58 @@ class CheckInViewApp {
     }
     
     updateAttendanceCounts(match) {
-        const homeCount = match.homeTeamAttendees ? match.homeTeamAttendees.length : 0;
-        const awayCount = match.awayTeamAttendees ? match.awayTeamAttendees.length : 0;
-        const homeTotalPlayers = this.currentHomeTeam ? this.currentHomeTeam.members.length : 0;
-        const awayTotalPlayers = this.currentAwayTeam ? this.currentAwayTeam.members.length : 0;
+        const homeAttendees = match.homeTeamAttendees || [];
+        const awayAttendees = match.awayTeamAttendees || [];
+        
+        // Calculate gender-based attendance for home team
+        let homeAttendanceText = '';
+        if (this.currentHomeTeam) {
+            const homeMembers = this.currentHomeTeam.members;
+            const homeMaleTotal = homeMembers.filter(m => m.gender === 'male').length;
+            const homeFemaleTotal = homeMembers.filter(m => m.gender === 'female').length;
+            
+            let homeMalePresent = 0, homeFemalePresent = 0;
+            homeAttendees.forEach(attendeeId => {
+                const member = homeMembers.find(m => m.id === attendeeId);
+                if (member) {
+                    if (member.gender === 'male') homeMalePresent++;
+                    else if (member.gender === 'female') homeFemalePresent++;
+                }
+            });
+            
+            const parts = [];
+            if (homeFemaleTotal > 0) parts.push(`${homeFemalePresent}/${homeFemaleTotal} Female`);
+            if (homeMaleTotal > 0) parts.push(`${homeMalePresent}/${homeMaleTotal} Male`);
+            homeAttendanceText = parts.join(', ') || '0/0';
+        }
+        
+        // Calculate gender-based attendance for away team
+        let awayAttendanceText = '';
+        if (this.currentAwayTeam) {
+            const awayMembers = this.currentAwayTeam.members;
+            const awayMaleTotal = awayMembers.filter(m => m.gender === 'male').length;
+            const awayFemaleTotal = awayMembers.filter(m => m.gender === 'female').length;
+            
+            let awayMalePresent = 0, awayFemalePresent = 0;
+            awayAttendees.forEach(attendeeId => {
+                const member = awayMembers.find(m => m.id === attendeeId);
+                if (member) {
+                    if (member.gender === 'male') awayMalePresent++;
+                    else if (member.gender === 'female') awayFemalePresent++;
+                }
+            });
+            
+            const parts = [];
+            if (awayFemaleTotal > 0) parts.push(`${awayFemalePresent}/${awayFemaleTotal} Female`);
+            if (awayMaleTotal > 0) parts.push(`${awayMalePresent}/${awayMaleTotal} Male`);
+            awayAttendanceText = parts.join(', ') || '0/0';
+        }
         
         const homeCountElement = document.getElementById('home-attendance-count');
         const awayCountElement = document.getElementById('away-attendance-count');
         
-        if (homeCountElement) homeCountElement.textContent = `${homeCount}/${homeTotalPlayers}`;
-        if (awayCountElement) awayCountElement.textContent = `${awayCount}/${awayTotalPlayers}`;
+        if (homeCountElement) homeCountElement.textContent = homeAttendanceText;
+        if (awayCountElement) awayCountElement.textContent = awayAttendanceText;
     }
     
     // Initialize the grid view with data

@@ -1459,10 +1459,48 @@ class CheckInApp {
                         const mainReferee = match.mainRefereeId ? refereeLookup.get(match.mainRefereeId) : null;
                         const assistantReferee = match.assistantRefereeId ? refereeLookup.get(match.assistantRefereeId) : null;
                         
-                        const homeAttendanceCount = match.homeTeamAttendees ? match.homeTeamAttendees.length : 0;
-                        const awayAttendanceCount = match.awayTeamAttendees ? match.awayTeamAttendees.length : 0;
-                        const homeTotalPlayers = homeTeam ? homeTeam.memberCount : 0;
-                        const awayTotalPlayers = awayTeam ? awayTeam.memberCount : 0;
+                        // Calculate gender-based attendance counts
+                        let homeAttendanceText = '';
+                        if (homeTeam && homeTeam.members) {
+                            const homeAttendees = match.homeTeamAttendees || [];
+                            const homeMaleTotal = homeTeam.members.filter(m => m.gender === 'male').length;
+                            const homeFemaleTotal = homeTeam.members.filter(m => m.gender === 'female').length;
+                            
+                            let homeMalePresent = 0, homeFemalePresent = 0;
+                            homeAttendees.forEach(attendeeId => {
+                                const member = homeTeam.members.find(m => m.id === attendeeId);
+                                if (member) {
+                                    if (member.gender === 'male') homeMalePresent++;
+                                    else if (member.gender === 'female') homeFemalePresent++;
+                                }
+                            });
+                            
+                            const parts = [];
+                            if (homeFemaleTotal > 0) parts.push(`${homeFemalePresent}/${homeFemaleTotal} Female`);
+                            if (homeMaleTotal > 0) parts.push(`${homeMalePresent}/${homeMaleTotal} Male`);
+                            homeAttendanceText = parts.join(', ') || '0/0';
+                        }
+                        
+                        let awayAttendanceText = '';
+                        if (awayTeam && awayTeam.members) {
+                            const awayAttendees = match.awayTeamAttendees || [];
+                            const awayMaleTotal = awayTeam.members.filter(m => m.gender === 'male').length;
+                            const awayFemaleTotal = awayTeam.members.filter(m => m.gender === 'female').length;
+                            
+                            let awayMalePresent = 0, awayFemalePresent = 0;
+                            awayAttendees.forEach(attendeeId => {
+                                const member = awayTeam.members.find(m => m.id === attendeeId);
+                                if (member) {
+                                    if (member.gender === 'male') awayMalePresent++;
+                                    else if (member.gender === 'female') awayFemalePresent++;
+                                }
+                            });
+                            
+                            const parts = [];
+                            if (awayFemaleTotal > 0) parts.push(`${awayFemalePresent}/${awayFemaleTotal} Female`);
+                            if (awayMaleTotal > 0) parts.push(`${awayMalePresent}/${awayMaleTotal} Male`);
+                            awayAttendanceText = parts.join(', ') || '0/0';
+                        }
                         
                         // Match status and score display
                         const hasScore = match.homeScore !== null && match.awayScore !== null;
@@ -1488,7 +1526,7 @@ class CheckInApp {
                                     <div class="team-info-match">
                                         <span class="team-name-match">${homeTeam ? homeTeam.name : 'Unknown Team'}</span>
                                         ${homeTeam && homeTeam.category ? `<div class="team-category-small">${homeTeam.category}</div>` : ''}
-                                        <div class="attendance-count">👥 ${homeAttendanceCount}/${homeTotalPlayers}</div>
+                                        <div class="attendance-count">👥 ${homeAttendanceText}</div>
                                     </div>
                                     <div class="vs-text">
                                         ${hasScore ? scoreDisplay : 'VS'}
@@ -1497,7 +1535,7 @@ class CheckInApp {
                                     <div class="team-info-match">
                                         <span class="team-name-match">${awayTeam ? awayTeam.name : 'Unknown Team'}</span>
                                         ${awayTeam && awayTeam.category ? `<div class="team-category-small">${awayTeam.category}</div>` : ''}
-                                        <div class="attendance-count">👥 ${awayAttendanceCount}/${awayTotalPlayers}</div>
+                                        <div class="attendance-count">👥 ${awayAttendanceText}</div>
                                     </div>
                                 </div>
                                 ${match.field ? `<div class="match-field">Field: ${match.field}</div>` : ''}
