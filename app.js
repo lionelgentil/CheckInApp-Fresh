@@ -4807,7 +4807,7 @@ Please check the browser console (F12) for more details.`);
     
     // Match Management
     showAddMatchModal(eventId) {
-        if (this.teams.length < 2) {
+        if (this.teamsBasic.length < 2) {
             alert('You need at least 2 teams to create a match');
             return;
         }
@@ -4817,14 +4817,14 @@ Please check the browser console (F12) for more details.`);
                 <label class="form-label">Home Team *</label>
                 <select class="form-select" id="home-team" required>
                     <option value="">Select home team</option>
-                    ${this.teams.map(team => `<option value="${team.id}">${team.name}</option>`).join('')}
+                    ${this.teamsBasic.map(team => `<option value="${team.id}">${team.name}</option>`).join('')}
                 </select>
             </div>
             <div class="form-group">
                 <label class="form-label">Away Team *</label>
                 <select class="form-select" id="away-team" required>
                     <option value="">Select away team</option>
-                    ${this.teams.map(team => `<option value="${team.id}">${team.name}</option>`).join('')}
+                    ${this.teamsBasic.map(team => `<option value="${team.id}">${team.name}</option>`).join('')}
                 </select>
             </div>
             <div class="form-group">
