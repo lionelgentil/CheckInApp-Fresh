@@ -3497,7 +3497,7 @@ function updateAttendanceOnly($db) {
         // First check if check-in is locked for this match
         // Get match details to check lock status
         $stmt = $db->prepare('
-            SELECT e.date as event_date, m.match_time 
+            SELECT e.date_epoch as event_date_epoch, m.match_time, m.match_time_epoch 
             FROM events e 
             JOIN matches m ON e.id = m.event_id 
             WHERE e.id = ? AND m.id = ?
@@ -3508,23 +3508,17 @@ function updateAttendanceOnly($db) {
         error_log('Match info: ' . json_encode($matchInfo));
         
         if ($matchInfo) {
-            // NEW: Try to use epoch timestamp first (more reliable)
-            $stmt = $db->prepare('SELECT match_time_epoch FROM matches WHERE id = ?');
-            $stmt->execute([$matchId]);
-            $matchEpochResult = $stmt->fetch(PDO::FETCH_ASSOC);
-            
-            error_log('DEBUG: Match epoch result: ' . json_encode($matchEpochResult));
-            
+            // Use epoch timestamp (more reliable)
             $isLocked = false;
-            if ($matchEpochResult && $matchEpochResult['match_time_epoch']) {
+            if ($matchInfo['match_time_epoch']) {
                 // Use new epoch-based lock function (much more reliable!)
-                error_log('DEBUG: Using EPOCH-based lock check with timestamp: ' . $matchEpochResult['match_time_epoch']);
-                $isLocked = isCheckInLockedForMatchEpoch($matchEpochResult['match_time_epoch']);
+                error_log('DEBUG: Using EPOCH-based lock check with timestamp: ' . $matchInfo['match_time_epoch']);
+                $isLocked = isCheckInLockedForMatchEpoch($matchInfo['match_time_epoch']);
                 $lockMethod = 'epoch';
             } else {
-                // Fallback to legacy string-based lock function
+                // Fallback to legacy string-based lock function if epoch not available
                 error_log('DEBUG: Using LEGACY string-based lock check - bypassLock=' . ($bypassLock ? 'true' : 'false'));
-                $isLocked = isCheckInLockedForMatch($matchInfo['event_date'], $matchInfo['match_time']);
+                $isLocked = isCheckInLockedForMatch($matchInfo['event_date_epoch'], $matchInfo['match_time']);
                 $lockMethod = 'legacy';
             }
             
@@ -3532,9 +3526,9 @@ function updateAttendanceOnly($db) {
             
             // Add debug info to response (will be visible in browser console)
             $debugInfo = [
-                'match_date' => $matchInfo['event_date'],
+                'match_date_epoch' => $matchInfo['event_date_epoch'],
                 'match_time' => $matchInfo['match_time'],
-                'match_time_epoch' => $matchEpochResult['match_time_epoch'] ?? null,
+                'match_time_epoch' => $matchInfo['match_time_epoch'],
                 'bypass_lock' => $bypassLock,
                 'is_locked' => $isLocked,
                 'lock_method' => $lockMethod,
@@ -3628,7 +3622,7 @@ function updateAttendanceOnly($db) {
         
         // Add debug info to successful response
         $result['debug'] = $debugInfo ?? [
-            'match_date' => $matchInfo['event_date'] ?? 'unknown',
+            'match_date_epoch' => $matchInfo['event_date_epoch'] ?? 'unknown',
             'match_time' => $matchInfo['match_time'] ?? 'unknown',
             'bypass_lock' => $bypassLock,
             'is_locked' => false,
@@ -4403,7 +4397,7 @@ function migrateToEpochTimestamps($db) {
         
         // Convert matches (combine event date + match time)
         $stmt = $db->query("
-            SELECT m.id, e.date as event_date, m.match_time 
+            SELECT m.id, e.date_epoch as event_date_epoch, m.match_time 
             FROM matches m 
             JOIN events e ON m.event_id = e.id 
             WHERE m.match_time IS NOT NULL AND m.match_time_epoch IS NULL
@@ -4412,12 +4406,12 @@ function migrateToEpochTimestamps($db) {
         while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
             try {
                 // Combine event date with match time
-                $eventDate = $row['event_date'];
+                $eventDateEpoch = $row['event_date_epoch'];
                 $matchTime = $row['match_time'];
                 
-                // Clean the date part and combine with time
-                $cleanDate = date('Y-m-d', strtotime($eventDate));
-                $dateTimeStr = $cleanDate . ' ' . $matchTime . ' America/Los_Angeles';
+                // Convert epoch back to date string for the migration
+                $eventDate = date('Y-m-d', $eventDateEpoch);
+                $dateTimeStr = $eventDate . ' ' . $matchTime . ' America/Los_Angeles';
                 $epoch = strtotime($dateTimeStr);
                 
                 if ($epoch === false) {
