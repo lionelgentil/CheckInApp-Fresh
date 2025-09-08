@@ -3056,17 +3056,23 @@ function updateAttendanceOnly($db) {
         
         if ($matchInfo) {
             // Check if check-in is locked - but allow bypass for main app (admin privileges)
-            if (!$bypassLock && isCheckInLockedForMatch($matchInfo['event_date'], $matchInfo['match_time'])) {
+            error_log('DEBUG: About to check lock - bypassLock=' . ($bypassLock ? 'true' : 'false'));
+            $isLocked = isCheckInLockedForMatch($matchInfo['event_date'], $matchInfo['match_time']);
+            error_log('DEBUG: isCheckInLockedForMatch returned: ' . ($isLocked ? 'true' : 'false'));
+            
+            if (!$bypassLock && $isLocked) {
                 error_log('Check-in is locked for this match (no bypass)');
                 http_response_code(423); // 423 Locked (more appropriate than 403)
                 echo json_encode([
                     'error' => 'Check-in is locked for this match',
-                    'message' => 'This match check-in was automatically locked 1 hour after the game ended.',
+                    'message' => 'This match check-in was automatically locked 5 minutes after game start (TEST MODE).',
                     'locked' => true
                 ]);
                 return;
             } elseif ($bypassLock) {
                 error_log('Check-in lock bypassed (admin privileges)');
+            } else {
+                error_log('Check-in is not locked - access allowed');
             }
         } else {
             error_log('Match not found in database');

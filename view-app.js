@@ -2879,11 +2879,28 @@ class CheckInViewApp {
                 }
             });
             
+            console.log('🏠 Home team calculations:', {
+                totalMembers: homeMembers.length,
+                maleTotal: homeMaleTotal,
+                femaleTotal: homeFemaleTotal,
+                malePresent: homeMalePresent,
+                femalePresent: homeFemalePresent,
+                attendeesIds: homeAttendees
+            });
+            
             const femaleCountEl = homeCountElement.querySelector('.female-count');
             const maleCountEl = homeCountElement.querySelector('.male-count');
+            
+            console.log('🏠 Home DOM elements:', {
+                femaleCountEl: !!femaleCountEl,
+                maleCountEl: !!maleCountEl
+            });
+            
             if (femaleCountEl) {
                 if (homeFemaleTotal > 0) {
-                    femaleCountEl.textContent = `${homeFemalePresent}/${homeFemaleTotal} Female`;
+                    const newText = `${homeFemalePresent}/${homeFemaleTotal} Female`;
+                    console.log('🏠 Setting female count to:', newText);
+                    femaleCountEl.textContent = newText;
                     femaleCountEl.style.display = 'block';
                 } else {
                     femaleCountEl.style.display = 'none';
@@ -2891,7 +2908,9 @@ class CheckInViewApp {
             }
             if (maleCountEl) {
                 if (homeMaleTotal > 0) {
-                    maleCountEl.textContent = `${homeMalePresent}/${homeMaleTotal} Male`;
+                    const newText = `${homeMalePresent}/${homeMaleTotal} Male`;
+                    console.log('🏠 Setting male count to:', newText);
+                    maleCountEl.textContent = newText;
                     maleCountEl.style.display = 'block';
                 } else {
                     maleCountEl.style.display = 'none';
@@ -2913,11 +2932,23 @@ class CheckInViewApp {
                 }
             });
             
+            console.log('✈️ Away team calculations:', {
+                totalMembers: awayMembers.length,
+                maleTotal: awayMaleTotal,
+                femaleTotal: awayFemaleTotal,
+                malePresent: awayMalePresent,
+                femalePresent: awayFemalePresent,
+                attendeesIds: awayAttendees
+            });
+            
             const femaleCountEl = awayCountElement.querySelector('.female-count');
             const maleCountEl = awayCountElement.querySelector('.male-count');
+            
             if (femaleCountEl) {
                 if (awayFemaleTotal > 0) {
-                    femaleCountEl.textContent = `${awayFemalePresent}/${awayFemaleTotal} Female`;
+                    const newText = `${awayFemalePresent}/${awayFemaleTotal} Female`;
+                    console.log('✈️ Setting female count to:', newText);
+                    femaleCountEl.textContent = newText;
                     femaleCountEl.style.display = 'block';
                 } else {
                     femaleCountEl.style.display = 'none';
@@ -2925,7 +2956,9 @@ class CheckInViewApp {
             }
             if (maleCountEl) {
                 if (awayMaleTotal > 0) {
-                    maleCountEl.textContent = `${awayMalePresent}/${awayMaleTotal} Male`;
+                    const newText = `${awayMalePresent}/${awayMaleTotal} Male`;
+                    console.log('✈️ Setting male count to:', newText);
+                    maleCountEl.textContent = newText;
                     maleCountEl.style.display = 'block';
                 } else {
                     maleCountEl.style.display = 'none';
