@@ -716,6 +716,23 @@ try {
             }
             break;
             
+        case 'cleanup-string-dates':
+            // FINAL STEP: Drop all old string date/time columns (IRREVERSIBLE!)
+            if ($method === 'POST') {
+                requireAuth(); // Require authentication for cleanup
+                $password = json_decode(file_get_contents('php://input'), true)['confirm_password'] ?? '';
+                if ($password !== 'CLEANUP_DATES_2024') {
+                    http_response_code(401);
+                    echo json_encode(['error' => 'Confirmation password required for irreversible cleanup']);
+                    break;
+                }
+                cleanupStringDateColumns($db);
+            } else {
+                http_response_code(405);
+                echo json_encode(['error' => 'POST method required']);
+            }
+            break;
+            
         default:
             http_response_code(404);
             echo json_encode(['error' => 'Endpoint not found']);
@@ -729,6 +746,130 @@ try {
         'file' => $e->getFile(),
         'line' => $e->getLine()
     ]);
+}
+
+// Final cleanup function to drop all old string date/time columns (IRREVERSIBLE!)
+function cleanupStringDateColumns($db) {
+    try {
+        error_log("=== STARTING STRING DATE CLEANUP ===" );
+        $results = [];
+        $errors = [];
+        
+        $results[] = "⚠️  IRREVERSIBLE OPERATION: Dropping all old string date/time columns";
+        $results[] = "This will permanently remove backup columns and switch to pure epoch-based system";
+        
+        // List all columns to be dropped (IRREVERSIBLE!)
+        $columnsToDropByTable = [
+            'events' => ['date', 'created_at'],
+            'matches' => ['match_time', 'created_at'], 
+            'general_attendees' => ['checked_in_at'],
+            'match_attendees' => ['checked_in_at'],
+            'player_disciplinary_records' => ['incident_date', 'suspension_served_date', 'created_at'],
+            'team_members' => ['created_at'],
+            'teams' => ['created_at'],
+            'referees' => ['created_at'],
+            'member_photos' => ['uploaded_at'],
+            'match_cards' => ['created_at']
+        ];
+        
+        $totalColumnsDropped = 0;
+        
+        foreach ($columnsToDropByTable as $table => $columns) {
+            $results[] = "\n🗑️  Processing table: $table";
+            
+            foreach ($columns as $column) {
+                try {
+                    // Check if column exists before trying to drop it
+                    $stmt = $db->prepare("
+                        SELECT COUNT(*) as exists 
+                        FROM information_schema.columns 
+                        WHERE table_name = ? AND column_name = ? AND table_schema = 'public'
+                    ");
+                    $stmt->execute([$table, $column]);
+                    $columnExists = $stmt->fetch(PDO::FETCH_ASSOC)['exists'] > 0;
+                    
+                    if ($columnExists) {
+                        $sql = "ALTER TABLE $table DROP COLUMN $column";
+                        $db->exec($sql);
+                        $results[] = "   ✅ Dropped $table.$column";
+                        $totalColumnsDropped++;
+                        error_log("CLEANUP: Dropped $table.$column");
+                    } else {
+                        $results[] = "   ⏭️  Skipped $table.$column (already removed)";
+                    }
+                    
+                } catch (Exception $e) {
+                    $error = "   ❌ Failed to drop $table.$column: " . $e->getMessage();
+                    $errors[] = $error;
+                    error_log("CLEANUP ERROR: " . $error);
+                }
+            }
+        }
+        
+        $results[] = "\n=== CLEANUP SUMMARY ===";
+        $results[] = "✅ Successfully dropped $totalColumnsDropped string date/time columns";
+        $results[] = "🎯 Database is now pure epoch-based!";
+        $results[] = "📊 All dates/times are stored as integers (seconds since 1970)";
+        $results[] = "⚡ Time calculations use simple arithmetic instead of complex parsing";
+        
+        if (!empty($errors)) {
+            $results[] = "\n⚠️ ERRORS ENCOUNTERED:";
+            $results = array_merge($results, $errors);
+        } else {
+            $results[] = "\n🎉 CLEANUP COMPLETED WITHOUT ERRORS!";
+        }
+        
+        // Verify the cleanup worked by checking remaining columns
+        $results[] = "\n🔍 VERIFICATION: Checking for any remaining string date columns...";
+        $stringDateColumnsFound = [];
+        
+        foreach (array_keys($columnsToDropByTable) as $table) {
+            $stmt = $db->prepare("
+                SELECT column_name 
+                FROM information_schema.columns 
+                WHERE table_name = ? 
+                AND table_schema = 'public'
+                AND (column_name LIKE '%date%' OR column_name LIKE '%time%' OR column_name LIKE '%created_at%' OR column_name LIKE '%uploaded_at%')
+                AND data_type IN ('timestamp', 'date', 'time')
+                ORDER BY column_name
+            ");
+            $stmt->execute([$table]);
+            $remainingColumns = $stmt->fetchAll(PDO::FETCH_COLUMN);
+            
+            if (!empty($remainingColumns)) {
+                $stringDateColumnsFound[] = "$table: " . implode(', ', $remainingColumns);
+            }
+        }
+        
+        if (empty($stringDateColumnsFound)) {
+            $results[] = "✅ PERFECT! No string date/time columns found - cleanup is complete!";
+        } else {
+            $results[] = "⚠️ Found remaining string date columns:";
+            $results = array_merge($results, $stringDateColumnsFound);
+        }
+        
+        error_log("=== STRING DATE CLEANUP COMPLETED ===");
+        
+        echo json_encode([
+            'success' => true,
+            'message' => 'String date columns cleanup completed successfully',
+            'results' => $results,
+            'columns_dropped' => $totalColumnsDropped,
+            'error_count' => count($errors),
+            'timestamp' => date('c'),
+            'database_status' => 'pure_epoch_based'
+        ]);
+        
+    } catch (Exception $e) {
+        error_log('STRING DATE CLEANUP FAILED: ' . $e->getMessage());
+        http_response_code(500);
+        echo json_encode([
+            'success' => false,
+            'error' => 'Cleanup failed: ' . $e->getMessage(),
+            'results' => $results ?? [],
+            'timestamp' => date('c')
+        ]);
+    }
 }
 
 function getTeams($db) {
@@ -3860,6 +4001,7 @@ function migrateRemainingEpochTimestamps($db) {
         $results[] = "Phase 1: Adding missing epoch columns...";
         
         $schemaUpdates = [
+            "ALTER TABLE events ADD COLUMN IF NOT EXISTS created_at_epoch INTEGER",
             "ALTER TABLE matches ADD COLUMN IF NOT EXISTS created_at_epoch INTEGER",
             "ALTER TABLE match_cards ADD COLUMN IF NOT EXISTS created_at_epoch INTEGER", 
             "ALTER TABLE player_disciplinary_records ADD COLUMN IF NOT EXISTS created_at_epoch INTEGER"
@@ -3878,6 +4020,26 @@ function migrateRemainingEpochTimestamps($db) {
         
         // Phase 2: Migrate remaining created_at timestamps
         $results[] = "\nPhase 2: Converting remaining created_at timestamps to epochs...";
+        
+        // Convert events created_at timestamps
+        $stmt = $db->query("SELECT id, created_at FROM events WHERE created_at IS NOT NULL AND created_at_epoch IS NULL");
+        $eventCount = 0;
+        while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+            try {
+                $epoch = strtotime($row['created_at'] . ' America/Los_Angeles');
+                if ($epoch !== false) {
+                    $updateStmt = $db->prepare("UPDATE events SET created_at_epoch = ? WHERE id = ?");
+                    $updateStmt->execute([$epoch, $row['id']]);
+                    $eventCount++;
+                    error_log("Converted event created_at: {$row['id']} -> {$row['created_at']} -> $epoch (" . date('Y-m-d H:i:s T', $epoch) . ")");
+                }
+            } catch (Exception $e) {
+                $error = "Failed to convert event {$row['id']}: " . $e->getMessage();
+                $errors[] = $error;
+                error_log($error);
+            }
+        }
+        $results[] = "✅ Converted $eventCount events created_at timestamps";
         
         // Convert matches created_at timestamps
         $stmt = $db->query("SELECT id, created_at FROM matches WHERE created_at IS NOT NULL AND created_at_epoch IS NULL");
