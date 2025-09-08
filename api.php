@@ -3066,17 +3066,36 @@ function updateAttendanceOnly($db) {
         error_log('Match info: ' . json_encode($matchInfo));
         
         if ($matchInfo) {
-            // Check if check-in is locked - but allow bypass for main app (admin privileges)
-            error_log('DEBUG: About to check lock - bypassLock=' . ($bypassLock ? 'true' : 'false'));
-            $isLocked = isCheckInLockedForMatch($matchInfo['event_date'], $matchInfo['match_time']);
-            error_log('DEBUG: isCheckInLockedForMatch returned: ' . ($isLocked ? 'true' : 'false'));
+            // NEW: Try to use epoch timestamp first (more reliable)
+            $stmt = $db->prepare('SELECT match_time_epoch FROM matches WHERE id = ?');
+            $stmt->execute([$matchId]);
+            $matchEpochResult = $stmt->fetch(PDO::FETCH_ASSOC);
+            
+            error_log('DEBUG: Match epoch result: ' . json_encode($matchEpochResult));
+            
+            $isLocked = false;
+            if ($matchEpochResult && $matchEpochResult['match_time_epoch']) {
+                // Use new epoch-based lock function (much more reliable!)
+                error_log('DEBUG: Using EPOCH-based lock check with timestamp: ' . $matchEpochResult['match_time_epoch']);
+                $isLocked = isCheckInLockedForMatchEpoch($matchEpochResult['match_time_epoch']);
+                $lockMethod = 'epoch';
+            } else {
+                // Fallback to legacy string-based lock function
+                error_log('DEBUG: Using LEGACY string-based lock check - bypassLock=' . ($bypassLock ? 'true' : 'false'));
+                $isLocked = isCheckInLockedForMatch($matchInfo['event_date'], $matchInfo['match_time']);
+                $lockMethod = 'legacy';
+            }
+            
+            error_log('DEBUG: Lock result: ' . ($isLocked ? 'LOCKED' : 'UNLOCKED') . ' (method: ' . $lockMethod . ')');
             
             // Add debug info to response (will be visible in browser console)
             $debugInfo = [
                 'match_date' => $matchInfo['event_date'],
                 'match_time' => $matchInfo['match_time'],
+                'match_time_epoch' => $matchEpochResult['match_time_epoch'] ?? null,
                 'bypass_lock' => $bypassLock,
                 'is_locked' => $isLocked,
+                'lock_method' => $lockMethod,
                 'current_time_pdt' => (new DateTime('now', new DateTimeZone('America/Los_Angeles')))->format('Y-m-d H:i:s T'),
                 'debug_message' => $isLocked ? 'LOCK SHOULD BE ACTIVE' : 'LOCK NOT ACTIVE YET'
             ];
