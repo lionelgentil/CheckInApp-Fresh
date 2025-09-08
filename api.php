@@ -694,6 +694,17 @@ try {
             }
             break;
             
+        case 'migrate-to-epochs':
+            // Migrate dates and times to epoch timestamps
+            if ($method === 'POST') {
+                requireAuth(); // Require authentication for migrations
+                migrateToEpochTimestamps($db);
+            } else {
+                http_response_code(405);
+                echo json_encode(['error' => 'POST method required']);
+            }
+            break;
+            
         default:
             http_response_code(404);
             echo json_encode(['error' => 'Endpoint not found']);
@@ -3724,7 +3735,249 @@ function testVolumeAccess($db) {
     }
 }
 
-// Helper function to check if check-in is locked for a match
+// Epoch timestamp migration function
+function migrateToEpochTimestamps($db) {
+    try {
+        error_log("=== STARTING EPOCH MIGRATION ===");
+        $results = [];
+        $errors = [];
+        
+        // Phase 1: Add epoch columns to all tables
+        $results[] = "Phase 1: Adding epoch columns...";
+        
+        $schemaUpdates = [
+            "ALTER TABLE events ADD COLUMN IF NOT EXISTS date_epoch INTEGER",
+            "ALTER TABLE matches ADD COLUMN IF NOT EXISTS match_time_epoch INTEGER", 
+            "ALTER TABLE general_attendees ADD COLUMN IF NOT EXISTS checked_in_at_epoch INTEGER",
+            "ALTER TABLE match_attendees ADD COLUMN IF NOT EXISTS checked_in_at_epoch INTEGER",
+            "ALTER TABLE player_disciplinary_records ADD COLUMN IF NOT EXISTS incident_date_epoch INTEGER",
+            "ALTER TABLE player_disciplinary_records ADD COLUMN IF NOT EXISTS suspension_served_date_epoch INTEGER",
+            "ALTER TABLE team_members ADD COLUMN IF NOT EXISTS created_at_epoch INTEGER",
+            "ALTER TABLE teams ADD COLUMN IF NOT EXISTS created_at_epoch INTEGER",
+            "ALTER TABLE referees ADD COLUMN IF NOT EXISTS created_at_epoch INTEGER", 
+            "ALTER TABLE member_photos ADD COLUMN IF NOT EXISTS uploaded_at_epoch INTEGER"
+        ];
+        
+        foreach ($schemaUpdates as $sql) {
+            try {
+                $db->exec($sql);
+                $results[] = "✅ " . $sql;
+            } catch (Exception $e) {
+                $error = "❌ Failed: $sql - " . $e->getMessage();
+                $errors[] = $error;
+                error_log($error);
+            }
+        }
+        
+        // Phase 2: Migrate existing data
+        $results[] = "\nPhase 2: Converting existing data to epochs...";
+        
+        // Convert events (date field)
+        $stmt = $db->query("SELECT id, date FROM events WHERE date IS NOT NULL AND date_epoch IS NULL");
+        $eventCount = 0;
+        while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+            try {
+                // Parse date assuming it's in Pacific timezone at midnight
+                $dateStr = $row['date'];
+                // Handle both "YYYY-MM-DD" and "YYYY-MM-DD HH:MM:SS" formats
+                $cleanDate = date('Y-m-d', strtotime($dateStr));
+                $epoch = strtotime($cleanDate . ' 00:00:00 America/Los_Angeles');
+                
+                if ($epoch === false) {
+                    throw new Exception("Failed to parse date: $dateStr");
+                }
+                
+                $updateStmt = $db->prepare("UPDATE events SET date_epoch = ? WHERE id = ?");
+                $updateStmt->execute([$epoch, $row['id']]);
+                $eventCount++;
+                
+                error_log("Converted event date: {$row['id']} -> $dateStr -> $epoch (" . date('Y-m-d H:i:s T', $epoch) . ")");
+            } catch (Exception $e) {
+                $error = "Failed to convert event {$row['id']}: " . $e->getMessage();
+                $errors[] = $error;
+                error_log($error);
+            }
+        }
+        $results[] = "✅ Converted $eventCount events";
+        
+        // Convert matches (combine event date + match time)
+        $stmt = $db->query("
+            SELECT m.id, e.date as event_date, m.match_time 
+            FROM matches m 
+            JOIN events e ON m.event_id = e.id 
+            WHERE m.match_time IS NOT NULL AND m.match_time_epoch IS NULL
+        ");
+        $matchCount = 0;
+        while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+            try {
+                // Combine event date with match time
+                $eventDate = $row['event_date'];
+                $matchTime = $row['match_time'];
+                
+                // Clean the date part and combine with time
+                $cleanDate = date('Y-m-d', strtotime($eventDate));
+                $dateTimeStr = $cleanDate . ' ' . $matchTime . ' America/Los_Angeles';
+                $epoch = strtotime($dateTimeStr);
+                
+                if ($epoch === false) {
+                    throw new Exception("Failed to parse datetime: $dateTimeStr");
+                }
+                
+                $updateStmt = $db->prepare("UPDATE matches SET match_time_epoch = ? WHERE id = ?");
+                $updateStmt->execute([$epoch, $row['id']]);
+                $matchCount++;
+                
+                error_log("Converted match time: {$row['id']} -> $dateTimeStr -> $epoch (" . date('Y-m-d H:i:s T', $epoch) . ")");
+            } catch (Exception $e) {
+                $error = "Failed to convert match {$row['id']}: " . $e->getMessage();
+                $errors[] = $error;
+                error_log($error);
+            }
+        }
+        $results[] = "✅ Converted $matchCount matches";
+        
+        // Convert general attendees check-in times
+        $stmt = $db->query("SELECT id, checked_in_at FROM general_attendees WHERE checked_in_at IS NOT NULL AND checked_in_at_epoch IS NULL");
+        $attendeeCount = 0;
+        while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+            try {
+                $epoch = strtotime($row['checked_in_at'] . ' America/Los_Angeles');
+                if ($epoch === false) {
+                    throw new Exception("Failed to parse timestamp: {$row['checked_in_at']}");
+                }
+                
+                $updateStmt = $db->prepare("UPDATE general_attendees SET checked_in_at_epoch = ? WHERE id = ?");
+                $updateStmt->execute([$epoch, $row['id']]);
+                $attendeeCount++;
+            } catch (Exception $e) {
+                $errors[] = "Failed to convert general attendee {$row['id']}: " . $e->getMessage();
+            }
+        }
+        $results[] = "✅ Converted $attendeeCount general attendee timestamps";
+        
+        // Convert match attendees check-in times  
+        $stmt = $db->query("SELECT id, checked_in_at FROM match_attendees WHERE checked_in_at IS NOT NULL AND checked_in_at_epoch IS NULL");
+        $matchAttendeeCount = 0;
+        while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+            try {
+                $epoch = strtotime($row['checked_in_at'] . ' America/Los_Angeles');
+                if ($epoch === false) {
+                    throw new Exception("Failed to parse timestamp: {$row['checked_in_at']}");
+                }
+                
+                $updateStmt = $db->prepare("UPDATE match_attendees SET checked_in_at_epoch = ? WHERE id = ?");
+                $updateStmt->execute([$epoch, $row['id']]);
+                $matchAttendeeCount++;
+            } catch (Exception $e) {
+                $errors[] = "Failed to convert match attendee {$row['id']}: " . $e->getMessage();
+            }
+        }
+        $results[] = "✅ Converted $matchAttendeeCount match attendee timestamps";
+        
+        // Convert disciplinary records
+        $stmt = $db->query("SELECT id, incident_date, suspension_served_date FROM player_disciplinary_records WHERE (incident_date IS NOT NULL AND incident_date_epoch IS NULL) OR (suspension_served_date IS NOT NULL AND suspension_served_date_epoch IS NULL)");
+        $disciplinaryCount = 0;
+        while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+            try {
+                $updates = [];
+                $params = [];
+                
+                if ($row['incident_date'] && !$row['incident_date_epoch']) {
+                    $epoch = strtotime($row['incident_date'] . ' 00:00:00 America/Los_Angeles');
+                    if ($epoch !== false) {
+                        $updates[] = "incident_date_epoch = ?";
+                        $params[] = $epoch;
+                    }
+                }
+                
+                if ($row['suspension_served_date'] && !$row['suspension_served_date_epoch']) {
+                    $epoch = strtotime($row['suspension_served_date'] . ' 00:00:00 America/Los_Angeles');
+                    if ($epoch !== false) {
+                        $updates[] = "suspension_served_date_epoch = ?";
+                        $params[] = $epoch;
+                    }
+                }
+                
+                if (!empty($updates)) {
+                    $params[] = $row['id'];
+                    $sql = "UPDATE player_disciplinary_records SET " . implode(', ', $updates) . " WHERE id = ?";
+                    $updateStmt = $db->prepare($sql);
+                    $updateStmt->execute($params);
+                    $disciplinaryCount++;
+                }
+            } catch (Exception $e) {
+                $errors[] = "Failed to convert disciplinary record {$row['id']}: " . $e->getMessage();
+            }
+        }
+        $results[] = "✅ Converted $disciplinaryCount disciplinary records";
+        
+        // Convert created_at timestamps for various tables
+        $createdAtTables = ['team_members', 'teams', 'referees'];
+        foreach ($createdAtTables as $table) {
+            $stmt = $db->query("SELECT id, created_at FROM $table WHERE created_at IS NOT NULL AND created_at_epoch IS NULL");
+            $count = 0;
+            while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+                try {
+                    $epoch = strtotime($row['created_at'] . ' America/Los_Angeles');
+                    if ($epoch !== false) {
+                        $updateStmt = $db->prepare("UPDATE $table SET created_at_epoch = ? WHERE id = ?");
+                        $updateStmt->execute([$epoch, $row['id']]);
+                        $count++;
+                    }
+                } catch (Exception $e) {
+                    $errors[] = "Failed to convert $table {$row['id']}: " . $e->getMessage();
+                }
+            }
+            $results[] = "✅ Converted $count $table created_at timestamps";
+        }
+        
+        // Convert member_photos uploaded_at
+        $stmt = $db->query("SELECT member_id, uploaded_at FROM member_photos WHERE uploaded_at IS NOT NULL AND uploaded_at_epoch IS NULL");
+        $photoCount = 0;
+        while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+            try {
+                $epoch = strtotime($row['uploaded_at'] . ' America/Los_Angeles');
+                if ($epoch !== false) {
+                    $updateStmt = $db->prepare("UPDATE member_photos SET uploaded_at_epoch = ? WHERE member_id = ?");
+                    $updateStmt->execute([$epoch, $row['member_id']]);
+                    $photoCount++;
+                }
+            } catch (Exception $e) {
+                $errors[] = "Failed to convert photo {$row['member_id']}: " . $e->getMessage();
+            }
+        }
+        $results[] = "✅ Converted $photoCount photo uploaded_at timestamps";
+        
+        $results[] = "\n=== MIGRATION COMPLETED ===";
+        
+        if (!empty($errors)) {
+            $results[] = "\n⚠️ ERRORS ENCOUNTERED:";
+            $results = array_merge($results, $errors);
+        }
+        
+        error_log("=== EPOCH MIGRATION COMPLETED ===");
+        
+        echo json_encode([
+            'success' => true,
+            'message' => 'Epoch timestamp migration completed',
+            'results' => $results,
+            'error_count' => count($errors),
+            'timestamp' => date('c')
+        ]);
+        
+    } catch (Exception $e) {
+        error_log('EPOCH MIGRATION FAILED: ' . $e->getMessage());
+        http_response_code(500);
+        echo json_encode([
+            'success' => false,
+            'error' => 'Migration failed: ' . $e->getMessage(),
+            'results' => $results ?? [],
+            'timestamp' => date('c')
+        ]);
+    }
+}
+
+// Helper function to check if check-in is locked for a match (LEGACY - uses string dates)
 function isCheckInLockedForMatch($eventDate, $matchTime) {
     if (!$matchTime || !$eventDate) {
         return false; // Don't lock if we don't have time info
@@ -3735,40 +3988,53 @@ function isCheckInLockedForMatch($eventDate, $matchTime) {
         $pacificTimezone = new DateTimeZone('America/Los_Angeles');
         
         // Parse game start time in Pacific timezone
-        $gameStart = new DateTime($eventDate . 'T' . $matchTime, $pacificTimezone);
+        // Extract just the date part in case eventDate includes timestamp
+        $dateOnly = date('Y-m-d', strtotime($eventDate));
+        $gameStart = new DateTime($dateOnly . 'T' . $matchTime, $pacificTimezone);
         
-        // Calculate lock time: game start + 1h 40m (game duration) + 1h (grace period) = 2h 40m total
-        // But you mentioned it should be 1 hour after game ended, so: game + 1h 40m + 1h = 2h 40m
-        // Actually, let me make it exactly 1 hour after game end (1h 40m game + 1h = 2h 40m)
-        $lockTime = clone $gameStart;
-        $lockTime->add(new DateInterval('PT1H40M')); // Game duration (1h 40m)
-        $lockTime->add(new DateInterval('PT1H'));    // Grace period (1 hour after game ends)
+        // Convert to epoch and use the new epoch-based function
+        return isCheckInLockedForMatchEpoch($gameStart->getTimestamp());
         
-        // TEMPORARY: For testing, reduce lock time to 5 minutes after game start
-        $lockTime = clone $gameStart;
-        $lockTime->add(new DateInterval('PT5M')); // TEST: Lock 5 minutes after game start
+    } catch (Exception $e) {
+        error_log('Error calculating lock time (legacy): ' . $e->getMessage());
+        return false; // Don't lock on error
+    }
+}
+
+// NEW: Epoch-based lock function (much simpler and more reliable!)
+function isCheckInLockedForMatchEpoch($gameStartEpoch) {
+    if (!$gameStartEpoch) {
+        error_log("Lock check: No game start epoch provided");
+        return false; // Don't lock if we don't have time info
+    }
+    
+    try {
+        // Simple epoch arithmetic!
+        $lockTimeEpoch = $gameStartEpoch + (5 * 60); // TEST: Lock 5 minutes after game start
+        // Production: $lockTimeEpoch = $gameStartEpoch + (2 * 60 * 60 + 40 * 60); // 2h 40m after game start
         
-        // Current time in Pacific timezone
-        $now = new DateTime('now', $pacificTimezone);
+        $currentEpoch = time();
+        $isLocked = $currentEpoch > $lockTimeEpoch;
         
-        error_log("Lock check: Game start: " . $gameStart->format('Y-m-d H:i:s T') . 
-                  ", Lock time: " . $lockTime->format('Y-m-d H:i:s T') . 
-                  ", Current time: " . $now->format('Y-m-d H:i:s T') .
-                  ", Is locked: " . ($now > $lockTime ? 'YES' : 'NO'));
+        // Convert back to readable times for logging (Pacific timezone)
+        $gameStartReadable = date('Y-m-d H:i:s T', $gameStartEpoch);
+        $lockTimeReadable = date('Y-m-d H:i:s T', $lockTimeEpoch);
+        $currentTimeReadable = date('Y-m-d H:i:s T', $currentEpoch);
         
-        $isLocked = $now > $lockTime;
+        error_log("EPOCH Lock check: Game start: $gameStartReadable, Lock time: $lockTimeReadable, Current: $currentTimeReadable, Locked: " . ($isLocked ? 'YES' : 'NO'));
         
         // Add more detailed logging
         if ($isLocked) {
-            error_log("ATTENDANCE LOCK: Check-in is LOCKED - current time is past lock time");
+            $minutesPastLock = ($currentEpoch - $lockTimeEpoch) / 60;
+            error_log("ATTENDANCE LOCK: Check-in is LOCKED - current time is " . round($minutesPastLock) . " minutes past lock time");
         } else {
-            $minutesUntilLock = ($lockTime->getTimestamp() - $now->getTimestamp()) / 60;
+            $minutesUntilLock = ($lockTimeEpoch - $currentEpoch) / 60;
             error_log("ATTENDANCE LOCK: Check-in is ALLOWED - lock will activate in " . round($minutesUntilLock) . " minutes");
         }
         
         return $isLocked;
     } catch (Exception $e) {
-        error_log('Error calculating lock time: ' . $e->getMessage());
+        error_log('Error calculating epoch lock time: ' . $e->getMessage());
         return false; // Don't lock on error
     }
 }
