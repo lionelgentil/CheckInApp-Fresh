@@ -773,10 +773,10 @@ class CheckInApp {
         }
     }
     
-    isCurrentSeasonEvent(eventDate) {
+    isCurrentSeasonEvent(eventEpoch) {
         const currentSeason = this.getCurrentSeason();
-        const event = new Date(eventDate);
-        return event >= currentSeason.startDate && event <= currentSeason.endDate;
+        const eventEpochTime = eventEpoch * 1000; // Convert to milliseconds
+        return eventEpochTime >= currentSeason.startDate.getTime() && eventEpochTime <= currentSeason.endDate.getTime();
     }
     
     async uploadPhoto(file, memberId) {
@@ -1077,7 +1077,7 @@ class CheckInApp {
                 selectedTeam.members.forEach(member => {
                     this.events.forEach(event => {
                         // Only count cards from current season events
-                        if (this.isCurrentSeasonEvent(event.date)) {
+                        if (this.isCurrentSeasonEvent(event.date_epoch)) {
                             event.matches.forEach(match => {
                                 if (match.cards) {
                                     const memberCards = match.cards.filter(card => card.memberId === member.id);
@@ -1130,7 +1130,7 @@ class CheckInApp {
                                     
                                     this.events.forEach(event => {
                                         // Only count cards from current season events
-                                        if (this.isCurrentSeasonEvent(event.date)) {
+                                        if (this.isCurrentSeasonEvent(event.date_epoch)) {
                                             event.matches.forEach(match => {
                                                 if (match.cards) {
                                                     const memberCards = match.cards.filter(card => card.memberId === member.id);
@@ -2849,7 +2849,12 @@ Please check the browser console (F12) for more details.`);
                     matchCards.push({
                         type: 'match',
                         eventName: event.name,
-                        eventDate: event.date,
+                        eventDate: new Date(event.date_epoch * 1000).toLocaleDateString('en-US', { 
+                            timeZone: 'America/Los_Angeles', 
+                            year: 'numeric', 
+                            month: '2-digit', 
+                            day: '2-digit' 
+                        }),
                         matchInfo,
                         cardType: card.cardType,
                         reason: card.reason,
@@ -3026,7 +3031,7 @@ Please check the browser console (F12) for more details.`);
             </div>
             <div class="form-group">
                 <label class="form-label">Date *</label>
-                <input type="date" class="form-input" id="event-date" value="${event ? event.date.split('T')[0] : ''}" required>
+                <input type="date" class="form-input" id="event-date" value="${event ? new Date(event.date_epoch * 1000).toISOString().split('T')[0] : ''}" required>
             </div>
             <div class="form-group">
                 <label class="form-label">Description</label>
@@ -3267,7 +3272,7 @@ Please check the browser console (F12) for more details.`);
         // Process completed matches
         this.events.forEach(event => {
             // Filter by season if requested
-            if (currentSeasonOnly && !this.isCurrentSeasonEvent(event.date)) {
+            if (currentSeasonOnly && !this.isCurrentSeasonEvent(event.date_epoch)) {
                 return;
             }
             
@@ -3526,7 +3531,7 @@ Please check the browser console (F12) for more details.`);
         // Process all events and matches
         this.events.forEach(event => {
             // Only include current season events
-            if (!this.isCurrentSeasonEvent(event.date)) {
+            if (!this.isCurrentSeasonEvent(event.date_epoch)) {
                 return;
             }
             
@@ -3564,7 +3569,12 @@ Please check the browser console (F12) for more details.`);
                     }
                     
                     cardRecords.push({
-                        eventDate: event.date,
+                        eventDate: new Date(event.date_epoch * 1000).toLocaleDateString('en-US', { 
+                            timeZone: 'America/Los_Angeles', 
+                            year: 'numeric', 
+                            month: '2-digit', 
+                            day: '2-digit' 
+                        }),
                         eventName: event.name,
                         matchInfo: `${homeTeam?.name || 'Unknown'} vs ${awayTeam?.name || 'Unknown'}`,
                         teamName: playerTeam?.name || 'Unknown Team',
@@ -4103,7 +4113,7 @@ Please check the browser console (F12) for more details.`);
         
         // Count current season events and matches
         this.events.forEach(event => {
-            if (this.isCurrentSeasonEvent(event.date)) {
+            if (this.isCurrentSeasonEvent(event.date_epoch)) {
                 stats.totalEvents++;
                 stats.totalMatches += event.matches.length;
                 
@@ -4134,7 +4144,12 @@ Please check the browser console (F12) for more details.`);
                                         matches: card.suspensionMatches,
                                         reason: card.reason || 'Not specified',
                                         eventName: event.name,
-                                        eventDate: event.date
+                                        eventDate: new Date(event.date_epoch * 1000).toLocaleDateString('en-US', { 
+                            timeZone: 'America/Los_Angeles', 
+                            year: 'numeric', 
+                            month: '2-digit', 
+                            day: '2-digit' 
+                        })
                                     });
                                 }
                             }
@@ -4504,7 +4519,7 @@ Please check the browser console (F12) for more details.`);
         // Filter by season if specified
         let filteredGames = gameRecords;
         if (showCurrentSeasonOnly) {
-            filteredGames = gameRecords.filter(game => this.isCurrentSeasonEvent(game.eventDate));
+            filteredGames = gameRecords.filter(game => this.isCurrentSeasonEvent(game.eventEpoch));
         }
         
         // Filter by status
@@ -4672,7 +4687,7 @@ Please check the browser console (F12) for more details.`);
         
         // Process all events and matches
         this.events.forEach((event, eventIndex) => {
-            console.log(`📅 Processing event ${eventIndex + 1}/${this.events.length}: ${event.name} (${event.date})`);
+            console.log(`📅 Processing event ${eventIndex + 1}/${this.events.length}: ${event.name} (${new Date(event.date_epoch * 1000).toLocaleDateString('en-US', { timeZone: 'America/Los_Angeles' })})`);
             
             if (!event.matches || event.matches.length === 0) {
                 console.log(`⚠️ Event ${event.name} has no matches`);
@@ -4695,12 +4710,19 @@ Please check the browser console (F12) for more details.`);
                 const gameRecord = {
                     eventId: event.id,
                     matchId: match.id,
-                    eventDate: event.date,
+                    eventDate: new Date(event.date_epoch * 1000).toLocaleDateString('en-US', { 
+                        timeZone: 'America/Los_Angeles', 
+                        year: 'numeric', 
+                        month: '2-digit', 
+                        day: '2-digit' 
+                    }),
+                    eventEpoch: event.date_epoch,
+                    timeEpoch: match.time_epoch,
                     eventName: event.name,
                     homeTeam: homeTeam?.name || 'Unknown Team',
                     awayTeam: awayTeam?.name || 'Unknown Team',
                     field: match.field,
-                    time: match.time,
+                    time: match.time_epoch ? epochToPacificTime(match.time_epoch) : null,
                     status: match.matchStatus || 'scheduled',
                     hasScore: match.homeScore !== null && match.awayScore !== null,
                     homeScore: match.homeScore,
@@ -5867,7 +5889,12 @@ Please check the browser console (F12) for more details.`);
                                 !card.suspensionServed) {
                                 activeMatchCards.push({
                                     eventName: event.name,
-                                    eventDate: event.date,
+                                    eventDate: new Date(event.date_epoch * 1000).toLocaleDateString('en-US', { 
+                            timeZone: 'America/Los_Angeles', 
+                            year: 'numeric', 
+                            month: '2-digit', 
+                            day: '2-digit' 
+                        }),
                                     suspensionMatches: card.suspensionMatches,
                                     reason: card.reason
                                 });
