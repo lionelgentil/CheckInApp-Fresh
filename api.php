@@ -705,6 +705,17 @@ try {
             }
             break;
             
+        case 'migrate-remaining-epochs':
+            // Migrate remaining created_at fields to epoch timestamps  
+            if ($method === 'POST') {
+                requireAuth(); // Require authentication for migrations
+                migrateRemainingEpochTimestamps($db);
+            } else {
+                http_response_code(405);
+                echo json_encode(['error' => 'POST method required']);
+            }
+            break;
+            
         default:
             http_response_code(404);
             echo json_encode(['error' => 'Endpoint not found']);
@@ -3834,6 +3845,123 @@ function testVolumeAccess($db) {
             'success' => false,
             'message' => 'Volume test failed: ' . $e->getMessage(),
             'volume_path' => $volumeDir ?? 'unknown'
+        ]);
+    }
+}
+
+// Supplementary migration for remaining created_at fields
+function migrateRemainingEpochTimestamps($db) {
+    try {
+        error_log("=== STARTING SUPPLEMENTARY EPOCH MIGRATION ===");
+        $results = [];
+        $errors = [];
+        
+        // Phase 1: Add missing epoch columns
+        $results[] = "Phase 1: Adding missing epoch columns...";
+        
+        $schemaUpdates = [
+            "ALTER TABLE matches ADD COLUMN IF NOT EXISTS created_at_epoch INTEGER",
+            "ALTER TABLE match_cards ADD COLUMN IF NOT EXISTS created_at_epoch INTEGER", 
+            "ALTER TABLE player_disciplinary_records ADD COLUMN IF NOT EXISTS created_at_epoch INTEGER"
+        ];
+        
+        foreach ($schemaUpdates as $sql) {
+            try {
+                $db->exec($sql);
+                $results[] = "✅ " . $sql;
+            } catch (Exception $e) {
+                $error = "❌ Failed: $sql - " . $e->getMessage();
+                $errors[] = $error;
+                error_log($error);
+            }
+        }
+        
+        // Phase 2: Migrate remaining created_at timestamps
+        $results[] = "\nPhase 2: Converting remaining created_at timestamps to epochs...";
+        
+        // Convert matches created_at timestamps
+        $stmt = $db->query("SELECT id, created_at FROM matches WHERE created_at IS NOT NULL AND created_at_epoch IS NULL");
+        $matchCount = 0;
+        while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+            try {
+                $epoch = strtotime($row['created_at'] . ' America/Los_Angeles');
+                if ($epoch !== false) {
+                    $updateStmt = $db->prepare("UPDATE matches SET created_at_epoch = ? WHERE id = ?");
+                    $updateStmt->execute([$epoch, $row['id']]);
+                    $matchCount++;
+                    error_log("Converted match created_at: {$row['id']} -> {$row['created_at']} -> $epoch (" . date('Y-m-d H:i:s T', $epoch) . ")");
+                }
+            } catch (Exception $e) {
+                $error = "Failed to convert match {$row['id']}: " . $e->getMessage();
+                $errors[] = $error;
+                error_log($error);
+            }
+        }
+        $results[] = "✅ Converted $matchCount matches created_at timestamps";
+        
+        // Convert match_cards created_at timestamps
+        $stmt = $db->query("SELECT id, created_at FROM match_cards WHERE created_at IS NOT NULL AND created_at_epoch IS NULL");
+        $cardCount = 0;
+        while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+            try {
+                $epoch = strtotime($row['created_at'] . ' America/Los_Angeles');
+                if ($epoch !== false) {
+                    $updateStmt = $db->prepare("UPDATE match_cards SET created_at_epoch = ? WHERE id = ?");
+                    $updateStmt->execute([$epoch, $row['id']]);
+                    $cardCount++;
+                }
+            } catch (Exception $e) {
+                $error = "Failed to convert match_card {$row['id']}: " . $e->getMessage();
+                $errors[] = $error;
+                error_log($error);
+            }
+        }
+        $results[] = "✅ Converted $cardCount match_cards created_at timestamps";
+        
+        // Convert player_disciplinary_records created_at timestamps
+        $stmt = $db->query("SELECT id, created_at FROM player_disciplinary_records WHERE created_at IS NOT NULL AND created_at_epoch IS NULL");
+        $recordCount = 0;
+        while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+            try {
+                $epoch = strtotime($row['created_at'] . ' America/Los_Angeles');
+                if ($epoch !== false) {
+                    $updateStmt = $db->prepare("UPDATE player_disciplinary_records SET created_at_epoch = ? WHERE id = ?");
+                    $updateStmt->execute([$epoch, $row['id']]);
+                    $recordCount++;
+                }
+            } catch (Exception $e) {
+                $error = "Failed to convert disciplinary record {$row['id']}: " . $e->getMessage();
+                $errors[] = $error;
+                error_log($error);
+            }
+        }
+        $results[] = "✅ Converted $recordCount disciplinary records created_at timestamps";
+        
+        $results[] = "\n=== SUPPLEMENTARY MIGRATION COMPLETED ===";
+        
+        if (!empty($errors)) {
+            $results[] = "\n⚠️ ERRORS ENCOUNTERED:";
+            $results = array_merge($results, $errors);
+        }
+        
+        error_log("=== SUPPLEMENTARY EPOCH MIGRATION COMPLETED ===");
+        
+        echo json_encode([
+            'success' => true,
+            'message' => 'Supplementary epoch timestamp migration completed',
+            'results' => $results,
+            'error_count' => count($errors),
+            'timestamp' => date('c')
+        ]);
+        
+    } catch (Exception $e) {
+        error_log('SUPPLEMENTARY EPOCH MIGRATION FAILED: ' . $e->getMessage());
+        http_response_code(500);
+        echo json_encode([
+            'success' => false,
+            'error' => 'Supplementary migration failed: ' . $e->getMessage(),
+            'results' => $results ?? [],
+            'timestamp' => date('c')
         ]);
     }
 }
