@@ -3716,14 +3716,29 @@ function isCheckInLockedForMatch($eventDate, $matchTime) {
         $lockTime->add(new DateInterval('PT1H40M')); // Game duration (1h 40m)
         $lockTime->add(new DateInterval('PT1H'));    // Grace period (1 hour after game ends)
         
+        // TEMPORARY: For testing, reduce lock time to 5 minutes after game start
+        // $lockTime = clone $gameStart;
+        // $lockTime->add(new DateInterval('PT5M')); // TEST: Lock 5 minutes after game start
+        
         // Current time in Pacific timezone
         $now = new DateTime('now', $pacificTimezone);
         
         error_log("Lock check: Game start: " . $gameStart->format('Y-m-d H:i:s T') . 
                   ", Lock time: " . $lockTime->format('Y-m-d H:i:s T') . 
-                  ", Current time: " . $now->format('Y-m-d H:i:s T'));
+                  ", Current time: " . $now->format('Y-m-d H:i:s T') .
+                  ", Is locked: " . ($now > $lockTime ? 'YES' : 'NO'));
         
-        return $now > $lockTime;
+        $isLocked = $now > $lockTime;
+        
+        // Add more detailed logging
+        if ($isLocked) {
+            error_log("ATTENDANCE LOCK: Check-in is LOCKED - current time is past lock time");
+        } else {
+            $minutesUntilLock = ($lockTime->getTimestamp() - $now->getTimestamp()) / 60;
+            error_log("ATTENDANCE LOCK: Check-in is ALLOWED - lock will activate in " . round($minutesUntilLock) . " minutes");
+        }
+        
+        return $isLocked;
     } catch (Exception $e) {
         error_log('Error calculating lock time: ' . $e->getMessage());
         return false; // Don't lock on error

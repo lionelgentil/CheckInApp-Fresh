@@ -2721,11 +2721,17 @@ class CheckInViewApp {
                 <div class="team-toggle-compact">
                     <button class="team-toggle-btn active" id="home-toggle" onclick="app.toggleGridTeam('home')" style="border-left: 4px solid ${homeTeam.colorData};">
                         <span class="team-name">${homeTeam.name}</span>
-                        <span class="attendance-count" id="home-attendance-count">0/0</span>
+                        <div class="attendance-count" id="home-attendance-count">
+                            <div class="female-count">0/0 Female</div>
+                            <div class="male-count">0/0 Male</div>
+                        </div>
                     </button>
                     <button class="team-toggle-btn" id="away-toggle" onclick="app.toggleGridTeam('away')" style="border-left: 4px solid ${awayTeam.colorData};">
                         <span class="team-name">${awayTeam.name}</span>
-                        <span class="attendance-count" id="away-attendance-count">0/0</span>
+                        <div class="attendance-count" id="away-attendance-count">
+                            <div class="female-count">0/0 Female</div>
+                            <div class="male-count">0/0 Male</div>
+                        </div>
                     </button>
                 </div>
                 
