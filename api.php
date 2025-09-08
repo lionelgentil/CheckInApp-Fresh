@@ -3497,7 +3497,7 @@ function updateAttendanceOnly($db) {
         // First check if check-in is locked for this match
         // Get match details to check lock status
         $stmt = $db->prepare('
-            SELECT e.date_epoch as event_date_epoch, m.match_time, m.match_time_epoch 
+            SELECT e.date_epoch as event_date_epoch, m.match_time_epoch 
             FROM events e 
             JOIN matches m ON e.id = m.event_id 
             WHERE e.id = ? AND m.id = ?
@@ -3511,15 +3511,15 @@ function updateAttendanceOnly($db) {
             // Use epoch timestamp (more reliable)
             $isLocked = false;
             if ($matchInfo['match_time_epoch']) {
-                // Use new epoch-based lock function (much more reliable!)
+                // Use epoch-based lock function
                 error_log('DEBUG: Using EPOCH-based lock check with timestamp: ' . $matchInfo['match_time_epoch']);
                 $isLocked = isCheckInLockedForMatchEpoch($matchInfo['match_time_epoch']);
                 $lockMethod = 'epoch';
             } else {
-                // Fallback to legacy string-based lock function if epoch not available
-                error_log('DEBUG: Using LEGACY string-based lock check - bypassLock=' . ($bypassLock ? 'true' : 'false'));
-                $isLocked = isCheckInLockedForMatch($matchInfo['event_date_epoch'], $matchInfo['match_time']);
-                $lockMethod = 'legacy';
+                // No match time available - don't lock
+                error_log('DEBUG: No match time available - check-in allowed');
+                $isLocked = false;
+                $lockMethod = 'no_time';
             }
             
             error_log('DEBUG: Lock result: ' . ($isLocked ? 'LOCKED' : 'UNLOCKED') . ' (method: ' . $lockMethod . ')');
@@ -3527,7 +3527,6 @@ function updateAttendanceOnly($db) {
             // Add debug info to response (will be visible in browser console)
             $debugInfo = [
                 'match_date_epoch' => $matchInfo['event_date_epoch'],
-                'match_time' => $matchInfo['match_time'],
                 'match_time_epoch' => $matchInfo['match_time_epoch'],
                 'bypass_lock' => $bypassLock,
                 'is_locked' => $isLocked,
@@ -3623,7 +3622,7 @@ function updateAttendanceOnly($db) {
         // Add debug info to successful response
         $result['debug'] = $debugInfo ?? [
             'match_date_epoch' => $matchInfo['event_date_epoch'] ?? 'unknown',
-            'match_time' => $matchInfo['match_time'] ?? 'unknown',
+            'match_time_epoch' => $matchInfo['match_time_epoch'] ?? 'unknown',
             'bypass_lock' => $bypassLock,
             'is_locked' => false,
             'current_time_pdt' => (new DateTime('now', new DateTimeZone('America/Los_Angeles')))->format('Y-m-d H:i:s T')
