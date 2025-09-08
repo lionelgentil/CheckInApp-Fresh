@@ -1024,8 +1024,8 @@ function updateSingleEvent($db) {
                     foreach ($match['homeTeamAttendees'] as $attendee) {
                         $checkedInEpoch = $attendee['checkedInAt_epoch'] ?? time();
                         $stmt = $db->prepare('
-                            INSERT INTO match_attendees (match_id, member_id, team_type, checked_in_at, checked_in_at_epoch)
-                            VALUES (?, ?, ?, CURRENT_TIMESTAMP, ?)
+                            INSERT INTO match_attendees (match_id, member_id, team_type, checked_in_at_epoch)
+                            VALUES (?, ?, ?, ?)
                         ');
                         $stmt->execute([$match['id'], $attendee['memberId'], 'home', $checkedInEpoch]);
                     }
@@ -1035,8 +1035,8 @@ function updateSingleEvent($db) {
                     foreach ($match['awayTeamAttendees'] as $attendee) {
                         $checkedInEpoch = $attendee['checkedInAt_epoch'] ?? time();
                         $stmt = $db->prepare('
-                            INSERT INTO match_attendees (match_id, member_id, team_type, checked_in_at, checked_in_at_epoch)
-                            VALUES (?, ?, ?, CURRENT_TIMESTAMP, ?)
+                            INSERT INTO match_attendees (match_id, member_id, team_type, checked_in_at_epoch)
+                            VALUES (?, ?, ?, ?)
                         ');
                         $stmt->execute([$match['id'], $attendee['memberId'], 'away', $checkedInEpoch]);
                     }
@@ -3588,8 +3588,8 @@ function updateAttendanceOnly($db) {
                 error_log('Adding attendance...');
                 $currentEpoch = time();
                 $stmt = $db->prepare('
-                    INSERT INTO match_attendees (match_id, member_id, team_type, checked_in_at, checked_in_at_epoch)
-                    VALUES (?, ?, ?, CURRENT_TIMESTAMP, ?)
+                    INSERT INTO match_attendees (match_id, member_id, team_type, checked_in_at_epoch)
+                    VALUES (?, ?, ?, ?)
                 ');
                 $stmt->execute([$matchId, $memberId, $teamType, $currentEpoch]);
                 $result = ['action' => 'added', 'success' => true];
@@ -3599,8 +3599,8 @@ function updateAttendanceOnly($db) {
             // Add attendance with epoch timestamp
             $currentEpoch = time();
             $stmt = $db->prepare('
-                INSERT INTO match_attendees (match_id, member_id, team_type, checked_in_at, checked_in_at_epoch)
-                VALUES (?, ?, ?, CURRENT_TIMESTAMP, ?)
+                INSERT INTO match_attendees (match_id, member_id, team_type, checked_in_at_epoch)
+                VALUES (?, ?, ?, ?)
             ');
             $stmt->execute([$matchId, $memberId, $teamType, $currentEpoch]);
             $result = ['action' => 'added', 'success' => true];
