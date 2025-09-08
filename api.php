@@ -3060,13 +3060,25 @@ function updateAttendanceOnly($db) {
             $isLocked = isCheckInLockedForMatch($matchInfo['event_date'], $matchInfo['match_time']);
             error_log('DEBUG: isCheckInLockedForMatch returned: ' . ($isLocked ? 'true' : 'false'));
             
+            // Add debug info to response (will be visible in browser console)
+            $debugInfo = [
+                'match_date' => $matchInfo['event_date'],
+                'match_time' => $matchInfo['match_time'],
+                'bypass_lock' => $bypassLock,
+                'is_locked' => $isLocked,
+                'current_time_pdt' => (new DateTime('now', new DateTimeZone('America/Los_Angeles')))->format('Y-m-d H:i:s T'),
+                'debug_message' => $isLocked ? 'LOCK SHOULD BE ACTIVE' : 'LOCK NOT ACTIVE YET'
+            ];
+            error_log('DEBUG: Full debug info: ' . json_encode($debugInfo));
+            
             if (!$bypassLock && $isLocked) {
                 error_log('Check-in is locked for this match (no bypass)');
                 http_response_code(423); // 423 Locked (more appropriate than 403)
                 echo json_encode([
                     'error' => 'Check-in is locked for this match',
                     'message' => 'This match check-in was automatically locked 5 minutes after game start (TEST MODE).',
-                    'locked' => true
+                    'locked' => true,
+                    'debug' => $debugInfo
                 ]);
                 return;
             } elseif ($bypassLock) {
@@ -3139,6 +3151,16 @@ function updateAttendanceOnly($db) {
         
         error_log('Committing transaction...');
         $db->commit();
+        
+        // Add debug info to successful response
+        $result['debug'] = $debugInfo ?? [
+            'match_date' => $matchInfo['event_date'] ?? 'unknown',
+            'match_time' => $matchInfo['match_time'] ?? 'unknown',
+            'bypass_lock' => $bypassLock,
+            'is_locked' => false,
+            'current_time_pdt' => (new DateTime('now', new DateTimeZone('America/Los_Angeles')))->format('Y-m-d H:i:s T')
+        ];
+        
         error_log('Attendance update successful: ' . json_encode($result));
         echo json_encode($result);
         

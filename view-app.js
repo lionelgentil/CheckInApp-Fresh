@@ -2871,13 +2871,15 @@ class CheckInViewApp {
             const homeFemaleTotal = homeMembers.filter(m => m.gender === 'female').length;
             
             let homeMalePresent = 0, homeFemalePresent = 0;
-            homeAttendees.forEach(attendeeId => {
+            homeAttendees.forEach(attendee => {
+                // Handle both object format {memberId: "id", name: "name"} and string format "id"
+                const attendeeId = typeof attendee === 'object' ? attendee.memberId : attendee;
                 const member = homeMembers.find(m => m.id === attendeeId);
                 if (member) {
                     if (member.gender === 'male') homeMalePresent++;
                     else if (member.gender === 'female') homeFemalePresent++;
                 } else {
-                    console.log('❌ Home attendee not found in roster:', attendeeId);
+                    console.log('❌ Home attendee not found in roster:', attendee);
                 }
             });
             
@@ -2927,13 +2929,16 @@ class CheckInViewApp {
             const awayFemaleTotal = awayMembers.filter(m => m.gender === 'female').length;
             
             let awayMalePresent = 0, awayFemalePresent = 0;
-            awayAttendees.forEach(attendeeId => {
+            awayAttendees.forEach(attendee => {
+                // Handle both object format {memberId: "id", name: "name"} and string format "id"
+                const attendeeId = typeof attendee === 'object' ? attendee.memberId : attendee;
                 const member = awayMembers.find(m => m.id === attendeeId);
                 if (member) {
                     if (member.gender === 'male') awayMalePresent++;
                     else if (member.gender === 'female') awayFemalePresent++;
+                    console.log('✅ Away attendee found:', member.name, `(${member.gender})`);
                 } else {
-                    console.log('❌ Away attendee not found in roster:', attendeeId);
+                    console.log('❌ Away attendee not found in roster:', attendee, 'parsed ID:', attendeeId);
                 }
             });
             
@@ -3306,7 +3311,8 @@ class CheckInViewApp {
                     matchId: matchId,
                     memberId: memberId,
                     teamType: teamType,
-                    action: 'toggle'
+                    action: 'toggle',
+                    bypass_lock: false  // View app should NOT bypass locks
                 })
             });
             
@@ -3315,6 +3321,12 @@ class CheckInViewApp {
                 if (response.status === 423) {
                     // 423 Locked - attendance is locked for this match
                     const errorData = await response.json().catch(() => ({}));
+                    
+                    // Log debug info from server for lock case
+                    if (errorData.debug) {
+                        console.log('🔒 Lock debug info:', errorData.debug);
+                    }
+                    
                     throw new Error(errorData.message || 'Check-in is locked for this match');
                 }
                 throw new Error(`HTTP ${response.status}: ${response.statusText}`);
@@ -3322,6 +3334,19 @@ class CheckInViewApp {
             
             const result = await response.json();
             console.log('Attendance updated successfully:', result);
+            
+            // Always log debug info from server for troubleshooting
+            if (result.debug) {
+                console.log('🔒 Server debug info:', result.debug);
+                console.log('🕐 Lock status:', result.debug.is_locked ? 'LOCKED ❌' : 'UNLOCKED ✅');
+                console.log('⏰ Times:', {
+                    gameStart: `${result.debug.match_date} ${result.debug.match_time}`,
+                    currentTime: result.debug.current_time_pdt,
+                    message: result.debug.debug_message
+                });
+            } else {
+                console.log('⚠️ No debug info received from server');
+            }
             
             // Update the events display in the background (no modal refresh)
             await this.renderEvents();
@@ -3975,6 +4000,12 @@ class CheckInViewApp {
                 if (response.status === 423) {
                     // 423 Locked - attendance is locked for this match
                     const errorData = await response.json().catch(() => ({}));
+                    
+                    // Log debug info from server for lock case
+                    if (errorData.debug) {
+                        console.log('🔒 Lock debug info:', errorData.debug);
+                    }
+                    
                     throw new Error(errorData.message || 'Check-in is locked for this match');
                 }
                 throw new Error(`HTTP ${response.status}: ${response.statusText}`);
