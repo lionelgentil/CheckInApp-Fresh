@@ -3717,8 +3717,8 @@ function isCheckInLockedForMatch($eventDate, $matchTime) {
         $lockTime->add(new DateInterval('PT1H'));    // Grace period (1 hour after game ends)
         
         // TEMPORARY: For testing, reduce lock time to 5 minutes after game start
-        // $lockTime = clone $gameStart;
-        // $lockTime->add(new DateInterval('PT5M')); // TEST: Lock 5 minutes after game start
+        $lockTime = clone $gameStart;
+        $lockTime->add(new DateInterval('PT5M')); // TEST: Lock 5 minutes after game start
         
         // Current time in Pacific timezone
         $now = new DateTime('now', $pacificTimezone);

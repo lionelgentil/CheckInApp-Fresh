@@ -2764,6 +2764,12 @@ class CheckInViewApp {
         // Initialize the check-in interface
         this.initializeCheckInInterface(eventId, matchId, homeTeam, awayTeam, match);
         
+        // Force update attendance counts after DOM is fully created
+        setTimeout(() => {
+            console.log('🔢 Force updating attendance counts after modal creation');
+            this.updateAttendanceCounts(match);
+        }, 200);
+        
         } catch (error) {
             console.error('Error in viewMatch:', error);
             this.closeLoadingModal();
@@ -2841,11 +2847,23 @@ class CheckInViewApp {
     }
     
     updateAttendanceCounts(match) {
+        console.log('🔢 updateAttendanceCounts called with:', {
+            homeAttendees: match.homeTeamAttendees ? match.homeTeamAttendees.length : 0,
+            awayAttendees: match.awayTeamAttendees ? match.awayTeamAttendees.length : 0,
+            hasHomeTeam: !!this.currentHomeTeam,
+            hasAwayTeam: !!this.currentAwayTeam
+        });
+        
         const homeAttendees = match.homeTeamAttendees || [];
         const awayAttendees = match.awayTeamAttendees || [];
         
         const homeCountElement = document.getElementById('home-attendance-count');
         const awayCountElement = document.getElementById('away-attendance-count');
+        
+        console.log('🔢 DOM elements found:', {
+            homeCountElement: !!homeCountElement,
+            awayCountElement: !!awayCountElement
+        });
         
         if (homeCountElement && this.currentHomeTeam) {
             const homeMembers = this.currentHomeTeam.members;
