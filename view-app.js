@@ -1621,8 +1621,8 @@ class CheckInViewApp {
         
         // Sort by date (most recent first), then by team name
         filteredCards.sort((a, b) => {
-            const dateA = new Date(a.eventDate);
-            const dateB = new Date(b.eventDate);
+            const dateA = a.eventDate_epoch;
+            const dateB = b.eventDate_epoch;
             if (dateB - dateA !== 0) return dateB - dateA;
             return a.teamName.localeCompare(b.teamName);
         });
@@ -1801,12 +1801,7 @@ class CheckInViewApp {
                     }
                     
                     cardRecords.push({
-                        eventDate: new Date(event.date_epoch * 1000).toLocaleDateString('en-US', { 
-                            timeZone: 'America/Los_Angeles', 
-                            year: 'numeric', 
-                            month: '2-digit', 
-                            day: '2-digit' 
-                        }),
+                        eventDate_epoch: event.date_epoch, // Add epoch for template compatibility
                         eventName: event.name,
                         matchInfo: `${homeTeam?.name || 'Unknown'} vs ${awayTeam?.name || 'Unknown'}`,
                         teamName: playerTeam?.name || 'Unknown Team',
@@ -1841,7 +1836,7 @@ class CheckInViewApp {
         // Filter by season if specified
         let filteredGames = gameRecords;
         if (showCurrentSeasonOnly) {
-            filteredGames = gameRecords.filter(game => this.isCurrentSeasonEvent(game.eventEpoch));
+            filteredGames = gameRecords.filter(game => this.isCurrentSeasonEvent(game.eventDate_epoch));
         }
         
         // Filter by status
@@ -1852,7 +1847,7 @@ class CheckInViewApp {
                 today.setHours(23, 59, 59, 999); // End of today
                 
                 filteredGames = filteredGames.filter(game => {
-                    const gameDate = new Date(game.eventDate);
+                    const gameDate = new Date(game.eventDate_epoch * 1000); // Use epoch timestamp
                     return game.status !== 'completed' && 
                            game.status !== 'cancelled' && 
                            gameDate < today; // Only past games
@@ -1883,14 +1878,14 @@ class CheckInViewApp {
         // REQUESTED CHANGE: Sort by date ascending (oldest first), then by time
         filteredGames.sort((a, b) => {
             // Sort by event epoch first
-            if (a.eventEpoch - b.eventEpoch !== 0) return a.eventEpoch - b.eventEpoch; // Changed to ascending order
+            if (a.eventDate_epoch - b.eventDate_epoch !== 0) return a.eventDate_epoch - b.eventDate_epoch; // Changed to ascending order
             
             // Then sort by time epoch if same date
-            if (a.timeEpoch && b.timeEpoch) {
-                return a.timeEpoch - b.timeEpoch;
-            } else if (a.timeEpoch && !b.timeEpoch) {
+            if (a.time_epoch && b.time_epoch) {
+                return a.time_epoch - b.time_epoch;
+            } else if (a.time_epoch && !b.time_epoch) {
                 return -1;
-            } else if (!a.timeEpoch && b.timeEpoch) {
+            } else if (!a.time_epoch && b.time_epoch) {
                 return 1;
             }
             return 0;
@@ -2035,19 +2030,12 @@ class CheckInViewApp {
                 const gameRecord = {
                     eventId: event.id,
                     matchId: match.id,
-                    eventDate: new Date(event.date_epoch * 1000).toLocaleDateString('en-US', { 
-                        timeZone: 'America/Los_Angeles', 
-                        year: 'numeric', 
-                        month: '2-digit', 
-                        day: '2-digit' 
-                    }),
-                    eventEpoch: event.date_epoch,
-                    timeEpoch: match.time_epoch,
+                    eventDate_epoch: event.date_epoch, // Keep epoch for template compatibility
+                    time_epoch: match.time_epoch, // Use correct property name for template
                     eventName: event.name,
                     homeTeam: homeTeam?.name || 'Unknown Team',
                     awayTeam: awayTeam?.name || 'Unknown Team',
                     field: match.field,
-                    time: match.time_epoch ? epochToPacificTime(match.time_epoch) : null,
                     status: match.matchStatus || 'scheduled',
                     hasScore: match.homeScore !== null && match.awayScore !== null,
                     homeScore: match.homeScore,
