@@ -2306,16 +2306,16 @@ function debugDisciplinaryRecords($db) {
         $totalRecords = $stmt->fetch(PDO::FETCH_ASSOC)['total'];
         
         // Get all raw records without joins
-        $stmt = $db->query('SELECT * FROM player_disciplinary_records ORDER BY created_at DESC LIMIT 10');
+        $stmt = $db->query('SELECT * FROM player_disciplinary_records ORDER BY created_at_epoch DESC LIMIT 10');
         $rawRecords = $stmt->fetchAll(PDO::FETCH_ASSOC);
         
         // Check for orphaned records (records with member_id that don't exist in team_members)
         $stmt = $db->query('
-            SELECT pdr.id, pdr.member_id, pdr.card_type, pdr.created_at
+            SELECT pdr.id, pdr.member_id, pdr.card_type, pdr.created_at_epoch
             FROM player_disciplinary_records pdr
             LEFT JOIN team_members tm ON pdr.member_id = tm.id
             WHERE tm.id IS NULL
-            ORDER BY pdr.created_at DESC
+            ORDER BY pdr.created_at_epoch DESC
         ');
         $orphanedRecords = $stmt->fetchAll(PDO::FETCH_ASSOC);
         
@@ -2354,7 +2354,7 @@ function getDisciplinaryRecords($db) {
             JOIN team_members tm ON pdr.member_id = tm.id
             JOIN teams t ON tm.team_id = t.id
             WHERE pdr.member_id = ?
-            ORDER BY pdr.incident_date DESC, pdr.created_at DESC
+            ORDER BY pdr.incident_date_epoch DESC, pdr.created_at_epoch DESC
         ');
         $stmt->execute([$memberId]);
     } elseif ($teamId) {
@@ -2365,7 +2365,7 @@ function getDisciplinaryRecords($db) {
             JOIN team_members tm ON pdr.member_id = tm.id
             JOIN teams t ON tm.team_id = t.id
             WHERE t.id = ?
-            ORDER BY pdr.incident_date DESC, pdr.created_at DESC
+            ORDER BY pdr.incident_date_epoch DESC, pdr.created_at_epoch DESC
         ');
         $stmt->execute([$teamId]);
     } else {
@@ -2375,7 +2375,7 @@ function getDisciplinaryRecords($db) {
             FROM player_disciplinary_records pdr
             JOIN team_members tm ON pdr.member_id = tm.id
             JOIN teams t ON tm.team_id = t.id
-            ORDER BY pdr.incident_date DESC, pdr.created_at DESC
+            ORDER BY pdr.incident_date_epoch DESC, pdr.created_at_epoch DESC
         ');
     }
     
@@ -2389,11 +2389,11 @@ function getDisciplinaryRecords($db) {
             'cardType' => $record['card_type'],
             'reason' => $record['reason'],
             'notes' => $record['notes'],
-            'incidentDate' => $record['incident_date'],
+            'incidentDate_epoch' => $record['incident_date_epoch'], // Use epoch timestamp
             'suspensionMatches' => $record['suspension_matches'] ? (int)$record['suspension_matches'] : null,
             'suspensionServed' => $record['suspension_served'] ? true : false,
-            'suspensionServedDate' => $record['suspension_served_date'],
-            'createdAt' => $record['created_at']
+            'suspensionServedDate_epoch' => $record['suspension_served_date_epoch'], // Use epoch timestamp
+            'createdAt_epoch' => $record['created_at_epoch'] // Use epoch timestamp
         ];
     }
     
@@ -2439,7 +2439,7 @@ function saveDisciplinaryRecords($db) {
         
         // Insert new records
         $stmt = $db->prepare('
-            INSERT INTO player_disciplinary_records (member_id, card_type, reason, notes, incident_date, suspension_matches, suspension_served, suspension_served_date)
+            INSERT INTO player_disciplinary_records (member_id, card_type, reason, notes, incident_date_epoch, suspension_matches, suspension_served, suspension_served_date_epoch)
             VALUES (?, ?, ?, ?, ?, ?, ?, ?)
         ');
         
@@ -2456,7 +2456,7 @@ function saveDisciplinaryRecords($db) {
                 }
             }
             
-            $suspensionServedDate = ($suspensionServed && !empty($record['suspensionServedDate'])) ? $record['suspensionServedDate'] : null;
+            $suspensionServedDate = ($suspensionServed && !empty($record['suspensionServedDate_epoch'])) ? $record['suspensionServedDate_epoch'] : null;
             
             // Convert suspension matches to integer or null
             $suspensionMatches = null;
@@ -2469,10 +2469,10 @@ function saveDisciplinaryRecords($db) {
                 $record['cardType'] ?? '',
                 $record['reason'] ?? null,
                 $record['notes'] ?? null,
-                $record['incidentDate'] ?? null,
+                $record['incidentDate_epoch'] ?? null, // Use epoch timestamp
                 $suspensionMatches,
                 $suspensionServed ? 1 : 0, // Explicit 1/0 for PostgreSQL
-                $suspensionServedDate
+                $suspensionServedDate // Already epoch timestamp
             ]);
         }
         
@@ -3861,11 +3861,11 @@ function searchInactiveMembers($db) {
             unset($member['photo_data']);
             
             $recordsStmt = $db->prepare('
-                SELECT card_type, reason, notes, incident_date, 
-                       suspension_matches, suspension_served, suspension_served_date, created_at
+                SELECT card_type, reason, notes, incident_date_epoch, 
+                       suspension_matches, suspension_served, suspension_served_date_epoch, created_at_epoch
                 FROM player_disciplinary_records 
                 WHERE member_id = ?
-                ORDER BY incident_date DESC, created_at DESC
+                ORDER BY incident_date_epoch DESC, created_at_epoch DESC
             ');
             $recordsStmt->execute([$member['id']]);
             $member['disciplinary_records'] = $recordsStmt->fetchAll(PDO::FETCH_ASSOC);
