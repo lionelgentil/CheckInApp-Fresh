@@ -4937,32 +4937,25 @@ Please check the browser console (F12) for more details.`);
         const event = this.events.find(e => e.id === eventId);
         if (!event) return;
         
+        // Convert event date epoch to YYYY-MM-DD format for time conversion
+        const eventDateString = new Date(event.date_epoch * 1000).toISOString().split('T')[0];
+        
+        // Create match object with only essential fields for creation
         const newMatch = {
             id: this.generateUUID(),
             homeTeamId: homeTeamId,
             awayTeamId: awayTeamId,
             field: field || null,
-            time_epoch: time ? this.matchTimeStringToEpoch(
-                epochToPacificDate(event.date_epoch, { 
-                    year: 'numeric', 
-                    month: '2-digit', 
-                    day: '2-digit' 
-                }).split('/').map(x => x.padStart(2, '0')).reverse().join('-'), // Convert MM/DD/YYYY to YYYY-MM-DD
-                time
-            ) : null,
+            time_epoch: time ? this.matchTimeStringToEpoch(eventDateString, time) : null,
             mainRefereeId: mainRefereeId || null,
             assistantRefereeId: assistantRefereeId || null,
-            notes: notes,
-            homeScore: null,
-            awayScore: null,
-            matchStatus: 'scheduled',
-            homeTeamAttendees: [],
-            awayTeamAttendees: [],
-            cards: []
+            notes: notes
         };
         
+        console.log('Creating match with time_epoch:', newMatch.time_epoch, 'from time:', time, 'date:', eventDateString);
+        
         try {
-            // Use efficient single-match API endpoint instead of sending all matches
+            // Use efficient single-match API endpoint with minimal payload
             const response = await fetch(`/api/match?event_id=${eventId}`, {
                 method: 'POST',
                 headers: {
@@ -4980,8 +4973,17 @@ Please check the browser console (F12) for more details.`);
                 throw new Error(result.error || 'Failed to create match');
             }
             
-            // Add match to local event data after successful API call
-            event.matches.push(newMatch);
+            // Add match to local event data with full structure for UI
+            const fullMatch = {
+                ...newMatch,
+                homeScore: null,
+                awayScore: null,
+                matchStatus: 'scheduled',
+                homeTeamAttendees: [],
+                awayTeamAttendees: [],
+                cards: []
+            };
+            event.matches.push(fullMatch);
             
             this.renderEvents();
             this.closeModal();
