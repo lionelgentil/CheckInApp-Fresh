@@ -1509,14 +1509,14 @@ function saveTeams($db) {
 }
 
 function getEvents($db) {
-    // Step 1: Get all events with epoch timestamps
-    $stmt = $db->query('SELECT id, name, description, date, date_epoch FROM events ORDER BY date_epoch, date');
+    // Step 1: Get all events with pure epoch timestamps
+    $stmt = $db->query('SELECT id, name, description, date_epoch FROM events ORDER BY date_epoch');
     $events = [];
     $eventIds = [];
     
     while ($event = $stmt->fetch(PDO::FETCH_ASSOC)) {
-        // Use epoch timestamp if available, fallback to string date
-        $eventEpoch = $event['date_epoch'] ?: strtotime($event['date'] . ' 00:00:00 America/Los_Angeles');
+        // Use epoch timestamp directly (pure epoch system)
+        $eventEpoch = $event['date_epoch'];
         
         $events[$event['id']] = [
             'id' => $event['id'],
@@ -1534,28 +1534,22 @@ function getEvents($db) {
         return;
     }
     
-    // Step 2: Get all matches with epoch timestamps
+    // Step 2: Get all matches with pure epoch timestamps
     $eventIdsPlaceholder = str_repeat('?,', count($eventIds) - 1) . '?';
     $stmt = $db->prepare("
-        SELECT id, event_id, home_team_id, away_team_id, field, match_time, match_time_epoch,
+        SELECT id, event_id, home_team_id, away_team_id, field, match_time_epoch,
                main_referee_id, assistant_referee_id, notes, home_score, away_score, match_status
         FROM matches 
         WHERE event_id IN ({$eventIdsPlaceholder}) 
-        ORDER BY event_id, match_time_epoch, match_time
+        ORDER BY event_id, match_time_epoch
     ");
     $stmt->execute($eventIds);
     
     $matches = [];
     $matchIds = [];
     while ($match = $stmt->fetch(PDO::FETCH_ASSOC)) {
-        // Use epoch timestamp if available, fallback to combining event date + match time
+        // Use epoch timestamp directly (pure epoch system)
         $matchEpoch = $match['match_time_epoch'];
-        if (!$matchEpoch && $match['match_time']) {
-            // Fallback: combine event date with match time
-            $eventDate = $events[$match['event_id']]['date'];
-            $cleanDate = date('Y-m-d', strtotime($eventDate));
-            $matchEpoch = strtotime($cleanDate . ' ' . $match['match_time'] . ' America/Los_Angeles');
-        }
         
         $matches[$match['id']] = [
             'id' => $match['id'],
@@ -1589,8 +1583,8 @@ function getEvents($db) {
         $stmt->execute($matchIds);
         
         while ($attendee = $stmt->fetch(PDO::FETCH_ASSOC)) {
-            // Use epoch timestamp if available, fallback to string timestamp
-            $checkedInEpoch = $attendee['checked_in_at_epoch'] ?: strtotime($attendee['checked_in_at'] . ' America/Los_Angeles');
+            // Use epoch timestamp directly (pure epoch system)
+            $checkedInEpoch = $attendee['checked_in_at_epoch'];
             
             $attendeeData = [
                 'memberId' => $attendee['member_id'],
@@ -1629,17 +1623,17 @@ function getEvents($db) {
         }
     }
     
-    // Step 5: Get all general attendees with epoch timestamps
+    // Step 5: Get all general attendees with pure epoch timestamps
     $stmt = $db->prepare("
-        SELECT event_id, member_id, name, team_name, status, checked_in_at, checked_in_at_epoch
+        SELECT event_id, member_id, name, team_name, status, checked_in_at_epoch
         FROM general_attendees 
         WHERE event_id IN ({$eventIdsPlaceholder})
     ");
     $stmt->execute($eventIds);
     
     while ($attendee = $stmt->fetch(PDO::FETCH_ASSOC)) {
-        // Use epoch timestamp if available, fallback to string timestamp
-        $checkedInEpoch = $attendee['checked_in_at_epoch'] ?: strtotime($attendee['checked_in_at'] . ' America/Los_Angeles');
+        // Use epoch timestamp directly (pure epoch system)
+        $checkedInEpoch = $attendee['checked_in_at_epoch'];
         
         $events[$attendee['event_id']]['attendees'][] = [
             'memberId' => $attendee['member_id'],
