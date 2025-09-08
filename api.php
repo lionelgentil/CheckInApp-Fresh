@@ -1357,16 +1357,20 @@ function saveTeams($db) {
 }
 
 function getEvents($db) {
-    // Step 1: Get all events
-    $stmt = $db->query('SELECT * FROM events ORDER BY date');
+    // Step 1: Get all events with epoch timestamps
+    $stmt = $db->query('SELECT id, name, description, date, date_epoch FROM events ORDER BY date_epoch, date');
     $events = [];
     $eventIds = [];
     
     while ($event = $stmt->fetch(PDO::FETCH_ASSOC)) {
+        // Use epoch timestamp if available, fallback to string date
+        $eventEpoch = $event['date_epoch'] ?: strtotime($event['date'] . ' 00:00:00 America/Los_Angeles');
+        
         $events[$event['id']] = [
             'id' => $event['id'],
             'name' => $event['name'],
-            'date' => $event['date'],
+            'date' => $event['date'], // Keep for backward compatibility
+            'date_epoch' => $eventEpoch, // NEW: Primary epoch timestamp
             'description' => $event['description'],
             'matches' => [],
             'attendees' => []
@@ -1379,21 +1383,37 @@ function getEvents($db) {
         return;
     }
     
-    // Step 2: Get all matches for all events in one query
+    // Step 2: Get all matches with epoch timestamps
     $eventIdsPlaceholder = str_repeat('?,', count($eventIds) - 1) . '?';
-    $stmt = $db->prepare("SELECT * FROM matches WHERE event_id IN ({$eventIdsPlaceholder}) ORDER BY event_id, match_time");
+    $stmt = $db->prepare("
+        SELECT id, event_id, home_team_id, away_team_id, field, match_time, match_time_epoch,
+               main_referee_id, assistant_referee_id, notes, home_score, away_score, match_status
+        FROM matches 
+        WHERE event_id IN ({$eventIdsPlaceholder}) 
+        ORDER BY event_id, match_time_epoch, match_time
+    ");
     $stmt->execute($eventIds);
     
     $matches = [];
     $matchIds = [];
     while ($match = $stmt->fetch(PDO::FETCH_ASSOC)) {
+        // Use epoch timestamp if available, fallback to combining event date + match time
+        $matchEpoch = $match['match_time_epoch'];
+        if (!$matchEpoch && $match['match_time']) {
+            // Fallback: combine event date with match time
+            $eventDate = $events[$match['event_id']]['date'];
+            $cleanDate = date('Y-m-d', strtotime($eventDate));
+            $matchEpoch = strtotime($cleanDate . ' ' . $match['match_time'] . ' America/Los_Angeles');
+        }
+        
         $matches[$match['id']] = [
             'id' => $match['id'],
             'eventId' => $match['event_id'],
             'homeTeamId' => $match['home_team_id'],
             'awayTeamId' => $match['away_team_id'],
             'field' => $match['field'],
-            'time' => $match['match_time'],
+            'time' => $match['match_time'], // Keep for backward compatibility
+            'time_epoch' => $matchEpoch, // NEW: Primary epoch timestamp
             'mainRefereeId' => $match['main_referee_id'],
             'assistantRefereeId' => $match['assistant_referee_id'],
             'notes' => $match['notes'],
@@ -1408,7 +1428,7 @@ function getEvents($db) {
     }
     
     if (!empty($matchIds)) {
-        // Step 3: Get all attendees for all matches in one query
+        // Step 3: Get all attendees with epoch timestamps
         $matchIdsPlaceholder = str_repeat('?,', count($matchIds) - 1) . '?';
         $stmt = $db->prepare("
             SELECT ma.*, tm.name as member_name
@@ -1419,10 +1439,14 @@ function getEvents($db) {
         $stmt->execute($matchIds);
         
         while ($attendee = $stmt->fetch(PDO::FETCH_ASSOC)) {
+            // Use epoch timestamp if available, fallback to string timestamp
+            $checkedInEpoch = $attendee['checked_in_at_epoch'] ?: strtotime($attendee['checked_in_at'] . ' America/Los_Angeles');
+            
             $attendeeData = [
                 'memberId' => $attendee['member_id'],
                 'name' => $attendee['member_name'],
-                'checkedInAt' => $attendee['checked_in_at']
+                'checkedInAt' => $attendee['checked_in_at'], // Keep for backward compatibility
+                'checkedInAt_epoch' => $checkedInEpoch // NEW: Primary epoch timestamp
             ];
             
             if ($attendee['team_type'] === 'home') {
@@ -1432,7 +1456,7 @@ function getEvents($db) {
             }
         }
         
-        // Step 4: Get all cards for all matches in one query
+        // Step 4: Get all cards (no timestamps to convert here)
         $stmt = $db->prepare("
             SELECT mc.*, tm.name as member_name
             FROM match_cards mc
@@ -1456,17 +1480,25 @@ function getEvents($db) {
         }
     }
     
-    // Step 5: Get all general attendees for all events in one query
-    $stmt = $db->prepare("SELECT * FROM general_attendees WHERE event_id IN ({$eventIdsPlaceholder})");
+    // Step 5: Get all general attendees with epoch timestamps
+    $stmt = $db->prepare("
+        SELECT event_id, member_id, name, team_name, status, checked_in_at, checked_in_at_epoch
+        FROM general_attendees 
+        WHERE event_id IN ({$eventIdsPlaceholder})
+    ");
     $stmt->execute($eventIds);
     
     while ($attendee = $stmt->fetch(PDO::FETCH_ASSOC)) {
+        // Use epoch timestamp if available, fallback to string timestamp
+        $checkedInEpoch = $attendee['checked_in_at_epoch'] ?: strtotime($attendee['checked_in_at'] . ' America/Los_Angeles');
+        
         $events[$attendee['event_id']]['attendees'][] = [
             'memberId' => $attendee['member_id'],
             'name' => $attendee['name'],
             'team' => $attendee['team_name'],
             'status' => $attendee['status'],
-            'checkedInAt' => $attendee['checked_in_at']
+            'checkedInAt' => $attendee['checked_in_at'], // Keep for backward compatibility
+            'checkedInAt_epoch' => $checkedInEpoch // NEW: Primary epoch timestamp
         ];
     }
     
@@ -1497,22 +1529,43 @@ function saveEvents($db) {
         $db->exec('DELETE FROM events');
         
         foreach ($input as $event) {
+            // Convert date to epoch if not already provided
+            $dateEpoch = null;
+            if (isset($event['date_epoch'])) {
+                $dateEpoch = $event['date_epoch'];
+            } elseif (isset($event['date'])) {
+                $dateEpoch = strtotime($event['date'] . ' 00:00:00 America/Los_Angeles');
+            }
+            
+            // Store both formats during transition
             $stmt = $db->prepare('
-                INSERT INTO events (id, name, date, description)
-                VALUES (?, ?, ?, ?)
+                INSERT INTO events (id, name, date, date_epoch, description)
+                VALUES (?, ?, ?, ?, ?)
             ');
             $stmt->execute([
                 $event['id'],
                 $event['name'],
-                $event['date'],
+                $event['date'] ?? ($dateEpoch ? date('Y-m-d', $dateEpoch) : null), // Backward compatibility
+                $dateEpoch, // NEW: Primary epoch storage
                 $event['description'] ?? ''
             ]);
             
             if (isset($event['matches']) && is_array($event['matches'])) {
                 foreach ($event['matches'] as $match) {
+                    // Convert match time to epoch if not already provided
+                    $matchTimeEpoch = null;
+                    if (isset($match['time_epoch'])) {
+                        $matchTimeEpoch = $match['time_epoch'];
+                    } elseif (isset($match['time']) && $dateEpoch) {
+                        // Combine event date with match time
+                        $eventDateStr = date('Y-m-d', $dateEpoch);
+                        $matchTimeEpoch = strtotime($eventDateStr . ' ' . $match['time'] . ' America/Los_Angeles');
+                    }
+                    
+                    // Store both formats during transition
                     $stmt = $db->prepare('
-                        INSERT INTO matches (id, event_id, home_team_id, away_team_id, field, match_time, main_referee_id, assistant_referee_id, notes, home_score, away_score, match_status)
-                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+                        INSERT INTO matches (id, event_id, home_team_id, away_team_id, field, match_time, match_time_epoch, main_referee_id, assistant_referee_id, notes, home_score, away_score, match_status)
+                        VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
                     ');
                     $stmt->execute([
                         $match['id'],
@@ -1520,7 +1573,8 @@ function saveEvents($db) {
                         $match['homeTeamId'],
                         $match['awayTeamId'],
                         $match['field'] ?? null,
-                        $match['time'] ?? null,
+                        $match['time'] ?? ($matchTimeEpoch ? date('H:i:s', $matchTimeEpoch) : null), // Backward compatibility
+                        $matchTimeEpoch, // NEW: Primary epoch storage
                         $match['mainRefereeId'] ?? null,
                         $match['assistantRefereeId'] ?? null,
                         $match['notes'] ?? null,
@@ -1529,19 +1583,28 @@ function saveEvents($db) {
                         $match['matchStatus'] ?? 'scheduled'
                     ]);
                     
-                    // Save attendees
+                    // Save attendees with epoch timestamps
                     if (isset($match['homeTeamAttendees'])) {
                         foreach ($match['homeTeamAttendees'] as $attendee) {
                             try {
+                                // Convert check-in time to epoch if not already provided
+                                $checkedInEpoch = null;
+                                if (isset($attendee['checkedInAt_epoch'])) {
+                                    $checkedInEpoch = $attendee['checkedInAt_epoch'];
+                                } elseif (isset($attendee['checkedInAt'])) {
+                                    $checkedInEpoch = strtotime($attendee['checkedInAt'] . ' America/Los_Angeles');
+                                }
+                                
                                 $stmt = $db->prepare('
-                                    INSERT INTO match_attendees (match_id, member_id, team_type, checked_in_at)
-                                    VALUES (?, ?, ?, ?)
+                                    INSERT INTO match_attendees (match_id, member_id, team_type, checked_in_at, checked_in_at_epoch)
+                                    VALUES (?, ?, ?, ?, ?)
                                 ');
                                 $stmt->execute([
                                     $match['id'],
                                     $attendee['memberId'],
                                     'home',
-                                    $attendee['checkedInAt']
+                                    $attendee['checkedInAt'] ?? ($checkedInEpoch ? date('Y-m-d H:i:s', $checkedInEpoch) : 'CURRENT_TIMESTAMP'), // Backward compatibility
+                                    $checkedInEpoch ?: time() // NEW: Primary epoch storage
                                 ]);
                             } catch (Exception $e) {
                                 error_log("Error saving home attendee: " . $e->getMessage());
@@ -1554,15 +1617,24 @@ function saveEvents($db) {
                     if (isset($match['awayTeamAttendees'])) {
                         foreach ($match['awayTeamAttendees'] as $attendee) {
                             try {
+                                // Convert check-in time to epoch if not already provided
+                                $checkedInEpoch = null;
+                                if (isset($attendee['checkedInAt_epoch'])) {
+                                    $checkedInEpoch = $attendee['checkedInAt_epoch'];
+                                } elseif (isset($attendee['checkedInAt'])) {
+                                    $checkedInEpoch = strtotime($attendee['checkedInAt'] . ' America/Los_Angeles');
+                                }
+                                
                                 $stmt = $db->prepare('
-                                    INSERT INTO match_attendees (match_id, member_id, team_type, checked_in_at)
-                                    VALUES (?, ?, ?, ?)
+                                    INSERT INTO match_attendees (match_id, member_id, team_type, checked_in_at, checked_in_at_epoch)
+                                    VALUES (?, ?, ?, ?, ?)
                                 ');
                                 $stmt->execute([
                                     $match['id'],
                                     $attendee['memberId'],
                                     'away',
-                                    $attendee['checkedInAt']
+                                    $attendee['checkedInAt'] ?? ($checkedInEpoch ? date('Y-m-d H:i:s', $checkedInEpoch) : 'CURRENT_TIMESTAMP'), // Backward compatibility
+                                    $checkedInEpoch ?: time() // NEW: Primary epoch storage
                                 ]);
                             } catch (Exception $e) {
                                 error_log("Error saving away attendee: " . $e->getMessage());
@@ -1572,7 +1644,7 @@ function saveEvents($db) {
                         }
                     }
                     
-                    // Save cards
+                    // Save cards (no timestamp conversion needed)
                     if (isset($match['cards']) && is_array($match['cards'])) {
                         foreach ($match['cards'] as $card) {
                             try {
@@ -1599,11 +1671,20 @@ function saveEvents($db) {
                 }
             }
             
+            // Save general attendees with epoch timestamps
             if (isset($event['attendees']) && is_array($event['attendees'])) {
                 foreach ($event['attendees'] as $attendee) {
+                    // Convert check-in time to epoch if not already provided
+                    $checkedInEpoch = null;
+                    if (isset($attendee['checkedInAt_epoch'])) {
+                        $checkedInEpoch = $attendee['checkedInAt_epoch'];
+                    } elseif (isset($attendee['checkedInAt'])) {
+                        $checkedInEpoch = strtotime($attendee['checkedInAt'] . ' America/Los_Angeles');
+                    }
+                    
                     $stmt = $db->prepare('
-                        INSERT INTO general_attendees (event_id, member_id, name, team_name, status, checked_in_at)
-                        VALUES (?, ?, ?, ?, ?, ?)
+                        INSERT INTO general_attendees (event_id, member_id, name, team_name, status, checked_in_at, checked_in_at_epoch)
+                        VALUES (?, ?, ?, ?, ?, ?, ?)
                     ');
                     $stmt->execute([
                         $event['id'],
@@ -1611,7 +1692,8 @@ function saveEvents($db) {
                         $attendee['name'],
                         $attendee['team'] ?? null,
                         $attendee['status'] ?? 'present',
-                        $attendee['checkedInAt']
+                        $attendee['checkedInAt'] ?? ($checkedInEpoch ? date('Y-m-d H:i:s', $checkedInEpoch) : 'CURRENT_TIMESTAMP'), // Backward compatibility
+                        $checkedInEpoch ?: time() // NEW: Primary epoch storage
                     ]);
                 }
             }
@@ -3106,7 +3188,7 @@ function updateAttendanceOnly($db) {
                 http_response_code(423); // 423 Locked (more appropriate than 403)
                 echo json_encode([
                     'error' => 'Check-in is locked for this match',
-                    'message' => 'This match check-in was automatically locked 5 minutes after game start (TEST MODE).',
+                    'message' => 'This match check-in was automatically locked 5 minutes after the scheduled start of the game (TEST MODE).',
                     'locked' => true,
                     'debug' => $debugInfo
                 ]);
@@ -3149,23 +3231,25 @@ function updateAttendanceOnly($db) {
                 $result = ['action' => 'removed', 'success' => true];
                 error_log('Attendance removed successfully');
             } else {
-                // Add attendance
+                // Add attendance with epoch timestamp
                 error_log('Adding attendance...');
+                $currentEpoch = time();
                 $stmt = $db->prepare('
-                    INSERT INTO match_attendees (match_id, member_id, team_type, checked_in_at)
-                    VALUES (?, ?, ?, CURRENT_TIMESTAMP)
+                    INSERT INTO match_attendees (match_id, member_id, team_type, checked_in_at, checked_in_at_epoch)
+                    VALUES (?, ?, ?, CURRENT_TIMESTAMP, ?)
                 ');
-                $stmt->execute([$matchId, $memberId, $teamType]);
+                $stmt->execute([$matchId, $memberId, $teamType, $currentEpoch]);
                 $result = ['action' => 'added', 'success' => true];
-                error_log('Attendance added successfully');
+                error_log('Attendance added successfully with epoch: ' . $currentEpoch);
             }
         } elseif ($action === 'add' && !$existingAttendee) {
-            // Add attendance
+            // Add attendance with epoch timestamp
+            $currentEpoch = time();
             $stmt = $db->prepare('
-                INSERT INTO match_attendees (match_id, member_id, team_type, checked_in_at)
-                VALUES (?, ?, ?, CURRENT_TIMESTAMP)
+                INSERT INTO match_attendees (match_id, member_id, team_type, checked_in_at, checked_in_at_epoch)
+                VALUES (?, ?, ?, CURRENT_TIMESTAMP, ?)
             ');
-            $stmt->execute([$matchId, $memberId, $teamType]);
+            $stmt->execute([$matchId, $memberId, $teamType, $currentEpoch]);
             $result = ['action' => 'added', 'success' => true];
         } elseif ($action === 'remove' && $existingAttendee) {
             // Remove attendance
