@@ -4961,41 +4961,32 @@ Please check the browser console (F12) for more details.`);
             cards: []
         };
         
-        // Add match to local event data
-        event.matches.push(newMatch);
-        
         try {
-            // Use efficient single-event update instead of bulk operation
-            const response = await fetch(`/api/event?id=${eventId}`, {
-                method: 'PUT',
+            // Use efficient single-match API endpoint instead of sending all matches
+            const response = await fetch(`/api/match?event_id=${eventId}`, {
+                method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify({
-                    id: event.id,
-                    name: event.name,
-                    date_epoch: event.date_epoch,
-                    description: event.description,
-                    matches: event.matches,
-                    attendees: event.attendees || []
-                })
+                body: JSON.stringify(newMatch)
             });
             
             if (!response.ok) {
-                throw new Error(`Failed to update event: ${response.status} ${response.statusText}`);
+                throw new Error(`Failed to create match: ${response.status} ${response.statusText}`);
             }
             
             const result = await response.json();
             if (!result.success) {
-                throw new Error(result.message || 'Failed to update event');
+                throw new Error(result.error || 'Failed to create match');
             }
+            
+            // Add match to local event data after successful API call
+            event.matches.push(newMatch);
             
             this.renderEvents();
             this.closeModal();
         } catch (error) {
             console.error('Failed to save match:', error);
-            // Remove the match from local data if API call failed
-            event.matches = event.matches.filter(m => m.id !== newMatch.id);
             alert('Failed to save match. Please try again.');
         }
     }
@@ -5015,29 +5006,21 @@ Please check the browser console (F12) for more details.`);
         event.matches = event.matches.filter(m => m.id !== matchId);
         
         try {
-            // Use efficient single-event update instead of bulk operation
-            const response = await fetch(`/api/event?id=${eventId}`, {
-                method: 'PUT',
+            // Use efficient single-match delete endpoint
+            const response = await fetch(`/api/match?match_id=${matchId}`, {
+                method: 'DELETE',
                 headers: {
                     'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    id: event.id,
-                    name: event.name,
-                    date_epoch: event.date_epoch,
-                    description: event.description,
-                    matches: event.matches,
-                    attendees: event.attendees || []
-                })
+                }
             });
             
             if (!response.ok) {
-                throw new Error(`Failed to update event: ${response.status} ${response.statusText}`);
+                throw new Error(`Failed to delete match: ${response.status} ${response.statusText}`);
             }
             
             const result = await response.json();
             if (!result.success) {
-                throw new Error(result.message || 'Failed to update event');
+                throw new Error(result.error || 'Failed to delete match');
             }
             
             this.renderEvents();

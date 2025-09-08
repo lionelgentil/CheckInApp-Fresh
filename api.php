@@ -326,6 +326,20 @@ try {
             }
             break;
             
+        case 'match':
+            // Individual match operations for efficiency
+            if ($method === 'POST') {
+                requireAuth();
+                createSingleMatch($db);
+            } elseif ($method === 'PUT') {
+                requireAuth();
+                updateSingleMatch($db);
+            } elseif ($method === 'DELETE') {
+                requireAuth();
+                deleteSingleMatch($db);
+            }
+            break;
+            
         case 'attendance':
             // Attendance-only endpoint for view.html (no admin auth required)
             if ($method === 'POST') {
@@ -4630,6 +4644,145 @@ function isCheckInLockedForMatchEpoch($gameStartEpoch) {
     } catch (Exception $e) {
         error_log('Error calculating epoch lock time: ' . $e->getMessage());
         return false; // Don't lock on error
+    }
+}
+
+// Individual match operations for efficient match management
+function createSingleMatch($db) {
+    $input = json_decode(file_get_contents('php://input'), true);
+    $eventId = $_GET['event_id'] ?? $input['eventId'] ?? null;
+    
+    if (!$eventId) {
+        http_response_code(400);
+        echo json_encode(['error' => 'Event ID is required']);
+        return;
+    }
+    
+    if (!$input || !isset($input['homeTeamId']) || !isset($input['awayTeamId'])) {
+        http_response_code(400);
+        echo json_encode(['error' => 'Home team ID and away team ID are required']);
+        return;
+    }
+    
+    try {
+        $matchId = $input['id'] ?? generateUUID();
+        $matchTimeEpoch = $input['time_epoch'] ?? null;
+        
+        // Insert the new match
+        $stmt = $db->prepare('
+            INSERT INTO matches (id, event_id, home_team_id, away_team_id, field, match_time_epoch, main_referee_id, assistant_referee_id, notes, home_score, away_score, match_status)
+            VALUES (?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?, ?)
+        ');
+        $stmt->execute([
+            $matchId,
+            $eventId,
+            $input['homeTeamId'],
+            $input['awayTeamId'],
+            $input['field'] ?? null,
+            $matchTimeEpoch,
+            $input['mainRefereeId'] ?? null,
+            $input['assistantRefereeId'] ?? null,
+            $input['notes'] ?? null,
+            $input['homeScore'] ?? null,
+            $input['awayScore'] ?? null,
+            $input['matchStatus'] ?? 'scheduled'
+        ]);
+        
+        echo json_encode([
+            'success' => true,
+            'message' => 'Match created successfully',
+            'match_id' => $matchId
+        ]);
+        
+    } catch (Exception $e) {
+        http_response_code(500);
+        echo json_encode(['error' => 'Failed to create match: ' . $e->getMessage()]);
+    }
+}
+
+function updateSingleMatch($db) {
+    $input = json_decode(file_get_contents('php://input'), true);
+    $matchId = $_GET['match_id'] ?? $input['matchId'] ?? null;
+    
+    if (!$matchId) {
+        http_response_code(400);
+        echo json_encode(['error' => 'Match ID is required']);
+        return;
+    }
+    
+    try {
+        // Build dynamic update query based on provided fields
+        $updates = [];
+        $params = [];
+        
+        $updatableFields = [
+            'home_team_id' => 'homeTeamId',
+            'away_team_id' => 'awayTeamId', 
+            'field' => 'field',
+            'match_time_epoch' => 'time_epoch',
+            'main_referee_id' => 'mainRefereeId',
+            'assistant_referee_id' => 'assistantRefereeId',
+            'notes' => 'notes',
+            'home_score' => 'homeScore',
+            'away_score' => 'awayScore',
+            'match_status' => 'matchStatus'
+        ];
+        
+        foreach ($updatableFields as $dbField => $inputField) {
+            if (array_key_exists($inputField, $input)) {
+                $updates[] = $dbField . ' = ?';
+                $params[] = $input[$inputField];
+            }
+        }
+        
+        if (empty($updates)) {
+            http_response_code(400);
+            echo json_encode(['error' => 'No fields to update']);
+            return;
+        }
+        
+        $params[] = $matchId;
+        $sql = 'UPDATE matches SET ' . implode(', ', $updates) . ' WHERE id = ?';
+        $stmt = $db->prepare($sql);
+        $result = $stmt->execute($params);
+        
+        if ($result && $stmt->rowCount() > 0) {
+            echo json_encode(['success' => true, 'message' => 'Match updated successfully']);
+        } else {
+            http_response_code(404);
+            echo json_encode(['error' => 'Match not found or no changes made']);
+        }
+        
+    } catch (Exception $e) {
+        http_response_code(500);
+        echo json_encode(['error' => 'Failed to update match: ' . $e->getMessage()]);
+    }
+}
+
+function deleteSingleMatch($db) {
+    $matchId = $_GET['match_id'] ?? null;
+    
+    if (!$matchId) {
+        http_response_code(400);
+        echo json_encode(['error' => 'Match ID is required']);
+        return;
+    }
+    
+    try {
+        // Delete match (cascading deletes will handle attendees and cards)
+        $stmt = $db->prepare('DELETE FROM matches WHERE id = ?');
+        $result = $stmt->execute([$matchId]);
+        
+        if ($result && $stmt->rowCount() > 0) {
+            echo json_encode(['success' => true, 'message' => 'Match deleted successfully']);
+        } else {
+            http_response_code(404);
+            echo json_encode(['error' => 'Match not found']);
+        }
+        
+    } catch (Exception $e) {
+        http_response_code(500);
+        echo json_encode(['error' => 'Failed to delete match: ' . $e->getMessage()]);
     }
 }
 ?>
