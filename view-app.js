@@ -3143,25 +3143,47 @@ class CheckInViewApp {
 
     // Update card summary for current team
     async updateCardSummary() {
-        if (!this.currentGridTeam || !this.events) return;
+        console.log('🎯 updateCardSummary called');
+        
+        if (!this.currentGridTeam || !this.events) {
+            console.log('🎯 Early return: currentGridTeam=', this.currentGridTeam, 'events=', this.events?.length);
+            return;
+        }
         
         const team = this.currentGridTeam === 'home' ? this.currentHomeTeam : this.currentAwayTeam;
-        if (!team) return;
+        if (!team) {
+            console.log('🎯 No team found for', this.currentGridTeam);
+            return;
+        }
+        
+        console.log('🎯 Processing team:', team.name, 'with', team.members.length, 'members');
         
         const summary = document.getElementById('team-card-summary');
         const summaryText = document.getElementById('card-summary-text');
         const summaryContent = document.getElementById('card-summary-content');
         
+        if (!summary || !summaryText || !summaryContent) {
+            console.log('🎯 Missing DOM elements:', {summary: !!summary, summaryText: !!summaryText, summaryContent: !!summaryContent});
+            return;
+        }
+        
         // Calculate card stats for current team
         const playersWithCards = [];
         
         for (const member of team.members) {
+            console.log('🎯 Processing member:', member.name);
+            
             const currentSeasonCards = this.calculateMemberCurrentSeasonCards(member);
+            console.log('🎯 Current season cards for', member.name, ':', currentSeasonCards);
+            
             const lifetimeCards = await this.calculateMemberLifetimeCards(member);
+            console.log('🎯 Lifetime cards for', member.name, ':', lifetimeCards);
             
             // Show players with ANY cards (current season OR lifetime)
             if (currentSeasonCards.currentYellowCards > 0 || currentSeasonCards.currentRedCards > 0 || 
                 lifetimeCards.lifetimeYellowCards > 0 || lifetimeCards.lifetimeRedCards > 0) {
+                
+                console.log('🎯 Adding player with cards:', member.name);
                 playersWithCards.push({
                     name: member.name,
                     currentYellow: currentSeasonCards.currentYellowCards,
@@ -3172,14 +3194,19 @@ class CheckInViewApp {
             }
         }
         
+        console.log('🎯 Players with cards:', playersWithCards.length);
+        
         if (playersWithCards.length === 0) {
             summary.style.display = 'none';
+            console.log('🎯 Hiding summary - no players with cards');
             return;
         }
         
         // Show summary
         summary.style.display = 'block';
         summaryText.textContent = `⚠️ ${playersWithCards.length} Player${playersWithCards.length !== 1 ? 's' : ''} with Cards`;
+        
+        console.log('🎯 Showing summary for', playersWithCards.length, 'players');
         
         // Build detailed content
         const content = playersWithCards.map(player => {
@@ -3211,6 +3238,7 @@ class CheckInViewApp {
         }).join('');
         
         summaryContent.innerHTML = content;
+        console.log('🎯 Card summary updated with content');
     }
 
     // Helper function to calculate current season card stats for a member
