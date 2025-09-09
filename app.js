@@ -4633,8 +4633,8 @@ Please check the browser console (F12) for more details.`);
                         ${filteredGames.map(game => `
                             <tr class="game-row ${game.status}">
                                 <td class="date-time-cell">
-                                    <div class="game-date">${epochToPacificDate(game.eventDate_epoch || game.eventDate)}</div>
-                                    ${game.time_epoch ? `<div class="game-time">${epochToPacificTime(game.time_epoch)}</div>` : ''}
+                                    <div class="game-date">${game.eventDate}</div>
+                                    ${game.time ? `<div class="game-time">${game.time}</div>` : ''}
                                 </td>
                                 <td class="event-cell">
                                     <div class="event-name">${game.eventName}</div>
