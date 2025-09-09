@@ -3143,62 +3143,68 @@ class CheckInViewApp {
 
     // Update card summary for current team
     async updateCardSummary() {
-        console.log('🎯 updateCardSummary called');
-        
-        if (!this.currentGridTeam || !this.events) {
-            console.log('🎯 Early return: currentGridTeam=', this.currentGridTeam, 'events=', this.events?.length);
-            return;
-        }
+        if (!this.currentGridTeam || !this.events) return;
         
         const team = this.currentGridTeam === 'home' ? this.currentHomeTeam : this.currentAwayTeam;
-        if (!team) {
-            console.log('🎯 No team found for', this.currentGridTeam);
-            return;
-        }
-        
-        console.log('🎯 Processing team:', team.name, 'with', team.members.length, 'members');
+        if (!team) return;
         
         const summary = document.getElementById('team-card-summary');
         const summaryText = document.getElementById('card-summary-text');
         const summaryContent = document.getElementById('card-summary-content');
         
-        if (!summary || !summaryText || !summaryContent) {
-            console.log('🎯 Missing DOM elements:', {summary: !!summary, summaryText: !!summaryText, summaryContent: !!summaryContent});
-            return;
+        if (!summary || !summaryText || !summaryContent) return;
+        
+        // Load disciplinary records for all team members in one API call
+        let disciplinaryRecords = [];
+        try {
+            const response = await fetch(`/api/disciplinary-records?team_id=${team.id}`);
+            if (response.ok) {
+                disciplinaryRecords = await response.json();
+            }
+        } catch (error) {
+            console.log('Could not load disciplinary records:', error);
         }
         
         // Calculate card stats for current team
         const playersWithCards = [];
         
         for (const member of team.members) {
-            console.log('🎯 Processing member:', member.name);
+            // Count current season cards from events (match cards)
+            let currentSeasonYellow = 0;
+            let currentSeasonRed = 0;
             
-            const currentSeasonCards = this.calculateMemberCurrentSeasonCards(member);
-            console.log('🎯 Current season cards for', member.name, ':', currentSeasonCards);
+            this.events.forEach(event => {
+                // Only count cards from current season events
+                if (this.isCurrentSeasonEvent(event.date_epoch ? new Date(event.date_epoch * 1000) : new Date(event.date))) {
+                    event.matches.forEach(match => {
+                        if (match.cards) {
+                            const memberCards = match.cards.filter(card => card.memberId === member.id);
+                            currentSeasonYellow += memberCards.filter(card => card.cardType === 'yellow').length;
+                            currentSeasonRed += memberCards.filter(card => card.cardType === 'red').length;
+                        }
+                    });
+                }
+            });
             
-            const lifetimeCards = await this.calculateMemberLifetimeCards(member);
-            console.log('🎯 Lifetime cards for', member.name, ':', lifetimeCards);
+            // Count lifetime disciplinary records (these are separate from match cards)
+            const memberDisciplinaryRecords = disciplinaryRecords.filter(record => record.memberId === member.id);
+            let lifetimeYellow = memberDisciplinaryRecords.filter(record => record.cardType === 'yellow').length;
+            let lifetimeRed = memberDisciplinaryRecords.filter(record => record.cardType === 'red').length;
             
-            // Show players with ANY cards (current season OR lifetime)
-            if (currentSeasonCards.currentYellowCards > 0 || currentSeasonCards.currentRedCards > 0 || 
-                lifetimeCards.lifetimeYellowCards > 0 || lifetimeCards.lifetimeRedCards > 0) {
-                
-                console.log('🎯 Adding player with cards:', member.name);
+            // Show players with ANY cards (current season match cards OR disciplinary records)
+            if (currentSeasonYellow > 0 || currentSeasonRed > 0 || lifetimeYellow > 0 || lifetimeRed > 0) {
                 playersWithCards.push({
                     name: member.name,
-                    currentYellow: currentSeasonCards.currentYellowCards,
-                    currentRed: currentSeasonCards.currentRedCards,
-                    lifetimeYellow: lifetimeCards.lifetimeYellowCards,
-                    lifetimeRed: lifetimeCards.lifetimeRedCards
+                    currentYellow: currentSeasonYellow,
+                    currentRed: currentSeasonRed,
+                    lifetimeYellow: lifetimeYellow,
+                    lifetimeRed: lifetimeRed
                 });
             }
         }
         
-        console.log('🎯 Players with cards:', playersWithCards.length);
-        
         if (playersWithCards.length === 0) {
             summary.style.display = 'none';
-            console.log('🎯 Hiding summary - no players with cards');
             return;
         }
         
@@ -3206,28 +3212,24 @@ class CheckInViewApp {
         summary.style.display = 'block';
         summaryText.textContent = `⚠️ ${playersWithCards.length} Player${playersWithCards.length !== 1 ? 's' : ''} with Cards`;
         
-        console.log('🎯 Showing summary for', playersWithCards.length, 'players');
-        
         // Build detailed content
         const content = playersWithCards.map(player => {
-            const currentCards = [];
-            if (player.currentYellow > 0) currentCards.push(`🟨${player.currentYellow}`);
-            if (player.currentRed > 0) currentCards.push(`🟥${player.currentRed}`);
-            
-            const lifetimeCards = [];
-            if (player.lifetimeYellow > 0) lifetimeCards.push(`🟨${player.lifetimeYellow}`);
-            if (player.lifetimeRed > 0) lifetimeCards.push(`🟥${player.lifetimeRed}`);
-            
             const parts = [];
             
-            // Show current season cards if any
-            if (currentCards.length > 0) {
+            // Show current season match cards if any
+            if (player.currentYellow > 0 || player.currentRed > 0) {
+                const currentCards = [];
+                if (player.currentYellow > 0) currentCards.push(`🟨${player.currentYellow}`);
+                if (player.currentRed > 0) currentCards.push(`🟥${player.currentRed}`);
                 parts.push(`${currentCards.join(' ')} this season`);
             }
             
-            // Show lifetime total if different from current
-            if (lifetimeCards.length > 0) {
-                parts.push(`${lifetimeCards.join(' ')} lifetime`);
+            // Show disciplinary records if any
+            if (player.lifetimeYellow > 0 || player.lifetimeRed > 0) {
+                const lifetimeCards = [];
+                if (player.lifetimeYellow > 0) lifetimeCards.push(`🟨${player.lifetimeYellow}`);
+                if (player.lifetimeRed > 0) lifetimeCards.push(`🟥${player.lifetimeRed}`);
+                parts.push(`${lifetimeCards.join(' ')} disciplinary`);
             }
             
             const fullText = parts.join(' • ');
@@ -3238,61 +3240,6 @@ class CheckInViewApp {
         }).join('');
         
         summaryContent.innerHTML = content;
-        console.log('🎯 Card summary updated with content');
-    }
-
-    // Helper function to calculate current season card stats for a member
-    calculateMemberCurrentSeasonCards(member) {
-        let currentYellowCards = 0;
-        let currentRedCards = 0;
-        
-        this.events.forEach(event => {
-            // Only count cards from current season events
-            if (this.isCurrentSeasonEvent(event.date_epoch ? new Date(event.date_epoch * 1000) : new Date(event.date))) {
-                event.matches.forEach(match => {
-                    if (match.cards) {
-                        const memberCards = match.cards.filter(card => card.memberId === member.id);
-                        currentYellowCards += memberCards.filter(card => card.cardType === 'yellow').length;
-                        currentRedCards += memberCards.filter(card => card.cardType === 'red').length;
-                    }
-                });
-            }
-        });
-        
-        return { currentYellowCards, currentRedCards };
-    }
-
-    // Helper function to calculate lifetime card stats for a member
-    async calculateMemberLifetimeCards(member) {
-        let lifetimeYellowCards = 0;
-        let lifetimeRedCards = 0;
-        
-        // Count cards from match events
-        this.events.forEach(event => {
-            event.matches.forEach(match => {
-                if (match.cards) {
-                    const memberCards = match.cards.filter(card => card.memberId === member.id);
-                    lifetimeYellowCards += memberCards.filter(card => card.cardType === 'yellow').length;
-                    lifetimeRedCards += memberCards.filter(card => card.cardType === 'red').length;
-                }
-            });
-        });
-        
-        // Also count disciplinary records for lifetime total
-        try {
-            const response = await fetch(`/api/disciplinary-records?member_id=${member.id}`);
-            if (response.ok) {
-                const disciplinaryRecords = await response.json();
-                disciplinaryRecords.forEach(record => {
-                    if (record.cardType === 'yellow') lifetimeYellowCards++;
-                    if (record.cardType === 'red') lifetimeRedCards++;
-                });
-            }
-        } catch (error) {
-            console.log('Could not load disciplinary records for lifetime count:', error);
-        }
-        
-        return { lifetimeYellowCards, lifetimeRedCards };
     }
 
     // New function to render team grid in fullscreen mode

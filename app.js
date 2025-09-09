@@ -3564,7 +3564,7 @@ Please check the browser console (F12) for more details.`);
                     let playerTeam = null;
                     let playerName = card.memberName || 'Unknown Player'; // Use API-provided name first
                     
-                    // Check home team first
+                    // First check home team (match context)
                     if (homeTeam) {
                         const homePlayer = homeTeam.members.find(m => m.id === card.memberId);
                         if (homePlayer) {
@@ -3573,12 +3573,24 @@ Please check the browser console (F12) for more details.`);
                         }
                     }
                     
-                    // Check away team if not found in home team
+                    // Then check away team (match context)
                     if (!playerTeam && awayTeam) {
                         const awayPlayer = awayTeam.members.find(m => m.id === card.memberId);
                         if (awayPlayer) {
                             playerTeam = awayTeam;
                             playerName = awayPlayer.name; // Override with current team roster name if found
+                        }
+                    }
+                    
+                    // If not found in match teams, search ALL teams (for moved players)
+                    if (!playerTeam) {
+                        for (const team of this.teams) {
+                            const player = team.members.find(m => m.id === card.memberId);
+                            if (player) {
+                                playerTeam = team;
+                                playerName = player.name;
+                                break; // Found player, use their current team
+                            }
                         }
                     }
                     
