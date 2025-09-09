@@ -2419,8 +2419,33 @@ Please check the browser console (F12) for more details.`);
         // Load disciplinary records for this member
         let disciplinaryRecords = [];
         try {
-            disciplinaryRecords = await this.fetch(`/api/disciplinary-records?member_id=${member.id}`);
-            console.log('Loaded disciplinary records for member:', member.name, disciplinaryRecords);
+            const rawRecords = await this.fetch(`/api/disciplinary-records?member_id=${member.id}`);
+            
+            // Process the records to ensure proper date formatting
+            disciplinaryRecords = rawRecords.map(record => {
+                // Use same logic as fetchDisciplinaryRecords to get the date
+                let eventDate = record.incidentDate_epoch || 
+                              record.incidentDate || 
+                              record.created_at_epoch || 
+                              record.createdAt;
+                
+                // Convert epoch timestamps to YYYY-MM-DD format for date input
+                let formattedDate = '';
+                if (eventDate) {
+                    if (typeof eventDate === 'number') {
+                        // Convert epoch to YYYY-MM-DD format
+                        formattedDate = new Date(eventDate * 1000).toISOString().split('T')[0];
+                    } else if (typeof eventDate === 'string' && eventDate.includes('-')) {
+                        // Already in date format, use as-is
+                        formattedDate = eventDate.split('T')[0]; // Remove time part if present
+                    }
+                }
+                
+                return {
+                    ...record,
+                    incidentDate: formattedDate // Override with formatted date for the input field
+                };
+            });
         } catch (error) {
             console.error('Error loading disciplinary records:', error);
             disciplinaryRecords = [];
@@ -2896,24 +2921,13 @@ Please check the browser console (F12) for more details.`);
     async fetchDisciplinaryRecords(memberId) {
         try {
             const records = await this.fetch(`/api/disciplinary-records?member_id=${memberId}`);
-            console.log('🐛 Raw disciplinary records from API:', records);
             
             return records.map(record => {
-                // DEBUG: Log each record's date fields
-                console.log('🐛 Processing disciplinary record:', {
-                    incidentDate: record.incidentDate,
-                    incidentDate_epoch: record.incidentDate_epoch,
-                    createdAt: record.createdAt,
-                    created_at_epoch: record.created_at_epoch
-                });
-                
                 // Try multiple date fields in order of preference
                 let eventDate = record.incidentDate_epoch || 
                               record.incidentDate || 
                               record.created_at_epoch || 
                               record.createdAt;
-                
-                console.log('🐛 Selected eventDate for disciplinary record:', eventDate);
                 
                 return {
                     type: 'prior',
@@ -2956,15 +2970,6 @@ Please check the browser console (F12) for more details.`);
         const typeIcon = card.type === 'match' ? '🏟️' : '📜';
         const typeLabel = card.type === 'match' ? 'Match' : 'Prior';
         
-        // DEBUG: Log the card data to see what we're working with
-        console.log('🐛 renderCardItem - card data:', {
-            type: card.type,
-            eventDate: card.eventDate,
-            eventDateType: typeof card.eventDate,
-            cardType: card.cardType,
-            eventName: card.eventName
-        });
-        
         // Handle different date formats properly
         let displayDate = 'No date';
         if (card.eventDate) {
@@ -2993,8 +2998,6 @@ Please check the browser console (F12) for more details.`);
                 }
             }
         }
-        
-        console.log('🐛 renderCardItem - final displayDate:', displayDate);
         
         return `
             <div style="padding: 12px; border-bottom: 1px solid #f8f9fa; background: white;">
