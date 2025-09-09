@@ -5,14 +5,8 @@ RewriteEngine On
 RewriteCond %{REQUEST_URI} ^/api/
 RewriteRule ^api/(.*)$ api.php?path=$1 [QSA,L]
 
-# Photos directory - serve directly if file exists, otherwise use API
-RewriteCond %{REQUEST_URI} ^/photos/(.+)$
-RewriteCond %{DOCUMENT_ROOT}/photos/%1 -f
-RewriteRule ^photos/(.+)$ photos/$1 [L]
-
-# Photo fallback - route to photos.php for missing files
+# Photos directory - route all photo requests to photos.php (photos stored in Railway volume, not document root)
 RewriteCond %{REQUEST_URI} ^/photos/(.+\.(jpg|jpeg|png|webp|svg))$
-RewriteCond %{DOCUMENT_ROOT}/photos/%1 !-f
 RewriteRule ^photos/(.+)$ photos.php [QSA,L]
 
 # Frontend routing - serve index.html for non-existing files (SPA support)

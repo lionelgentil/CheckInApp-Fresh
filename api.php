@@ -162,7 +162,6 @@ try {
         PDO::ATTR_PERSISTENT => true, // Use persistent connections
         PDO::ATTR_TIMEOUT => 10, // Connection timeout
         PDO::ATTR_EMULATE_PREPARES => false, // Use native prepared statements
-        PDO::MYSQL_ATTR_USE_BUFFERED_QUERY => true, // Buffer queries
         PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC // Default fetch mode
     );
     
