@@ -2812,8 +2812,8 @@ class CheckInViewApp {
                     </div>
                 </div>
                 
-                <!-- Quick Stats Footer -->
-                <div class="checkin-footer">
+                <!-- Quick Stats Footer - Hidden since info moved to team header -->
+                <div class="checkin-footer" style="display: none;">
                     <div id="grid-pagination-info" class="pagination-info-compact"></div>
                 </div>
             </div>
@@ -3107,6 +3107,45 @@ class CheckInViewApp {
         this.updatePaginationInfo();
     }
     
+    // Helper function to calculate current season card stats for a member
+    calculateMemberCurrentSeasonCards(member) {
+        let currentYellowCards = 0;
+        let currentRedCards = 0;
+        
+        this.events.forEach(event => {
+            // Only count cards from current season events
+            if (this.isCurrentSeasonEvent(event.date_epoch ? new Date(event.date_epoch * 1000) : new Date(event.date))) {
+                event.matches.forEach(match => {
+                    if (match.cards) {
+                        const memberCards = match.cards.filter(card => card.memberId === member.id);
+                        currentYellowCards += memberCards.filter(card => card.cardType === 'yellow').length;
+                        currentRedCards += memberCards.filter(card => card.cardType === 'red').length;
+                    }
+                });
+            }
+        });
+        
+        return { currentYellowCards, currentRedCards };
+    }
+
+    // Helper function to calculate lifetime card stats for a member
+    calculateMemberLifetimeCards(member) {
+        let lifetimeYellowCards = 0;
+        let lifetimeRedCards = 0;
+        
+        this.events.forEach(event => {
+            event.matches.forEach(match => {
+                if (match.cards) {
+                    const memberCards = match.cards.filter(card => card.memberId === member.id);
+                    lifetimeYellowCards += memberCards.filter(card => card.cardType === 'yellow').length;
+                    lifetimeRedCards += memberCards.filter(card => card.cardType === 'red').length;
+                }
+            });
+        });
+        
+        return { lifetimeYellowCards, lifetimeRedCards };
+    }
+
     // New function to render team grid in fullscreen mode
     renderGridTeamFullscreen(teamType, team, attendees) {
         const containerId = `grid-container-${teamType}`;
@@ -3122,20 +3161,48 @@ class CheckInViewApp {
                 const isCheckedIn = attendees.some(a => a.memberId === member.id);
                 const isLocked = this.currentCheckInLocked || false;
                 
+                // Calculate card statistics
+                const currentSeasonCards = this.calculateMemberCurrentSeasonCards(member);
+                const lifetimeCards = this.calculateMemberLifetimeCards(member);
+                
                 return `
                     <div class="player-grid-item ${isCheckedIn ? 'checked-in' : ''} ${isLocked ? 'locked' : ''}" 
                          ${!isLocked ? `onclick="app.toggleGridPlayerAttendance('${this.currentEventId}', '${this.currentMatchId}', '${member.id}', '${teamType}')"` : ''}
                          ${isLocked ? 'title="Check-in is locked for this match"' : ''}>
-                        ${member.id === team.captainId ? '<div class="grid-captain-icon">👑</div>' : ''}
+                        
+                        <!-- Top Row: Captain Crown + Check-in Badge -->
+                        <div class="player-card-top-row">
+                            ${member.id === team.captainId ? '<div class="grid-captain-icon">👑</div>' : '<div class="grid-captain-spacer"></div>'}
+                            ${isCheckedIn ? '<div class="grid-check-badge">✅</div>' : ''}
+                        </div>
+                        
+                        <!-- Player Photo -->
                         ${member.photo ? 
                             `<img src="${this.getMemberPhotoUrl(member)}" alt="${member.name}" class="player-grid-photo">` :
                             `<div class="player-grid-photo" style="background: #ddd; display: flex; align-items: center; justify-content: center; color: #666; font-size: 20px;">👤</div>`
                         }
+                        
+                        <!-- Player Info -->
                         <div class="player-grid-content">
                             <div class="player-grid-name">${member.name}</div>
-                            ${member.jerseyNumber ? `<div class="player-grid-jersey">#${member.jerseyNumber}</div>` : ''}
+                            <div class="player-grid-meta">
+                                ${member.jerseyNumber ? `#${member.jerseyNumber}` : ''}${member.jerseyNumber && member.gender ? ' • ' : ''}${member.gender ? member.gender.charAt(0).toUpperCase() : ''}
+                            </div>
                         </div>
-                        <div class="grid-check-icon">${isLocked ? '🔒' : '✓'}</div>
+                        
+                        <!-- Card Statistics -->
+                        <div class="player-card-stats">
+                            <div class="current-season-cards">
+                                ${currentSeasonCards.currentYellowCards > 0 ? `<span class="card-stat yellow">🟨${currentSeasonCards.currentYellowCards}</span>` : ''}
+                                ${currentSeasonCards.currentRedCards > 0 ? `<span class="card-stat red">🟥${currentSeasonCards.currentRedCards}</span>` : ''}
+                                ${currentSeasonCards.currentYellowCards === 0 && currentSeasonCards.currentRedCards === 0 ? '<span class="no-cards">Clean</span>' : ''}
+                            </div>
+                            ${lifetimeCards.lifetimeYellowCards > 0 || lifetimeCards.lifetimeRedCards > 0 ? `
+                                <div class="lifetime-cards">
+                                    📊 Total: ${lifetimeCards.lifetimeYellowCards > 0 ? `🟨${lifetimeCards.lifetimeYellowCards}` : ''}${lifetimeCards.lifetimeYellowCards > 0 && lifetimeCards.lifetimeRedCards > 0 ? ' ' : ''}${lifetimeCards.lifetimeRedCards > 0 ? `🟥${lifetimeCards.lifetimeRedCards}` : ''}
+                                </div>
+                            ` : ''}
+                        </div>
                     </div>
                 `;
             }).join('');
