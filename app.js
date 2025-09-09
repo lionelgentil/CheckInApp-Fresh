@@ -2936,6 +2936,35 @@ Please check the browser console (F12) for more details.`);
         const typeIcon = card.type === 'match' ? '🏟️' : '📜';
         const typeLabel = card.type === 'match' ? 'Match' : 'Prior';
         
+        // Handle different date formats properly
+        let displayDate = 'No date';
+        if (card.eventDate) {
+            if (card.type === 'match') {
+                // Match cards already have formatted date like "09/14/2025"
+                displayDate = card.eventDate;
+            } else {
+                // Disciplinary records might have epoch timestamps or date strings
+                if (typeof card.eventDate === 'number') {
+                    // It's an epoch timestamp
+                    displayDate = epochToPacificDate(card.eventDate);
+                } else if (typeof card.eventDate === 'string' && card.eventDate.includes('-')) {
+                    // It's likely an ISO date string, convert it
+                    const date = new Date(card.eventDate);
+                    if (!isNaN(date.getTime())) {
+                        displayDate = date.toLocaleDateString('en-US', { 
+                            timeZone: 'America/Los_Angeles', 
+                            year: 'numeric', 
+                            month: '2-digit', 
+                            day: '2-digit' 
+                        });
+                    }
+                } else {
+                    // Use as-is if it's already a formatted string
+                    displayDate = card.eventDate;
+                }
+            }
+        }
+        
         return `
             <div style="padding: 12px; border-bottom: 1px solid #f8f9fa; background: white;">
                 <div style="display: flex; align-items: center; gap: 8px; margin-bottom: 6px;">
@@ -2945,7 +2974,7 @@ Please check the browser console (F12) for more details.`);
                         ${card.minute ? `<span style="color: #666; font-size: 0.8em;"> - ${card.minute}'</span>` : ''}
                         <span style="margin-left: 8px; background: ${card.type === 'match' ? '#e3f2fd' : '#fff3e0'}; color: #666; padding: 1px 4px; border-radius: 3px; font-size: 0.7em;">${typeIcon} ${typeLabel}</span>
                     </div>
-                    <small style="color: #666; font-size: 0.75em;">${epochToPacificDate(card.eventDate_epoch || card.eventDate)}</small>
+                    <small style="color: #666; font-size: 0.75em;">${displayDate}</small>
                 </div>
                 ${card.type === 'match' ? `
                     <div style="font-size: 0.8em; color: #666; margin-bottom: 3px;">
