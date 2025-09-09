@@ -2808,7 +2808,7 @@ class CheckInViewApp {
                 <!-- Collapsible Card Summary -->
                 <div id="team-card-summary" class="team-card-summary" style="display: none;">
                     <div class="card-summary-header" onclick="app.toggleCardSummary()">
-                        <span id="card-summary-text">ℹ️ 0 Players with Cards</span>
+                        <span id="card-summary-text">ℹ️ 0 Players with cards</span>
                         <span id="card-summary-icon">▼</span>
                     </div>
                     <div id="card-summary-content" class="card-summary-content" style="display: none;">
@@ -3124,7 +3124,12 @@ class CheckInViewApp {
             
         this.renderGridTeamFullscreen(teamType, team, attendees);
         this.updatePaginationInfo();
-        await this.updateCardSummary(); // Update card summary for the new team
+        
+        // Clear previous team's card summary first to avoid confusion
+        this.clearCardSummary();
+        
+        // Then update with new team's card summary
+        await this.updateCardSummary();
     }
     
     // Toggle card summary collapse/expand
@@ -3138,6 +3143,24 @@ class CheckInViewApp {
         } else {
             content.style.display = 'none';
             icon.textContent = '▼';
+        }
+    }
+    
+    // Clear card summary to avoid showing previous team's data
+    clearCardSummary() {
+        const summary = document.getElementById('team-card-summary');
+        const summaryText = document.getElementById('card-summary-text');
+        const summaryContent = document.getElementById('card-summary-content');
+        
+        if (summary) {
+            summary.style.display = 'none';
+        }
+        if (summaryText) {
+            summaryText.textContent = 'ℹ️ 0 Players with cards';
+        }
+        if (summaryContent) {
+            summaryContent.innerHTML = '';
+            summaryContent.style.display = 'none';
         }
     }
 
@@ -3222,11 +3245,11 @@ class CheckInViewApp {
         summary.style.border = '1px solid #f39c12';
         summary.style.borderRadius = '12px';
         summary.style.maxWidth = '600px';
-        summary.style.margin = '10px auto 0 auto';
+        summary.style.margin = '10px 0 0 0'; // Left-aligned like player cards
         summary.style.padding = '0 15px';
         summary.style.boxShadow = '0 2px 8px rgba(243, 156, 18, 0.2)';
         
-        summaryText.textContent = `ℹ️ ${playersWithCards.length} Player${playersWithCards.length !== 1 ? 's' : ''} with Cards`;
+        summaryText.textContent = `ℹ️ ${playersWithCards.length} Player${playersWithCards.length !== 1 ? 's' : ''} with cards`;
         
         // Also style the header
         const summaryHeader = summary.querySelector('.card-summary-header');

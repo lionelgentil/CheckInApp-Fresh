@@ -1159,11 +1159,11 @@ body {
 
 /* Team Card Summary Styles - Referee Theme */
 .team-card-summary {
-    background: linear-gradient(135deg, #fff3cd, #ffeaa7) !important;
-    border: 1px solid #f39c12 !important;
+    background: linear-gradient(135deg, #fff3cd, #ffeaa7);
+    border: 1px solid #f39c12;
     border-radius: 12px;
     max-width: 600px; /* Match player grid container */
-    margin: 10px auto 0 auto !important; /* Center like player grid */
+    margin: 10px 0 0 0; /* Left-aligned like player cards */
     padding: 0 15px; /* Match player grid padding */
     overflow: hidden;
     box-shadow: 0 2px 8px rgba(243, 156, 18, 0.2);
@@ -1176,11 +1176,11 @@ body {
     justify-content: space-between;
     align-items: center;
     font-weight: 600;
-    font-size: 0.85em !important; /* Smaller, more consistent size */
-    color: #856404 !important;
-    background: linear-gradient(135deg, #fff3cd, #ffeaa7) !important;
+    font-size: 0.85em; /* Smaller, more consistent size */
+    color: #856404;
+    background: linear-gradient(135deg, #fff3cd, #ffeaa7);
     transition: all 0.2s ease;
-    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif !important; /* Match main page */
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; /* Match main page */
 }
 
 .card-summary-header:hover {
@@ -1225,7 +1225,7 @@ body {
 
 @media (max-width: 768px) {
     .team-card-summary {
-        margin: 8px auto 0 auto; /* Center on mobile too */
+        margin: 8px 0 0 0; /* Left-aligned on mobile too */
         padding: 0 15px; /* Keep consistent padding */
         border-radius: 10px;
     }
