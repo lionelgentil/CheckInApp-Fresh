@@ -4850,13 +4850,13 @@ function debugIndexUsage($db) {
         $stmt = $db->query("
             SELECT 
                 schemaname,
-                tablename,
-                indexname,
+                relname as tablename,
+                indexrelname as indexname,
                 idx_tup_read,
                 idx_tup_fetch
             FROM pg_stat_user_indexes 
-            WHERE tablename = 'player_disciplinary_records'
-            ORDER BY indexname
+            WHERE relname = 'player_disciplinary_records'
+            ORDER BY indexrelname
         ");
         $indexStats = $stmt->fetchAll(PDO::FETCH_ASSOC);
         $results['index_usage_stats'] = $indexStats;
