@@ -233,6 +233,13 @@ try {
             }
             break;
             
+        case 'teams-no-photos':
+            // Teams with members but WITHOUT photo data for faster loading
+            if ($method === 'GET') {
+                getTeamsWithoutPhotos($db);
+            }
+            break;
+            
         case 'teams-basic':
             // Lightweight teams endpoint for performance optimization
             if ($method === 'GET') {
@@ -763,6 +770,102 @@ function getTeams($db) {
     echo json_encode($teams);
 }
 
+function getTeamsWithoutPhotos($db) {
+    // Fast teams endpoint optimized for static photo serving
+    // Only include active members (active = TRUE or active IS NULL for backward compatibility)
+    $stmt = $db->query('
+        SELECT 
+            t.id as team_id,
+            t.name as team_name,
+            t.category as team_category,
+            t.color as team_color,
+            t.description as team_description,
+            t.captain_id as team_captain_id,
+            tm.id as member_id,
+            tm.name as member_name,
+            tm.jersey_number,
+            tm.gender,
+            tm.photo
+        FROM teams t
+        LEFT JOIN team_members tm ON t.id = tm.team_id AND (tm.active IS NULL OR tm.active = TRUE)
+        ORDER BY t.name, tm.name
+    ');
+    
+    $teams = [];
+    $currentTeam = null;
+    
+    while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+        // Start new team or continue existing team
+        if (!$currentTeam || $currentTeam['id'] !== $row['team_id']) {
+            // Save previous team if exists
+            if ($currentTeam) {
+                $teams[] = $currentTeam;
+            }
+            
+            // Start new team
+            $currentTeam = [
+                'id' => $row['team_id'],
+                'name' => $row['team_name'],
+                'category' => $row['team_category'],
+                'colorData' => $row['team_color'],
+                'description' => $row['team_description'],
+                'captainId' => $row['team_captain_id'],
+                'members' => []
+            ];
+        }
+        
+        // Add member to current team (if member exists)
+        if ($row['member_id']) {
+            // Generate photo URL - same logic as getTeams() for consistency
+            if ($row['photo']) {
+                // Check if it's already base64 data (legacy)
+                if (strpos($row['photo'], 'data:image/') === 0) {
+                    // It's base64 data, use directly
+                    $photo = $row['photo'];
+                } else {
+                    // Check if it's a filename with valid extension (post-migration format)
+                    if (preg_match('/\.(jpg|jpeg|png|webp)$/i', $row['photo'])) {
+                        // It's a filename - use direct static URL (bypass PHP for better performance)
+                        $photo = '/photos/' . $row['photo'];
+                    } else {
+                        // Legacy file-based storage - convert to API URL
+                        $photoValue = $row['photo'];
+                        if (strpos($photoValue, '/photos/members/') === 0) {
+                            $photoValue = basename($photoValue);
+                        } elseif (strpos($photoValue, '/api/photos') === 0) {
+                            $parsedUrl = parse_url($photoValue);
+                            if ($parsedUrl && isset($parsedUrl['query'])) {
+                                parse_str($parsedUrl['query'], $query);
+                                if (isset($query['filename'])) {
+                                    $photoValue = $query['filename'];
+                                }
+                            }
+                        }
+                        $photo = '/photos/' . $photoValue;
+                    }
+                }
+            } else {
+                $photo = getDefaultPhoto($row['gender']);
+            }
+            
+            $currentTeam['members'][] = [
+                'id' => $row['member_id'],
+                'name' => $row['member_name'],
+                'jerseyNumber' => $row['jersey_number'] ? (int)$row['jersey_number'] : null,
+                'gender' => $row['gender'],
+                'photo' => $photo
+            ];
+        }
+    }
+    
+    // Don't forget the last team
+    if ($currentTeam) {
+        $teams[] = $currentTeam;
+    }
+    
+    echo json_encode($teams);
+}
+
 function getTeamsBasic($db) {
     // Lightweight teams endpoint - only essential data without player photos for performance
     // Only count active members (active = TRUE or active IS NULL for backward compatibility)  
@@ -1158,7 +1261,7 @@ function getEvents($db) {
         $stmt = $db->prepare("
             SELECT mc.*, tm.name as member_name
             FROM match_cards mc
-            JOIN team_members tm ON mc.member_id = tm.id
+            LEFT JOIN team_members tm ON mc.member_id = tm.id
             WHERE mc.match_id IN ({$matchIdsPlaceholder})
             ORDER BY mc.match_id, mc.minute ASC
         ");
@@ -1168,7 +1271,7 @@ function getEvents($db) {
             $matches[$card['match_id']]['cards'][] = [
                 'id' => $card['id'],
                 'memberId' => $card['member_id'],
-                'memberName' => $card['member_name'],
+                'memberName' => $card['member_name'] ?? 'Unknown Player',
                 'teamType' => $card['team_type'],
                 'cardType' => $card['card_type'],
                 'reason' => $card['reason'],
@@ -1442,8 +1545,8 @@ function getDisciplinaryRecords($db) {
         $stmt = $db->prepare('
             SELECT pdr.*, tm.name as member_name, t.name as team_name
             FROM player_disciplinary_records pdr
-            JOIN team_members tm ON pdr.member_id = tm.id
-            JOIN teams t ON tm.team_id = t.id
+            LEFT JOIN team_members tm ON pdr.member_id = tm.id
+            LEFT JOIN teams t ON tm.team_id = t.id
             WHERE pdr.member_id = ?
             ORDER BY pdr.incident_date_epoch DESC, pdr.created_at_epoch DESC
         ');
@@ -1453,8 +1556,8 @@ function getDisciplinaryRecords($db) {
         $stmt = $db->prepare('
             SELECT pdr.*, tm.name as member_name, t.name as team_name
             FROM player_disciplinary_records pdr
-            JOIN team_members tm ON pdr.member_id = tm.id
-            JOIN teams t ON tm.team_id = t.id
+            LEFT JOIN team_members tm ON pdr.member_id = tm.id
+            LEFT JOIN teams t ON tm.team_id = t.id
             WHERE t.id = ?
             ORDER BY pdr.incident_date_epoch DESC, pdr.created_at_epoch DESC
         ');
@@ -1464,8 +1567,8 @@ function getDisciplinaryRecords($db) {
         $stmt = $db->query('
             SELECT pdr.*, tm.name as member_name, t.name as team_name
             FROM player_disciplinary_records pdr
-            JOIN team_members tm ON pdr.member_id = tm.id
-            JOIN teams t ON tm.team_id = t.id
+            LEFT JOIN team_members tm ON pdr.member_id = tm.id
+            LEFT JOIN teams t ON tm.team_id = t.id
             ORDER BY pdr.incident_date_epoch DESC, pdr.created_at_epoch DESC
         ');
     }
@@ -1475,8 +1578,8 @@ function getDisciplinaryRecords($db) {
         $records[] = [
             'id' => $record['id'],
             'memberId' => $record['member_id'],
-            'memberName' => $record['member_name'],
-            'teamName' => $record['team_name'],
+            'memberName' => $record['member_name'] ?? 'Unknown Player',
+            'teamName' => $record['team_name'] ?? 'Unknown Team',
             'cardType' => $record['card_type'],
             'reason' => $record['reason'],
             'notes' => $record['notes'],

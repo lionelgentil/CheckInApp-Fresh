@@ -1780,14 +1780,14 @@ class CheckInViewApp {
                 match.cards.forEach(card => {
                     // Determine which team the player belongs to
                     let playerTeam = null;
-                    let playerName = 'Unknown Player';
+                    let playerName = card.memberName || 'Unknown Player'; // Use API-provided name first
                     
                     // Check home team first
                     if (homeTeam) {
                         const homePlayer = homeTeam.members.find(m => m.id === card.memberId);
                         if (homePlayer) {
                             playerTeam = homeTeam;
-                            playerName = homePlayer.name;
+                            playerName = homePlayer.name; // Override with current team roster name if found
                         }
                     }
                     
@@ -1796,7 +1796,7 @@ class CheckInViewApp {
                         const awayPlayer = awayTeam.members.find(m => m.id === card.memberId);
                         if (awayPlayer) {
                             playerTeam = awayTeam;
-                            playerName = awayPlayer.name;
+                            playerName = awayPlayer.name; // Override with current team roster name if found
                         }
                     }
                     
@@ -2724,7 +2724,9 @@ class CheckInViewApp {
                 <h4 style="margin: 0 0 15px 0; color: #856404;">Cards & Disciplinary Actions</h4>
                 <div style="display: flex; flex-direction: column; gap: 8px;">
                     ${match.cards.map(card => {
+                        // Try to find member in current team rosters, otherwise use API-provided name
                         const member = [...homeTeam.members, ...awayTeam.members].find(m => m.id === card.memberId);
+                        const memberName = member ? member.name : (card.memberName || 'Unknown Player');
                         const teamName = homeTeam.members.some(m => m.id === card.memberId) ? homeTeam.name : awayTeam.name;
                         const cardIcon = card.cardType === 'yellow' ? '🟨' : '🟥';
                         const cardColor = card.cardType === 'yellow' ? '#ffc107' : '#dc3545';
@@ -2733,7 +2735,7 @@ class CheckInViewApp {
                             <div style="display: flex; align-items: center; gap: 10px; padding: 8px; background: white; border-radius: 6px; border-left: 4px solid ${cardColor};">
                                 <span style="font-size: 1.2em;">${cardIcon}</span>
                                 <div style="flex: 1;">
-                                    <strong>${member ? member.name : 'Unknown Player'}</strong> (${teamName})
+                                    <strong>${memberName}</strong> (${teamName})
                                     ${card.minute ? `<span style="color: #666;"> - ${card.minute}'</span>` : ''}
                                     ${card.reason ? `<div style="font-size: 0.9em; color: #666; margin-top: 2px;">${card.reason}</div>` : ''}
                                     ${card.notes ? `<div style="font-size: 0.85em; color: #888; margin-top: 2px; font-style: italic;">Notes: ${card.notes}</div>` : ''}

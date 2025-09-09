@@ -3562,14 +3562,14 @@ Please check the browser console (F12) for more details.`);
                 match.cards.forEach(card => {
                     // Determine which team the player belongs to
                     let playerTeam = null;
-                    let playerName = 'Unknown Player';
+                    let playerName = card.memberName || 'Unknown Player'; // Use API-provided name first
                     
                     // Check home team first
                     if (homeTeam) {
                         const homePlayer = homeTeam.members.find(m => m.id === card.memberId);
                         if (homePlayer) {
                             playerTeam = homeTeam;
-                            playerName = homePlayer.name;
+                            playerName = homePlayer.name; // Override with current team roster name if found
                         }
                     }
                     
@@ -3578,7 +3578,7 @@ Please check the browser console (F12) for more details.`);
                         const awayPlayer = awayTeam.members.find(m => m.id === card.memberId);
                         if (awayPlayer) {
                             playerTeam = awayTeam;
-                            playerName = awayPlayer.name;
+                            playerName = awayPlayer.name; // Override with current team roster name if found
                         }
                     }
                     
