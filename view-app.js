@@ -3161,48 +3161,20 @@ class CheckInViewApp {
                 const isCheckedIn = attendees.some(a => a.memberId === member.id);
                 const isLocked = this.currentCheckInLocked || false;
                 
-                // Calculate card statistics
-                const currentSeasonCards = this.calculateMemberCurrentSeasonCards(member);
-                const lifetimeCards = this.calculateMemberLifetimeCards(member);
-                
                 return `
                     <div class="player-grid-item ${isCheckedIn ? 'checked-in' : ''} ${isLocked ? 'locked' : ''}" 
                          ${!isLocked ? `onclick="app.toggleGridPlayerAttendance('${this.currentEventId}', '${this.currentMatchId}', '${member.id}', '${teamType}')"` : ''}
                          ${isLocked ? 'title="Check-in is locked for this match"' : ''}>
-                        
-                        <!-- Top Row: Captain Crown + Check-in Badge -->
-                        <div class="player-card-top-row">
-                            ${member.id === team.captainId ? '<div class="grid-captain-icon">👑</div>' : '<div class="grid-captain-spacer"></div>'}
-                            ${isCheckedIn ? '<div class="grid-check-badge">✅</div>' : ''}
-                        </div>
-                        
-                        <!-- Player Photo -->
+                        ${member.id === team.captainId ? '<div class="grid-captain-icon">👑</div>' : ''}
                         ${member.photo ? 
                             `<img src="${this.getMemberPhotoUrl(member)}" alt="${member.name}" class="player-grid-photo">` :
                             `<div class="player-grid-photo" style="background: #ddd; display: flex; align-items: center; justify-content: center; color: #666; font-size: 20px;">👤</div>`
                         }
-                        
-                        <!-- Player Info -->
                         <div class="player-grid-content">
                             <div class="player-grid-name">${member.name}</div>
-                            <div class="player-grid-meta">
-                                ${member.jerseyNumber ? `#${member.jerseyNumber}` : ''}${member.jerseyNumber && member.gender ? ' • ' : ''}${member.gender ? member.gender.charAt(0).toUpperCase() : ''}
-                            </div>
+                            ${member.jerseyNumber ? `<div class="player-grid-jersey">#${member.jerseyNumber}</div>` : ''}
                         </div>
-                        
-                        <!-- Card Statistics -->
-                        <div class="player-card-stats">
-                            <div class="current-season-cards">
-                                ${currentSeasonCards.currentYellowCards > 0 ? `<span class="card-stat yellow">🟨${currentSeasonCards.currentYellowCards}</span>` : ''}
-                                ${currentSeasonCards.currentRedCards > 0 ? `<span class="card-stat red">🟥${currentSeasonCards.currentRedCards}</span>` : ''}
-                                ${currentSeasonCards.currentYellowCards === 0 && currentSeasonCards.currentRedCards === 0 ? '<span class="no-cards">Clean</span>' : ''}
-                            </div>
-                            ${lifetimeCards.lifetimeYellowCards > 0 || lifetimeCards.lifetimeRedCards > 0 ? `
-                                <div class="lifetime-cards">
-                                    📊 Total: ${lifetimeCards.lifetimeYellowCards > 0 ? `🟨${lifetimeCards.lifetimeYellowCards}` : ''}${lifetimeCards.lifetimeYellowCards > 0 && lifetimeCards.lifetimeRedCards > 0 ? ' ' : ''}${lifetimeCards.lifetimeRedCards > 0 ? `🟥${lifetimeCards.lifetimeRedCards}` : ''}
-                                </div>
-                            ` : ''}
-                        </div>
+                        <div class="grid-check-icon">${isLocked ? '🔒' : '✓'}</div>
                     </div>
                 `;
             }).join('');
