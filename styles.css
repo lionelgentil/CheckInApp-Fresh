@@ -1163,8 +1163,8 @@ body {
     border: 1px solid #f39c12;
     border-radius: 12px;
     max-width: 600px; /* Match player grid container */
-    margin: 10px 0 0 0; /* Left-aligned like player cards */
-    padding: 0 15px; /* Match player grid padding */
+    margin: 10px 20px 0 20px; /* Match team boxes margins */
+    padding: 0; /* Remove padding since we add margins */
     overflow: hidden;
     box-shadow: 0 2px 8px rgba(243, 156, 18, 0.2);
 }
@@ -1235,8 +1235,8 @@ body {
 
 @media (max-width: 768px) {
     .team-card-summary {
-        margin: 8px 0 0 0; /* Left-aligned on mobile too */
-        padding: 0 15px; /* Keep consistent padding */
+        margin: 8px 20px 0 20px; /* Match team boxes margins on mobile */
+        padding: 0; /* Keep consistent padding */
         border-radius: 10px;
     }
     

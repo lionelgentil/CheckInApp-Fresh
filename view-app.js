@@ -3252,8 +3252,8 @@ class CheckInViewApp {
         summary.style.border = '1px solid #f39c12';
         summary.style.borderRadius = '12px';
         summary.style.maxWidth = '600px';
-        summary.style.margin = '10px 0 0 0'; // Left-aligned like player cards
-        summary.style.padding = '0 15px';
+        summary.style.margin = '10px 20px 0 20px'; // Add horizontal margins like team boxes
+        summary.style.padding = '0';
         summary.style.boxShadow = '0 2px 8px rgba(243, 156, 18, 0.2)';
         
         summaryText.textContent = `ℹ️ ${playersWithCards.length} Player${playersWithCards.length !== 1 ? 's' : ''} with cards`;
@@ -3263,18 +3263,23 @@ class CheckInViewApp {
         if (summaryHeader) {
             summaryHeader.style.fontSize = '0.85em';
             summaryHeader.style.fontFamily = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+            summaryHeader.style.fontWeight = '600';
             summaryHeader.style.color = '#856404';
             summaryHeader.style.background = 'linear-gradient(135deg, #fff3cd, #ffeaa7)';
         }
         
         // Build detailed content
         const content = playersWithCards.map(player => {
-            return `<div class="player-card-summary">
-                <span class="player-name">${player.name}:</span> ${player.text}
+            return `<div class="player-card-summary" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-size: 0.85em; font-weight: 500;">
+                <span class="player-name" style="font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif; font-weight: 700;">${player.name}:</span> ${player.text}
             </div>`;
         }).join('');
         
         summaryContent.innerHTML = content;
+        
+        // Apply consistent styling to the content area
+        summaryContent.style.fontFamily = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+        summaryContent.style.fontSize = '0.85em';
     }
 
     // New function to render team grid in fullscreen mode
