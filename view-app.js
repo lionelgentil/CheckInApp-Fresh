@@ -3159,6 +3159,7 @@ class CheckInViewApp {
             const currentSeasonCards = this.calculateMemberCurrentSeasonCards(member);
             const lifetimeCards = this.calculateMemberLifetimeCards(member);
             
+            // Show players with ANY cards (current season OR lifetime)
             if (currentSeasonCards.currentYellowCards > 0 || currentSeasonCards.currentRedCards > 0 || 
                 lifetimeCards.lifetimeYellowCards > 0 || lifetimeCards.lifetimeRedCards > 0) {
                 playersWithCards.push({
@@ -3190,11 +3191,13 @@ class CheckInViewApp {
             if (player.lifetimeYellow > 0) lifetimeCards.push(`🟨${player.lifetimeYellow}`);
             if (player.lifetimeRed > 0) lifetimeCards.push(`🟥${player.lifetimeRed}`);
             
-            const currentText = currentCards.length > 0 ? currentCards.join(' ') + ' this season' : 'Clean this season';
-            const lifetimeText = lifetimeCards.length > 0 ? lifetimeCards.join(' ') + ' lifetime' : 'No lifetime cards';
+            const currentText = currentCards.length > 0 ? `${currentCards.join(' ')} current` : 'Clean current';
+            const lifetimeText = lifetimeCards.length > 0 ? `${lifetimeCards.join(' ')} total` : '';
+            
+            const fullText = lifetimeText ? `${currentText} • ${lifetimeText}` : currentText;
             
             return `<div class="player-card-summary">
-                <strong>${player.name}:</strong> ${currentText}, ${lifetimeText}
+                <span class="player-name">${player.name}:</span> ${fullText}
             </div>`;
         }).join('');
         
