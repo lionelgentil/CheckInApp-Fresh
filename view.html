@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PASS CheckIn App v5.5.3 - View Only</title>
+    <title>PASS CheckIn App v6.0.0 - View Only</title>
     <meta name="theme-color" content="#2196F3">
     <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/x-icon" href="favicon.ico">
@@ -25,18 +25,42 @@
         .app-header {
             text-align: center;
             color: white;
-            margin-bottom: 30px;
+            margin-bottom: 20px;
+            transition: all 0.3s ease;
+        }
+        
+        .app-header.collapsed {
+            margin-bottom: 10px;
         }
         
         .app-header h1 {
             font-size: 2.5em;
             margin-bottom: 10px;
             text-shadow: 2px 2px 4px rgba(0, 0, 0, 0.3);
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+        
+        .app-header.collapsed h1 {
+            font-size: 1.2em;
+            margin-bottom: 5px;
+        }
+        
+        .header-content {
+            transition: all 0.3s ease;
+            overflow: hidden;
+        }
+        
+        .header-content.collapsed {
+            max-height: 0;
+            opacity: 0;
+            margin: 0;
         }
         
         .version-info {
             opacity: 0.8;
             font-size: 0.9em;
+            transition: all 0.3s ease;
         }
         
         .view-only-badge {
@@ -79,6 +103,33 @@
         
         /* Mobile optimization */
         @media (max-width: 768px) {
+            /* Auto-collapse header on mobile for space optimization */
+            .app-header {
+                margin-bottom: 10px;
+            }
+            
+            .app-header h1 {
+                font-size: 1.2em;
+                margin-bottom: 5px;
+            }
+            
+            .header-content {
+                max-height: 0;
+                opacity: 0;
+                margin: 0;
+            }
+            
+            .app-header.expanded .header-content {
+                max-height: 200px;
+                opacity: 1;
+                margin: 10px 0;
+            }
+            
+            .app-header.expanded h1 {
+                font-size: 2em;
+                margin-bottom: 10px;
+            }
+            
             .main-nav {
                 gap: 8px;
                 margin-bottom: 20px;
@@ -2405,9 +2456,12 @@
 </head>
 <body>
     <div class="container">
-        <div class="app-header">
-            <h1>PASS CheckIn App</h1>
-            <div class="version-info"><span id="app-version"></span></div>
+        <div class="app-header" id="app-header">
+            <h1 onclick="toggleHeader()">PASS CheckIn App</h1>
+            <div class="header-content" id="header-content">
+                <div class="version-info"><span id="app-version"></span></div>
+                <div class="view-only-badge">View Only Mode</div>
+            </div>
         </div>
         
         <nav class="main-nav">
@@ -2525,6 +2579,36 @@
         window.chartJsLoaded = false;
         window.chartJsAttempts = 0;
         const MAX_CHART_ATTEMPTS = 25; // 5 seconds max
+        
+        // Header toggle functionality
+        function toggleHeader() {
+            const header = document.getElementById('app-header');
+            const content = document.getElementById('header-content');
+            const isMobile = window.innerWidth <= 768;
+            
+            if (isMobile) {
+                header.classList.toggle('expanded');
+            } else {
+                // On desktop, toggle collapse state
+                header.classList.toggle('collapsed');
+                content.classList.toggle('collapsed');
+            }
+        }
+        
+        // Auto-collapse on mobile by default
+        function initializeHeader() {
+            const header = document.getElementById('app-header');
+            const isMobile = window.innerWidth <= 768;
+            
+            if (isMobile) {
+                // Mobile: collapsed by default, can expand
+                header.classList.remove('expanded');
+            }
+        }
+        
+        // Initialize header state on load and resize
+        window.addEventListener('load', initializeHeader);
+        window.addEventListener('resize', initializeHeader);
         
         // Dynamic version loading to prevent cache issues
         async function loadApp() {
