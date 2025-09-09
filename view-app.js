@@ -3215,9 +3215,27 @@ class CheckInViewApp {
             return;
         }
         
-        // Show summary
+        // Show summary with proper styling
         summary.style.display = 'block';
+        // Force our styling via JavaScript since CSS isn't taking effect
+        summary.style.background = 'linear-gradient(135deg, #fff3cd, #ffeaa7)';
+        summary.style.border = '1px solid #f39c12';
+        summary.style.borderRadius = '12px';
+        summary.style.maxWidth = '600px';
+        summary.style.margin = '10px auto 0 auto';
+        summary.style.padding = '0 15px';
+        summary.style.boxShadow = '0 2px 8px rgba(243, 156, 18, 0.2)';
+        
         summaryText.textContent = `ℹ️ ${playersWithCards.length} Player${playersWithCards.length !== 1 ? 's' : ''} with Cards`;
+        
+        // Also style the header
+        const summaryHeader = summary.querySelector('.card-summary-header');
+        if (summaryHeader) {
+            summaryHeader.style.fontSize = '0.85em';
+            summaryHeader.style.fontFamily = '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif';
+            summaryHeader.style.color = '#856404';
+            summaryHeader.style.background = 'linear-gradient(135deg, #fff3cd, #ffeaa7)';
+        }
         
         // Build detailed content
         const content = playersWithCards.map(player => {
