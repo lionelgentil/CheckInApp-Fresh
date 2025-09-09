@@ -2808,7 +2808,7 @@ class CheckInViewApp {
                 <!-- Collapsible Card Summary -->
                 <div id="team-card-summary" class="team-card-summary" style="display: none;">
                     <div class="card-summary-header" onclick="app.toggleCardSummary()">
-                        <span id="card-summary-text">⚠️ 0 Players with Cards</span>
+                        <span id="card-summary-text">ℹ️ 0 Players with Cards</span>
                         <span id="card-summary-icon">▼</span>
                     </div>
                     <div id="card-summary-content" class="card-summary-content" style="display: none;">
@@ -3217,7 +3217,7 @@ class CheckInViewApp {
         
         // Show summary
         summary.style.display = 'block';
-        summaryText.textContent = `⚠️ ${playersWithCards.length} Player${playersWithCards.length !== 1 ? 's' : ''} with Cards`;
+        summaryText.textContent = `ℹ️ ${playersWithCards.length} Player${playersWithCards.length !== 1 ? 's' : ''} with Cards`;
         
         // Build detailed content
         const content = playersWithCards.map(player => {
