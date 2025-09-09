@@ -1,11 +1,11 @@
 /**
- * CheckIn App v5.1.2 - View Only Mode
+ * CheckIn App v6.0.0 - View Only Mode
  * Read-only version for public viewing
  * Enhanced with pure epoch timestamp support for reliable timezone handling
  */
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '5.5.3';
+const APP_VERSION = '6.0.0';
 
 // Utility function to convert epoch timestamp to Pacific timezone display
 function epochToPacificDate(epochTimestamp, options = {}) {

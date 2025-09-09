@@ -1,10 +1,10 @@
 /**
- * CheckIn App Core v4.9.2 - Shared Functionality
+ * CheckIn App Core v6.0.0 - Shared Functionality
  * Common utilities and components shared between main and view apps
  */
 
 // Version constant - shared across all apps
-const CORE_VERSION = '5.5.3';
+const CORE_VERSION = '6.0.0';
 
 /**
  * Base class with shared functionality for CheckIn apps
