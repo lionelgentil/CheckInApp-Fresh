@@ -2936,6 +2936,15 @@ Please check the browser console (F12) for more details.`);
         const typeIcon = card.type === 'match' ? '🏟️' : '📜';
         const typeLabel = card.type === 'match' ? 'Match' : 'Prior';
         
+        // DEBUG: Log the card data to see what we're working with
+        console.log('🐛 renderCardItem - card data:', {
+            type: card.type,
+            eventDate: card.eventDate,
+            eventDateType: typeof card.eventDate,
+            cardType: card.cardType,
+            eventName: card.eventName
+        });
+        
         // Handle different date formats properly
         let displayDate = 'No date';
         if (card.eventDate) {
@@ -2964,6 +2973,8 @@ Please check the browser console (F12) for more details.`);
                 }
             }
         }
+        
+        console.log('🐛 renderCardItem - final displayDate:', displayDate);
         
         return `
             <div style="padding: 12px; border-bottom: 1px solid #f8f9fa; background: white;">
