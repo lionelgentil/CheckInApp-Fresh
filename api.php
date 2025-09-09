@@ -1,6 +1,6 @@
 <?php
 /**
- * CheckIn App for BUSC PASS - PHP API
+ * CheckIn App for BUSC PASS - PHP API (PRODUCTION CLEAN VERSION)
  * RESTful API for team and event management
  */
 
@@ -8,7 +8,7 @@
 session_start();
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '5.5.3';
+const APP_VERSION = '5.5.4';
 
 // Authentication configuration
 const ADMIN_PASSWORD = 'checkin2024'; // Change this to your desired password
@@ -229,46 +229,7 @@ try {
                 getTeams($db);
             } elseif ($method === 'POST') {
                 requireAuth(); // Require authentication for modifications
-                
-                // Log team saves to detect if they're causing the issue
-                error_log("=== TEAM SAVE TRIGGERED ===");
-                error_log("Team save request detected - this might delete disciplinary records!");
-                error_log("Team save data: " . file_get_contents('php://input'));
-                
-                // Count disciplinary records before team save
-                $recordsBeforeTeamSave = getDisciplinaryRecordsCount($db);
-                error_log("Disciplinary records before team save: " . $recordsBeforeTeamSave);
-                
                 saveTeams($db);
-                
-                // Count disciplinary records after team save (bust cache for fresh count)
-                $recordsAfterTeamSave = getDisciplinaryRecordsCount($db, true);
-                error_log("Disciplinary records after team save: " . $recordsAfterTeamSave);
-                
-                if ($recordsAfterTeamSave < $recordsBeforeTeamSave) {
-                    error_log("ALERT: Team save deleted " . ($recordsBeforeTeamSave - $recordsAfterTeamSave) . " disciplinary records!");
-                }
-                error_log("=== TEAM SAVE COMPLETE ===");
-            }
-            break;
-            
-        case 'member-photo':
-            // DEPRECATED: This endpoint is deprecated after photo migration
-            // Use /api/photos?filename= instead for direct file serving with HTTP caching
-            if ($method === 'GET') {
-                http_response_code(410); // Gone
-                echo json_encode([
-                    'error' => 'This endpoint is deprecated after photo migration',
-                    'message' => 'Use /api/photos?filename= instead for direct file serving with HTTP caching',
-                    'migration_info' => 'Photos are now stored as files with direct URLs for better performance'
-                ]);
-            }
-            break;
-            
-        case 'teams-no-photos':
-            // Teams with members but WITHOUT photo data for faster loading
-            if ($method === 'GET') {
-                getTeamsWithoutPhotos($db);
             }
             break;
             
@@ -291,24 +252,7 @@ try {
                 getEvents($db);
             } elseif ($method === 'POST') {
                 requireAuth(); // Require authentication for modifications
-                
-                // Log events saves to detect if they're causing the issue
-                error_log("=== EVENT SAVE TRIGGERED ===");
-                
-                // Count disciplinary records before event save
-                $recordsBeforeEventSave = getDisciplinaryRecordsCount($db);
-                error_log("Disciplinary records before event save: " . $recordsBeforeEventSave);
-                
                 saveEvents($db);
-                
-                // Count disciplinary records after event save (bust cache for fresh count)
-                $recordsAfterEventSave = getDisciplinaryRecordsCount($db, true);
-                error_log("Disciplinary records after event save: " . $recordsAfterEventSave);
-                
-                if ($recordsAfterEventSave < $recordsBeforeEventSave) {
-                    error_log("ALERT: Event save deleted " . ($recordsBeforeEventSave - $recordsAfterEventSave) . " disciplinary records!");
-                }
-                error_log("=== EVENT SAVE COMPLETE ===");
             }
             break;
             
@@ -426,30 +370,6 @@ try {
             }
             break;
             
-        case 'debug-disciplinary':
-            if ($method === 'GET') {
-                debugDisciplinaryRecords($db);
-            }
-            break;
-            
-        case 'cleanup-disciplinary':
-            // DISABLED: Cleanup endpoint removed to prevent accidental data loss
-            http_response_code(404);
-            echo json_encode(['error' => 'Cleanup endpoint disabled for data protection']);
-            break;
-            
-        case 'db-schema':
-            if ($method === 'GET') {
-                getDatabaseSchema($db);
-            }
-            break;
-            
-        case 'db-data':
-            if ($method === 'GET') {
-                getDatabaseData($db);
-            }
-            break;
-            
         case 'photos':
             // Photo serving and upload endpoints
             if ($method === 'GET') {
@@ -460,333 +380,6 @@ try {
             } elseif ($method === 'DELETE') {
                 requireAuth(); // Require authentication for photo deletions
                 deletePhoto($db);
-            }
-            break;
-            
-        case 'migrate-photos':
-            // Migrate photos from team_members.photo to member_photos table
-            if ($method === 'POST') {
-                requireAuth(); // Require authentication for migrations
-                migratePhotosToSeparateTable($db);
-            }
-            break;
-            
-        case 'fix-photos-directory':
-            // Emergency fix to recreate photos directory and clean database
-            if ($method === 'POST') {
-                $password = isset($_POST['password']) ? $_POST['password'] : '';
-                if ($password !== 'fixphotos2024') {
-                    http_response_code(401);
-                    echo json_encode(['error' => 'Invalid password']);
-                    break;
-                }
-                
-                $photosDir = __DIR__ . '/photos/members';
-                $defaultsDir = __DIR__ . '/photos/defaults';
-                $results = [];
-                
-                // Create photos directories if they don't exist
-                if (!is_dir($photosDir)) {
-                    if (mkdir($photosDir, 0755, true)) {
-                        $results[] = "Created photos/members directory";
-                    } else {
-                        $results[] = "ERROR: Could not create photos/members directory";
-                    }
-                } else {
-                    $results[] = "photos/members directory already exists";
-                }
-                
-                if (!is_dir($defaultsDir)) {
-                    if (mkdir($defaultsDir, 0755, true)) {
-                        $results[] = "Created photos/defaults directory";
-                    } else {
-                        $results[] = "ERROR: Could not create photos/defaults directory";
-                    }
-                } else {
-                    $results[] = "photos/defaults directory already exists";
-                }
-                
-                // Clean up database - set photo field to NULL for members with missing files
-                $stmt = $db->query("SELECT id, name, photo FROM team_members WHERE photo IS NOT NULL");
-                $members = $stmt->fetchAll(PDO::FETCH_ASSOC);
-                $cleanedCount = 0;
-                
-                foreach ($members as $member) {
-                    $photoFilename = $member['photo'];
-                    
-                    // Extract filename if it's a URL
-                    if (strpos($photoFilename, '/api/photos?filename=') === 0) {
-                        $parsedUrl = parse_url($photoFilename);
-                        if ($parsedUrl && isset($parsedUrl['query'])) {
-                            parse_str($parsedUrl['query'], $query);
-                            if (isset($query['filename'])) {
-                                $photoFilename = $query['filename'];
-                            }
-                        }
-                    }
-                    
-                    $photoPath = $photosDir . '/' . $photoFilename;
-                    
-                    // If file doesn't exist, clear the database reference
-                    if (!file_exists($photoPath)) {
-                        $updateStmt = $db->prepare('UPDATE team_members SET photo = NULL WHERE id = ?');
-                        $updateStmt->execute([$member['id']]);
-                        $cleanedCount++;
-                    }
-                }
-                
-                $results[] = "Cleaned {$cleanedCount} missing photo references from database";
-                
-                // Create default SVG files if they don't exist
-                $maleDefault = $defaultsDir . '/male.svg';
-                $femaleDefault = $defaultsDir . '/female.svg';
-                
-                if (!file_exists($maleDefault)) {
-                    $maleSvg = '<svg width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-    <circle cx="50" cy="50" r="50" fill="#4F80FF"/>
-    <circle cx="50" cy="35" r="18" fill="white"/>
-    <ellipse cx="50" cy="75" rx="25" ry="20" fill="white"/>
-</svg>';
-                    if (file_put_contents($maleDefault, $maleSvg)) {
-                        $results[] = "Created male.svg default avatar";
-                    } else {
-                        $results[] = "ERROR: Could not create male.svg";
-                    }
-                } else {
-                    $results[] = "male.svg already exists";
-                }
-                
-                if (!file_exists($femaleDefault)) {
-                    $femaleSvg = '<svg width="100" height="100" viewBox="0 0 100 100" xmlns="http://www.w3.org/2000/svg">
-    <circle cx="50" cy="50" r="50" fill="#FF69B4"/>
-    <circle cx="50" cy="35" r="18" fill="white"/>
-    <ellipse cx="50" cy="75" rx="25" ry="20" fill="white"/>
-</svg>';
-                    if (file_put_contents($femaleDefault, $femaleSvg)) {
-                        $results[] = "Created female.svg default avatar";
-                    } else {
-                        $results[] = "ERROR: Could not create female.svg";
-                    }
-                } else {
-                    $results[] = "female.svg already exists";
-                }
-                
-                echo json_encode([
-                    'success' => true,
-                    'message' => 'Photos directory fix completed',
-                    'results' => $results,
-                    'cleaned_members' => $cleanedCount
-                ]);
-            } else {
-                http_response_code(405);
-                echo json_encode(['error' => 'POST method required']);
-            }
-            break;
-            
-        case 'debug-photos-detailed':
-            // Enhanced debug endpoint to check photo data and files
-            if ($method === 'GET') {
-                $stmt = $db->query("
-                    SELECT id, name, gender, photo, 
-                           LENGTH(photo) as photo_length,
-                           CASE 
-                               WHEN photo LIKE '/api/photos%' THEN 'API_URL'
-                               WHEN photo LIKE '/photos/members%' THEN 'FULL_PATH'  
-                               WHEN photo LIKE '%.svg' OR photo LIKE '%.jpg' OR photo LIKE '%.png' THEN 'FILENAME'
-                               ELSE 'OTHER'
-                           END as photo_type
-                    FROM team_members 
-                    WHERE photo IS NOT NULL 
-                    ORDER BY photo_type, id
-                    LIMIT 20
-                ");
-                $members = $stmt->fetchAll(PDO::FETCH_ASSOC);
-                
-                // Check if files actually exist
-                $photosDir = __DIR__ . '/photos/members';
-                foreach ($members as &$member) {
-                    $photoFilename = $member['photo'];
-                    
-                    // Extract filename if it's a URL
-                    if (strpos($photoFilename, '/api/photos?filename=') === 0) {
-                        $parsedUrl = parse_url($photoFilename);
-                        if ($parsedUrl && isset($parsedUrl['query'])) {
-                            parse_str($parsedUrl['query'], $query);
-                            if (isset($query['filename'])) {
-                                $photoFilename = $query['filename'];
-                            }
-                        }
-                    }
-                    
-                    $photoPath = $photosDir . '/' . $photoFilename;
-                    $member['file_exists'] = file_exists($photoPath);
-                    $member['file_size'] = file_exists($photoPath) ? filesize($photoPath) : 0;
-                    $member['expected_path'] = $photoPath;
-                    
-                    // Check for any files starting with member ID
-                    $memberFiles = glob($photosDir . '/' . $member['id'] . '*');
-                    $member['found_files'] = array_map('basename', $memberFiles);
-                }
-                
-                echo json_encode([
-                    'success' => true,
-                    'members' => $members,
-                    'photos_directory' => $photosDir,
-                    'directory_exists' => is_dir($photosDir),
-                    'timestamp' => date('c')
-                ]);
-            }
-            break;
-            
-        case 'debug-photos':
-            // Debug endpoint to check photo data in database
-            if ($method === 'GET') {
-                $stmt = $db->query("
-                    SELECT id, name, gender, photo, 
-                           LENGTH(photo) as photo_length,
-                           CASE 
-                               WHEN photo LIKE '/api/photos%' THEN 'API_URL'
-                               WHEN photo LIKE '/photos/members%' THEN 'FULL_PATH'  
-                               WHEN photo LIKE '%.svg' OR photo LIKE '%.jpg' OR photo LIKE '%.png' THEN 'FILENAME'
-                               ELSE 'OTHER'
-                           END as photo_type
-                    FROM team_members 
-                    WHERE photo IS NOT NULL 
-                    ORDER BY photo_type, id
-                    LIMIT 20
-                ");
-                $members = $stmt->fetchAll(PDO::FETCH_ASSOC);
-                echo json_encode([
-                    'success' => true,
-                    'members' => $members,
-                    'timestamp' => date('c'),
-                    'note' => 'Check photo_type: FILENAME is correct, API_URL/FULL_PATH are wrong'
-                ]);
-            }
-            break;
-            
-        case 'cleanup-photo-paths':
-            // Cleanup endpoint to fix photo paths in database
-            if ($method === 'POST') {
-                $password = isset($_POST['password']) ? $_POST['password'] : '';
-                if ($password !== 'cleanup2024') {
-                    http_response_code(401);
-                    echo json_encode(['error' => 'Invalid password']);
-                    break;
-                }
-                cleanupPhotoPaths($db);
-            } else {
-                http_response_code(405);
-                echo json_encode(['error' => 'POST method required']);
-            }
-            break;
-            
-        case 'migrate-photos':
-            // TEMPORARY: Migration endpoint - remove after use
-            if ($method === 'POST') {
-                $password = isset($_POST['password']) ? $_POST['password'] : '';
-                if ($password !== 'migrate2024') {
-                    http_response_code(401);
-                    echo json_encode(['error' => 'Invalid password']);
-                    break;
-                }
-                migratePhotos($db);
-            } else {
-                http_response_code(405);
-                echo json_encode(['error' => 'POST method required']);
-            }
-            break;
-            
-        case 'volume-files':
-            // List files in Railway volume
-            if ($method === 'GET') {
-                listVolumeFiles($db);
-            }
-            break;
-            
-        case 'volume-test':
-            // Test Railway volume access
-            if ($method === 'GET') {
-                testVolumeAccess($db);
-            }
-            break;
-            
-        case 'db-maintenance':
-            // Database maintenance endpoint for SQL execution
-            if ($method === 'POST') {
-                requireAuth(); // Require authentication for database maintenance
-                executeDatabaseMaintenance($db);
-            } else {
-                http_response_code(405);
-                echo json_encode(['error' => 'POST method required']);
-            }
-            break;
-            
-        case 'migrate-to-epochs':
-            // Migrate dates and times to epoch timestamps
-            if ($method === 'POST') {
-                requireAuth(); // Require authentication for migrations
-                migrateToEpochTimestamps($db);
-            } else {
-                http_response_code(405);
-                echo json_encode(['error' => 'POST method required']);
-            }
-            break;
-            
-        case 'migrate-remaining-epochs':
-            // Migrate remaining created_at fields to epoch timestamps  
-            if ($method === 'POST') {
-                requireAuth(); // Require authentication for migrations
-                migrateRemainingEpochTimestamps($db);
-            } else {
-                http_response_code(405);
-                echo json_encode(['error' => 'POST method required']);
-            }
-            break;
-            
-        case 'cleanup-string-dates':
-            // FINAL STEP: Drop all old string date/time columns (IRREVERSIBLE!)
-            if ($method === 'POST') {
-                requireAuth(); // Require authentication for cleanup
-                $password = json_decode(file_get_contents('php://input'), true)['confirm_password'] ?? '';
-                if ($password !== 'CLEANUP_DATES_2024') {
-                    http_response_code(401);
-                    echo json_encode(['error' => 'Confirmation password required for irreversible cleanup']);
-                    break;
-                }
-                cleanupStringDateColumns($db);
-            } else {
-                http_response_code(405);
-                echo json_encode(['error' => 'POST method required']);
-            }
-            break;
-            
-        case 'migrate-indexes':
-            // Apply new performance indexes to production database
-            if ($method === 'POST') {
-                requireAuth(); // Require authentication for database changes
-                migratePerformanceIndexes($db);
-            }
-            break;
-            
-        case 'performance-test':
-            // Performance testing endpoint to measure database vs application overhead
-            if ($method === 'GET') {
-                performanceTest($db);
-            }
-            break;
-            
-        case 'debug-indexes':
-            // Debug index usage and statistics
-            if ($method === 'GET') {
-                debugIndexUsage($db);
-            }
-            break;
-            
-        case 'db-indexes':
-            // List all database indexes for optimization analysis
-            if ($method === 'GET') {
-                getDatabaseIndexes($db);
             }
             break;
             
@@ -803,130 +396,6 @@ try {
         'file' => $e->getFile(),
         'line' => $e->getLine()
     ]);
-}
-
-// Final cleanup function to drop all old string date/time columns (IRREVERSIBLE!)
-function cleanupStringDateColumns($db) {
-    try {
-        error_log("=== STARTING STRING DATE CLEANUP ===" );
-        $results = [];
-        $errors = [];
-        
-        $results[] = "⚠️  IRREVERSIBLE OPERATION: Dropping all old string date/time columns";
-        $results[] = "This will permanently remove backup columns and switch to pure epoch-based system";
-        
-        // List all columns to be dropped (IRREVERSIBLE!)
-        $columnsToDropByTable = [
-            'events' => ['date', 'created_at'],
-            'matches' => ['match_time', 'created_at'], 
-            'general_attendees' => ['checked_in_at'],
-            'match_attendees' => ['checked_in_at'],
-            'player_disciplinary_records' => ['incident_date', 'suspension_served_date', 'created_at'],
-            'team_members' => ['created_at'],
-            'teams' => ['created_at'],
-            'referees' => ['created_at'],
-            'member_photos' => ['uploaded_at'],
-            'match_cards' => ['created_at']
-        ];
-        
-        $totalColumnsDropped = 0;
-        
-        foreach ($columnsToDropByTable as $table => $columns) {
-            $results[] = "\n🗑️  Processing table: $table";
-            
-            foreach ($columns as $column) {
-                try {
-                    // Check if column exists before trying to drop it
-                    $stmt = $db->prepare("
-                        SELECT COUNT(*) as exists 
-                        FROM information_schema.columns 
-                        WHERE table_name = ? AND column_name = ? AND table_schema = 'public'
-                    ");
-                    $stmt->execute([$table, $column]);
-                    $columnExists = $stmt->fetch(PDO::FETCH_ASSOC)['exists'] > 0;
-                    
-                    if ($columnExists) {
-                        $sql = "ALTER TABLE $table DROP COLUMN $column";
-                        $db->exec($sql);
-                        $results[] = "   ✅ Dropped $table.$column";
-                        $totalColumnsDropped++;
-                        error_log("CLEANUP: Dropped $table.$column");
-                    } else {
-                        $results[] = "   ⏭️  Skipped $table.$column (already removed)";
-                    }
-                    
-                } catch (Exception $e) {
-                    $error = "   ❌ Failed to drop $table.$column: " . $e->getMessage();
-                    $errors[] = $error;
-                    error_log("CLEANUP ERROR: " . $error);
-                }
-            }
-        }
-        
-        $results[] = "\n=== CLEANUP SUMMARY ===";
-        $results[] = "✅ Successfully dropped $totalColumnsDropped string date/time columns";
-        $results[] = "🎯 Database is now pure epoch-based!";
-        $results[] = "📊 All dates/times are stored as integers (seconds since 1970)";
-        $results[] = "⚡ Time calculations use simple arithmetic instead of complex parsing";
-        
-        if (!empty($errors)) {
-            $results[] = "\n⚠️ ERRORS ENCOUNTERED:";
-            $results = array_merge($results, $errors);
-        } else {
-            $results[] = "\n🎉 CLEANUP COMPLETED WITHOUT ERRORS!";
-        }
-        
-        // Verify the cleanup worked by checking remaining columns
-        $results[] = "\n🔍 VERIFICATION: Checking for any remaining string date columns...";
-        $stringDateColumnsFound = [];
-        
-        foreach (array_keys($columnsToDropByTable) as $table) {
-            $stmt = $db->prepare("
-                SELECT column_name 
-                FROM information_schema.columns 
-                WHERE table_name = ? 
-                AND table_schema = 'public'
-                AND (column_name LIKE '%date%' OR column_name LIKE '%time%' OR column_name LIKE '%created_at%' OR column_name LIKE '%uploaded_at%')
-                AND data_type IN ('timestamp', 'date', 'time')
-                ORDER BY column_name
-            ");
-            $stmt->execute([$table]);
-            $remainingColumns = $stmt->fetchAll(PDO::FETCH_COLUMN);
-            
-            if (!empty($remainingColumns)) {
-                $stringDateColumnsFound[] = "$table: " . implode(', ', $remainingColumns);
-            }
-        }
-        
-        if (empty($stringDateColumnsFound)) {
-            $results[] = "✅ PERFECT! No string date/time columns found - cleanup is complete!";
-        } else {
-            $results[] = "⚠️ Found remaining string date columns:";
-            $results = array_merge($results, $stringDateColumnsFound);
-        }
-        
-        error_log("=== STRING DATE CLEANUP COMPLETED ===");
-        
-        echo json_encode([
-            'success' => true,
-            'message' => 'String date columns cleanup completed successfully',
-            'results' => $results,
-            'columns_dropped' => $totalColumnsDropped,
-            'error_count' => count($errors),
-            'timestamp' => date('c'),
-            'database_status' => 'pure_epoch_based'
-        ]);
-        
-    } catch (Exception $e) {
-        error_log('STRING DATE CLEANUP FAILED: ' . $e->getMessage());
-        http_response_code(500);
-        echo json_encode([
-            'success' => false,
-            'error' => 'Cleanup failed: ' . $e->getMessage(),
-            'results' => $results ?? [],
-            'timestamp' => date('c')
-        ]);
-    }
 }
 
 // Individual event operations for efficiency (replaces bulk operations)
@@ -1294,186 +763,9 @@ function getTeams($db) {
     echo json_encode($teams);
 }
 
-// DEPRECATED: This function is deprecated after photo migration to Railway volume
-// Photos are now served directly via servePhoto() with /api/photos?filename= URLs
-function getMemberPhoto($db) {
-    $memberId = $_GET['member_id'] ?? '';
-    
-    if (empty($memberId)) {
-        http_response_code(400);
-        echo json_encode(['error' => 'Member ID required']);
-        return;
-    }
-    
-    try {
-        // First check if member has photo in member_photos table
-        $photoStmt = $db->prepare('SELECT photo_data FROM member_photos WHERE member_id = ?');
-        $photoStmt->execute([$memberId]);
-        $photoData = $photoStmt->fetchColumn();
-        
-        if ($photoData) {
-            // Return base64 photo data
-            echo json_encode([
-                'success' => true,
-                'member_id' => $memberId,
-                'photo' => $photoData,
-                'source' => 'member_photos_table'
-            ]);
-            return;
-        }
-        
-        // Fallback: check legacy photo field in team_members
-        $memberStmt = $db->prepare('SELECT photo, gender FROM team_members WHERE id = ?');
-        $memberStmt->execute([$memberId]);
-        $member = $memberStmt->fetch(PDO::FETCH_ASSOC);
-        
-        if (!$member) {
-            http_response_code(404);
-            echo json_encode(['error' => 'Member not found']);
-            return;
-        }
-        
-        if ($member['photo'] && $member['photo'] !== 'has_photo') {
-            // Legacy photo data
-            $photoValue = $member['photo'];
-            
-            if (strpos($photoValue, 'data:image/') === 0) {
-                // Base64 data in legacy field
-                echo json_encode([
-                    'success' => true,
-                    'member_id' => $memberId,
-                    'photo' => $photoValue,
-                    'source' => 'legacy_base64'
-                ]);
-                return;
-            } else {
-                // File-based photo - convert to API URL
-                $cleanFilename = basename($photoValue);
-                if (strpos($cleanFilename, '.') !== false) {
-                    echo json_encode([
-                        'success' => true,
-                        'member_id' => $memberId,
-                        'photo' => "/api/photos?filename=" . urlencode($cleanFilename),
-                        'source' => 'legacy_file'
-                    ]);
-                    return;
-                }
-            }
-        }
-        
-        // No custom photo found - return gender default
-        echo json_encode([
-            'success' => true,
-            'member_id' => $memberId,
-            'photo' => getDefaultPhoto($member['gender']),
-            'source' => 'gender_default'
-        ]);
-        
-    } catch (Exception $e) {
-        http_response_code(500);
-        echo json_encode(['error' => 'Failed to load member photo: ' . $e->getMessage()]);
-    }
-}
-
-function getTeamsWithoutPhotos($db) {
-    // Fast teams endpoint optimized for static photo serving
-    // Only include active members (active = TRUE or active IS NULL for backward compatibility)
-    $stmt = $db->query('
-        SELECT 
-            t.id as team_id,
-            t.name as team_name,
-            t.category as team_category,
-            t.color as team_color,
-            t.description as team_description,
-            t.captain_id as team_captain_id,
-            tm.id as member_id,
-            tm.name as member_name,
-            tm.jersey_number,
-            tm.gender,
-            tm.photo
-        FROM teams t
-        LEFT JOIN team_members tm ON t.id = tm.team_id AND (tm.active IS NULL OR tm.active = TRUE)
-        ORDER BY t.name, tm.name
-    ');
-    
-    $teams = [];
-    $currentTeam = null;
-    
-    while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-        // Start new team or continue existing team
-        if (!$currentTeam || $currentTeam['id'] !== $row['team_id']) {
-            // Save previous team if exists
-            if ($currentTeam) {
-                $teams[] = $currentTeam;
-            }
-            
-            // Start new team
-            $currentTeam = [
-                'id' => $row['team_id'],
-                'name' => $row['team_name'],
-                'category' => $row['team_category'],
-                'colorData' => $row['team_color'],
-                'description' => $row['team_description'],
-                'captainId' => $row['team_captain_id'],
-                'members' => []
-            ];
-        }
-        
-        // Add member to current team (if member exists)
-        if ($row['member_id']) {
-            // Generate photo URL - same logic as getTeams() for consistency
-            if ($row['photo']) {
-                // Check if it's already base64 data (legacy)
-                if (strpos($row['photo'], 'data:image/') === 0) {
-                    // It's base64 data, use directly
-                    $photo = $row['photo'];
-                } else {
-                    // Check if it's a filename with valid extension (post-migration format)
-                    if (preg_match('/\.(jpg|jpeg|png|webp)$/i', $row['photo'])) {
-                        // It's a filename - use direct static URL (bypass PHP for better performance)
-                        $photo = '/photos/' . $row['photo'];
-                    } else {
-                        // Legacy file-based storage - convert to API URL
-                        $photoValue = $row['photo'];
-                        if (strpos($photoValue, '/photos/members/') === 0) {
-                            $photoValue = basename($photoValue);
-                        } elseif (strpos($photoValue, '/api/photos') === 0) {
-                            $parsedUrl = parse_url($photoValue);
-                            if ($parsedUrl && isset($parsedUrl['query'])) {
-                                parse_str($parsedUrl['query'], $query);
-                                if (isset($query['filename'])) {
-                                    $photoValue = $query['filename'];
-                                }
-                            }
-                        }
-                        $photo = '/photos/' . $photoValue;
-                    }
-                }
-            } else {
-                $photo = getDefaultPhoto($row['gender']);
-            }
-            
-            $currentTeam['members'][] = [
-                'id' => $row['member_id'],
-                'name' => $row['member_name'],
-                'jerseyNumber' => $row['jersey_number'] ? (int)$row['jersey_number'] : null,
-                'gender' => $row['gender'],
-                'photo' => $photo
-            ];
-        }
-    }
-    
-    // Don't forget the last team
-    if ($currentTeam) {
-        $teams[] = $currentTeam;
-    }
-    
-    echo json_encode($teams);
-}
-
 function getTeamsBasic($db) {
     // Lightweight teams endpoint - only essential data without player photos for performance
-    // Only count active members (active = TRUE or active IS NULL for backward compatibility)
+    // Only count active members (active = TRUE or active IS NULL for backward compatibility)  
     $stmt = $db->query('
         SELECT 
             t.id,
@@ -1683,35 +975,6 @@ function saveTeams($db) {
             }
         }
         
-        // EMERGENCY FIX: Completely disable member deletion to preserve disciplinary records
-        // Delete orphaned members (not in incoming data) - this will cascade delete their disciplinary records
-        if (!empty($incomingMemberIds)) {
-            error_log("SKIPPING: Member cleanup disabled to preserve disciplinary records");
-            // $placeholders = str_repeat('?,', count($incomingMemberIds) - 1) . '?';
-            // $stmt = $db->prepare("DELETE FROM team_members WHERE id NOT IN ({$placeholders})");
-            // $stmt->execute($incomingMemberIds);
-        } else {
-            error_log("SKIPPING: All member deletion disabled to preserve disciplinary records");
-            // // CRITICAL FIX: Only delete all members if we're sure this is intentional
-            // // Check if any teams in the input are supposed to have members
-            // $hasAnyMembersData = false;
-            // foreach ($input as $team) {
-            //     if (isset($team['members']) && is_array($team['members'])) {
-            //         $hasAnyMembersData = true;
-            //         break;
-            //     }
-            // }
-            // 
-            // // Only delete all members if teams explicitly have empty members arrays
-            // // Don't delete if members key is missing entirely (could be partial update)
-            // if ($hasAnyMembersData) {
-            //     error_log("WARNING: Deleting all team members due to empty members data");
-            //     $db->exec('DELETE FROM team_members');
-            // } else {
-            //     error_log("SKIPPING: Team save without members data - preserving existing members");
-            // }
-        }
-        
         // Clean up teams that are no longer in the input data
         // First collect all team IDs from input
         $incomingTeamIds = [];
@@ -1725,7 +988,6 @@ function saveTeams($db) {
             $placeholders = str_repeat('?,', count($incomingTeamIds) - 1) . '?';
             $stmt = $db->prepare("DELETE FROM teams WHERE id NOT IN ({$placeholders})");
             $stmt->execute($incomingTeamIds);
-            error_log("Cleaned up teams not in incoming data");
         }
         
         foreach ($input as $team) {
@@ -2171,220 +1433,6 @@ function generateUUID() {
     );
 }
 
-function cleanupDisciplinaryRecords($db) {
-    error_log("WARNING: cleanupDisciplinaryRecords function was called! This should not happen.");
-    try {
-        // Get count and sample data before cleanup for confirmation
-        $stmt = $db->query('SELECT COUNT(*) as total FROM player_disciplinary_records');
-        $recordsBeforeCleanup = $stmt->fetch(PDO::FETCH_ASSOC)['total'];
-        
-        // Get sample of existing records to show what's being deleted
-        $stmt = $db->query('SELECT card_type, incident_date, suspension_matches, suspension_served, suspension_served_date FROM player_disciplinary_records ORDER BY created_at DESC LIMIT 5');
-        $sampleRecords = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        
-        // Clear all disciplinary records
-        $db->exec('DELETE FROM player_disciplinary_records');
-        
-        // Reset the auto-increment counter
-        $db->exec('ALTER SEQUENCE player_disciplinary_records_id_seq RESTART WITH 1');
-        
-        echo json_encode([
-            'success' => true,
-            'message' => 'Disciplinary records cleaned up successfully for v2.14.9',
-            'records_deleted' => $recordsBeforeCleanup,
-            'sample_deleted_records' => $sampleRecords,
-            'note' => 'Fresh start with suspension served date support',
-            'timestamp' => date('c')
-        ]);
-        
-    } catch (Exception $e) {
-        http_response_code(500);
-        echo json_encode([
-            'error' => 'Failed to cleanup disciplinary records: ' . $e->getMessage(),
-            'timestamp' => date('c')
-        ]);
-    }
-}
-
-function getDatabaseSchema($db) {
-    try {
-        // Get all tables in the database
-        $stmt = $db->query("
-            SELECT table_name 
-            FROM information_schema.tables 
-            WHERE table_schema = 'public' 
-            AND table_type = 'BASE TABLE'
-            ORDER BY table_name
-        ");
-        $tables = $stmt->fetchAll(PDO::FETCH_COLUMN);
-        
-        $schema = [];
-        
-        foreach ($tables as $tableName) {
-            // Get column information for each table
-            $stmt = $db->prepare("
-                SELECT 
-                    column_name,
-                    data_type,
-                    is_nullable,
-                    column_default,
-                    character_maximum_length,
-                    numeric_precision,
-                    numeric_scale
-                FROM information_schema.columns 
-                WHERE table_name = ? 
-                AND table_schema = 'public'
-                ORDER BY ordinal_position
-            ");
-            $stmt->execute([$tableName]);
-            $columns = $stmt->fetchAll(PDO::FETCH_ASSOC);
-            
-            // Get constraints (primary keys, foreign keys, etc.)
-            $stmt = $db->prepare("
-                SELECT 
-                    tc.constraint_name,
-                    tc.constraint_type,
-                    kcu.column_name,
-                    ccu.table_name AS foreign_table_name,
-                    ccu.column_name AS foreign_column_name
-                FROM information_schema.table_constraints AS tc 
-                JOIN information_schema.key_column_usage AS kcu
-                    ON tc.constraint_name = kcu.constraint_name
-                    AND tc.table_schema = kcu.table_schema
-                LEFT JOIN information_schema.constraint_column_usage AS ccu
-                    ON ccu.constraint_name = tc.constraint_name
-                    AND ccu.table_schema = tc.table_schema
-                WHERE tc.table_name = ? 
-                AND tc.table_schema = 'public'
-                ORDER BY tc.constraint_type, kcu.ordinal_position
-            ");
-            $stmt->execute([$tableName]);
-            $constraints = $stmt->fetchAll(PDO::FETCH_ASSOC);
-            
-            // Get row count
-            $stmt = $db->prepare("SELECT COUNT(*) as row_count FROM {$tableName}");
-            $stmt->execute();
-            $rowCount = $stmt->fetch(PDO::FETCH_ASSOC)['row_count'];
-            
-            $schema[$tableName] = [
-                'columns' => $columns,
-                'constraints' => $constraints,
-                'row_count' => $rowCount
-            ];
-        }
-        
-        echo json_encode([
-            'success' => true,
-            'schema' => $schema,
-            'table_count' => count($tables),
-            'timestamp' => date('c')
-        ]);
-        
-    } catch (Exception $e) {
-        http_response_code(500);
-        echo json_encode([
-            'error' => 'Failed to get database schema: ' . $e->getMessage(),
-            'timestamp' => date('c')
-        ]);
-    }
-}
-
-function getDatabaseData($db) {
-    try {
-        // Get all tables
-        $stmt = $db->query("
-            SELECT table_name 
-            FROM information_schema.tables 
-            WHERE table_schema = 'public' 
-            AND table_type = 'BASE TABLE'
-            ORDER BY table_name
-        ");
-        $tables = $stmt->fetchAll(PDO::FETCH_COLUMN);
-        
-        $data = [];
-        $totalRows = 0;
-        
-        foreach ($tables as $tableName) {
-            // Get all data from each table (limit to prevent huge responses)
-            $stmt = $db->prepare("SELECT * FROM {$tableName} ORDER BY 1 LIMIT 100");
-            $stmt->execute();
-            $rows = $stmt->fetchAll(PDO::FETCH_ASSOC);
-            
-            // Get total count
-            $stmt = $db->prepare("SELECT COUNT(*) as total FROM {$tableName}");
-            $stmt->execute();
-            $count = $stmt->fetch(PDO::FETCH_ASSOC)['total'];
-            
-            $data[$tableName] = [
-                'rows' => $rows,
-                'count' => $count,
-                'showing' => count($rows),
-                'truncated' => $count > 100
-            ];
-            
-            $totalRows += $count;
-        }
-        
-        echo json_encode([
-            'success' => true,
-            'data' => $data,
-            'total_tables' => count($tables),
-            'total_rows' => $totalRows,
-            'timestamp' => date('c')
-        ]);
-        
-    } catch (Exception $e) {
-        http_response_code(500);
-        echo json_encode([
-            'error' => 'Failed to get database data: ' . $e->getMessage(),
-            'timestamp' => date('c')
-        ]);
-    }
-}
-
-function debugDisciplinaryRecords($db) {
-    try {
-        // Check if table exists and has records
-        $stmt = $db->query('SELECT COUNT(*) as total FROM player_disciplinary_records');
-        $totalRecords = $stmt->fetch(PDO::FETCH_ASSOC)['total'];
-        
-        // Get all raw records without joins
-        $stmt = $db->query('SELECT * FROM player_disciplinary_records ORDER BY created_at_epoch DESC LIMIT 10');
-        $rawRecords = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        
-        // Check for orphaned records (records with member_id that don't exist in team_members)
-        $stmt = $db->query('
-            SELECT pdr.id, pdr.member_id, pdr.card_type, pdr.created_at_epoch
-            FROM player_disciplinary_records pdr
-            LEFT JOIN team_members tm ON pdr.member_id = tm.id
-            WHERE tm.id IS NULL
-            ORDER BY pdr.created_at_epoch DESC
-        ');
-        $orphanedRecords = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        
-        // Check table structure
-        $stmt = $db->query("SELECT column_name, data_type, is_nullable, column_default 
-                           FROM information_schema.columns 
-                           WHERE table_name = 'player_disciplinary_records' 
-                           ORDER BY ordinal_position");
-        $tableStructure = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        
-        echo json_encode([
-            'total_records' => $totalRecords,
-            'raw_records' => $rawRecords,
-            'orphaned_records' => $orphanedRecords,
-            'table_structure' => $tableStructure,
-            'debug_timestamp' => date('c')
-        ]);
-        
-    } catch (Exception $e) {
-        echo json_encode([
-            'error' => $e->getMessage(),
-            'debug_timestamp' => date('c')
-        ]);
-    }
-}
-
 function getDisciplinaryRecords($db) {
     $memberId = $_GET['member_id'] ?? null;
     $teamId = $_GET['team_id'] ?? null;
@@ -2532,9 +1580,6 @@ function saveDisciplinaryRecords($db) {
 function servePhoto($db) {
     $filename = $_GET['filename'] ?? '';
     
-    // Debug logging for troubleshooting
-    error_log("servePhoto called with filename: " . $filename);
-    
     if (empty($filename)) {
         http_response_code(400);
         echo json_encode(['error' => 'Filename required']);
@@ -2548,7 +1593,6 @@ function servePhoto($db) {
     for ($i = 0; $i < $maxDepth; $i++) {
         if (strpos($filename, '/photos/members/') === 0) {
             $filename = basename($filename);
-            error_log("servePhoto: Cleaned path to filename: " . $filename);
         } elseif (strpos($filename, '/api/photos') === 0) {
             // Handle case where full API URL was passed as filename
             $parsedUrl = parse_url($filename);
@@ -2556,7 +1600,6 @@ function servePhoto($db) {
                 parse_str($parsedUrl['query'], $query);
                 if (isset($query['filename'])) {
                     $filename = $query['filename'];
-                    error_log("servePhoto: Extracted filename from nested URL: " . $filename);
                     continue; // Check if we need to clean further
                 }
             }
@@ -2566,10 +1609,6 @@ function servePhoto($db) {
             // No more cleaning needed
             break;
         }
-    }
-    
-    if ($originalFilename !== $filename) {
-        error_log("servePhoto: Cleaned filename from '{$originalFilename}' to '{$filename}'");
     }
     
     // Handle special "default" filename for default avatars
@@ -2591,16 +1630,12 @@ function servePhoto($db) {
         
         if (file_exists($volumePhotoPath)) {
             $photoPath = $volumePhotoPath;
-            error_log("servePhoto: Found in Railway volume: " . $photoPath);
         } elseif (file_exists($fallbackPhotoPath)) {
             $photoPath = $fallbackPhotoPath;
-            error_log("servePhoto: Found in fallback directory: " . $photoPath);
         } elseif (file_exists($legacyPhotoPath)) {
             $photoPath = $legacyPhotoPath;
-            error_log("servePhoto: Found in legacy location: " . $photoPath);
         } else {
             $photoPath = null;
-            error_log("servePhoto: Photo not found in any location");
         }
         
         // If the exact filename doesn't exist, try to find any photo for this member
@@ -2623,34 +1658,23 @@ function servePhoto($db) {
             $fallbackFiles = is_dir($fallbackDir) ? glob($fallbackDir . '/' . $memberId . '_*') : [];
             $legacyFiles = glob($legacyDir . '/' . $memberId . '*');
             
-            error_log("servePhoto: Searching volume: " . $volumeDir . '/' . $memberId . '_*');
-            error_log("servePhoto: Found " . count($volumeFiles) . " volume files: " . implode(', ', $volumeFiles));
-            error_log("servePhoto: Found " . count($fallbackFiles) . " fallback files: " . implode(', ', $fallbackFiles));
-            error_log("servePhoto: Found " . count($legacyFiles) . " legacy files: " . implode(', ', $legacyFiles));
-            
             if (!empty($volumeFiles)) {
                 // Use the most recent file from volume
                 $photoPath = end($volumeFiles);
-                error_log("servePhoto: Using volume photo for member {$memberId}: " . basename($photoPath));
             } elseif (!empty($fallbackFiles)) {
                 // Use the most recent file from fallback
                 $photoPath = end($fallbackFiles);
-                error_log("servePhoto: Using fallback photo for member {$memberId}: " . basename($photoPath));
             } elseif (!empty($legacyFiles)) {
                 // Fallback to legacy files
                 $photoPath = end($legacyFiles);
-                error_log("servePhoto: Using legacy photo for member {$memberId}: " . basename($photoPath));
             } else {
                 // No photo file found, fall back to gender-appropriate default
-                error_log("servePhoto: No files found for member {$memberId}, looking up gender for fallback");
                 $stmt = $db->prepare('SELECT gender FROM team_members WHERE id = ?');
                 $stmt->execute([$memberId]);
                 $member = $stmt->fetch(PDO::FETCH_ASSOC);
                 
                 $gender = ($member && $member['gender'] === 'female') ? 'female' : 'male';
                 $photoPath = __DIR__ . '/photos/defaults/' . ($gender === 'female' ? 'female.svg' : 'male.svg');
-                error_log("servePhoto: No photo found for member {$memberId}, falling back to {$gender} default: " . $photoPath);
-                error_log("servePhoto: WARNING - Serving {$gender}.svg for requested filename: {$filename}");
             }
         }
     }
@@ -2700,8 +1724,6 @@ function uploadPhoto($db) {
         // Check if member_id is provided
         $memberId = $_POST['member_id'] ?? '';
         
-        error_log("uploadPhoto: Starting upload for member ID: " . $memberId);
-        
         if (empty($memberId)) {
             http_response_code(400);
             echo json_encode(['error' => 'Member ID required']);
@@ -2721,31 +1743,25 @@ function uploadPhoto($db) {
             }
             
             if ($retry < $maxRetries - 1) {
-                error_log("uploadPhoto: Member not found (attempt " . ($retry + 1) . "/$maxRetries), retrying in 100ms...");
                 usleep(100000); // Wait 100ms before retry
             }
         }
         
         if (!$member) {
-            error_log("uploadPhoto: Member not found after $maxRetries attempts: " . $memberId);
             http_response_code(404);
             echo json_encode(['error' => 'Member not found - ensure member is created before uploading photo']);
             return;
         }
-        
-        error_log("uploadPhoto: Found member: " . $member['name']);
     
     // Check if file was uploaded
     if (!isset($_FILES['photo']) || $_FILES['photo']['error'] !== UPLOAD_ERR_OK) {
         $errorMsg = isset($_FILES['photo']) ? 'Upload error: ' . $_FILES['photo']['error'] : 'No file uploaded';
-        error_log("uploadPhoto: " . $errorMsg);
         http_response_code(400);
         echo json_encode(['error' => 'No valid file uploaded', 'details' => $errorMsg]);
         return;
     }
     
     $file = $_FILES['photo'];
-    error_log("uploadPhoto: File received - name: " . $file['name'] . ", size: " . $file['size'] . " bytes");
     
     // Validate file size (2MB max)
     if ($file['size'] > 2 * 1024 * 1024) {
@@ -2790,7 +1806,6 @@ function uploadPhoto($db) {
     
     // Check if Railway volume exists and is accessible
     if (!is_dir($photosDir)) {
-        error_log("uploadPhoto: Railway volume directory not found: " . $photosDir);
         $photosDir = $fallbackDir;
     } else {
         // Test write access without trying to change permissions
@@ -2798,14 +1813,10 @@ function uploadPhoto($db) {
         $canWrite = @file_put_contents($testFile, 'test');
         
         if ($canWrite === false) {
-            error_log("uploadPhoto: Railway volume not writable, using fallback directory");
-            error_log("uploadPhoto: Volume owner: " . (posix_getpwuid(fileowner($photosDir))['name'] ?? 'unknown'));
-            error_log("uploadPhoto: Volume permissions: " . substr(sprintf('%o', fileperms($photosDir)), -4));
             $photosDir = $fallbackDir;
         } else {
             // Clean up test file
             @unlink($testFile);
-            error_log("uploadPhoto: Railway volume is writable");
         }
     }
     
@@ -2823,9 +1834,7 @@ function uploadPhoto($db) {
             'tried_fallback' => $fallbackDir,
             'current_directory' => $photosDir,
             'directory_exists' => is_dir($photosDir),
-            'directory_writable' => is_writable($photosDir),
-            'volume_owner' => is_dir('/app/storage/photos') ? (posix_getpwuid(fileowner('/app/storage/photos'))['name'] ?? 'unknown') : 'N/A',
-            'volume_permissions' => is_dir('/app/storage/photos') ? substr(sprintf('%o', fileperms('/app/storage/photos')), -4) : 'N/A'
+            'directory_writable' => is_writable($photosDir)
         ]);
         return;
     }
@@ -2834,31 +1843,19 @@ function uploadPhoto($db) {
     
     // Move uploaded file to Railway volume
     if (!move_uploaded_file($file['tmp_name'], $photoPath)) {
-        error_log("uploadPhoto: Failed to move file to volume, trying with different permissions");
-        error_log("uploadPhoto: Source: " . $file['tmp_name']);
-        error_log("uploadPhoto: Destination: " . $photoPath);
-        error_log("uploadPhoto: Volume permissions: " . substr(sprintf('%o', fileperms($photosDir)), -4));
-        
         // Try creating the file with different approach
         $tempData = file_get_contents($file['tmp_name']);
         if ($tempData !== false && file_put_contents($photoPath, $tempData) !== false) {
-            error_log("uploadPhoto: Successfully saved using file_put_contents instead of move_uploaded_file");
+            // Success with alternative method
         } else {
             http_response_code(500);
             echo json_encode([
                 'error' => 'Failed to save photo to volume',
-                'details' => 'Both move_uploaded_file and file_put_contents failed',
-                'volume_path' => $photosDir,
-                'file_path' => $photoPath,
-                'volume_exists' => is_dir($photosDir),
-                'volume_writable' => is_writable($photosDir),
-                'volume_permissions' => is_dir($photosDir) ? substr(sprintf('%o', fileperms($photosDir)), -4) : 'N/A'
+                'details' => 'Both move_uploaded_file and file_put_contents failed'
             ]);
             return;
         }
     }
-    
-    error_log("uploadPhoto: Saved file to volume: " . $photoPath);
     
     // Remove any existing photo files for this member (cleanup old files from volume)
     $existingFiles = glob($photosDir . '/' . $memberId . '_*');
@@ -2870,8 +1867,6 @@ function uploadPhoto($db) {
     
     // Update database - store filename only (not base64)
     try {
-        error_log("uploadPhoto: Storing filename in database: " . $filename);
-        
         // Remove old photo data from member_photos table (if exists)
         $deleteStmt = $db->prepare('DELETE FROM member_photos WHERE member_id = ?');
         $deleteStmt->execute([$memberId]);
@@ -2880,9 +1875,7 @@ function uploadPhoto($db) {
         $stmt = $db->prepare('UPDATE team_members SET photo = ? WHERE id = ?');
         $result = $stmt->execute([$filename, $memberId]);
         
-        if ($result) {
-            error_log("uploadPhoto: Database updated successfully");
-        } else {
+        if (!$result) {
             throw new Exception("Failed to update team_members table");
         }
         
@@ -2894,11 +1887,9 @@ function uploadPhoto($db) {
             'filename' => $filename
         ];
         
-        error_log("uploadPhoto: Success response (volume storage)");
         echo json_encode($responseData);
         
     } catch (Exception $e) {
-        error_log("uploadPhoto: Database error: " . $e->getMessage());
         // Clean up the uploaded file if database update fails
         if (file_exists($photoPath)) {
             unlink($photoPath);
@@ -2907,81 +1898,10 @@ function uploadPhoto($db) {
     }
     
     } catch (Exception $e) {
-        error_log("uploadPhoto: Unexpected error: " . $e->getMessage());
-        error_log("uploadPhoto: Stack trace: " . $e->getTraceAsString());
         http_response_code(500);
         echo json_encode([
             'error' => 'Photo upload failed: ' . $e->getMessage(),
             'member_id' => $memberId ?? 'unknown'
-        ]);
-    }
-}
-
-function migratePhotosToSeparateTable($db) {
-    try {
-        $results = [];
-        
-        // Get all members with photo data
-        $stmt = $db->prepare('SELECT id, photo FROM team_members WHERE photo IS NOT NULL AND photo != \'\'');
-        $stmt->execute();
-        $members = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        
-        $migratedCount = 0;
-        $skippedCount = 0;
-        
-        foreach ($members as $member) {
-            $memberId = $member['id'];
-            $photoData = $member['photo'];
-            
-            // Check if it's base64 data that should be migrated
-            if (strpos($photoData, 'data:image/') === 0) {
-                // Extract content type and file size
-                $contentType = '';
-                $fileSize = strlen($photoData);
-                
-                if (preg_match('/^data:([^;]+);/', $photoData, $matches)) {
-                    $contentType = $matches[1];
-                }
-                
-                // Insert into member_photos table
-                $insertStmt = $db->prepare('
-                    INSERT INTO member_photos (member_id, photo_data, content_type, file_size, uploaded_at)
-                    VALUES (?, ?, ?, ?, CURRENT_TIMESTAMP)
-                    ON CONFLICT (member_id) DO UPDATE SET
-                        photo_data = EXCLUDED.photo_data,
-                        content_type = EXCLUDED.content_type,
-                        file_size = EXCLUDED.file_size,
-                        uploaded_at = CURRENT_TIMESTAMP
-                ');
-                
-                $insertStmt->execute([$memberId, $photoData, $contentType, $fileSize]);
-                
-                // Clear photo from team_members table
-                $updateStmt = $db->prepare('UPDATE team_members SET photo = NULL WHERE id = ?');
-                $updateStmt->execute([$memberId]);
-                
-                $migratedCount++;
-            } else {
-                // Skip filename-based photos (legacy file system photos)
-                $skippedCount++;
-            }
-        }
-        
-        $results[] = "Migration completed successfully";
-        $results[] = "Migrated {$migratedCount} base64 photos to member_photos table";
-        $results[] = "Skipped {$skippedCount} filename-based photos (legacy file system)";
-        
-        echo json_encode([
-            'success' => true,
-            'results' => $results,
-            'migrated_count' => $migratedCount,
-            'skipped_count' => $skippedCount
-        ]);
-        
-    } catch (Exception $e) {
-        http_response_code(500);
-        echo json_encode([
-            'error' => 'Migration failed: ' . $e->getMessage()
         ]);
     }
 }
@@ -3019,107 +1939,6 @@ function deletePhoto($db) {
     $stmt->execute([$memberId]);
     
     echo json_encode(['success' => true]);
-}
-
-function migratePhotos($db) {
-    // Create photos directories if they don't exist
-    $photosDir = __DIR__ . '/photos/members';
-    if (!is_dir($photosDir)) {
-        mkdir($photosDir, 0755, true);
-    }
-
-    // Get all members with base64 photos
-    $stmt = $db->query("
-        SELECT id, name, gender, photo 
-        FROM team_members 
-        WHERE photo IS NOT NULL 
-        AND photo LIKE 'data:image/%'
-    ");
-
-    $members = $stmt->fetchAll(PDO::FETCH_ASSOC);
-    $totalMembers = count($members);
-    $convertedCount = 0;
-    $errorCount = 0;
-    $errors = array();
-
-    if ($totalMembers === 0) {
-        echo json_encode(array(
-            'success' => true,
-            'message' => 'No base64 photos found. Migration already complete.',
-            'converted' => 0,
-            'errors' => 0,
-            'total' => 0
-        ));
-        return;
-    }
-
-    $db->beginTransaction();
-
-    try {
-        foreach ($members as $member) {
-            $base64Photo = $member['photo'];
-            
-            // Extract image data from base64
-            if (!preg_match('/^data:image\/(\w+);base64,(.+)$/', $base64Photo, $matches)) {
-                $errors[] = "Invalid base64 format for {$member['name']}";
-                $errorCount++;
-                continue;
-            }
-            
-            $imageType = strtolower($matches[1]);
-            $imageData = base64_decode($matches[2]);
-            
-            if ($imageData === false) {
-                $errors[] = "Failed to decode base64 for {$member['name']}";
-                $errorCount++;
-                continue;
-            }
-            
-            // Map image types to file extensions
-            $extensions = array(
-                'jpeg' => 'jpg',
-                'jpg' => 'jpg', 
-                'png' => 'png',
-                'webp' => 'webp',
-                'svg+xml' => 'svg'
-            );
-            
-            $extension = isset($extensions[$imageType]) ? $extensions[$imageType] : 'jpg';
-            $filename = $member['id'] . '.' . $extension;
-            $filePath = $photosDir . '/' . $filename;
-            
-            // Save image file
-            if (file_put_contents($filePath, $imageData) === false) {
-                $errors[] = "Failed to save file for {$member['name']}";
-                $errorCount++;
-                continue;
-            }
-            
-            // Update database record
-            $updateStmt = $db->prepare("UPDATE team_members SET photo = ? WHERE id = ?");
-            $updateStmt->execute(array($filename, $member['id']));
-            
-            $convertedCount++;
-        }
-        
-        $db->commit();
-        
-        echo json_encode(array(
-            'success' => true,
-            'message' => 'Photo migration completed successfully!',
-            'converted' => $convertedCount,
-            'errors' => $errorCount,
-            'total' => $totalMembers,
-            'error_details' => $errors
-        ));
-        
-    } catch (Exception $e) {
-        $db->rollBack();
-        echo json_encode(array(
-            'success' => false,
-            'error' => 'Migration failed: ' . $e->getMessage()
-        ));
-    }
 }
 
 function initializeDatabase($db) {
@@ -3272,19 +2091,19 @@ function initializeDatabase($db) {
         $db->exec('CREATE INDEX IF NOT EXISTS idx_matches_event_time ON matches(event_id, match_time)');
         $db->exec('CREATE INDEX IF NOT EXISTS idx_team_members_name ON team_members(team_id, name)');
         
-        // NEW: Critical indexes for disciplinary records performance
+        // Critical indexes for disciplinary records performance
         $db->exec('CREATE INDEX IF NOT EXISTS idx_team_members_id_team_id ON team_members(id, team_id)'); // For JOIN optimization
         $db->exec('CREATE INDEX IF NOT EXISTS idx_teams_id_name ON teams(id, name)'); // For team lookup optimization
         $db->exec('CREATE INDEX IF NOT EXISTS idx_player_disciplinary_sort ON player_disciplinary_records(member_id, incident_date_epoch DESC, created_at_epoch DESC)'); // For sorted queries
         $db->exec('CREATE INDEX IF NOT EXISTS idx_player_disciplinary_team_sort ON player_disciplinary_records(incident_date_epoch DESC, created_at_epoch DESC)'); // For team-based queries
         
-        // NEW: Epoch timestamp indexes for time-based queries
+        // Epoch timestamp indexes for time-based queries
         $db->exec('CREATE INDEX IF NOT EXISTS idx_events_date_epoch ON events(date_epoch)');
         $db->exec('CREATE INDEX IF NOT EXISTS idx_matches_time_epoch ON matches(match_time_epoch)');
         $db->exec('CREATE INDEX IF NOT EXISTS idx_match_attendees_time ON match_attendees(checked_in_at_epoch)');
         $db->exec('CREATE INDEX IF NOT EXISTS idx_general_attendees_time ON general_attendees(checked_in_at_epoch)');
         
-        // NEW: Active members optimization
+        // Active members optimization
         $db->exec('CREATE INDEX IF NOT EXISTS idx_team_members_active ON team_members(active, team_id) WHERE active IS NULL OR active = TRUE');
         
     } catch (Exception $e) {
@@ -3310,219 +2129,20 @@ function initializeDatabase($db) {
         $db->exec('ALTER TABLE player_disciplinary_records ADD COLUMN IF NOT EXISTS suspension_served BOOLEAN DEFAULT FALSE');
         $db->exec('ALTER TABLE player_disciplinary_records ADD COLUMN IF NOT EXISTS suspension_served_date DATE DEFAULT NULL');
         
+        // Add epoch timestamp columns
+        $db->exec('ALTER TABLE events ADD COLUMN IF NOT EXISTS date_epoch INTEGER');
+        $db->exec('ALTER TABLE matches ADD COLUMN IF NOT EXISTS match_time_epoch INTEGER');
+        $db->exec('ALTER TABLE general_attendees ADD COLUMN IF NOT EXISTS checked_in_at_epoch INTEGER');
+        $db->exec('ALTER TABLE match_attendees ADD COLUMN IF NOT EXISTS checked_in_at_epoch INTEGER');
+        $db->exec('ALTER TABLE player_disciplinary_records ADD COLUMN IF NOT EXISTS incident_date_epoch INTEGER');
+        $db->exec('ALTER TABLE player_disciplinary_records ADD COLUMN IF NOT EXISTS suspension_served_date_epoch INTEGER');
+        $db->exec('ALTER TABLE player_disciplinary_records ADD COLUMN IF NOT EXISTS created_at_epoch INTEGER');
+        $db->exec('ALTER TABLE team_members ADD COLUMN IF NOT EXISTS active BOOLEAN DEFAULT TRUE');
+        
         // Add indexes for new tables
         $db->exec('CREATE INDEX IF NOT EXISTS idx_match_cards_match_id ON match_cards(match_id)');
     } catch (Exception $e) {
         // Columns might already exist, ignore errors
-    }
-}
-
-function cleanupPhotoPaths($db) {
-    try {
-        // Find all members with photo paths that need cleaning
-        $stmt = $db->query("
-            SELECT id, name, photo 
-            FROM team_members 
-            WHERE photo IS NOT NULL 
-            AND (photo LIKE '/photos/members/%' OR photo LIKE '/api/photos%')
-        ");
-        
-        $members = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        $cleanedCount = 0;
-        
-        if (empty($members)) {
-            echo json_encode([
-                'success' => true,
-                'message' => 'No photo paths need cleaning',
-                'cleaned' => 0
-            ]);
-            return;
-        }
-        
-        $db->beginTransaction();
-        
-        foreach ($members as $member) {
-            $oldPath = $member['photo'];
-            $newPath = $oldPath;
-            
-            // Clean nested API URLs
-            $maxDepth = 5;
-            for ($i = 0; $i < $maxDepth; $i++) {
-                if (strpos($newPath, '/photos/members/') === 0) {
-                    $newPath = basename($newPath);
-                    break;
-                } elseif (strpos($newPath, '/api/photos') === 0) {
-                    $parsedUrl = parse_url($newPath);
-                    if ($parsedUrl && isset($parsedUrl['query'])) {
-                        parse_str($parsedUrl['query'], $query);
-                        if (isset($query['filename'])) {
-                            $newPath = $query['filename'];
-                            continue; // Check if we need to clean further
-                        }
-                    }
-                    break;
-                } else {
-                    break;
-                }
-            }
-            
-            if ($oldPath !== $newPath) {
-                $stmt = $db->prepare("UPDATE team_members SET photo = ? WHERE id = ?");
-                $stmt->execute([$newPath, $member['id']]);
-                $cleanedCount++;
-                error_log("Cleaned photo path for {$member['name']}: {$oldPath} -> {$newPath}");
-            }
-        }
-        
-        $db->commit();
-        
-        echo json_encode([
-            'success' => true,
-            'message' => 'Photo paths cleaned successfully',
-            'cleaned' => $cleanedCount,
-            'members' => array_map(function($m) use ($members) { 
-                $oldPath = $m['photo'];
-                $newPath = $oldPath;
-                
-                // Apply same cleaning logic for reporting
-                $maxDepth = 5;
-                for ($i = 0; $i < $maxDepth; $i++) {
-                    if (strpos($newPath, '/photos/members/') === 0) {
-                        $newPath = basename($newPath);
-                        break;
-                    } elseif (strpos($newPath, '/api/photos') === 0) {
-                        $parsedUrl = parse_url($newPath);
-                        if ($parsedUrl && isset($parsedUrl['query'])) {
-                            parse_str($parsedUrl['query'], $query);
-                            if (isset($query['filename'])) {
-                                $newPath = $query['filename'];
-                                continue;
-                            }
-                        }
-                        break;
-                    } else {
-                        break;
-                    }
-                }
-                
-                return [
-                    'name' => $m['name'],
-                    'old_path' => $oldPath,
-                    'new_path' => $newPath
-                ];
-            }, $members)
-        ]);
-        
-    } catch (Exception $e) {
-        $db->rollBack();
-        echo json_encode([
-            'success' => false,
-            'error' => 'Cleanup failed: ' . $e->getMessage()
-        ]);
-    }
-}
-
-function executeDatabaseMaintenance($db) {
-    $input = json_decode(file_get_contents('php://input'), true);
-    
-    if (!$input || !isset($input['query'])) {
-        http_response_code(400);
-        echo json_encode(['error' => 'Query is required']);
-        return;
-    }
-    
-    $query = trim($input['query']);
-    
-    if (empty($query)) {
-        http_response_code(400);
-        echo json_encode(['error' => 'Query cannot be empty']);
-        return;
-    }
-    
-    // Basic security: only allow certain operations
-    $query_upper = strtoupper($query);
-    $allowed_operations = ['SELECT', 'UPDATE', 'DELETE', 'INSERT', 'CREATE INDEX', 'ALTER TABLE'];
-    $is_allowed = false;
-    
-    foreach ($allowed_operations as $op) {
-        if (strpos($query_upper, $op) === 0) {
-            $is_allowed = true;
-            break;
-        }
-    }
-    
-    if (!$is_allowed) {
-        http_response_code(400);
-        echo json_encode(['error' => 'Only SELECT, UPDATE, DELETE, INSERT, CREATE INDEX, and ALTER TABLE operations are allowed']);
-        return;
-    }
-    
-    // Prevent dangerous operations (but allow CREATE INDEX and ALTER TABLE specifically)
-    $dangerous_keywords = ['DROP', 'TRUNCATE', 'GRANT', 'REVOKE'];
-    
-    // Special handling for CREATE - only allow CREATE INDEX
-    if (strpos($query_upper, 'CREATE') !== false && strpos($query_upper, 'CREATE INDEX') !== 0) {
-        http_response_code(400);
-        echo json_encode(['error' => 'Only CREATE INDEX is allowed, other CREATE operations are forbidden']);
-        return;
-    }
-    
-    // Special handling for ALTER - only allow ALTER TABLE
-    if (strpos($query_upper, 'ALTER') !== false && strpos($query_upper, 'ALTER TABLE') !== 0) {
-        http_response_code(400);
-        echo json_encode(['error' => 'Only ALTER TABLE is allowed, other ALTER operations are forbidden']);
-        return;
-    }
-    
-    foreach ($dangerous_keywords as $keyword) {
-        if (strpos($query_upper, $keyword) !== false) {
-            http_response_code(400);
-            echo json_encode(['error' => "Operation contains forbidden keyword: $keyword"]);
-            return;
-        }
-    }
-    
-    try {
-        $db->beginTransaction();
-        
-        if (strpos($query_upper, 'SELECT') === 0) {
-            // For SELECT queries, return the data
-            $stmt = $db->prepare($query);
-            $stmt->execute();
-            $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
-            
-            $db->commit();
-            echo json_encode([
-                'success' => true,
-                'data' => $data,
-                'rowCount' => count($data)
-            ]);
-        } else {
-            // For other queries (UPDATE, DELETE, INSERT), return affected rows
-            $stmt = $db->prepare($query);
-            $stmt->execute();
-            $rowCount = $stmt->rowCount();
-            
-            $db->commit();
-            echo json_encode([
-                'success' => true,
-                'rowCount' => $rowCount,
-                'message' => "Query executed successfully. $rowCount row(s) affected."
-            ]);
-        }
-        
-    } catch (PDOException $e) {
-        $db->rollBack();
-        http_response_code(400);
-        echo json_encode([
-            'error' => 'Database error: ' . $e->getMessage()
-        ]);
-    } catch (Exception $e) {
-        $db->rollBack();
-        http_response_code(500);
-        echo json_encode([
-            'error' => 'Server error: ' . $e->getMessage()
-        ]);
     }
 }
 
@@ -3531,12 +2151,7 @@ function updateAttendanceOnly($db) {
     $rawInput = file_get_contents('php://input');
     $input = json_decode($rawInput, true);
     
-    error_log('=== ATTENDANCE UPDATE DEBUG ===');
-    error_log('Raw input: ' . $rawInput);
-    error_log('Parsed input: ' . json_encode($input));
-    
     if (!$input || !isset($input['eventId']) || !isset($input['matchId']) || !isset($input['memberId']) || !isset($input['teamType'])) {
-        error_log('Missing required parameters');
         http_response_code(400);
         echo json_encode(['error' => 'Missing required parameters', 'received' => $input]);
         return;
@@ -3549,10 +2164,7 @@ function updateAttendanceOnly($db) {
     $action = $input['action'] ?? 'toggle'; // 'add', 'remove', or 'toggle'
     $bypassLock = $input['bypass_lock'] ?? false; // Allow main app to bypass lock
     
-    error_log('Processing attendance: eventId=' . $eventId . ', matchId=' . $matchId . ', memberId=' . $memberId . ', teamType=' . $teamType . ', action=' . $action . ', bypassLock=' . ($bypassLock ? 'true' : 'false'));
-    
     try {
-        error_log('Starting match lookup...');
         // First check if check-in is locked for this match
         // Get match details to check lock status
         $stmt = $db->prepare('
@@ -3564,87 +2176,53 @@ function updateAttendanceOnly($db) {
         $stmt->execute([$eventId, $matchId]);
         $matchInfo = $stmt->fetch(PDO::FETCH_ASSOC);
         
-        error_log('Match info: ' . json_encode($matchInfo));
-        
         if ($matchInfo) {
             // Use epoch timestamp (more reliable)
             $isLocked = false;
             if ($matchInfo['match_time_epoch']) {
                 // Use epoch-based lock function
-                error_log('DEBUG: Using EPOCH-based lock check with timestamp: ' . $matchInfo['match_time_epoch']);
                 $isLocked = isCheckInLockedForMatchEpoch($matchInfo['match_time_epoch']);
-                $lockMethod = 'epoch';
             } else {
                 // No match time available - don't lock
-                error_log('DEBUG: No match time available - check-in allowed');
                 $isLocked = false;
-                $lockMethod = 'no_time';
             }
             
-            error_log('DEBUG: Lock result: ' . ($isLocked ? 'LOCKED' : 'UNLOCKED') . ' (method: ' . $lockMethod . ')');
-            
-            // Add debug info to response (will be visible in browser console)
-            $debugInfo = [
-                'match_date_epoch' => $matchInfo['event_date_epoch'],
-                'match_time_epoch' => $matchInfo['match_time_epoch'],
-                'bypass_lock' => $bypassLock,
-                'is_locked' => $isLocked,
-                'lock_method' => $lockMethod,
-                'current_time_pdt' => (new DateTime('now', new DateTimeZone('America/Los_Angeles')))->format('Y-m-d H:i:s T'),
-                'debug_message' => $isLocked ? 'LOCK SHOULD BE ACTIVE' : 'LOCK NOT ACTIVE YET'
-            ];
-            error_log('DEBUG: Full debug info: ' . json_encode($debugInfo));
-            
             if (!$bypassLock && $isLocked) {
-                error_log('Check-in is locked for this match (no bypass)');
                 http_response_code(423); // 423 Locked (more appropriate than 403)
                 echo json_encode([
                     'error' => 'Check-in is locked for this match',
-                    'message' => 'This match check-in was automatically locked 5 minutes after the scheduled start of the game (TEST MODE).',
-                    'locked' => true,
-                    'debug' => $debugInfo
+                    'message' => 'This match check-in was automatically locked 2 hours and 40 minutes after the scheduled start of the game.',
+                    'locked' => true
                 ]);
                 return;
-            } elseif ($bypassLock) {
-                error_log('Check-in lock bypassed (admin privileges)');
-            } else {
-                error_log('Check-in is not locked - access allowed');
             }
         } else {
-            error_log('Match not found in database');
             http_response_code(404);
             echo json_encode(['error' => 'Match not found']);
             return;
         }
         
-        error_log('Starting database transaction...');
         $db->beginTransaction();
-        error_log('Transaction started successfully');
         
         // Check if attendee already exists
-        error_log('Checking existing attendance...');
         $stmt = $db->prepare('
             SELECT id FROM match_attendees 
             WHERE match_id = ? AND member_id = ? AND team_type = ?
         ');
         $stmt->execute([$matchId, $memberId, $teamType]);
         $existingAttendee = $stmt->fetch();
-        error_log('Existing attendee: ' . json_encode($existingAttendee));
         
         if ($action === 'toggle') {
             if ($existingAttendee) {
                 // Remove attendance
-                error_log('Removing attendance...');
                 $stmt = $db->prepare('
                     DELETE FROM match_attendees 
                     WHERE match_id = ? AND member_id = ? AND team_type = ?
                 ');
                 $stmt->execute([$matchId, $memberId, $teamType]);
                 $result = ['action' => 'removed', 'success' => true];
-                error_log('Attendance removed successfully');
             } else {
                 // Add attendance with epoch timestamp
-                error_log('Adding attendance...');
                 $currentEpoch = time();
                 $stmt = $db->prepare('
                     INSERT INTO match_attendees (match_id, member_id, team_type, checked_in_at_epoch)
@@ -3652,7 +2230,6 @@ function updateAttendanceOnly($db) {
                 ');
                 $stmt->execute([$matchId, $memberId, $teamType, $currentEpoch]);
                 $result = ['action' => 'added', 'success' => true];
-                error_log('Attendance added successfully with epoch: ' . $currentEpoch);
             }
         } elseif ($action === 'add' && !$existingAttendee) {
             // Add attendance with epoch timestamp
@@ -3675,36 +2252,15 @@ function updateAttendanceOnly($db) {
             $result = ['action' => 'none', 'success' => true, 'message' => 'No change needed'];
         }
         
-        error_log('Committing transaction...');
         $db->commit();
-        
-        // Add debug info to successful response
-        $result['debug'] = $debugInfo ?? [
-            'match_date_epoch' => $matchInfo['event_date_epoch'] ?? 'unknown',
-            'match_time_epoch' => $matchInfo['match_time_epoch'] ?? 'unknown',
-            'bypass_lock' => $bypassLock,
-            'is_locked' => false,
-            'current_time_pdt' => (new DateTime('now', new DateTimeZone('America/Los_Angeles')))->format('Y-m-d H:i:s T')
-        ];
-        
-        error_log('Attendance update successful: ' . json_encode($result));
         echo json_encode($result);
         
     } catch (Exception $e) {
-        error_log('Exception caught: ' . $e->getMessage());
-        error_log('Exception file: ' . $e->getFile() . ' line: ' . $e->getLine());
-        
         // Only rollback if there's an active transaction
         if ($db->inTransaction()) {
-            error_log('Rolling back transaction...');
             $db->rollBack();
-            error_log('Transaction rolled back');
-        } else {
-            error_log('No active transaction to rollback');
         }
         
-        error_log('Attendance update failed: ' . $e->getMessage());
-        error_log('Stack trace: ' . $e->getTraceAsString());
         http_response_code(500);
         echo json_encode([
             'error' => 'Failed to update attendance: ' . $e->getMessage(),
@@ -4005,49 +2561,36 @@ function updateMatchResults($db) {
         
         $db->beginTransaction();
         
-        // Get current events data
-        $stmt = $db->prepare('SELECT events_data FROM events WHERE id = ?');
-        $stmt->execute([$eventId]);
-        $result = $stmt->fetch(PDO::FETCH_ASSOC);
+        // Update match directly in matches table
+        $stmt = $db->prepare('
+            UPDATE matches 
+            SET home_score = ?, away_score = ?, match_status = ?, notes = ?
+            WHERE id = ?
+        ');
+        $result = $stmt->execute([$homeScore, $awayScore, $matchStatus, $matchNotes, $matchId]);
         
-        if (!$result) {
-            $db->rollback();
-            http_response_code(404);
-            echo json_encode(['error' => 'Event not found']);
-            return;
-        }
-        
-        $eventsData = json_decode($result['events_data'], true);
-        
-        // Find and update the specific match
-        $matchFound = false;
-        foreach ($eventsData as &$event) {
-            if ($event['id'] === $eventId) {
-                foreach ($event['matches'] as &$match) {
-                    if ($match['id'] === $matchId) {
-                        $match['homeScore'] = $homeScore !== '' ? (int)$homeScore : null;
-                        $match['awayScore'] = $awayScore !== '' ? (int)$awayScore : null;
-                        $match['matchStatus'] = $matchStatus;
-                        $match['matchNotes'] = $matchNotes;
-                        $match['cards'] = $cards;
-                        $matchFound = true;
-                        break;
-                    }
-                }
-                break;
+        // Update cards
+        if (!empty($cards)) {
+            // Remove existing cards for this match
+            $db->prepare('DELETE FROM match_cards WHERE match_id = ?')->execute([$matchId]);
+            
+            // Add new cards
+            foreach ($cards as $card) {
+                $stmt = $db->prepare('
+                    INSERT INTO match_cards (match_id, member_id, team_type, card_type, reason, notes, minute)
+                    VALUES (?, ?, ?, ?, ?, ?, ?)
+                ');
+                $stmt->execute([
+                    $matchId,
+                    $card['memberId'],
+                    $card['teamType'],
+                    $card['cardType'],
+                    $card['reason'] ?? null,
+                    $card['notes'] ?? null,
+                    $card['minute'] ?? null
+                ]);
             }
         }
-        
-        if (!$matchFound) {
-            $db->rollback();
-            http_response_code(404);
-            echo json_encode(['error' => 'Match not found']);
-            return;
-        }
-        
-        // Update the database
-        $stmt = $db->prepare('UPDATE events SET events_data = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?');
-        $result = $stmt->execute([json_encode($eventsData), $eventId]);
         
         if ($result) {
             $db->commit();
@@ -4070,70 +2613,36 @@ function addPlayerCards($db) {
     try {
         $input = json_decode(file_get_contents('php://input'), true);
         
-        $eventId = $input['eventId'] ?? null;
         $matchId = $input['matchId'] ?? null;
         $cards = $input['cards'] ?? [];
         
-        if (!$eventId || !$matchId || empty($cards)) {
+        if (!$matchId || empty($cards)) {
             http_response_code(400);
-            echo json_encode(['error' => 'Event ID, Match ID, and cards data are required']);
+            echo json_encode(['error' => 'Match ID and cards data are required']);
             return;
         }
         
         $db->beginTransaction();
         
-        // Get current events data
-        $stmt = $db->prepare('SELECT events_data FROM events WHERE id = ?');
-        $stmt->execute([$eventId]);
-        $result = $stmt->fetch(PDO::FETCH_ASSOC);
-        
-        if (!$result) {
-            $db->rollback();
-            http_response_code(404);
-            echo json_encode(['error' => 'Event not found']);
-            return;
+        // Add new cards to match_cards table
+        foreach ($cards as $card) {
+            $stmt = $db->prepare('
+                INSERT INTO match_cards (match_id, member_id, team_type, card_type, reason, notes, minute)
+                VALUES (?, ?, ?, ?, ?, ?, ?)
+            ');
+            $stmt->execute([
+                $matchId,
+                $card['memberId'],
+                $card['teamType'],
+                $card['cardType'],
+                $card['reason'] ?? null,
+                $card['notes'] ?? null,
+                $card['minute'] ?? null
+            ]);
         }
         
-        $eventsData = json_decode($result['events_data'], true);
-        
-        // Find and update the specific match cards
-        $matchFound = false;
-        foreach ($eventsData as &$event) {
-            if ($event['id'] === $eventId) {
-                foreach ($event['matches'] as &$match) {
-                    if ($match['id'] === $matchId) {
-                        // Append new cards to existing ones
-                        if (!isset($match['cards'])) {
-                            $match['cards'] = [];
-                        }
-                        $match['cards'] = array_merge($match['cards'], $cards);
-                        $matchFound = true;
-                        break;
-                    }
-                }
-                break;
-            }
-        }
-        
-        if (!$matchFound) {
-            $db->rollback();
-            http_response_code(404);
-            echo json_encode(['error' => 'Match not found']);
-            return;
-        }
-        
-        // Update the database
-        $stmt = $db->prepare('UPDATE events SET events_data = ?, updated_at = CURRENT_TIMESTAMP WHERE id = ?');
-        $result = $stmt->execute([json_encode($eventsData), $eventId]);
-        
-        if ($result) {
-            $db->commit();
-            echo json_encode(['success' => true, 'message' => 'Cards added successfully']);
-        } else {
-            $db->rollback();
-            http_response_code(500);
-            echo json_encode(['error' => 'Failed to add cards']);
-        }
+        $db->commit();
+        echo json_encode(['success' => true, 'message' => 'Cards added successfully']);
         
     } catch (Exception $e) {
         $db->rollback();
@@ -4142,552 +2651,21 @@ function addPlayerCards($db) {
     }
 }
 
-// List files in Railway volume
-function listVolumeFiles($db) {
-    try {
-        $volumeDir = '/app/storage/photos';
-        
-        if (!is_dir($volumeDir)) {
-            echo json_encode([
-                'success' => false,
-                'error' => 'Volume directory does not exist',
-                'path' => $volumeDir
-            ]);
-            return;
-        }
-        
-        $files = [];
-        $iterator = new DirectoryIterator($volumeDir);
-        
-        foreach ($iterator as $fileInfo) {
-            if ($fileInfo->isFile()) {
-                $files[] = [
-                    'name' => $fileInfo->getFilename(),
-                    'size' => $fileInfo->getSize(),
-                    'modified' => date('Y-m-d H:i:s', $fileInfo->getMTime()),
-                    'path' => $fileInfo->getPathname()
-                ];
-            }
-        }
-        
-        // Sort by modification time (newest first)
-        usort($files, function($a, $b) {
-            return strtotime($b['modified']) - strtotime($a['modified']);
-        });
-        
-        echo json_encode([
-            'success' => true,
-            'files' => $files,
-            'count' => count($files),
-            'volume_path' => $volumeDir
-        ]);
-        
-    } catch (Exception $e) {
-        echo json_encode([
-            'success' => false,
-            'error' => 'Failed to list volume files: ' . $e->getMessage()
-        ]);
-    }
-}
-
-// Test Railway volume access
-function testVolumeAccess($db) {
-    try {
-        $volumeDir = '/app/storage/photos';
-        $testFile = $volumeDir . '/test_' . time() . '.txt';
-        
-        $results = [];
-        
-        // Test 1: Check if volume directory exists
-        $results['directory_exists'] = is_dir($volumeDir);
-        
-        // Test 2: Check if volume is writable
-        $results['directory_writable'] = is_writable($volumeDir);
-        
-        // Test 3: Try to create directory if it doesn't exist
-        if (!$results['directory_exists']) {
-            $results['create_directory'] = mkdir($volumeDir, 0755, true);
-        }
-        
-        // Test 4: Try to write a test file
-        $testContent = 'Railway volume test - ' . date('Y-m-d H:i:s');
-        $results['write_test'] = file_put_contents($testFile, $testContent) !== false;
-        
-        // Test 5: Try to read the test file
-        if ($results['write_test']) {
-            $readContent = file_get_contents($testFile);
-            $results['read_test'] = ($readContent === $testContent);
-            
-            // Clean up test file
-            $results['cleanup_test'] = unlink($testFile);
-        }
-        
-        // Test 6: Check disk space
-        $results['disk_free'] = disk_free_space($volumeDir);
-        $results['disk_total'] = disk_total_space($volumeDir);
-        
-        $allTestsPassed = $results['directory_exists'] && 
-                          $results['directory_writable'] && 
-                          $results['write_test'] && 
-                          $results['read_test'] && 
-                          $results['cleanup_test'];
-        
-        echo json_encode([
-            'success' => $allTestsPassed,
-            'message' => $allTestsPassed ? 
-                'Railway volume is working correctly!' : 
-                'Some volume tests failed - check details',
-            'details' => $results,
-            'volume_path' => $volumeDir
-        ]);
-        
-    } catch (Exception $e) {
-        echo json_encode([
-            'success' => false,
-            'message' => 'Volume test failed: ' . $e->getMessage(),
-            'volume_path' => $volumeDir ?? 'unknown'
-        ]);
-    }
-}
-
-// Supplementary migration for remaining created_at fields
-function migrateRemainingEpochTimestamps($db) {
-    try {
-        error_log("=== STARTING SUPPLEMENTARY EPOCH MIGRATION ===");
-        $results = [];
-        $errors = [];
-        
-        // Phase 1: Add missing epoch columns
-        $results[] = "Phase 1: Adding missing epoch columns...";
-        
-        $schemaUpdates = [
-            "ALTER TABLE events ADD COLUMN IF NOT EXISTS created_at_epoch INTEGER",
-            "ALTER TABLE matches ADD COLUMN IF NOT EXISTS created_at_epoch INTEGER",
-            "ALTER TABLE match_cards ADD COLUMN IF NOT EXISTS created_at_epoch INTEGER", 
-            "ALTER TABLE player_disciplinary_records ADD COLUMN IF NOT EXISTS created_at_epoch INTEGER"
-        ];
-        
-        foreach ($schemaUpdates as $sql) {
-            try {
-                $db->exec($sql);
-                $results[] = "✅ " . $sql;
-            } catch (Exception $e) {
-                $error = "❌ Failed: $sql - " . $e->getMessage();
-                $errors[] = $error;
-                error_log($error);
-            }
-        }
-        
-        // Phase 2: Migrate remaining created_at timestamps
-        $results[] = "\nPhase 2: Converting remaining created_at timestamps to epochs...";
-        
-        // Convert events created_at timestamps
-        $stmt = $db->query("SELECT id, created_at FROM events WHERE created_at IS NOT NULL AND created_at_epoch IS NULL");
-        $eventCount = 0;
-        while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-            try {
-                $epoch = strtotime($row['created_at'] . ' America/Los_Angeles');
-                if ($epoch !== false) {
-                    $updateStmt = $db->prepare("UPDATE events SET created_at_epoch = ? WHERE id = ?");
-                    $updateStmt->execute([$epoch, $row['id']]);
-                    $eventCount++;
-                    error_log("Converted event created_at: {$row['id']} -> {$row['created_at']} -> $epoch (" . date('Y-m-d H:i:s T', $epoch) . ")");
-                }
-            } catch (Exception $e) {
-                $error = "Failed to convert event {$row['id']}: " . $e->getMessage();
-                $errors[] = $error;
-                error_log($error);
-            }
-        }
-        $results[] = "✅ Converted $eventCount events created_at timestamps";
-        
-        // Convert matches created_at timestamps
-        $stmt = $db->query("SELECT id, created_at FROM matches WHERE created_at IS NOT NULL AND created_at_epoch IS NULL");
-        $matchCount = 0;
-        while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-            try {
-                $epoch = strtotime($row['created_at'] . ' America/Los_Angeles');
-                if ($epoch !== false) {
-                    $updateStmt = $db->prepare("UPDATE matches SET created_at_epoch = ? WHERE id = ?");
-                    $updateStmt->execute([$epoch, $row['id']]);
-                    $matchCount++;
-                    error_log("Converted match created_at: {$row['id']} -> {$row['created_at']} -> $epoch (" . date('Y-m-d H:i:s T', $epoch) . ")");
-                }
-            } catch (Exception $e) {
-                $error = "Failed to convert match {$row['id']}: " . $e->getMessage();
-                $errors[] = $error;
-                error_log($error);
-            }
-        }
-        $results[] = "✅ Converted $matchCount matches created_at timestamps";
-        
-        // Convert match_cards created_at timestamps
-        $stmt = $db->query("SELECT id, created_at FROM match_cards WHERE created_at IS NOT NULL AND created_at_epoch IS NULL");
-        $cardCount = 0;
-        while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-            try {
-                $epoch = strtotime($row['created_at'] . ' America/Los_Angeles');
-                if ($epoch !== false) {
-                    $updateStmt = $db->prepare("UPDATE match_cards SET created_at_epoch = ? WHERE id = ?");
-                    $updateStmt->execute([$epoch, $row['id']]);
-                    $cardCount++;
-                }
-            } catch (Exception $e) {
-                $error = "Failed to convert match_card {$row['id']}: " . $e->getMessage();
-                $errors[] = $error;
-                error_log($error);
-            }
-        }
-        $results[] = "✅ Converted $cardCount match_cards created_at timestamps";
-        
-        // Convert player_disciplinary_records created_at timestamps
-        $stmt = $db->query("SELECT id, created_at FROM player_disciplinary_records WHERE created_at IS NOT NULL AND created_at_epoch IS NULL");
-        $recordCount = 0;
-        while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-            try {
-                $epoch = strtotime($row['created_at'] . ' America/Los_Angeles');
-                if ($epoch !== false) {
-                    $updateStmt = $db->prepare("UPDATE player_disciplinary_records SET created_at_epoch = ? WHERE id = ?");
-                    $updateStmt->execute([$epoch, $row['id']]);
-                    $recordCount++;
-                }
-            } catch (Exception $e) {
-                $error = "Failed to convert disciplinary record {$row['id']}: " . $e->getMessage();
-                $errors[] = $error;
-                error_log($error);
-            }
-        }
-        $results[] = "✅ Converted $recordCount disciplinary records created_at timestamps";
-        
-        $results[] = "\n=== SUPPLEMENTARY MIGRATION COMPLETED ===";
-        
-        if (!empty($errors)) {
-            $results[] = "\n⚠️ ERRORS ENCOUNTERED:";
-            $results = array_merge($results, $errors);
-        }
-        
-        error_log("=== SUPPLEMENTARY EPOCH MIGRATION COMPLETED ===");
-        
-        echo json_encode([
-            'success' => true,
-            'message' => 'Supplementary epoch timestamp migration completed',
-            'results' => $results,
-            'error_count' => count($errors),
-            'timestamp' => date('c')
-        ]);
-        
-    } catch (Exception $e) {
-        error_log('SUPPLEMENTARY EPOCH MIGRATION FAILED: ' . $e->getMessage());
-        http_response_code(500);
-        echo json_encode([
-            'success' => false,
-            'error' => 'Supplementary migration failed: ' . $e->getMessage(),
-            'results' => $results ?? [],
-            'timestamp' => date('c')
-        ]);
-    }
-}
-
-// Epoch timestamp migration function
-function migrateToEpochTimestamps($db) {
-    try {
-        error_log("=== STARTING EPOCH MIGRATION ===");
-        $results = [];
-        $errors = [];
-        
-        // Phase 1: Add epoch columns to all tables
-        $results[] = "Phase 1: Adding epoch columns...";
-        
-        $schemaUpdates = [
-            "ALTER TABLE events ADD COLUMN IF NOT EXISTS date_epoch INTEGER",
-            "ALTER TABLE matches ADD COLUMN IF NOT EXISTS match_time_epoch INTEGER", 
-            "ALTER TABLE general_attendees ADD COLUMN IF NOT EXISTS checked_in_at_epoch INTEGER",
-            "ALTER TABLE match_attendees ADD COLUMN IF NOT EXISTS checked_in_at_epoch INTEGER",
-            "ALTER TABLE player_disciplinary_records ADD COLUMN IF NOT EXISTS incident_date_epoch INTEGER",
-            "ALTER TABLE player_disciplinary_records ADD COLUMN IF NOT EXISTS suspension_served_date_epoch INTEGER",
-            "ALTER TABLE team_members ADD COLUMN IF NOT EXISTS created_at_epoch INTEGER",
-            "ALTER TABLE teams ADD COLUMN IF NOT EXISTS created_at_epoch INTEGER",
-            "ALTER TABLE referees ADD COLUMN IF NOT EXISTS created_at_epoch INTEGER", 
-            "ALTER TABLE member_photos ADD COLUMN IF NOT EXISTS uploaded_at_epoch INTEGER"
-        ];
-        
-        foreach ($schemaUpdates as $sql) {
-            try {
-                $db->exec($sql);
-                $results[] = "✅ " . $sql;
-            } catch (Exception $e) {
-                $error = "❌ Failed: $sql - " . $e->getMessage();
-                $errors[] = $error;
-                error_log($error);
-            }
-        }
-        
-        // Phase 2: Migrate existing data
-        $results[] = "\nPhase 2: Converting existing data to epochs...";
-        
-        // Convert events (date field)
-        $stmt = $db->query("SELECT id, date FROM events WHERE date IS NOT NULL AND date_epoch IS NULL");
-        $eventCount = 0;
-        while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-            try {
-                // Parse date assuming it's in Pacific timezone at midnight
-                $dateStr = $row['date'];
-                // Handle both "YYYY-MM-DD" and "YYYY-MM-DD HH:MM:SS" formats
-                $cleanDate = date('Y-m-d', strtotime($dateStr));
-                $epoch = strtotime($cleanDate . ' 00:00:00 America/Los_Angeles');
-                
-                if ($epoch === false) {
-                    throw new Exception("Failed to parse date: $dateStr");
-                }
-                
-                $updateStmt = $db->prepare("UPDATE events SET date_epoch = ? WHERE id = ?");
-                $updateStmt->execute([$epoch, $row['id']]);
-                $eventCount++;
-                
-                error_log("Converted event date: {$row['id']} -> $dateStr -> $epoch (" . date('Y-m-d H:i:s T', $epoch) . ")");
-            } catch (Exception $e) {
-                $error = "Failed to convert event {$row['id']}: " . $e->getMessage();
-                $errors[] = $error;
-                error_log($error);
-            }
-        }
-        $results[] = "✅ Converted $eventCount events";
-        
-        // Convert matches (combine event date + match time)
-        $stmt = $db->query("
-            SELECT m.id, e.date_epoch as event_date_epoch, m.match_time 
-            FROM matches m 
-            JOIN events e ON m.event_id = e.id 
-            WHERE m.match_time IS NOT NULL AND m.match_time_epoch IS NULL
-        ");
-        $matchCount = 0;
-        while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-            try {
-                // Combine event date with match time
-                $eventDateEpoch = $row['event_date_epoch'];
-                $matchTime = $row['match_time'];
-                
-                // Convert epoch back to date string for the migration
-                $eventDate = date('Y-m-d', $eventDateEpoch);
-                $dateTimeStr = $eventDate . ' ' . $matchTime . ' America/Los_Angeles';
-                $epoch = strtotime($dateTimeStr);
-                
-                if ($epoch === false) {
-                    throw new Exception("Failed to parse datetime: $dateTimeStr");
-                }
-                
-                $updateStmt = $db->prepare("UPDATE matches SET match_time_epoch = ? WHERE id = ?");
-                $updateStmt->execute([$epoch, $row['id']]);
-                $matchCount++;
-                
-                error_log("Converted match time: {$row['id']} -> $dateTimeStr -> $epoch (" . date('Y-m-d H:i:s T', $epoch) . ")");
-            } catch (Exception $e) {
-                $error = "Failed to convert match {$row['id']}: " . $e->getMessage();
-                $errors[] = $error;
-                error_log($error);
-            }
-        }
-        $results[] = "✅ Converted $matchCount matches";
-        
-        // Convert general attendees check-in times
-        $stmt = $db->query("SELECT id, checked_in_at FROM general_attendees WHERE checked_in_at IS NOT NULL AND checked_in_at_epoch IS NULL");
-        $attendeeCount = 0;
-        while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-            try {
-                $epoch = strtotime($row['checked_in_at'] . ' America/Los_Angeles');
-                if ($epoch === false) {
-                    throw new Exception("Failed to parse timestamp: {$row['checked_in_at']}");
-                }
-                
-                $updateStmt = $db->prepare("UPDATE general_attendees SET checked_in_at_epoch = ? WHERE id = ?");
-                $updateStmt->execute([$epoch, $row['id']]);
-                $attendeeCount++;
-            } catch (Exception $e) {
-                $errors[] = "Failed to convert general attendee {$row['id']}: " . $e->getMessage();
-            }
-        }
-        $results[] = "✅ Converted $attendeeCount general attendee timestamps";
-        
-        // Convert match attendees check-in times  
-        $stmt = $db->query("SELECT id, checked_in_at FROM match_attendees WHERE checked_in_at IS NOT NULL AND checked_in_at_epoch IS NULL");
-        $matchAttendeeCount = 0;
-        while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-            try {
-                $epoch = strtotime($row['checked_in_at'] . ' America/Los_Angeles');
-                if ($epoch === false) {
-                    throw new Exception("Failed to parse timestamp: {$row['checked_in_at']}");
-                }
-                
-                $updateStmt = $db->prepare("UPDATE match_attendees SET checked_in_at_epoch = ? WHERE id = ?");
-                $updateStmt->execute([$epoch, $row['id']]);
-                $matchAttendeeCount++;
-            } catch (Exception $e) {
-                $errors[] = "Failed to convert match attendee {$row['id']}: " . $e->getMessage();
-            }
-        }
-        $results[] = "✅ Converted $matchAttendeeCount match attendee timestamps";
-        
-        // Convert disciplinary records
-        $stmt = $db->query("SELECT id, incident_date, suspension_served_date FROM player_disciplinary_records WHERE (incident_date IS NOT NULL AND incident_date_epoch IS NULL) OR (suspension_served_date IS NOT NULL AND suspension_served_date_epoch IS NULL)");
-        $disciplinaryCount = 0;
-        while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-            try {
-                $updates = [];
-                $params = [];
-                
-                if ($row['incident_date'] && !$row['incident_date_epoch']) {
-                    $epoch = strtotime($row['incident_date'] . ' 00:00:00 America/Los_Angeles');
-                    if ($epoch !== false) {
-                        $updates[] = "incident_date_epoch = ?";
-                        $params[] = $epoch;
-                    }
-                }
-                
-                if ($row['suspension_served_date'] && !$row['suspension_served_date_epoch']) {
-                    $epoch = strtotime($row['suspension_served_date'] . ' 00:00:00 America/Los_Angeles');
-                    if ($epoch !== false) {
-                        $updates[] = "suspension_served_date_epoch = ?";
-                        $params[] = $epoch;
-                    }
-                }
-                
-                if (!empty($updates)) {
-                    $params[] = $row['id'];
-                    $sql = "UPDATE player_disciplinary_records SET " . implode(', ', $updates) . " WHERE id = ?";
-                    $updateStmt = $db->prepare($sql);
-                    $updateStmt->execute($params);
-                    $disciplinaryCount++;
-                }
-            } catch (Exception $e) {
-                $errors[] = "Failed to convert disciplinary record {$row['id']}: " . $e->getMessage();
-            }
-        }
-        $results[] = "✅ Converted $disciplinaryCount disciplinary records";
-        
-        // Convert created_at timestamps for various tables
-        $createdAtTables = ['team_members', 'teams', 'referees'];
-        foreach ($createdAtTables as $table) {
-            $stmt = $db->query("SELECT id, created_at FROM $table WHERE created_at IS NOT NULL AND created_at_epoch IS NULL");
-            $count = 0;
-            while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-                try {
-                    $epoch = strtotime($row['created_at'] . ' America/Los_Angeles');
-                    if ($epoch !== false) {
-                        $updateStmt = $db->prepare("UPDATE $table SET created_at_epoch = ? WHERE id = ?");
-                        $updateStmt->execute([$epoch, $row['id']]);
-                        $count++;
-                    }
-                } catch (Exception $e) {
-                    $errors[] = "Failed to convert $table {$row['id']}: " . $e->getMessage();
-                }
-            }
-            $results[] = "✅ Converted $count $table created_at timestamps";
-        }
-        
-        // Convert member_photos uploaded_at
-        $stmt = $db->query("SELECT member_id, uploaded_at FROM member_photos WHERE uploaded_at IS NOT NULL AND uploaded_at_epoch IS NULL");
-        $photoCount = 0;
-        while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
-            try {
-                $epoch = strtotime($row['uploaded_at'] . ' America/Los_Angeles');
-                if ($epoch !== false) {
-                    $updateStmt = $db->prepare("UPDATE member_photos SET uploaded_at_epoch = ? WHERE member_id = ?");
-                    $updateStmt->execute([$epoch, $row['member_id']]);
-                    $photoCount++;
-                }
-            } catch (Exception $e) {
-                $errors[] = "Failed to convert photo {$row['member_id']}: " . $e->getMessage();
-            }
-        }
-        $results[] = "✅ Converted $photoCount photo uploaded_at timestamps";
-        
-        $results[] = "\n=== MIGRATION COMPLETED ===";
-        
-        if (!empty($errors)) {
-            $results[] = "\n⚠️ ERRORS ENCOUNTERED:";
-            $results = array_merge($results, $errors);
-        }
-        
-        error_log("=== EPOCH MIGRATION COMPLETED ===");
-        
-        echo json_encode([
-            'success' => true,
-            'message' => 'Epoch timestamp migration completed',
-            'results' => $results,
-            'error_count' => count($errors),
-            'timestamp' => date('c')
-        ]);
-        
-    } catch (Exception $e) {
-        error_log('EPOCH MIGRATION FAILED: ' . $e->getMessage());
-        http_response_code(500);
-        echo json_encode([
-            'success' => false,
-            'error' => 'Migration failed: ' . $e->getMessage(),
-            'results' => $results ?? [],
-            'timestamp' => date('c')
-        ]);
-    }
-}
-
-// Helper function to check if check-in is locked for a match (LEGACY - uses string dates)
-function isCheckInLockedForMatch($eventDate, $matchTime) {
-    if (!$matchTime || !$eventDate) {
-        return false; // Don't lock if we don't have time info
-    }
-    
-    try {
-        // Set timezone to Pacific Time (PDT/PST) since all times in the app are Pacific
-        $pacificTimezone = new DateTimeZone('America/Los_Angeles');
-        
-        // Parse game start time in Pacific timezone
-        // Extract just the date part in case eventDate includes timestamp
-        $dateOnly = date('Y-m-d', strtotime($eventDate));
-        $gameStart = new DateTime($dateOnly . 'T' . $matchTime, $pacificTimezone);
-        
-        // Convert to epoch and use the new epoch-based function
-        return isCheckInLockedForMatchEpoch($gameStart->getTimestamp());
-        
-    } catch (Exception $e) {
-        error_log('Error calculating lock time (legacy): ' . $e->getMessage());
-        return false; // Don't lock on error
-    }
-}
-
-// NEW: Epoch-based lock function (much simpler and more reliable!)
+// Helper function to check if check-in is locked for a match (EPOCH-based)
 function isCheckInLockedForMatchEpoch($gameStartEpoch) {
     if (!$gameStartEpoch) {
-        error_log("Lock check: No game start epoch provided");
         return false; // Don't lock if we don't have time info
     }
     
     try {
         // Simple epoch arithmetic!
-        $lockTimeEpoch = $gameStartEpoch + (5 * 60); // TEST: Lock 5 minutes after game start
-        // Production: $lockTimeEpoch = $gameStartEpoch + (2 * 60 * 60 + 40 * 60); // 2h 40m after game start
+        $lockTimeEpoch = $gameStartEpoch + (2 * 60 * 60 + 40 * 60); // 2h 40m after game start
         
         $currentEpoch = time();
         $isLocked = $currentEpoch > $lockTimeEpoch;
         
-        // Convert back to readable times for logging (Pacific timezone)
-        $gameStartReadable = date('Y-m-d H:i:s T', $gameStartEpoch);
-        $lockTimeReadable = date('Y-m-d H:i:s T', $lockTimeEpoch);
-        $currentTimeReadable = date('Y-m-d H:i:s T', $currentEpoch);
-        
-        error_log("EPOCH Lock check: Game start: $gameStartReadable, Lock time: $lockTimeReadable, Current: $currentTimeReadable, Locked: " . ($isLocked ? 'YES' : 'NO'));
-        
-        // Add more detailed logging
-        if ($isLocked) {
-            $minutesPastLock = ($currentEpoch - $lockTimeEpoch) / 60;
-            error_log("ATTENDANCE LOCK: Check-in is LOCKED - current time is " . round($minutesPastLock) . " minutes past lock time");
-        } else {
-            $minutesUntilLock = ($lockTimeEpoch - $currentEpoch) / 60;
-            error_log("ATTENDANCE LOCK: Check-in is ALLOWED - lock will activate in " . round($minutesUntilLock) . " minutes");
-        }
-        
         return $isLocked;
     } catch (Exception $e) {
-        error_log('Error calculating epoch lock time: ' . $e->getMessage());
         return false; // Don't lock on error
     }
 }
@@ -4829,442 +2807,5 @@ function deleteSingleMatch($db) {
         http_response_code(500);
         echo json_encode(['error' => 'Failed to delete match: ' . $e->getMessage()]);
     }
-}
-
-// Debug index usage and PostgreSQL statistics
-function debugIndexUsage($db) {
-    try {
-        $results = [];
-        
-        // 1. Check if our indexes actually exist
-        $stmt = $db->query("
-            SELECT indexname, indexdef 
-            FROM pg_indexes 
-            WHERE tablename = 'player_disciplinary_records'
-            ORDER BY indexname
-        ");
-        $disciplinaryIndexes = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        $results['disciplinary_indexes'] = $disciplinaryIndexes;
-        
-        // 2. Check index statistics (usage)
-        $stmt = $db->query("
-            SELECT 
-                schemaname,
-                relname as tablename,
-                indexrelname as indexname,
-                idx_tup_read,
-                idx_tup_fetch
-            FROM pg_stat_user_indexes 
-            WHERE relname = 'player_disciplinary_records'
-            ORDER BY indexrelname
-        ");
-        $indexStats = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        $results['index_usage_stats'] = $indexStats;
-        
-        // 3. Force PostgreSQL to analyze the table (update statistics)
-        $db->exec('ANALYZE player_disciplinary_records');
-        $results['analyze_completed'] = true;
-        
-        // 4. Check table statistics
-        $stmt = $db->query("
-            SELECT 
-                attname,
-                n_distinct,
-                correlation
-            FROM pg_stats 
-            WHERE tablename = 'player_disciplinary_records' 
-            AND attname IN ('member_id', 'incident_date_epoch', 'created_at_epoch')
-        ");
-        $tableStats = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        $results['column_statistics'] = $tableStats;
-        
-        // 5. Test a simple index-only query
-        $testMemberId = $_GET['member_id'] ?? '40a5da1f-269e-4f4b-8062-2d5b9358bbb9';
-        $stmt = $db->prepare("
-            EXPLAIN (FORMAT JSON, ANALYZE, BUFFERS) 
-            SELECT member_id, incident_date_epoch 
-            FROM player_disciplinary_records 
-            WHERE member_id = ?
-        ");
-        $stmt->execute([$testMemberId]);
-        $simpleQueryPlan = $stmt->fetch(PDO::FETCH_ASSOC);
-        $results['simple_query_plan'] = json_decode($simpleQueryPlan['QUERY PLAN'], true);
-        
-        // 6. Check PostgreSQL settings that might affect index usage
-        $stmt = $db->query("
-            SELECT name, setting, unit, short_desc 
-            FROM pg_settings 
-            WHERE name IN ('random_page_cost', 'seq_page_cost', 'enable_indexscan', 'enable_seqscan')
-        ");
-        $pgSettings = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        $results['postgresql_settings'] = $pgSettings;
-        
-        // 7. Manual index hint test (force index usage)
-        try {
-            $stmt = $db->prepare("
-                SET enable_seqscan = off;
-                EXPLAIN (FORMAT JSON, ANALYZE, BUFFERS) 
-                SELECT pdr.*, tm.name as member_name, t.name as team_name
-                FROM player_disciplinary_records pdr
-                JOIN team_members tm ON pdr.member_id = tm.id
-                JOIN teams t ON tm.team_id = t.id
-                WHERE pdr.member_id = ?
-                ORDER BY pdr.incident_date_epoch DESC, pdr.created_at_epoch DESC;
-                SET enable_seqscan = on;
-            ");
-            $stmt->execute([$testMemberId]);
-            
-            // Get results from each statement
-            $forcedResults = [];
-            do {
-                $result = $stmt->fetchAll(PDO::FETCH_ASSOC);
-                if (!empty($result)) {
-                    foreach ($result as $row) {
-                        if (isset($row['QUERY PLAN'])) {
-                            $forcedResults[] = json_decode($row['QUERY PLAN'], true);
-                        }
-                    }
-                }
-            } while ($stmt->nextRowset());
-            
-            $results['forced_index_plan'] = $forcedResults;
-            
-        } catch (Exception $e) {
-            $results['forced_index_error'] = $e->getMessage();
-        }
-        
-        echo json_encode([
-            'success' => true,
-            'debug_results' => $results,
-            'timestamp' => date('c')
-        ]);
-        
-    } catch (Exception $e) {
-        http_response_code(500);
-        echo json_encode([
-            'error' => 'Index debugging failed: ' . $e->getMessage(),
-            'timestamp' => date('c')
-        ]);
-    }
-}
-
-// Database index migration function
-function migratePerformanceIndexes($db) {
-    try {
-        $results = [];
-        $errors = [];
-        
-        // Performance indexes that need to be created
-        $performanceIndexes = [
-            // Critical indexes for disciplinary records performance
-            'CREATE INDEX IF NOT EXISTS idx_team_members_id_team_id ON team_members(id, team_id)',
-            'CREATE INDEX IF NOT EXISTS idx_teams_id_name ON teams(id, name)', 
-            'CREATE INDEX IF NOT EXISTS idx_player_disciplinary_sort ON player_disciplinary_records(member_id, incident_date_epoch DESC, created_at_epoch DESC)',
-            'CREATE INDEX IF NOT EXISTS idx_player_disciplinary_team_sort ON player_disciplinary_records(incident_date_epoch DESC, created_at_epoch DESC)',
-            
-            // Epoch timestamp indexes for time-based queries
-            'CREATE INDEX IF NOT EXISTS idx_events_date_epoch ON events(date_epoch)',
-            'CREATE INDEX IF NOT EXISTS idx_matches_time_epoch ON matches(match_time_epoch)',
-            'CREATE INDEX IF NOT EXISTS idx_match_attendees_time ON match_attendees(checked_in_at_epoch)',
-            'CREATE INDEX IF NOT EXISTS idx_general_attendees_time ON general_attendees(checked_in_at_epoch)',
-            
-            // Active members optimization (PostgreSQL partial index)
-            'CREATE INDEX IF NOT EXISTS idx_team_members_active ON team_members(active, team_id) WHERE active IS NULL OR active = TRUE'
-        ];
-        
-        $results[] = "Starting performance index migration...";
-        
-        foreach ($performanceIndexes as $indexSql) {
-            try {
-                $startTime = microtime(true);
-                $db->exec($indexSql);
-                $createTime = round((microtime(true) - $startTime) * 1000, 2);
-                
-                // Extract index name for reporting
-                preg_match('/idx_[a-zA-Z_]+/', $indexSql, $matches);
-                $indexName = $matches[0] ?? 'unknown_index';
-                
-                $results[] = "✅ Created index: $indexName ({$createTime}ms)";
-                error_log("INDEX MIGRATION: Created $indexName in {$createTime}ms");
-                
-            } catch (Exception $e) {
-                $error = "❌ Failed to create index: " . $e->getMessage();
-                $errors[] = $error;
-                error_log("INDEX MIGRATION ERROR: " . $error);
-            }
-        }
-        
-        // Verify the most critical index was created
-        try {
-            $stmt = $db->query("
-                SELECT indexname, indexdef 
-                FROM pg_indexes 
-                WHERE indexname = 'idx_player_disciplinary_records_member_id' 
-                   OR indexname = 'idx_player_disciplinary_sort'
-                ORDER BY indexname
-            ");
-            $criticalIndexes = $stmt->fetchAll(PDO::FETCH_ASSOC);
-            
-            if (count($criticalIndexes) >= 1) {
-                $results[] = "✅ Critical disciplinary records indexes verified";
-                foreach ($criticalIndexes as $idx) {
-                    $results[] = "   - " . $idx['indexname'];
-                }
-            } else {
-                $errors[] = "⚠️ Critical indexes may not have been created properly";
-            }
-            
-        } catch (Exception $e) {
-            $errors[] = "Failed to verify indexes: " . $e->getMessage();
-        }
-        
-        // Performance improvement estimation
-        $results[] = "\n📈 Expected Performance Improvements:";
-        $results[] = "- Disciplinary records queries: 10-50x faster (no more sequential scans)";
-        $results[] = "- Team member lookups: 2-5x faster (composite indexes)";
-        $results[] = "- Time-based queries: 5-20x faster (epoch indexes)";
-        
-        if (!empty($errors)) {
-            $results[] = "\n⚠️ ERRORS ENCOUNTERED:";
-            $results = array_merge($results, $errors);
-        }
-        
-        echo json_encode([
-            'success' => empty($errors),
-            'message' => 'Performance index migration completed',
-            'results' => $results,
-            'indexes_created' => count($performanceIndexes) - count($errors),
-            'errors' => count($errors),
-            'timestamp' => date('c')
-        ]);
-        
-    } catch (Exception $e) {
-        error_log('INDEX MIGRATION FAILED: ' . $e->getMessage());
-        http_response_code(500);
-        echo json_encode([
-            'success' => false,
-            'error' => 'Index migration failed: ' . $e->getMessage(),
-            'timestamp' => date('c')
-        ]);
-    }
-}
-
-// Performance testing functions
-function performanceTest($db) {
-    try {
-        $results = [];
-        $testMemberId = $_GET['member_id'] ?? null;
-        
-        // Test 1: Basic connection test
-        $start = microtime(true);
-        $db->query('SELECT 1')->fetch();
-        $connectionTime = (microtime(true) - $start) * 1000;
-        $results['connection_test_ms'] = round($connectionTime, 2);
-        
-        // Test 2: Simple query without joins
-        $start = microtime(true);
-        $stmt = $db->prepare('SELECT COUNT(*) FROM player_disciplinary_records WHERE member_id = ?');
-        $stmt->execute([$testMemberId ?: 'test']);
-        $simpleQueryTime = (microtime(true) - $start) * 1000;
-        $results['simple_query_ms'] = round($simpleQueryTime, 2);
-        
-        // Test 3: Complex join query (same as your disciplinary records endpoint)
-        $start = microtime(true);
-        $stmt = $db->prepare('
-            SELECT pdr.*, tm.name as member_name, t.name as team_name
-            FROM player_disciplinary_records pdr
-            JOIN team_members tm ON pdr.member_id = tm.id
-            JOIN teams t ON tm.team_id = t.id
-            WHERE pdr.member_id = ?
-            ORDER BY pdr.incident_date_epoch DESC, pdr.created_at_epoch DESC
-        ');
-        $stmt->execute([$testMemberId ?: 'test']);
-        $records = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        $complexQueryTime = (microtime(true) - $start) * 1000;
-        $results['complex_query_ms'] = round($complexQueryTime, 2);
-        $results['records_found'] = count($records);
-        
-        // Test 4: Multiple simple queries to test connection overhead
-        $start = microtime(true);
-        for ($i = 0; $i < 5; $i++) {
-            $db->query('SELECT 1')->fetch();
-        }
-        $multipleConnectionTime = (microtime(true) - $start) * 1000;
-        $results['multiple_connections_ms'] = round($multipleConnectionTime, 2);
-        $results['avg_connection_overhead_ms'] = round($multipleConnectionTime / 5, 2);
-        
-        // Test 5: Table stats for optimization analysis
-        $tableStats = [];
-        $tables = ['player_disciplinary_records', 'team_members', 'teams'];
-        foreach ($tables as $table) {
-            $stmt = $db->prepare("SELECT COUNT(*) as count FROM $table");
-            $stmt->execute();
-            $tableStats[$table] = $stmt->fetch(PDO::FETCH_ASSOC)['count'];
-        }
-        $results['table_sizes'] = $tableStats;
-        
-        // Test 6: Query plan analysis (PostgreSQL EXPLAIN)
-        if ($testMemberId) {
-            try {
-                $stmt = $db->prepare('
-                    EXPLAIN (FORMAT JSON, ANALYZE, BUFFERS) 
-                    SELECT pdr.*, tm.name as member_name, t.name as team_name
-                    FROM player_disciplinary_records pdr
-                    JOIN team_members tm ON pdr.member_id = tm.id
-                    JOIN teams t ON tm.team_id = t.id
-                    WHERE pdr.member_id = ?
-                    ORDER BY pdr.incident_date_epoch DESC, pdr.created_at_epoch DESC
-                ');
-                $stmt->execute([$testMemberId]);
-                $queryPlan = $stmt->fetch(PDO::FETCH_ASSOC);
-                $results['query_plan'] = json_decode($queryPlan['QUERY PLAN'], true);
-            } catch (Exception $e) {
-                $results['query_plan_error'] = $e->getMessage();
-            }
-        }
-        
-        // Summary and recommendations
-        $results['performance_analysis'] = [
-            'total_test_time_ms' => round((microtime(true) - $start) * 1000, 2),
-            'recommendations' => []
-        ];
-        
-        if ($complexQueryTime > 100) {
-            $results['performance_analysis']['recommendations'][] = 'Complex query is slow (>100ms) - check indexes';
-        }
-        if ($connectionTime > 50) {
-            $results['performance_analysis']['recommendations'][] = 'Database connection is slow (>50ms) - possible network latency';
-        }
-        if ($simpleQueryTime > 20) {
-            $results['performance_analysis']['recommendations'][] = 'Simple queries are slow (>20ms) - possible database load';
-        }
-        
-        echo json_encode([
-            'success' => true,
-            'test_timestamp' => date('c'),
-            'test_member_id' => $testMemberId,
-            'results' => $results
-        ]);
-        
-    } catch (Exception $e) {
-        http_response_code(500);
-        echo json_encode([
-            'error' => 'Performance test failed: ' . $e->getMessage(),
-            'timestamp' => date('c')
-        ]);
-    }
-}
-
-function getDatabaseIndexes($db) {
-    try {
-        // Get all indexes for our main tables
-        $stmt = $db->query("
-            SELECT 
-                schemaname,
-                tablename,
-                indexname,
-                indexdef
-            FROM pg_indexes 
-            WHERE schemaname = 'public'
-            AND tablename IN ('player_disciplinary_records', 'team_members', 'teams', 'events', 'matches', 'match_attendees', 'general_attendees')
-            ORDER BY tablename, indexname
-        ");
-        
-        $indexes = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        
-        // Also get table sizes
-        $stmt = $db->query("
-            SELECT 
-                schemaname,
-                tablename,
-                pg_size_pretty(pg_total_relation_size(schemaname||'.'||tablename)) as size,
-                pg_total_relation_size(schemaname||'.'||tablename) as size_bytes
-            FROM pg_tables 
-            WHERE schemaname = 'public'
-            AND tablename IN ('player_disciplinary_records', 'team_members', 'teams', 'events', 'matches', 'match_attendees', 'general_attendees')
-            ORDER BY pg_total_relation_size(schemaname||'.'||tablename) DESC
-        ");
-        
-        $tableSizes = $stmt->fetchAll(PDO::FETCH_ASSOC);
-        
-        echo json_encode([
-            'success' => true,
-            'indexes' => $indexes,
-            'table_sizes' => $tableSizes,
-            'timestamp' => date('c')
-        ]);
-        
-    } catch (Exception $e) {
-        http_response_code(500);
-        echo json_encode([
-            'error' => 'Failed to get database indexes: ' . $e->getMessage(),
-            'timestamp' => date('c')
-        ]);
-    }
-}
-
-// Enhanced getDisciplinaryRecords with performance logging
-function getDisciplinaryRecordsWithLogging($db) {
-    $startTime = microtime(true);
-    $memberId = $_GET['member_id'] ?? null;
-    $teamId = $_GET['team_id'] ?? null;
-    
-    error_log("=== DISCIPLINARY RECORDS PERFORMANCE TEST ===");
-    error_log("Member ID: " . ($memberId ?: 'null'));
-    error_log("Team ID: " . ($teamId ?: 'null'));
-    
-    if ($memberId) {
-        // Log query execution time
-        $queryStart = microtime(true);
-        $stmt = $db->prepare('
-            SELECT pdr.*, tm.name as member_name, t.name as team_name
-            FROM player_disciplinary_records pdr
-            JOIN team_members tm ON pdr.member_id = tm.id
-            JOIN teams t ON tm.team_id = t.id
-            WHERE pdr.member_id = ?
-            ORDER BY pdr.incident_date_epoch DESC, pdr.created_at_epoch DESC
-        ');
-        $stmt->execute([$memberId]);
-        $queryTime = (microtime(true) - $queryStart) * 1000;
-        error_log("Query execution time: " . round($queryTime, 2) . "ms");
-        
-        // Log fetch time
-        $fetchStart = microtime(true);
-        $records = [];
-        while ($record = $stmt->fetch(PDO::FETCH_ASSOC)) {
-            $records[] = [
-                'id' => $record['id'],
-                'memberId' => $record['member_id'],
-                'memberName' => $record['member_name'],
-                'teamName' => $record['team_name'],
-                'cardType' => $record['card_type'],
-                'reason' => $record['reason'],
-                'notes' => $record['notes'],
-                'incidentDate_epoch' => $record['incident_date_epoch'],
-                'suspensionMatches' => $record['suspension_matches'] ? (int)$record['suspension_matches'] : null,
-                'suspensionServed' => $record['suspension_served'] ? true : false,
-                'suspensionServedDate_epoch' => $record['suspension_served_date_epoch'],
-                'createdAt_epoch' => $record['created_at_epoch']
-            ];
-        }
-        $fetchTime = (microtime(true) - $fetchStart) * 1000;
-        error_log("Fetch and transform time: " . round($fetchTime, 2) . "ms");
-        error_log("Records found: " . count($records));
-        
-    } else {
-        // Handle other cases (team_id or all records)
-        $records = [];
-        error_log("Non-member query - using original function");
-        
-        // Call original function logic here for consistency
-        getDisciplinaryRecords($db);
-        return;
-    }
-    
-    $totalTime = (microtime(true) - $startTime) * 1000;
-    error_log("Total response time: " . round($totalTime, 2) . "ms");
-    error_log("=== END DISCIPLINARY RECORDS PERFORMANCE TEST ===");
-    
-    echo json_encode($records);
 }
 ?>
