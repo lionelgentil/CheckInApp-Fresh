@@ -3139,10 +3139,12 @@ class CheckInViewApp {
         
         if (content.style.display === 'none') {
             content.style.display = 'block';
-            icon.textContent = '▲';
+            icon.textContent = '▼';
+            icon.classList.add('expanded');
         } else {
             content.style.display = 'none';
             icon.textContent = '▼';
+            icon.classList.remove('expanded');
         }
     }
     
@@ -3151,6 +3153,7 @@ class CheckInViewApp {
         const summary = document.getElementById('team-card-summary');
         const summaryText = document.getElementById('card-summary-text');
         const summaryContent = document.getElementById('card-summary-content');
+        const summaryIcon = document.getElementById('card-summary-icon');
         
         if (summary) {
             summary.style.display = 'none';
@@ -3161,6 +3164,10 @@ class CheckInViewApp {
         if (summaryContent) {
             summaryContent.innerHTML = '';
             summaryContent.style.display = 'none';
+        }
+        if (summaryIcon) {
+            summaryIcon.textContent = '▼';
+            summaryIcon.classList.remove('expanded');
         }
     }
 
