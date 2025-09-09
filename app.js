@@ -3264,8 +3264,11 @@ Please check the browser console (F12) for more details.`);
         // Initialize team stats by division
         const teamStats = {};
         
+        // Use full teams if available, otherwise use basic teams
+        const teamsToUse = this.teams.length > 0 ? this.teams : this.teamsBasic;
+        
         // Initialize all teams with zero stats
-        this.teams.forEach(team => {
+        teamsToUse.forEach(team => {
             if (team.category === 'Over 30' || team.category === 'Over 40') {
                 teamStats[team.id] = {
                     id: team.id,
@@ -3285,6 +3288,12 @@ Please check the browser console (F12) for more details.`);
         
         // Process completed matches
         this.events.forEach(event => {
+            // Validate event has proper date_epoch
+            if (!event.date_epoch || isNaN(event.date_epoch)) {
+                console.warn(`⚠️ Event ${event.name} has invalid date_epoch for standings:`, event.date_epoch);
+                return;
+            }
+            
             // Filter by season if requested
             if (currentSeasonOnly && !this.isCurrentSeasonEvent(event.date_epoch)) {
                 return;
@@ -3535,16 +3544,23 @@ Please check the browser console (F12) for more details.`);
     collectCurrentSeasonCards() {
         const cardRecords = [];
         
-        // Create lookup maps for efficiency
+        // Create lookup maps for efficiency - use both full teams and basic teams
         const teamLookup = new Map();
         const refereeLookup = new Map();
         
-        this.teams.forEach(team => teamLookup.set(team.id, team));
+        // Prefer full teams data if available, otherwise use basic
+        const teamsToUse = this.teams.length > 0 ? this.teams : this.teamsBasic;
+        teamsToUse.forEach(team => teamLookup.set(team.id, team));
         this.referees.forEach(referee => refereeLookup.set(referee.id, referee));
         
         // Process all events and matches
         this.events.forEach(event => {
-            // Only include current season events
+            // Only include current season events AND validate date_epoch
+            if (!event.date_epoch || isNaN(event.date_epoch)) {
+                console.warn(`⚠️ Event ${event.name} has invalid date_epoch:`, event.date_epoch);
+                return;
+            }
+            
             if (!this.isCurrentSeasonEvent(event.date_epoch)) {
                 return;
             }
@@ -4713,6 +4729,12 @@ Please check the browser console (F12) for more details.`);
         
         // Process all events and matches
         this.events.forEach((event, eventIndex) => {
+            // Validate event has proper date_epoch
+            if (!event.date_epoch || isNaN(event.date_epoch)) {
+                console.warn(`⚠️ Event ${event.name} has invalid date_epoch:`, event.date_epoch);
+                return;
+            }
+            
             console.log(`📅 Processing event ${eventIndex + 1}/${this.events.length}: ${event.name} (${new Date(event.date_epoch * 1000).toLocaleDateString('en-US', { timeZone: 'America/Los_Angeles' })})`);
             
             if (!event.matches || event.matches.length === 0) {
