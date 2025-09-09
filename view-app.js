@@ -2843,7 +2843,7 @@ class CheckInViewApp {
         document.body.appendChild(modal);
         
         // Initialize the check-in interface
-        this.initializeCheckInInterface(eventId, matchId, homeTeam, awayTeam, match);
+        await this.initializeCheckInInterface(eventId, matchId, homeTeam, awayTeam, match);
         
         // Force update attendance counts after DOM is fully created
         setTimeout(() => {
@@ -2918,7 +2918,7 @@ class CheckInViewApp {
     
     // New helper functions for mobile check-in interface
     
-    initializeCheckInInterface(eventId, matchId, homeTeam, awayTeam, match) {
+    async initializeCheckInInterface(eventId, matchId, homeTeam, awayTeam, match) {
         // Store current match data
         this.currentEventId = eventId;
         this.currentMatchId = matchId;
@@ -2939,7 +2939,7 @@ class CheckInViewApp {
         // Initialize with home team displayed by default
         this.renderGridTeamFullscreen('home', homeTeam, match.homeTeamAttendees || []);
         this.updatePaginationInfo();
-        this.updateCardSummary(); // Initialize card summary for home team
+        await this.updateCardSummary(); // Initialize card summary for home team
     }
     
     updateAttendanceCounts(match) {
@@ -3089,7 +3089,7 @@ class CheckInViewApp {
     }
     
     // Toggle between home and away team in new mobile interface
-    toggleGridTeam(teamType) {
+    async toggleGridTeam(teamType) {
         this.currentGridTeam = teamType;
         
         // Update toggle button states
@@ -3124,7 +3124,7 @@ class CheckInViewApp {
             
         this.renderGridTeamFullscreen(teamType, team, attendees);
         this.updatePaginationInfo();
-        this.updateCardSummary(); // Update card summary for the new team
+        await this.updateCardSummary(); // Update card summary for the new team
     }
     
     // Toggle card summary collapse/expand
@@ -3142,7 +3142,7 @@ class CheckInViewApp {
     }
 
     // Update card summary for current team
-    updateCardSummary() {
+    async updateCardSummary() {
         if (!this.currentGridTeam || !this.events) return;
         
         const team = this.currentGridTeam === 'home' ? this.currentHomeTeam : this.currentAwayTeam;
@@ -3155,9 +3155,9 @@ class CheckInViewApp {
         // Calculate card stats for current team
         const playersWithCards = [];
         
-        team.members.forEach(member => {
+        for (const member of team.members) {
             const currentSeasonCards = this.calculateMemberCurrentSeasonCards(member);
-            const lifetimeCards = this.calculateMemberLifetimeCards(member);
+            const lifetimeCards = await this.calculateMemberLifetimeCards(member);
             
             // Show players with ANY cards (current season OR lifetime)
             if (currentSeasonCards.currentYellowCards > 0 || currentSeasonCards.currentRedCards > 0 || 
@@ -3170,7 +3170,7 @@ class CheckInViewApp {
                     lifetimeRed: lifetimeCards.lifetimeRedCards
                 });
             }
-        });
+        }
         
         if (playersWithCards.length === 0) {
             summary.style.display = 'none';
@@ -3191,10 +3191,19 @@ class CheckInViewApp {
             if (player.lifetimeYellow > 0) lifetimeCards.push(`🟨${player.lifetimeYellow}`);
             if (player.lifetimeRed > 0) lifetimeCards.push(`🟥${player.lifetimeRed}`);
             
-            const currentText = currentCards.length > 0 ? `${currentCards.join(' ')} current` : 'Clean current';
-            const lifetimeText = lifetimeCards.length > 0 ? `${lifetimeCards.join(' ')} total` : '';
+            const parts = [];
             
-            const fullText = lifetimeText ? `${currentText} • ${lifetimeText}` : currentText;
+            // Show current season cards if any
+            if (currentCards.length > 0) {
+                parts.push(`${currentCards.join(' ')} this season`);
+            }
+            
+            // Show lifetime total if different from current
+            if (lifetimeCards.length > 0) {
+                parts.push(`${lifetimeCards.join(' ')} lifetime`);
+            }
+            
+            const fullText = parts.join(' • ');
             
             return `<div class="player-card-summary">
                 <span class="player-name">${player.name}:</span> ${fullText}
@@ -3226,10 +3235,11 @@ class CheckInViewApp {
     }
 
     // Helper function to calculate lifetime card stats for a member
-    calculateMemberLifetimeCards(member) {
+    async calculateMemberLifetimeCards(member) {
         let lifetimeYellowCards = 0;
         let lifetimeRedCards = 0;
         
+        // Count cards from match events
         this.events.forEach(event => {
             event.matches.forEach(match => {
                 if (match.cards) {
@@ -3239,6 +3249,20 @@ class CheckInViewApp {
                 }
             });
         });
+        
+        // Also count disciplinary records for lifetime total
+        try {
+            const response = await fetch(`/api/disciplinary-records?member_id=${member.id}`);
+            if (response.ok) {
+                const disciplinaryRecords = await response.json();
+                disciplinaryRecords.forEach(record => {
+                    if (record.cardType === 'yellow') lifetimeYellowCards++;
+                    if (record.cardType === 'red') lifetimeRedCards++;
+                });
+            }
+        } catch (error) {
+            console.log('Could not load disciplinary records for lifetime count:', error);
+        }
         
         return { lifetimeYellowCards, lifetimeRedCards };
     }
