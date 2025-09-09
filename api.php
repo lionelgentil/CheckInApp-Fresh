@@ -2238,7 +2238,7 @@ function initializeDatabase($db) {
         
         // Additional performance indexes for optimized queries
         $db->exec('CREATE INDEX IF NOT EXISTS idx_match_cards_match_id ON match_cards(match_id)');
-        $db->exec('CREATE INDEX IF NOT EXISTS idx_matches_event_time ON matches(event_id, match_time)');
+        $db->exec('CREATE INDEX IF NOT EXISTS idx_matches_event_time ON matches(event_id, match_time_epoch)');
         $db->exec('CREATE INDEX IF NOT EXISTS idx_team_members_name ON team_members(team_id, name)');
         
         // Critical indexes for disciplinary records performance

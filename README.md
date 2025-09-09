@@ -1,6 +1,6 @@
-# CheckIn App v4.3.1
+# CheckIn App v6.0.0
 
-A comprehensive soccer league management system designed for recreational adult leagues. Features team management, event scheduling, player check-ins, disciplinary tracking, and season management.
+A comprehensive soccer league management system designed for recreational adult leagues. Features team management, event scheduling, player check-ins, disciplinary tracking, and season management with advanced PostgreSQL backend.
 
 ## 🏆 Features
 
@@ -8,19 +8,23 @@ A comprehensive soccer league management system designed for recreational adult 
 - **Team Registration**: Create and manage teams with categories (Over 30, Over 40)
 - **Player Rosters**: Add/remove players with photos, jersey numbers, and captain designation
 - **Player Profiles**: Complete disciplinary history with current season and lifetime records
-- **Photo Management**: Upload and manage player photos with gender-based defaults
+- **Photo Management**: Upload and manage player photos with Railway volume storage and fallback systems
+- **Member Management**: Soft delete (deactivate) and reactivate players to preserve disciplinary records
 
 ### Event & Match Management
-- **Event Creation**: Schedule tournaments and match days
+- **Event Creation**: Schedule tournaments and match days with epoch-based timestamps
 - **Match Setup**: Configure home/away teams, referees, fields, and times
-- **Real-time Check-ins**: ECNL-style grid interface for quick player attendance
+- **Real-time Check-ins**: ECNL-style grid interface with 75px player photos for mobile
 - **Match Results**: Score tracking, match status, and referee assignment
+- **Check-in Locking**: Automatic lock 2h 40min after match start to preserve integrity
 
-### Disciplinary System
-- **Card Tracking**: Issue yellow and red cards with detailed reasons
+### Advanced Disciplinary System
+- **Card Tracking**: Issue yellow and red cards with detailed reasons and match context
+- **Current Season vs Lifetime**: Clear distinction between current season and career statistics
+- **Collapsible Card Summary**: Mobile-optimized summary showing players with cards for referees
 - **Suspension Management**: Automatic suspension tracking for red cards
 - **Suspension Enforcement**: Prevents suspended players from checking in
-- **Lifetime Records**: Complete disciplinary history across all seasons
+- **Cross-Season Tracking**: Disciplinary records preserved across season transitions
 
 ### Season Management
 - **Season Overview**: Current season statistics and pending suspensions
@@ -30,240 +34,232 @@ A comprehensive soccer league management system designed for recreational adult 
 
 ### Reporting & Analytics
 - **League Standings**: Real-time standings by division with points, goals, and rankings
-- **Card Tracker**: Comprehensive disciplinary report with filters
+- **Card Tracker**: Comprehensive disciplinary report with filters and search
 - **Player Statistics**: Individual player performance and discipline records
 - **Season Summary**: Complete overview of events, matches, and cards
 
 ## 🎯 User Interfaces
 
 ### Main Admin Interface (`index.html`)
-- Full administrative control
+- Full administrative control with authentication system
 - Team, event, and referee management
 - Match result entry and card issuance
 - Season management and data migration
-- Complete CRUD operations
+- Complete CRUD operations with optimistic UI updates
 
 ### View-Only Interface (`view.html`)
-- Public viewing access
-- Read-only data display
-- Player check-ins (with suspension enforcement)
-- Statistics and standings viewing
-- Player profile management (jersey numbers and photos only)
+- Public viewing access without admin authentication
+- Mobile-optimized with collapsible header (saves 20% screen space)
+- Player check-ins with enhanced card summary for referees
+- Real-time disciplinary information display
+- Optimized for mobile referee use during matches
 
 ## 🏗️ Technical Architecture
 
 ### Frontend
 - **Pure JavaScript** (ES6+) with modular class-based architecture
-- **Responsive CSS** with mobile-first design
+- **Responsive CSS** with mobile-first design and collapsible headers
 - **Progressive Web App** capabilities
 - **Real-time UI updates** with optimistic rendering
+- **Performance Optimized**: Smart caching, lazy loading, and batched DOM updates
 
 ### Backend Integration
-- RESTful API endpoints for all data operations
-- Photo upload and management system
-- Season archiving and data migration
-- Disciplinary records management
+- **PostgreSQL Database** with epoch timestamp system for better performance
+- **Railway Cloud Hosting** with persistent volume storage for photos
+- **Photo Management**: Multi-tier storage (Railway volume → fallback → legacy)
+- **Keep-alive System**: Database warming to prevent cold starts
+- **API Performance**: Optimized queries with caching and connection pooling
 
-### Key API Endpoints
+### Enhanced API Endpoints
 ```
-GET/POST  /api/teams              - Team management
-GET/POST  /api/events             - Event and match data
+GET/POST  /api/teams              - Team management with member lifecycle
+GET/POST  /api/teams-no-photos    - Fast team loading without photo data
+GET/POST  /api/teams-basic        - Lightweight teams for performance
+GET/POST  /api/teams-specific     - Load specific teams by IDs
+GET/POST  /api/events             - Event and match data with epoch timestamps
 GET/POST  /api/referees           - Referee management
-GET/POST  /api/disciplinary-records - Disciplinary tracking
-POST      /api/photos             - Photo uploads
-POST      /api/archive-season     - Season data archiving
-GET       /api/version            - Version information
+GET/POST  /api/disciplinary-records - Advanced disciplinary tracking
+POST      /api/photos             - Photo uploads with fallback storage
+POST      /api/attendance         - Attendance-only updates (no auth required)
+POST      /api/match-results      - Match results for view interface
+POST      /api/players/cards      - Card assignment for referees
+GET       /api/health             - System health with database ping
+GET       /api/keep-alive         - Database warming endpoint
+GET       /api/version            - Version information (v6.0.0)
 ```
 
 ## 🚀 Getting Started
 
 ### Prerequisites
-- Web server with PHP support
-- SQLite database
-- Modern web browser
+- Web server with PHP 7.4+ support
+- PostgreSQL database (Railway recommended)
+- Modern web browser with ES6+ support
 
-### Installation
-1. Clone or download the application files
-2. Configure your web server to serve the application directory
-3. Ensure proper permissions for photo uploads and database access
-4. Access `index.html` for admin interface or `view.html` for public access
+### Railway Deployment
+1. Connect your GitHub repository to Railway
+2. Add PostgreSQL service and connect DATABASE_URL
+3. Configure environment variables
+4. Deploy with automatic photo storage setup
+
+### Local Development
+1. Clone the repository
+2. Configure PostgreSQL connection in environment
+3. Set up photo storage directories
+4. Run with PHP built-in server: `php -S localhost:8000 router.php`
 
 ### Initial Setup
-1. **Create Teams**: Add your league teams with player rosters
-2. **Add Referees**: Register referees with contact information
-3. **Schedule Events**: Create match days and configure matches
-4. **Configure Season**: Review current season settings in Season Management
+1. **Database Initialization**: Automatic PostgreSQL schema creation
+2. **Create Teams**: Add your league teams with player rosters
+3. **Add Referees**: Register referees with contact information
+4. **Schedule Events**: Create match days and configure matches
+5. **Configure Photos**: Ensure photo storage permissions
 
-## 📱 Mobile Features
+## 📱 Enhanced Mobile Features
 
-### ECNL-Style Check-in Grid
-- Touch-optimized player grid interface
-- Instant visual feedback for check-ins
-- Scrollable player roster with photos
-- Suspension enforcement with alerts
+### Advanced Check-in Interface
+- **75x75px Player Photos**: Larger photos for better mobile visibility
+- **Collapsible Card Summary**: Team-specific disciplinary overview for referees
+- **Current vs Lifetime Cards**: Clear distinction with emoji indicators (🟨🟥)
+- **Touch-Optimized Grid**: Improved touch targets and visual feedback
+- **Removed Footer Clutter**: More space for player grid
 
-### Mobile-Optimized Match Results
-- Sectioned layout for better mobile UX
-- Large touch targets for score entry
-- Responsive card management interface
-- Progressive form design
+### Mobile-First Design Improvements
+- **Collapsible Header**: Tap to collapse, saves 20% screen space
+- **Responsive Navigation**: Optimized button sizes for mobile
+- **Performance Optimized**: Fast loading with cached data
+- **Progressive Enhancement**: Works on all devices and connection speeds
 
-### Responsive Design
-- Adapts to all screen sizes
-- Mobile-first CSS approach
-- Touch-friendly interactions
-- Optimized for tablets and phones
+### Referee-Specific Features
+- **Quick Card Overview**: See which players have cards before check-in
+- **Team Separation**: Card summary shows only current team's disciplinary info
+- **Visual Indicators**: Easy-to-read emoji system for card types and counts
+- **Expandable Details**: Tap to see full card breakdown per player
 
-## 🔐 Season Management
+## 🔐 Advanced Authentication & Security
 
-### Season Lifecycle
-1. **Active Season**: Current season with ongoing events and matches
-2. **Season Statistics**: Real-time tracking of events, matches, and disciplinary actions
-3. **Suspension Monitoring**: Automatic tracking of pending suspensions
-4. **Season Closure**: Validated migration process with data preservation
-5. **New Season**: Clean start with preserved team and referee data
+### Admin Authentication System
+- **Session-based Authentication**: 1-hour timeout with automatic refresh
+- **Protected Endpoints**: All admin operations require authentication
+- **View-Only Access**: Public interface with limited, safe operations
+- **Secure Photo Uploads**: Authentication required for photo management
 
-### Data Migration Process
-When closing a season:
-1. **Validation**: Ensures all suspensions are resolved
-2. **Preview**: Shows exactly what data will be migrated
-3. **Migration**: Moves match cards to disciplinary records database
-4. **Archive**: Preserves complete season data with timestamps
-5. **Cleanup**: Clears current events for new season
+### Data Integrity Features
+- **Epoch Timestamps**: Consistent time handling across timezones
+- **Database Constraints**: Foreign key relationships preserve data integrity
+- **Soft Deletes**: Member deactivation preserves disciplinary history
+- **Transaction Safety**: Database transactions for critical operations
 
-## 🛡️ Suspension System
+## 🔧 Performance Optimizations
 
-### Automatic Enforcement
-- Real-time suspension checking during player check-ins
-- Background validation with instant UI feedback
-- Comprehensive suspension tracking across multiple sources
-- Detailed suspension alerts with context
+### Database Performance
+- **PostgreSQL Optimization**: Native prepared statements and persistent connections
+- **Query Caching**: Smart caching system for disciplinary records
+- **Index Optimization**: Strategic indexes for time-based and relationship queries
+- **Connection Pooling**: Persistent connections with keep-alive system
 
-### Suspension Sources
-- **Match Cards**: Red cards issued during current season matches
-- **Disciplinary Records**: Lifetime disciplinary history
-- **Cross-Season**: Suspensions carry over between seasons
+### Frontend Performance
+- **Lazy Loading**: Player photos load on demand
+- **Smart Caching**: API response caching with cache invalidation
+- **Batched DOM Updates**: Efficient rendering for large datasets
+- **Optimistic UI**: Immediate feedback with background validation
 
-## 📊 Reporting Features
+### Railway Cloud Optimizations
+- **Database Warming**: Keep-alive system prevents cold starts
+- **Photo Storage**: Multi-tier storage system with Railway volumes
+- **Gzip Compression**: Automatic response compression
+- **CDN-Ready**: Static assets optimized for content delivery
 
-### League Standings
-- Automatic point calculation (3 for win, 1 for draw)
-- Goal difference and goals for/against tracking
-- Division-based standings (Over 30, Over 40)
-- Current season vs. all-time toggles
+## 📊 Enhanced Reporting Features
 
-### Card Tracking
-- Real-time disciplinary report
-- Filter by card type (yellow, red, all)
-- Player and team breakdowns
-- Match context and referee information
+### Disciplinary Dashboard
+- **Collapsible Team Cards**: Quick overview of players with cards
+- **Current Season Focus**: Immediate visibility of current season issues
+- **Lifetime Context**: Full career statistics available on demand
+- **Referee Tools**: Designed specifically for match-day decision making
 
-### Player Profiles
-- Complete disciplinary history
-- Current season vs. lifetime statistics
-- Team and jersey information
-- Photo management
+### Advanced Analytics
+- **Performance Metrics**: Database response times and system health
+- **Usage Statistics**: Team engagement and check-in patterns
+- **Disciplinary Trends**: Card issuance patterns by team and season
+- **Photo Management**: Storage usage and upload success rates
 
-## 🔧 Configuration
+## 🎨 Modern UI/UX Design
 
-### Season Configuration
-Seasons are automatically determined by date ranges:
-- **Spring**: February 15 - June 30
-- **Fall**: August 1 - December 31
-- **Between Seasons**: Defaults to next upcoming season
+### Card Summary Styling
+- **Attention-Grabbing Design**: Red gradient header for urgency
+- **Dark Theme Content**: High contrast for mobile readability
+- **Modern Typography**: SF Pro Display font with proper weight hierarchy
+- **Interactive Elements**: Hover effects and smooth animations
 
-### Team Categories
-- **Over 30**: Teams with age restriction of 30+
-- **Over 40**: Teams with age restriction of 40+
-
-### Match Status Options
-- **Scheduled**: Match is planned but not yet played
-- **In Progress**: Match is currently being played
-- **Completed**: Match has finished with final score
-- **Cancelled**: Match was cancelled
-
-## 🎨 Customization
-
-### Styling
-- Modern CSS with comprehensive responsive design
-- Customizable color schemes and branding
-- Mobile-optimized touch targets
-- Progressive enhancement approach
-
-### Photo Management
-- Upload and crop player photos
-- Gender-based default avatars
-- Automatic image optimization
-- Cache-busting for immediate updates
+### Responsive Breakpoints
+- **Mobile First**: Optimized for 320px+ screens
+- **Tablet Optimized**: Enhanced layouts for 768px+ screens
+- **Desktop Enhanced**: Full-featured interface for 1024px+ screens
+- **Progressive Enhancement**: Graceful degradation for older browsers
 
 ## 📝 Version History
 
-### v4.3.1 (Current)
-- 🎯 **Enhanced Card Assignment**: Card selection now only shows players who were checked in for the match
-- 🛡️ **Data Integrity**: Prevents referees from assigning cards to players who weren't present
-- 👥 **Better UX**: Shows jersey numbers and attendance counts for easier player identification
-- 📱 **View-only improvements**: Removed Referees section, optimized Standings button sizing
+### v6.0.0 (Current) - Major Mobile & Performance Update
+- 🏆 **Enhanced Mobile Check-in Experience**:
+  - 📱 Collapsible header saves 20% of mobile screen space
+  - 📸 Increased player photos from 50px to 75px for better visibility
+  - ⚡ Removed footer clutter, more space for player cards
+- 🎯 **Advanced Disciplinary Features**:
+  - 📋 Collapsible card summary showing current team's disciplinary overview
+  - 🟨🟥 Clear distinction between current season and lifetime cards
+  - 👨‍⚽️ Referee-optimized design for match-day decision making
+- 🚀 **Performance & Infrastructure**:
+  - 🐘 Complete PostgreSQL optimization with epoch timestamps
+  - ☁️ Railway cloud deployment with persistent photo storage
+  - 🔄 Database keep-alive system prevents cold starts
+  - 💾 Multi-tier photo storage with automatic fallbacks
+- 🔧 **Technical Improvements**:
+  - 🔐 Enhanced authentication system with better session management
+  - 📊 Advanced API endpoints for optimized data loading
+  - 🏃‍♂️ Smart caching and performance optimizations
+  - 🛡️ Improved data integrity with soft deletes and foreign key constraints
 
-### v4.3.0
-- 🚀 **MAJOR PERFORMANCE IMPROVEMENTS**:
-  - ⚡ Smart API caching system reduces redundant requests
-  - 📊 Database query caching for disciplinary records
-  - 🔍 Optimized nested loops with O(1) lookup maps
-  - 🎨 DOM manipulation batching for smoother UI updates
-  - 📸 Lazy loading for player photos improves page load times
-- 📈 Significantly improved rendering performance for large datasets
-- 🏃‍♂️ Faster initial page loads and smoother interactions
+### v5.5.3 (Previous)
+- 🎯 Enhanced Card Assignment: Card selection only shows checked-in players
+- 🛡️ Data Integrity: Prevents cards for non-present players
+- 👥 Better UX: Jersey numbers and attendance counts
+- 📱 View-only improvements: Optimized interface
 
-### v4.2.3
-- 📱 Improved mobile navigation: "Card Tracker" → "Cards"
-- 🎯 Better button fit on small screens
+### v4.x Series
+- Season Management system
+- Suspension enforcement
+- Mobile-optimized interfaces
+- Performance improvements
+- Authentication system
 
-### v4.2.2
-- 📱 Optimized mobile navigation in view.html
-- ❌ Removed Season Management from view-only interface
-- 📄 Consolidated version display to save space
+## 🤝 Support & Troubleshooting
 
-### v4.2.1
-- 🔐 Added admin authentication system
-- 🔒 Password protection for admin interface
-- 🛡️ Protected all admin API endpoints
-- ⏰ Session-based authentication with timeout
+### Common Issues
+1. **Photo Upload Issues**: Check Railway volume permissions and fallback directories
+2. **Database Connection**: Verify PostgreSQL DATABASE_URL environment variable
+3. **Authentication Problems**: Clear browser cache and check session timeout
+4. **Mobile Performance**: Ensure latest browser version with ES6+ support
 
-### v4.2.0
-- ✅ Complete Season Management system
-- ✅ Data migration and archiving
-- ✅ Enhanced suspension enforcement
-- ✅ Mobile-optimized match results interface
+### Performance Monitoring
+- **Health Endpoint**: `/api/health` provides system status and database ping times
+- **Keep-Alive Monitoring**: `/api/keep-alive` shows database warming status
+- **Version Check**: `/api/version` confirms current deployment version
 
-### v4.1.0
-- ✅ Performance-optimized suspension checking
-- ✅ Background validation with UI reversion
-- ✅ Enhanced mobile match result interface
+### Railway-Specific Support
+- **Environment Variables**: Ensure DATABASE_URL is properly connected
+- **Volume Storage**: Verify persistent storage is mounted at `/app/storage/photos`
+- **Cold Start Issues**: Monitor keep-alive script execution
+- **Build Logs**: Check Railway deployment logs for initialization errors
 
-### v4.0.9
-- ✅ Comprehensive suspension system
-- ✅ Red card suspension tracking
-- ✅ Enhanced disciplinary records
+## 📄 License & Compliance
 
-### Previous Versions (v2.x)
-- PostgreSQL migration and optimization
-- Complete disciplinary records system
-- Referee management and match results
-- Photo upload architecture improvements
-- Performance optimizations and bug fixes
-
-## 🤝 Support
-
-For technical support or feature requests:
-1. Check the application logs for error details
-2. Verify database connectivity and permissions
-3. Ensure all API endpoints are accessible
-4. Review browser console for JavaScript errors
-
-## 📄 License
-
-This application is designed for recreational soccer league management. Please ensure compliance with your local data protection and privacy regulations when handling player information.
+This application is designed for recreational soccer league management with focus on:
+- **Data Privacy**: Secure handling of player information
+- **GDPR Compliance**: Right to deletion with data preservation needs
+- **Photo Rights**: Proper consent and usage policies
+- **Performance Standards**: Optimized for mobile referee use
 
 ---
 
-**CheckIn App v4.2.0** - Comprehensive Soccer League Management System
+**CheckIn App v6.0.0** - Advanced Soccer League Management System
+*Optimized for Mobile Referees • PostgreSQL Powered • Railway Cloud Ready*
