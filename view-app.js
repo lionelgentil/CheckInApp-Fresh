@@ -3156,7 +3156,8 @@ class CheckInViewApp {
         const totalPlayers = team.members.length;
         const checkedIn = attendees.length;
         
-        infoElement.innerHTML = `${checkedIn}/${totalPlayers} players checked in • Tap to toggle`;
+        // Footer info removed as requested - player count now shown in team header
+        // infoElement.innerHTML = `${checkedIn}/${totalPlayers} players checked in • Tap to toggle`;
     }
     
     // Render grid for specific team with scrolling (no pagination)
