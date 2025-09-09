@@ -424,6 +424,12 @@ try {
             }
             break;
             
+        case 'team-card-summary':
+            if ($method === 'GET') {
+                getTeamCardSummary($db);
+            }
+            break;
+            
         case 'photos':
             // Photo serving and upload endpoints
             if ($method === 'GET') {
@@ -1724,6 +1730,87 @@ function saveDisciplinaryRecords($db) {
         $db->rollBack();
         http_response_code(500);
         echo json_encode(['error' => 'Database error: ' . $e->getMessage(), 'trace' => $e->getTraceAsString()]);
+    }
+}
+
+/**
+ * Get efficient card summary for a team - avoids client-side processing
+ * Returns pre-calculated card counts for all team members
+ */
+function getTeamCardSummary($db) {
+    $teamId = $_GET['team_id'] ?? null;
+    
+    if (!$teamId) {
+        http_response_code(400);
+        echo json_encode(['error' => 'team_id parameter is required']);
+        return;
+    }
+    
+    try {
+        // Get current season start date (you may need to adjust this logic)
+        $currentSeasonStart = strtotime('2025-01-01'); // Adjust as needed
+        
+        $stmt = $db->prepare('
+            SELECT 
+                tm.id as member_id,
+                tm.name as member_name,
+                
+                -- Match cards (from match_cards table)
+                COALESCE(SUM(CASE WHEN mc.card_type = \'yellow\' THEN 1 ELSE 0 END), 0) as match_yellow_total,
+                COALESCE(SUM(CASE WHEN mc.card_type = \'red\' THEN 1 ELSE 0 END), 0) as match_red_total,
+                
+                -- Current season match cards (based on match time)
+                COALESCE(SUM(CASE 
+                    WHEN mc.card_type = \'yellow\' AND m.match_time_epoch >= ? THEN 1 
+                    ELSE 0 
+                END), 0) as match_yellow_current,
+                COALESCE(SUM(CASE 
+                    WHEN mc.card_type = \'red\' AND m.match_time_epoch >= ? THEN 1 
+                    ELSE 0 
+                END), 0) as match_red_current,
+                
+                -- Lifetime disciplinary records
+                COALESCE(COUNT(CASE WHEN pdr.card_type = \'yellow\' THEN 1 END), 0) as lifetime_yellow,
+                COALESCE(COUNT(CASE WHEN pdr.card_type = \'red\' THEN 1 END), 0) as lifetime_red
+                
+            FROM team_members tm
+            LEFT JOIN match_cards mc ON tm.id = mc.member_id
+            LEFT JOIN matches m ON mc.match_id = m.id
+            LEFT JOIN player_disciplinary_records pdr ON tm.id = pdr.member_id
+            WHERE tm.team_id = ? AND tm.active = true
+            GROUP BY tm.id, tm.name
+            ORDER BY tm.name
+        ');
+        
+        $stmt->execute([$currentSeasonStart, $currentSeasonStart, $teamId]);
+        
+        $results = [];
+        while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+            // Only include players with any cards
+            $hasCards = $row['match_yellow_total'] > 0 || 
+                       $row['match_red_total'] > 0 || 
+                       $row['lifetime_yellow'] > 0 || 
+                       $row['lifetime_red'] > 0;
+                       
+            if ($hasCards) {
+                $results[] = [
+                    'memberId' => $row['member_id'],
+                    'memberName' => $row['member_name'],
+                    'allMatchYellow' => (int)$row['match_yellow_total'],
+                    'allMatchRed' => (int)$row['match_red_total'],
+                    'currentSeasonYellow' => (int)$row['match_yellow_current'],
+                    'currentSeasonRed' => (int)$row['match_red_current'],
+                    'lifetimeYellow' => (int)$row['lifetime_yellow'],
+                    'lifetimeRed' => (int)$row['lifetime_red']
+                ];
+            }
+        }
+        
+        echo json_encode($results);
+        
+    } catch (Exception $e) {
+        http_response_code(500);
+        echo json_encode(['error' => 'Database error: ' . $e->getMessage()]);
     }
 }
 
