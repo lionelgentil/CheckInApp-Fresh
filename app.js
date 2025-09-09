@@ -2896,18 +2896,38 @@ Please check the browser console (F12) for more details.`);
     async fetchDisciplinaryRecords(memberId) {
         try {
             const records = await this.fetch(`/api/disciplinary-records?member_id=${memberId}`);
-            return records.map(record => ({
-                type: 'prior',
-                eventDate: record.incidentDate || record.createdAt,
-                matchInfo: 'External incident',
-                cardType: record.cardType,
-                reason: record.reason,
-                notes: record.notes,
-                minute: null,
-                suspensionMatches: record.suspensionMatches,
-                suspensionServed: record.suspensionServed,
-                suspensionServedDate: record.suspensionServedDate
-            }));
+            console.log('🐛 Raw disciplinary records from API:', records);
+            
+            return records.map(record => {
+                // DEBUG: Log each record's date fields
+                console.log('🐛 Processing disciplinary record:', {
+                    incidentDate: record.incidentDate,
+                    incidentDate_epoch: record.incidentDate_epoch,
+                    createdAt: record.createdAt,
+                    created_at_epoch: record.created_at_epoch
+                });
+                
+                // Try multiple date fields in order of preference
+                let eventDate = record.incidentDate_epoch || 
+                              record.incidentDate || 
+                              record.created_at_epoch || 
+                              record.createdAt;
+                
+                console.log('🐛 Selected eventDate for disciplinary record:', eventDate);
+                
+                return {
+                    type: 'prior',
+                    eventDate: eventDate,
+                    matchInfo: 'External incident',
+                    cardType: record.cardType,
+                    reason: record.reason,
+                    notes: record.notes,
+                    minute: null,
+                    suspensionMatches: record.suspensionMatches,
+                    suspensionServed: record.suspensionServed,
+                    suspensionServedDate: record.suspensionServedDate
+                };
+            });
         } catch (error) {
             console.error('Error loading disciplinary records for profile:', error);
             return [];
