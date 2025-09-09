@@ -709,6 +709,7 @@ class CheckInViewApp {
                             month: '2-digit', 
                             day: '2-digit' 
                         }),
+                        eventDate_epoch: event.date_epoch, // Add epoch for template compatibility
                         matchInfo,
                         cardType: card.cardType,
                         reason: card.reason,
@@ -735,7 +736,13 @@ class CheckInViewApp {
                 const records = await response.json();
                 return records.map(record => ({
                     type: 'prior',
-                    eventDate: record.incidentDate || record.createdAt,
+                    eventDate: record.incidentDate_epoch ? new Date(record.incidentDate_epoch * 1000).toLocaleDateString('en-US', { 
+                        timeZone: 'America/Los_Angeles', 
+                        year: 'numeric', 
+                        month: '2-digit', 
+                        day: '2-digit' 
+                    }) : (record.incidentDate || record.createdAt),
+                    eventDate_epoch: record.incidentDate_epoch || record.created_at_epoch, // Add epoch for template compatibility
                     matchInfo: 'External incident',
                     cardType: record.cardType,
                     reason: record.reason,
@@ -2798,6 +2805,17 @@ class CheckInViewApp {
                     </button>
                 </div>
                 
+                <!-- Collapsible Card Summary -->
+                <div id="team-card-summary" class="team-card-summary" style="display: none;">
+                    <div class="card-summary-header" onclick="app.toggleCardSummary()">
+                        <span id="card-summary-text">⚠️ 0 Players with Cards</span>
+                        <span id="card-summary-icon">▼</span>
+                    </div>
+                    <div id="card-summary-content" class="card-summary-content" style="display: none;">
+                        <!-- Card details will be populated here -->
+                    </div>
+                </div>
+                
                 <!-- Detailed Cards Section (if any) -->
                 ${cardsSection ? `<div class="detailed-cards-section" style="padding: 0 20px;">${cardsSection}</div>` : ''}
                 
@@ -2921,6 +2939,7 @@ class CheckInViewApp {
         // Initialize with home team displayed by default
         this.renderGridTeamFullscreen('home', homeTeam, match.homeTeamAttendees || []);
         this.updatePaginationInfo();
+        this.updateCardSummary(); // Initialize card summary for home team
     }
     
     updateAttendanceCounts(match) {
@@ -3105,8 +3124,83 @@ class CheckInViewApp {
             
         this.renderGridTeamFullscreen(teamType, team, attendees);
         this.updatePaginationInfo();
+        this.updateCardSummary(); // Update card summary for the new team
     }
     
+    // Toggle card summary collapse/expand
+    toggleCardSummary() {
+        const content = document.getElementById('card-summary-content');
+        const icon = document.getElementById('card-summary-icon');
+        
+        if (content.style.display === 'none') {
+            content.style.display = 'block';
+            icon.textContent = '▲';
+        } else {
+            content.style.display = 'none';
+            icon.textContent = '▼';
+        }
+    }
+
+    // Update card summary for current team
+    updateCardSummary() {
+        if (!this.currentGridTeam || !this.events) return;
+        
+        const team = this.currentGridTeam === 'home' ? this.currentHomeTeam : this.currentAwayTeam;
+        if (!team) return;
+        
+        const summary = document.getElementById('team-card-summary');
+        const summaryText = document.getElementById('card-summary-text');
+        const summaryContent = document.getElementById('card-summary-content');
+        
+        // Calculate card stats for current team
+        const playersWithCards = [];
+        
+        team.members.forEach(member => {
+            const currentSeasonCards = this.calculateMemberCurrentSeasonCards(member);
+            const lifetimeCards = this.calculateMemberLifetimeCards(member);
+            
+            if (currentSeasonCards.currentYellowCards > 0 || currentSeasonCards.currentRedCards > 0 || 
+                lifetimeCards.lifetimeYellowCards > 0 || lifetimeCards.lifetimeRedCards > 0) {
+                playersWithCards.push({
+                    name: member.name,
+                    currentYellow: currentSeasonCards.currentYellowCards,
+                    currentRed: currentSeasonCards.currentRedCards,
+                    lifetimeYellow: lifetimeCards.lifetimeYellowCards,
+                    lifetimeRed: lifetimeCards.lifetimeRedCards
+                });
+            }
+        });
+        
+        if (playersWithCards.length === 0) {
+            summary.style.display = 'none';
+            return;
+        }
+        
+        // Show summary
+        summary.style.display = 'block';
+        summaryText.textContent = `⚠️ ${playersWithCards.length} Player${playersWithCards.length !== 1 ? 's' : ''} with Cards`;
+        
+        // Build detailed content
+        const content = playersWithCards.map(player => {
+            const currentCards = [];
+            if (player.currentYellow > 0) currentCards.push(`🟨${player.currentYellow}`);
+            if (player.currentRed > 0) currentCards.push(`🟥${player.currentRed}`);
+            
+            const lifetimeCards = [];
+            if (player.lifetimeYellow > 0) lifetimeCards.push(`🟨${player.lifetimeYellow}`);
+            if (player.lifetimeRed > 0) lifetimeCards.push(`🟥${player.lifetimeRed}`);
+            
+            const currentText = currentCards.length > 0 ? currentCards.join(' ') + ' this season' : 'Clean this season';
+            const lifetimeText = lifetimeCards.length > 0 ? lifetimeCards.join(' ') + ' lifetime' : 'No lifetime cards';
+            
+            return `<div class="player-card-summary">
+                <strong>${player.name}:</strong> ${currentText}, ${lifetimeText}
+            </div>`;
+        }).join('');
+        
+        summaryContent.innerHTML = content;
+    }
+
     // Helper function to calculate current season card stats for a member
     calculateMemberCurrentSeasonCards(member) {
         let currentYellowCards = 0;
