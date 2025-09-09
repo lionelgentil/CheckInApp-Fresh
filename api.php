@@ -39,6 +39,19 @@ function getDisciplinaryRecordsCount($db, $bustCache = false) {
     return $count;
 }
 
+// Database ping function to keep connection warm
+function pingDatabase($db) {
+    $start = microtime(true);
+    try {
+        $stmt = $db->query('SELECT 1');
+        $result = $stmt->fetch();
+        $ping_time = round((microtime(true) - $start) * 1000, 2);
+        return $ping_time . 'ms';
+    } catch (Exception $e) {
+        return 'failed: ' . $e->getMessage();
+    }
+}
+
 // Authentication functions
 function isAuthenticated() {
     return isset($_SESSION['admin_authenticated']) && 
@@ -140,11 +153,20 @@ try {
     $user = $parsedUrl['user'];
     $password = $parsedUrl['pass'];
     
-    // Build PostgreSQL PDO connection string
-    $dsn = "pgsql:host={$host};port={$port};dbname={$dbname}";
+    // Build PostgreSQL PDO connection string with optimizations
+    $dsn = "pgsql:host={$host};port={$port};dbname={$dbname};connect_timeout=10";
     
-    $db = new PDO($dsn, $user, $password);
-    $db->setAttribute(PDO::ATTR_ERRMODE, PDO::ERRMODE_EXCEPTION);
+    // PDO options for better performance and persistent connections
+    $options = array(
+        PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+        PDO::ATTR_PERSISTENT => true, // Use persistent connections
+        PDO::ATTR_TIMEOUT => 10, // Connection timeout
+        PDO::ATTR_EMULATE_PREPARES => false, // Use native prepared statements
+        PDO::MYSQL_ATTR_USE_BUFFERED_QUERY => true, // Buffer queries
+        PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC // Default fetch mode
+    );
+    
+    $db = new PDO($dsn, $user, $password, $options);
     
     // Initialize PostgreSQL database
     initializeDatabase($db);
@@ -220,8 +242,34 @@ try {
                 'timestamp' => date('c'),
                 'database' => 'PostgreSQL',
                 'php_version' => PHP_VERSION,
-                'persistent' => true
+                'persistent' => true,
+                'db_ping' => pingDatabase($db) // Add DB ping
             ));
+            break;
+            
+        case 'keep-alive':
+            // Lightweight endpoint to keep database connections warm
+            if ($method === 'GET') {
+                $start = microtime(true);
+                
+                // Ping database and get basic stats
+                $db_ping = pingDatabase($db);
+                $team_count = $db->query('SELECT COUNT(*) FROM teams')->fetchColumn();
+                $event_count = $db->query('SELECT COUNT(*) FROM events')->fetchColumn();
+                
+                $total_time = round((microtime(true) - $start) * 1000, 2);
+                
+                echo json_encode(array(
+                    'status' => 'alive',
+                    'db_ping' => $db_ping,
+                    'stats' => array(
+                        'teams' => (int)$team_count,
+                        'events' => (int)$event_count
+                    ),
+                    'total_time' => $total_time . 'ms',
+                    'timestamp' => time()
+                ));
+            }
             break;
             
         case 'teams':
