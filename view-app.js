@@ -660,11 +660,20 @@ class CheckInViewApp {
     
     // iOS-style score adjustment for mobile
     adjustScore(inputId, delta) {
+        console.log(`🎯 adjustScore called:`, { inputId, delta });
+        
         const input = document.getElementById(inputId);
-        if (!input) return;
+        if (!input) {
+            console.log(`❌ adjustScore: Input element not found:`, inputId);
+            return;
+        }
+        
+        console.log(`📊 adjustScore: Input found, current value:`, input.value);
         
         let currentValue = parseInt(input.value) || 0;
         let newValue = Math.max(0, Math.min(99, currentValue + delta)); // Keep between 0-99
+        
+        console.log(`📊 adjustScore: Changing from ${currentValue} to ${newValue}`);
         
         input.value = newValue;
         
@@ -673,6 +682,8 @@ class CheckInViewApp {
         setTimeout(() => {
             input.style.transform = 'scale(1)';
         }, 150);
+        
+        console.log(`✅ adjustScore: Score updated successfully`);
     }
     
     // Player Profile Management  
@@ -3930,8 +3941,16 @@ class CheckInViewApp {
         // Find all score stepper buttons and replace onclick with proper event listeners
         const allStepperButtons = modal.querySelectorAll('.score-stepper-btn[onclick]');
         
-        allStepperButtons.forEach(button => {
+        console.log('🔍 Debug: Found stepper buttons:', allStepperButtons.length);
+        
+        allStepperButtons.forEach((button, index) => {
             const onclickAttr = button.getAttribute('onclick');
+            console.log(`🔍 Debug: Button ${index}:`, {
+                element: button,
+                onclick: onclickAttr,
+                textContent: button.textContent,
+                className: button.className
+            });
             
             // Parse the onclick attribute to determine which function to call
             if (onclickAttr && onclickAttr.includes('adjustScore')) {
@@ -3941,11 +3960,40 @@ class CheckInViewApp {
                     const scoreId = match[1]; // 'home-score' or 'away-score'
                     const increment = parseInt(match[2]); // 1 or -1
                     
+                    console.log(`✅ Debug: Setting up event listener for button ${index}:`, {
+                        scoreId,
+                        increment,
+                        buttonText: button.textContent
+                    });
+                    
                     // Remove the onclick attribute and add proper event listener
                     button.removeAttribute('onclick');
-                    button.addEventListener('click', () => this.adjustScore(scoreId, increment));
+                    button.addEventListener('click', (e) => {
+                        console.log(`🎯 Debug: Button clicked:`, {
+                            scoreId,
+                            increment,
+                            buttonText: button.textContent,
+                            event: e
+                        });
+                        this.adjustScore(scoreId, increment);
+                    });
+                } else {
+                    console.log(`❌ Debug: Could not parse onclick for button ${index}:`, onclickAttr);
                 }
+            } else {
+                console.log(`❌ Debug: Button ${index} does not have adjustScore onclick:`, onclickAttr);
             }
+        });
+        
+        // Also log all buttons in the modal for debugging
+        const allButtons = modal.querySelectorAll('button');
+        console.log('🔍 Debug: All buttons in modal:', allButtons.length);
+        allButtons.forEach((btn, i) => {
+            console.log(`Button ${i}:`, {
+                className: btn.className,
+                textContent: btn.textContent,
+                onclick: btn.getAttribute('onclick')
+            });
         });
     }
     
