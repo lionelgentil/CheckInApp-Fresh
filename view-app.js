@@ -3927,27 +3927,26 @@ class CheckInViewApp {
         document.body.appendChild(modal);
         
         // Add event listeners for score stepper buttons after modal is added to DOM
-        const homeUpBtn = modal.querySelector('.score-stepper-btn[onclick*="home-score"][onclick*="1"]');
-        const homeDownBtn = modal.querySelector('.score-stepper-btn[onclick*="home-score"][onclick*="-1"]');
-        const awayUpBtn = modal.querySelector('.score-stepper-btn[onclick*="away-score"][onclick*="1"]');
-        const awayDownBtn = modal.querySelector('.score-stepper-btn[onclick*="away-score"][onclick*="-1"]');
+        // Find all score stepper buttons and replace onclick with proper event listeners
+        const allStepperButtons = modal.querySelectorAll('.score-stepper-btn[onclick]');
         
-        if (homeUpBtn) {
-            homeUpBtn.removeAttribute('onclick');
-            homeUpBtn.addEventListener('click', () => this.adjustScore('home-score', 1));
-        }
-        if (homeDownBtn) {
-            homeDownBtn.removeAttribute('onclick');
-            homeDownBtn.addEventListener('click', () => this.adjustScore('home-score', -1));
-        }
-        if (awayUpBtn) {
-            awayUpBtn.removeAttribute('onclick');
-            awayUpBtn.addEventListener('click', () => this.adjustScore('away-score', 1));
-        }
-        if (awayDownBtn) {
-            awayDownBtn.removeAttribute('onclick');
-            awayDownBtn.addEventListener('click', () => this.adjustScore('away-score', -1));
-        }
+        allStepperButtons.forEach(button => {
+            const onclickAttr = button.getAttribute('onclick');
+            
+            // Parse the onclick attribute to determine which function to call
+            if (onclickAttr && onclickAttr.includes('adjustScore')) {
+                // Extract the parameters from onclick="app.adjustScore('home-score', 1)"
+                const match = onclickAttr.match(/adjustScore\('([^']+)',\s*(-?\d+)\)/);
+                if (match) {
+                    const scoreId = match[1]; // 'home-score' or 'away-score'
+                    const increment = parseInt(match[2]); // 1 or -1
+                    
+                    // Remove the onclick attribute and add proper event listener
+                    button.removeAttribute('onclick');
+                    button.addEventListener('click', () => this.adjustScore(scoreId, increment));
+                }
+            }
+        });
     }
     
     addCard() {
