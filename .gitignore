@@ -38,3 +38,17 @@ temp/
 # Cache
 .cache/
 cache/
+
+# Node.js dependencies
+node_modules/
+npm-debug.log*
+yarn-debug.log*
+yarn-error.log*
+
+# Playwright testing artifacts
+test-results/
+playwright-report/
+playwright/.cache/
+
+# Testing coverage
+coverage/
