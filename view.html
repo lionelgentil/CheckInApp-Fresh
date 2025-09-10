@@ -2648,21 +2648,32 @@
                 const data = await response.json();
                 const version = data.version;
                 
-                // Create and load the view app script with current version + cache busting
-                const script = document.createElement('script');
-                script.src = `view-app.js?v=${version}&cb=${Date.now()}`;
-                script.onload = function() {
-                    // Set version numbers from JavaScript constant after script loads
-                    document.getElementById('app-version').textContent = APP_VERSION;
-                    document.getElementById('footer-version').textContent = APP_VERSION;
+                // Load configuration first
+                const configScript = document.createElement('script');
+                configScript.src = `config.js?v=${version}&cb=${Date.now()}`;
+                configScript.onload = function() {
+                    // Create and load the view app script with current version + cache busting
+                    const script = document.createElement('script');
+                    script.src = `view-app.js?v=${version}&cb=${Date.now()}`;
+                    script.onload = function() {
+                        // Set version numbers from JavaScript constant after script loads
+                        document.getElementById('app-version').textContent = APP_VERSION;
+                        document.getElementById('footer-version').textContent = APP_VERSION;
+                    };
+                    document.body.appendChild(script);
                 };
-                document.body.appendChild(script);
+                document.body.appendChild(configScript);
             } catch (error) {
                 console.error('Failed to load version:', error);
                 // Fallback: load without version parameter but with cache busting
-                const script = document.createElement('script');
-                script.src = `view-app.js?cb=${Date.now()}`;
-                document.body.appendChild(script);
+                const configScript = document.createElement('script');
+                configScript.src = `config.js?cb=${Date.now()}`;
+                configScript.onload = function() {
+                    const script = document.createElement('script');
+                    script.src = `view-app.js?cb=${Date.now()}`;
+                    document.body.appendChild(script);
+                };
+                document.body.appendChild(configScript);
             }
         }
         

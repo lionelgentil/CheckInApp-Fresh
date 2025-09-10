@@ -1,0 +1,28 @@
+// CheckIn App Configuration
+// This file contains configuration data that can be easily modified without touching the main application code
+
+window.CheckInAppConfig = {
+    // Card reasons for yellow and red cards
+    cardReasons: [
+        "Unsporting behavior",
+        "Dissent by word or action", 
+        "Persistent infringement",
+        "Delaying the restart of play",
+        "Failure to respect distance",
+        "Entering/leaving without permission",
+        "Sliding",
+        "Reckless/aggressive challenge",
+        "Denial of a goal scoring opportunity",
+        "Stopping a promising attack",
+        "Serious foul play",
+        "Violent conduct",
+        "Spitting",
+        "Offensive/insulting language",
+        "Second yellow card"
+    ],
+    
+    // Future config items can go here
+    // maxPlayersPerTeam: 25,
+    // defaultMatchDuration: 90,
+    // etc.
+};

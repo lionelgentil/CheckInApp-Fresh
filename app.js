@@ -56,6 +56,29 @@ function epochToPacificDateTime(epochTimestamp) {
     });
 }
 
+// Helper function to generate card reasons dropdown HTML
+function generateCardReasonsOptions(selectedReason = '') {
+    if (!window.CheckInAppConfig || !window.CheckInAppConfig.cardReasons) {
+        console.warn('Card reasons config not found, using fallback list');
+        // Fallback list in case config doesn't load
+        const fallbackReasons = [
+            "Unsporting behavior", "Dissent by word or action", "Persistent infringement",
+            "Delaying the restart of play", "Failure to respect distance", 
+            "Entering/leaving without permission", "Sliding", "Reckless/aggressive challenge",
+            "Denial of a goal scoring opportunity", "Stopping a promising attack",
+            "Serious foul play", "Violent conduct", "Spitting",
+            "Offensive/insulting language", "Second yellow card"
+        ];
+        return fallbackReasons.map(reason => 
+            `<option value="${reason}" ${selectedReason === reason ? 'selected' : ''}>${reason}</option>`
+        ).join('');
+    }
+    
+    return window.CheckInAppConfig.cardReasons.map(reason => 
+        `<option value="${reason}" ${selectedReason === reason ? 'selected' : ''}>${reason}</option>`
+    ).join('');
+}
+
 // Utility function to get current epoch timestamp
 function getCurrentEpochTimestamp() {
     return Math.floor(Date.now() / 1000); // Convert milliseconds to seconds
@@ -2492,21 +2515,7 @@ Please check the browser console (F12) for more details.`);
                             <div style="display: flex; gap: 10px;">
                                 <select class="form-select" style="flex: 1;" data-record-index="${index}" data-field="reason">
                                     <option value="">Select Reason</option>
-                                    <option value="Unsporting behavior" ${record.reason === 'Unsporting behavior' ? 'selected' : ''}>Unsporting behavior</option>
-                                    <option value="Dissent by word or action" ${record.reason === 'Dissent by word or action' ? 'selected' : ''}>Dissent by word or action</option>
-                                    <option value="Persistent infringement" ${record.reason === 'Persistent infringement' ? 'selected' : ''}>Persistent infringement</option>
-                                    <option value="Delaying the restart of play" ${record.reason === 'Delaying the restart of play' ? 'selected' : ''}>Delaying the restart of play</option>
-                                    <option value="Failure to respect distance" ${record.reason === 'Failure to respect distance' ? 'selected' : ''}>Failure to respect distance</option>
-                                    <option value="Entering/leaving without permission" ${record.reason === 'Entering/leaving without permission' ? 'selected' : ''}>Entering/leaving without permission</option>
-                                    <option value="Sliding" ${record.reason === 'Sliding' ? 'selected' : ''}>Sliding</option>
-                                    <option value="Reckless/aggressive challenge" ${record.reason === 'Reckless/aggressive challenge' ? 'selected' : ''}>Reckless/aggressive challenge</option>
-                                    <option value="Denial of a goal scoring opportunity" ${record.reason === 'Denial of a goal scoring opportunity' ? 'selected' : ''}>Denial of a goal scoring opportunity</option>
-                                    <option value="Stopping a promising attack" ${record.reason === 'Stopping a promising attack' ? 'selected' : ''}>Stopping a promising attack</option>
-                                    <option value="Serious foul play" ${record.reason === 'Serious foul play' ? 'selected' : ''}>Serious foul play</option>
-                                    <option value="Violent conduct" ${record.reason === 'Violent conduct' ? 'selected' : ''}>Violent conduct</option>
-                                    <option value="Spitting" ${record.reason === 'Spitting' ? 'selected' : ''}>Spitting</option>
-                                    <option value="Offensive/insulting language" ${record.reason === 'Offensive/insulting language' ? 'selected' : ''}>Offensive/insulting language</option>
-                                    <option value="Second yellow card" ${record.reason === 'Second yellow card' ? 'selected' : ''}>Second yellow card</option>
+                                    ${generateCardReasonsOptions(record.reason)}
                                 </select>
                             </div>
                             <textarea class="form-input" placeholder="Additional Notes (optional)" data-record-index="${index}" data-field="notes" rows="2">${record.notes || ''}</textarea>
@@ -2565,21 +2574,7 @@ Please check the browser console (F12) for more details.`);
                 <div style="display: flex; gap: 10px;">
                     <select class="form-select" style="flex: 1;" data-record-index="${newIndex}" data-field="reason">
                         <option value="">Select Reason</option>
-                        <option value="Unsporting behavior">Unsporting behavior</option>
-                        <option value="Dissent by word or action">Dissent by word or action</option>
-                        <option value="Persistent infringement">Persistent infringement</option>
-                        <option value="Delaying the restart of play">Delaying the restart of play</option>
-                        <option value="Failure to respect distance">Failure to respect distance</option>
-                        <option value="Entering/leaving without permission">Entering/leaving without permission</option>
-                        <option value="Sliding">Sliding</option>
-                        <option value="Reckless/aggressive challenge">Reckless/aggressive challenge</option>
-                        <option value="Denial of a goal scoring opportunity">Denial of a goal scoring opportunity</option>
-                        <option value="Stopping a promising attack">Stopping a promising attack</option>
-                        <option value="Serious foul play">Serious foul play</option>
-                        <option value="Violent conduct">Violent conduct</option>
-                        <option value="Spitting">Spitting</option>
-                        <option value="Offensive/insulting language">Offensive/insulting language</option>
-                        <option value="Second yellow card">Second yellow card</option>
+                        ${generateCardReasonsOptions()}
                     </select>
                 </div>
                 <textarea class="form-input" placeholder="Additional Notes (optional)" data-record-index="${newIndex}" data-field="notes" rows="2"></textarea>
@@ -5467,21 +5462,7 @@ Please check the browser console (F12) for more details.`);
                                             <label class="mobile-label">Reason</label>
                                             <select class="form-select-mobile" data-card-index="${index}" data-field="reason">
                                                 <option value="">Select Reason</option>
-                                                <option value="Unsporting behavior" ${card.reason === 'Unsporting behavior' ? 'selected' : ''}>Unsporting behavior</option>
-                                                <option value="Dissent by word or action" ${card.reason === 'Dissent by word or action' ? 'selected' : ''}>Dissent by word or action</option>
-                                                <option value="Persistent infringement" ${card.reason === 'Persistent infringement' ? 'selected' : ''}>Persistent infringement</option>
-                                                <option value="Delaying the restart of play" ${card.reason === 'Delaying the restart of play' ? 'selected' : ''}>Delaying the restart of play</option>
-                                                <option value="Failure to respect distance" ${card.reason === 'Failure to respect distance' ? 'selected' : ''}>Failure to respect distance</option>
-                                                <option value="Entering/leaving without permission" ${card.reason === 'Entering/leaving without permission' ? 'selected' : ''}>Entering/leaving without permission</option>
-                                                <option value="Sliding" ${card.reason === 'Sliding' ? 'selected' : ''}>Sliding</option>
-                                                <option value="Reckless/aggressive challenge" ${card.reason === 'Reckless/aggressive challenge' ? 'selected' : ''}>Reckless/aggressive challenge</option>
-                                                <option value="Denial of a goal scoring opportunity" ${card.reason === 'Denial of a goal scoring opportunity' ? 'selected' : ''}>Denial of a goal scoring opportunity</option>
-                                                <option value="Stopping a promising attack" ${card.reason === 'Stopping a promising attack' ? 'selected' : ''}>Stopping a promising attack</option>
-                                                <option value="Serious foul play" ${card.reason === 'Serious foul play' ? 'selected' : ''}>Serious foul play</option>
-                                                <option value="Violent conduct" ${card.reason === 'Violent conduct' ? 'selected' : ''}>Violent conduct</option>
-                                                <option value="Spitting" ${card.reason === 'Spitting' ? 'selected' : ''}>Spitting</option>
-                                                <option value="Offensive/insulting language" ${card.reason === 'Offensive/insulting language' ? 'selected' : ''}>Offensive/insulting language</option>
-                                                <option value="Second yellow card" ${card.reason === 'Second yellow card' ? 'selected' : ''}>Second yellow card</option>
+                                                ${generateCardReasonsOptions(card.reason)}
                                             </select>
                                         </div>
                                         
@@ -5614,21 +5595,7 @@ Please check the browser console (F12) for more details.`);
                         <label class="mobile-label">Reason</label>
                         <select class="form-select-mobile" data-card-index="${newIndex}" data-field="reason">
                             <option value="">Select Reason</option>
-                            <option value="Unsporting behavior">Unsporting behavior</option>
-                            <option value="Dissent by word or action">Dissent by word or action</option>
-                            <option value="Persistent infringement">Persistent infringement</option>
-                            <option value="Delaying the restart of play">Delaying the restart of play</option>
-                            <option value="Failure to respect distance">Failure to respect distance</option>
-                            <option value="Entering/leaving without permission">Entering/leaving without permission</option>
-                            <option value="Sliding">Sliding</option>
-                            <option value="Reckless/aggressive challenge">Reckless/aggressive challenge</option>
-                            <option value="Denial of a goal scoring opportunity">Denial of a goal scoring opportunity</option>
-                            <option value="Stopping a promising attack">Stopping a promising attack</option>
-                            <option value="Serious foul play">Serious foul play</option>
-                            <option value="Violent conduct">Violent conduct</option>
-                            <option value="Spitting">Spitting</option>
-                            <option value="Offensive/insulting language">Offensive/insulting language</option>
-                            <option value="Second yellow card">Second yellow card</option>
+                            ${generateCardReasonsOptions()}
                         </select>
                     </div>
                     

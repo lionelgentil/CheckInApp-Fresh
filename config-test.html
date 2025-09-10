@@ -1,0 +1,62 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Config Test</title>
+</head>
+<body>
+    <h1>Configuration File Test</h1>
+    <div id="test-results"></div>
+    <div id="dropdown-test"></div>
+
+    <script src="config.js"></script>
+    <script>
+        // Test the configuration
+        const resultsDiv = document.getElementById('test-results');
+        const dropdownDiv = document.getElementById('dropdown-test');
+        
+        // Test 1: Check if config loaded
+        if (window.CheckInAppConfig) {
+            resultsDiv.innerHTML += '<p>✅ Config loaded successfully</p>';
+            
+            // Test 2: Check card reasons
+            if (window.CheckInAppConfig.cardReasons && window.CheckInAppConfig.cardReasons.length > 0) {
+                resultsDiv.innerHTML += `<p>✅ Found ${window.CheckInAppConfig.cardReasons.length} card reasons</p>`;
+                
+                // Test 3: Show first few reasons
+                const firstThree = window.CheckInAppConfig.cardReasons.slice(0, 3);
+                resultsDiv.innerHTML += `<p>First 3 reasons: ${firstThree.join(', ')}</p>`;
+                
+                // Test 4: Generate dropdown HTML
+                function generateCardReasonsOptions(selectedReason = '') {
+                    if (!window.CheckInAppConfig || !window.CheckInAppConfig.cardReasons) {
+                        return '<option>Config not found</option>';
+                    }
+                    
+                    return window.CheckInAppConfig.cardReasons.map(reason => 
+                        `<option value="${reason}" ${selectedReason === reason ? 'selected' : ''}>${reason}</option>`
+                    ).join('');
+                }
+                
+                // Test dropdown generation
+                const dropdownHtml = `
+                    <h3>Test Dropdown (with "Sliding" selected):</h3>
+                    <select>
+                        <option value="">Select Reason</option>
+                        ${generateCardReasonsOptions('Sliding')}
+                    </select>
+                `;
+                
+                dropdownDiv.innerHTML = dropdownHtml;
+                resultsDiv.innerHTML += '<p>✅ Dropdown generated successfully</p>';
+                
+            } else {
+                resultsDiv.innerHTML += '<p>❌ Card reasons not found in config</p>';
+            }
+        } else {
+            resultsDiv.innerHTML += '<p>❌ Config not loaded</p>';
+        }
+    </script>
+</body>
+</html>
