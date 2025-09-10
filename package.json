@@ -1,0 +1,31 @@
+{
+  "name": "checkinapp-fresh",
+  "version": "1.0.0",
+  "description": "A comprehensive soccer league management system designed for recreational adult leagues. Features team management, event scheduling, player check-ins, disciplinary tracking, and season management with advanced PostgreSQL backend.",
+  "main": "app.js",
+  "scripts": {
+    "test": "playwright test",
+    "test:mobile": "playwright test --project=mobile",
+    "test:debug": "playwright test --debug",
+    "test:headed": "playwright test --headed",
+    "test:report": "playwright show-report"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/lionelgentil/CheckInApp-Fresh.git"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "type": "commonjs",
+  "bugs": {
+    "url": "https://github.com/lionelgentil/CheckInApp-Fresh/issues"
+  },
+  "homepage": "https://github.com/lionelgentil/CheckInApp-Fresh#readme",
+
+  "devDependencies": {
+    "@playwright/test": "^1.x.x",
+    "jest": "^29.x.x",
+    "playwright": "^1.x.x"
+  }
+}

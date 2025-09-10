@@ -78,6 +78,9 @@ class CheckInViewApp {
         try {
             const response = await fetch(url, options);
             
+            // Display Railway edge info from this response (only once)
+            displayRailwayEdgeFromResponse(response);
+            
             // Handle 401 Unauthorized - session expired
             if (response.status === 401) {
                 console.warn('🔐 Session expired (401), redirecting to re-authenticate...');
@@ -3922,6 +3925,29 @@ class CheckInViewApp {
         `);
         
         document.body.appendChild(modal);
+        
+        // Add event listeners for score stepper buttons after modal is added to DOM
+        const homeUpBtn = modal.querySelector('.score-stepper-btn[onclick*="home-score"][onclick*="1"]');
+        const homeDownBtn = modal.querySelector('.score-stepper-btn[onclick*="home-score"][onclick*="-1"]');
+        const awayUpBtn = modal.querySelector('.score-stepper-btn[onclick*="away-score"][onclick*="1"]');
+        const awayDownBtn = modal.querySelector('.score-stepper-btn[onclick*="away-score"][onclick*="-1"]');
+        
+        if (homeUpBtn) {
+            homeUpBtn.removeAttribute('onclick');
+            homeUpBtn.addEventListener('click', () => this.adjustScore('home-score', 1));
+        }
+        if (homeDownBtn) {
+            homeDownBtn.removeAttribute('onclick');
+            homeDownBtn.addEventListener('click', () => this.adjustScore('home-score', -1));
+        }
+        if (awayUpBtn) {
+            awayUpBtn.removeAttribute('onclick');
+            awayUpBtn.addEventListener('click', () => this.adjustScore('away-score', 1));
+        }
+        if (awayDownBtn) {
+            awayDownBtn.removeAttribute('onclick');
+            awayDownBtn.addEventListener('click', () => this.adjustScore('away-score', -1));
+        }
     }
     
     addCard() {
@@ -4417,6 +4443,52 @@ class CheckInViewApp {
 // Global functions for onclick handlers
 async function showSection(sectionName) {
     await app.showSection(sectionName);
+}
+
+// Function to display Railway edge server info from any response
+function displayRailwayEdgeFromResponse(response) {
+    // Only create the display once
+    if (document.getElementById('railway-edge-info')) {
+        return;
+    }
+    
+    const railwayEdge = response.headers.get('x-railway-edge');
+    
+    if (railwayEdge) {
+        // Create edge info display
+        const edgeInfo = document.createElement('div');
+        edgeInfo.id = 'railway-edge-info';
+        edgeInfo.style.cssText = `
+            position: fixed;
+            top: 10px;
+            left: 10px;
+            background: rgba(0, 0, 0, 0.8);
+            color: white;
+            padding: 8px 12px;
+            border-radius: 6px;
+            font-size: 12px;
+            font-family: monospace;
+            z-index: 1001;
+            cursor: pointer;
+            transition: opacity 0.3s ease;
+        `;
+        edgeInfo.textContent = `Railway Edge: ${railwayEdge}`;
+        
+        // Click to hide/show
+        let isVisible = true;
+        edgeInfo.addEventListener('click', () => {
+            isVisible = !isVisible;
+            edgeInfo.style.opacity = isVisible ? '1' : '0.3';
+        });
+        
+        document.body.appendChild(edgeInfo);
+        
+        // Auto-hide after 10 seconds, then show faded
+        setTimeout(() => {
+            edgeInfo.style.opacity = '0.3';
+            isVisible = false;
+        }, 10000);
+    }
 }
 
 // Initialize app

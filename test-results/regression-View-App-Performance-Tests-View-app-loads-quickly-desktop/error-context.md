@@ -1,0 +1,221 @@
+# Page snapshot
+
+```yaml
+- generic [active] [ref=e1]:
+  - generic [ref=e2]:
+    - generic [ref=e3]:
+      - heading "PASS CheckIn App" [level=1] [ref=e4] [cursor=pointer]
+      - generic [ref=e5]:
+        - generic [ref=e7]: 6.0.0
+        - generic [ref=e8]: View Only Mode
+    - navigation [ref=e9]:
+      - button "Teams" [ref=e10] [cursor=pointer]
+      - button "Events" [ref=e11] [cursor=pointer]
+      - button "Standings" [ref=e12] [cursor=pointer]
+      - button "Cards" [ref=e13] [cursor=pointer]
+      - button "Game Tracker" [ref=e14] [cursor=pointer]:
+        - text: Game
+        - text: Tracker
+    - generic [ref=e15]:
+      - heading "Events Management" [level=2] [ref=e17]
+      - generic [ref=e19]:
+        - generic [ref=e21]:
+          - generic [ref=e22]: Match Day 4
+          - generic [ref=e23]: Sep 14, 2025
+        - generic [ref=e24]:
+          - generic [ref=e25]:
+            - generic [ref=e26]:
+              - generic [ref=e27]:
+                - generic [ref=e28]: Goal Diggers
+                - generic [ref=e29]: Over 40
+                - generic [ref=e30]: 👥 0/24
+              - generic [ref=e31]: VS
+              - generic [ref=e32]:
+                - generic [ref=e33]: Spartans
+                - generic [ref=e34]: Over 40
+                - generic [ref=e35]: 👥 0/24
+            - generic [ref=e36]: "Field: 8"
+            - generic [ref=e37]: "Time: 9:00 AM"
+            - generic [ref=e38]:
+              - button "👁️" [ref=e39] [cursor=pointer]
+              - button "🏆" [ref=e40] [cursor=pointer]
+          - generic [ref=e41]:
+            - generic [ref=e42]:
+              - generic [ref=e43]:
+                - generic [ref=e44]: BenchWarmers
+                - generic [ref=e45]: Over 30
+                - generic [ref=e46]: 👥 0/23
+              - generic [ref=e47]: VS
+              - generic [ref=e48]:
+                - generic [ref=e49]: Bandits FC
+                - generic [ref=e50]: Over 30
+                - generic [ref=e51]: 👥 0/25
+            - generic [ref=e52]: "Field: 9"
+            - generic [ref=e53]: "Time: 9:00 AM"
+            - generic [ref=e54]:
+              - button "👁️" [ref=e55] [cursor=pointer]
+              - button "🏆" [ref=e56] [cursor=pointer]
+          - generic [ref=e57]:
+            - generic [ref=e58]:
+              - generic [ref=e59]:
+                - generic [ref=e60]: Mayhem
+                - generic [ref=e61]: Over 30
+                - generic [ref=e62]: 👥 0/25
+              - generic [ref=e63]: VS
+              - generic [ref=e64]:
+                - generic [ref=e65]: Stingrays
+                - generic [ref=e66]: Over 30
+                - generic [ref=e67]: 👥 0/26
+            - generic [ref=e68]: "Field: 10"
+            - generic [ref=e69]: "Time: 9:00 AM"
+            - generic [ref=e70]:
+              - button "👁️" [ref=e71] [cursor=pointer]
+              - button "🏆" [ref=e72] [cursor=pointer]
+          - generic [ref=e73]:
+            - generic [ref=e74]:
+              - generic [ref=e75]:
+                - generic [ref=e76]: Lumberjacks
+                - generic [ref=e77]: Over 30
+                - generic [ref=e78]: 👥 0/29
+              - generic [ref=e79]: VS
+              - generic [ref=e80]:
+                - generic [ref=e81]: Flash
+                - generic [ref=e82]: Over 30
+                - generic [ref=e83]: 👥 0/25
+            - generic [ref=e84]: "Field: 11"
+            - generic [ref=e85]: "Time: 9:00 AM"
+            - generic [ref=e86]:
+              - button "👁️" [ref=e87] [cursor=pointer]
+              - button "🏆" [ref=e88] [cursor=pointer]
+          - generic [ref=e89]:
+            - generic [ref=e90]:
+              - generic [ref=e91]:
+                - generic [ref=e92]: Beers and Tears
+                - generic [ref=e93]: Over 30
+                - generic [ref=e94]: 👥 0/16
+              - generic [ref=e95]: VS
+              - generic [ref=e96]:
+                - generic [ref=e97]: Shin Splints United
+                - generic [ref=e98]: Over 30
+                - generic [ref=e99]: 👥 0/20
+            - generic [ref=e100]: "Field: 12"
+            - generic [ref=e101]: "Time: 9:00 AM"
+            - generic [ref=e102]:
+              - button "👁️" [ref=e103] [cursor=pointer]
+              - button "🏆" [ref=e104] [cursor=pointer]
+          - generic [ref=e105]:
+            - generic [ref=e106]:
+              - generic [ref=e107]:
+                - generic [ref=e108]: Knights
+                - generic [ref=e109]: Over 30
+                - generic [ref=e110]: 👥 0/27
+              - generic [ref=e111]: VS
+              - generic [ref=e112]:
+                - generic [ref=e113]: KR3W
+                - generic [ref=e114]: Over 30
+                - generic [ref=e115]: 👥 0/21
+            - generic [ref=e116]: "Field: 8"
+            - generic [ref=e117]: "Time: 11:00 AM"
+            - generic [ref=e118]:
+              - button "👁️" [ref=e119] [cursor=pointer]
+              - button "🏆" [ref=e120] [cursor=pointer]
+          - generic [ref=e121]:
+            - generic [ref=e122]:
+              - generic [ref=e123]:
+                - generic [ref=e124]: Miskicks
+                - generic [ref=e125]: Over 30
+                - generic [ref=e126]: 👥 0/26
+              - generic [ref=e127]: VS
+              - generic [ref=e128]:
+                - generic [ref=e129]: Grass Stains
+                - generic [ref=e130]: Over 30
+                - generic [ref=e131]: 👥 0/21
+            - generic [ref=e132]: "Field: 9"
+            - generic [ref=e133]: "Time: 11:00 AM"
+            - generic [ref=e134]:
+              - button "👁️" [ref=e135] [cursor=pointer]
+              - button "🏆" [ref=e136] [cursor=pointer]
+          - generic [ref=e137]:
+            - generic [ref=e138]:
+              - generic [ref=e139]:
+                - generic [ref=e140]: Stingrays ReUnited
+                - generic [ref=e141]: Over 40
+                - generic [ref=e142]: 👥 0/26
+              - generic [ref=e143]: VS
+              - generic [ref=e144]:
+                - generic [ref=e145]: Ol'Limpians
+                - generic [ref=e146]: Over 40
+                - generic [ref=e147]: 👥 0/29
+            - generic [ref=e148]: "Field: 10"
+            - generic [ref=e149]: "Time: 11:00 AM"
+            - generic [ref=e150]:
+              - button "👁️" [ref=e151] [cursor=pointer]
+              - button "🏆" [ref=e152] [cursor=pointer]
+          - generic [ref=e153]:
+            - generic [ref=e154]:
+              - generic [ref=e155]:
+                - generic [ref=e156]: Perezosos F.C.
+                - generic [ref=e157]: Over 40
+                - generic [ref=e158]: 👥 0/24
+              - generic [ref=e159]: VS
+              - generic [ref=e160]:
+                - generic [ref=e161]: Rat Pack
+                - generic [ref=e162]: Over 40
+                - generic [ref=e163]: 👥 0/30
+            - generic [ref=e164]: "Field: 11"
+            - generic [ref=e165]: "Time: 11:00 AM"
+            - generic [ref=e166]:
+              - button "👁️" [ref=e167] [cursor=pointer]
+              - button "🏆" [ref=e168] [cursor=pointer]
+          - generic [ref=e169]:
+            - generic [ref=e170]:
+              - generic [ref=e171]:
+                - generic [ref=e172]: Subparcelona
+                - generic [ref=e173]: Over 40
+                - generic [ref=e174]: 👥 0/26
+              - generic [ref=e175]: VS
+              - generic [ref=e176]:
+                - generic [ref=e177]: Renegades
+                - generic [ref=e178]: Over 40
+                - generic [ref=e179]: 👥 0/21
+            - generic [ref=e180]: "Field: 12"
+            - generic [ref=e181]: "Time: 11:00 AM"
+            - generic [ref=e182]:
+              - button "👁️" [ref=e183] [cursor=pointer]
+              - button "🏆" [ref=e184] [cursor=pointer]
+          - generic [ref=e185]:
+            - generic [ref=e186]:
+              - generic [ref=e187]:
+                - generic [ref=e188]: Fire N Ice
+                - generic [ref=e189]: Over 40
+                - generic [ref=e190]: 👥 0/29
+              - generic [ref=e191]: VS
+              - generic [ref=e192]:
+                - generic [ref=e193]: GreenAchers
+                - generic [ref=e194]: Over 40
+                - generic [ref=e195]: 👥 0/22
+            - generic [ref=e196]: "Field: 9"
+            - generic [ref=e197]: "Time: 1:00 PM"
+            - generic [ref=e198]:
+              - button "👁️" [ref=e199] [cursor=pointer]
+              - button "🏆" [ref=e200] [cursor=pointer]
+          - generic [ref=e201]:
+            - generic [ref=e202]:
+              - generic [ref=e203]:
+                - generic [ref=e204]: Fireball
+                - generic [ref=e205]: Over 30
+                - generic [ref=e206]: 👥 0/24
+              - generic [ref=e207]: VS
+              - generic [ref=e208]:
+                - generic [ref=e209]: Phoenix
+                - generic [ref=e210]: Over 30
+                - generic [ref=e211]: 👥 0/22
+            - generic [ref=e212]: "Field: 10"
+            - generic [ref=e213]: "Time: 1:00 PM"
+            - generic [ref=e214]:
+              - button "👁️" [ref=e215] [cursor=pointer]
+              - button "🏆" [ref=e216] [cursor=pointer]
+  - generic [ref=e217]:
+    - text: View Only v
+    - generic [ref=e218]: 6.0.0
+```
