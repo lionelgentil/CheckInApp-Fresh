@@ -12,11 +12,11 @@ window.CheckInAppConfig = {
         "Entering/leaving without permission",
         "Sliding",
         "Reckless/aggressive challenge",
-        "Denial of a goal scoring opportunity",
         "Stopping a promising attack",
         "Serious foul play",
         "Violent conduct",
         "Spitting",
+        "Denial of a goal scoring opportunity",
         "Offensive/insulting language",
         "Second yellow card"
     ],

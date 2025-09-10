@@ -3675,6 +3675,7 @@ Please check the browser console (F12) for more details.`);
                             month: '2-digit', 
                             day: '2-digit' 
                         }),
+                        eventDate_epoch: event.date_epoch,  // Add the epoch timestamp for proper date handling
                         eventName: event.name,
                         matchInfo: `${homeTeam?.name || 'Unknown'} vs ${awayTeam?.name || 'Unknown'}`,
                         teamName: playerTeam?.name || 'Unknown Team',
