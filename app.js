@@ -5720,10 +5720,24 @@ Please check the browser console (F12) for more details.`);
         if (!match) return;
         
         // Get form values
-        const matchStatus = document.getElementById('match-status').value;
+        let matchStatus = document.getElementById('match-status').value;
         const homeScore = document.getElementById('home-score').value;
         const awayScore = document.getElementById('away-score').value;
         const matchNotes = document.getElementById('match-notes').value.trim();
+        
+        // Smart status suggestion: if entering scores but status is still "Scheduled", suggest "Completed"
+        const hasScores = homeScore !== '' || awayScore !== '';
+        if (hasScores && matchStatus === 'scheduled') {
+            const shouldComplete = confirm(
+                'You\'re entering match results but the status is still "Scheduled".\n\n' +
+                'Would you like to change the status to "Completed"?'
+            );
+            if (shouldComplete) {
+                matchStatus = 'completed';
+                // Update the form field to reflect the change
+                document.getElementById('match-status').value = 'completed';
+            }
+        }
         
         // Update match data
         match.matchStatus = matchStatus;
