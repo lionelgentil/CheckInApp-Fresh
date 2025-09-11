@@ -935,50 +935,40 @@ class CheckInApp {
             clickedBtn.classList.add('active');
         }
         
-        // Lazy load data for the section if not already loaded
-        if (sectionName === 'teams') {
-            // TEAMS BUG FIX: Only reload if we don't have complete teams data
-            // (loadSpecificTeams might have loaded only partial data)
-            if (!this.hasCompleteTeamsData) {
-                // Show loading spinner for teams section
-                this.showLoadingModal('Loading all teams with player photos... Please be patient, this can take several seconds.');
-                try {
+        // Use the generalized loading system for all sections
+        return this.executeWithLoading(async () => {
+            // Lazy load data for the section if not already loaded
+            if (sectionName === 'teams') {
+                // TEAMS BUG FIX: Only reload if we don't have complete teams data
+                // (loadSpecificTeams might have loaded only partial data)
+                if (!this.hasCompleteTeamsData) {
                     await this.loadTeams(); // Load complete team data for roster display
-                    this.closeLoadingModal();
-                } catch (error) {
-                    this.closeLoadingModal();
-                    console.error('Error loading teams:', error);
                 }
-            }
-            this.renderTeams();
-        } else if (sectionName === 'events') {
-            // Performance optimization: Use lightweight team data for events display
-            if (this.teamsBasic.length === 0) {
-                await this.loadTeamsBasic(); // Only load basic team info for events display
-            }
-            if (this.referees.length === 0) {
-                await this.loadReferees();
-            }
-            this.renderEvents();
-        } else if (sectionName === 'referees') {
-            if (this.referees.length === 0) {
-                await this.loadReferees();
-            }
-            this.renderReferees();
-        } else if (sectionName === 'standings') {
-            // Ensure we have both teams and events loaded for standings calculation
-            if (this.teams.length === 0) {
-                await this.loadTeams();
-            }
-            if (this.events.length === 0) {
-                await this.loadEvents();
-            }
-            this.renderStandings();
-        } else if (sectionName === 'cards') {
-            // Show loading spinner for cards section
-            this.showLoadingModal('Loading all cards for all teams... This can take up to 30 seconds as we analyze every match and player.');
-            
-            try {
+                this.renderTeams();
+            } else if (sectionName === 'events') {
+                // Performance optimization: Use lightweight team data for events display
+                if (this.teamsBasic.length === 0) {
+                    await this.loadTeamsBasic(); // Only load basic team info for events display
+                }
+                if (this.referees.length === 0) {
+                    await this.loadReferees();
+                }
+                this.renderEvents();
+            } else if (sectionName === 'referees') {
+                if (this.referees.length === 0) {
+                    await this.loadReferees();
+                }
+                this.renderReferees();
+            } else if (sectionName === 'standings') {
+                // Ensure we have both teams and events loaded for standings calculation
+                if (this.teams.length === 0) {
+                    await this.loadTeams();
+                }
+                if (this.events.length === 0) {
+                    await this.loadEvents();
+                }
+                this.renderStandings();
+            } else if (sectionName === 'cards') {
                 // Ensure we have all data loaded for card tracking
                 if (this.teams.length === 0) {
                     await this.loadTeams();
@@ -994,50 +984,67 @@ class CheckInApp {
                 await new Promise(resolve => setTimeout(resolve, 500));
                 
                 this.renderCardTracker();
-                this.closeLoadingModal();
-            } catch (error) {
-                this.closeLoadingModal();
-                console.error('Error loading cards section:', error);
-                // Show error in cards container
-                const container = document.getElementById('cards-tracker-container');
+            } else if (sectionName === 'game-tracker') {
+                // Game tracker needs events and referees for display
+                if (this.events.length === 0) {
+                    await this.loadEvents();
+                }
+                if (this.referees.length === 0) {
+                    await this.loadReferees();
+                }
+                this.renderGameTracker();
+            } else if (sectionName === 'season') {
+                // Ensure we have all data loaded for season management
+                if (this.teams.length === 0) {
+                    await this.loadTeams();
+                }
+                if (this.events.length === 0) {
+                    await this.loadEvents();
+                }
+                if (this.referees.length === 0) {
+                    await this.loadReferees();
+                }
+                this.renderSeasonManagement();
+            }
+            
+            // Show section
+            document.querySelectorAll('.content-section').forEach(section => {
+                section.classList.remove('active');
+            });
+            document.getElementById(sectionName + '-section').classList.add('active');
+            
+        }, {
+            message: this.getSectionLoadingMessage(sectionName),
+            showModal: true,
+            errorHandler: (error) => {
+                console.error(`Error loading ${sectionName} section:`, error);
+                // Show error in the section container if available
+                const container = document.getElementById(`${sectionName}-container`);
                 if (container) {
                     container.innerHTML = `
                         <div style="text-align: center; padding: 40px; color: #dc3545;">
-                            <h3>Error Loading Cards</h3>
-                            <p>Failed to load card data. Please refresh the page and try again.</p>
+                            <h3>Error Loading ${sectionName.charAt(0).toUpperCase() + sectionName.slice(1)}</h3>
+                            <p>Failed to load data. Please refresh the page and try again.</p>
                             <p style="font-size: 0.9em; color: #666;">Error: ${error.message}</p>
                         </div>
                     `;
                 }
             }
-        } else if (sectionName === 'game-tracker') {
-            // Game tracker needs events and referees for display
-            if (this.events.length === 0) {
-                await this.loadEvents();
-            }
-            if (this.referees.length === 0) {
-                await this.loadReferees();
-            }
-            this.renderGameTracker();
-        } else if (sectionName === 'season') {
-            // Ensure we have all data loaded for season management
-            if (this.teams.length === 0) {
-                await this.loadTeams();
-            }
-            if (this.events.length === 0) {
-                await this.loadEvents();
-            }
-            if (this.referees.length === 0) {
-                await this.loadReferees();
-            }
-            this.renderSeasonManagement();
-        }
-        
-        // Show section
-        document.querySelectorAll('.content-section').forEach(section => {
-            section.classList.remove('active');
         });
-        document.getElementById(sectionName + '-section').classList.add('active');
+    }
+    
+    // Get appropriate loading message for each section
+    getSectionLoadingMessage(sectionName) {
+        const messages = {
+            'teams': 'Loading teams and player rosters...',
+            'events': 'Loading events and match schedules...',
+            'referees': 'Loading referee information...',
+            'standings': 'Calculating league standings...',
+            'cards': 'Loading card tracker and analyzing all matches...',
+            'game-tracker': 'Loading game tracker and match data...',
+            'season': 'Loading season management data...'
+        };
+        return messages[sectionName] || 'Loading section...';
     }
     
     renderTeams() {
