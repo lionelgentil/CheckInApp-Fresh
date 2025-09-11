@@ -3190,7 +3190,7 @@ class CheckInViewApp {
         
         if (content.style.display === 'none') {
             content.style.display = 'block';
-            icon.textContent = '▼';
+            icon.textContent = '▲';
             icon.classList.add('expanded');
         } else {
             content.style.display = 'none';
