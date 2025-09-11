@@ -1,11 +1,11 @@
 /**
- * CheckIn App v6.0.0 - JavaScript Frontend
+ * CheckIn App v6.1.0 - JavaScript Frontend
  * Works with PHP/PostgreSQL backend
  * Enhanced with pure epoch timestamp support for reliable timezone handling
  */
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '6.0.0';
+const APP_VERSION = '6.1.0';
 
 // Utility function to convert epoch timestamp to Pacific timezone display
 function epochToPacificDate(epochTimestamp, options = {}) {
@@ -1139,7 +1139,7 @@ class CheckInApp {
                                     <button class="btn btn-small" onclick="app.showAddMemberModal('${selectedTeam.id}')" title="Add Member">+</button>
                                     ${selectedTeam.members.length > 0 ? `<button class="btn btn-small btn-captain" onclick="app.showCaptainModal('${selectedTeam.id}')" title="Set Captain">👑</button>` : ''}
                                     <button class="btn btn-small btn-secondary" onclick="app.editTeam('${selectedTeam.id}')" title="Edit Team">✏️</button>
-                                    <button class="btn btn-small btn-danger" onclick="app.deleteTeam('${selectedTeam.id}')" title="Delete Team">🗑️</button>
+                                    <button class="btn btn-small btn-danger" onclick="app.handleActionClick(event, app.deleteTeamWithLoading.bind(app), '${selectedTeam.id}')" title="Delete Team">🗑️</button>
                                 </div>
                             </div>
                             <div class="team-description">${selectedTeam.description || ''}</div>
@@ -1200,9 +1200,9 @@ class CheckInApp {
                                                 </div>
                                             </div>
                                             <div class="member-actions">
-                                                <button class="btn btn-small" onclick="app.viewPlayerProfile('${selectedTeam.id}', '${member.id}')" title="View Profile">👤</button>
-                                                <button class="btn btn-small btn-secondary" onclick="app.editMember('${selectedTeam.id}', '${member.id}')" title="Edit Member">✏️</button>
-                                                <button class="btn btn-small btn-danger" onclick="app.deleteMember('${selectedTeam.id}', '${member.id}')" title="Delete Member">🗑️</button>
+                                                <button class="btn btn-small" onclick="event.preventDefault(); app.viewPlayerProfileWithLoading('${selectedTeam.id}', '${member.id}')" title="View Profile">👤</button>
+                                                <button class="btn btn-small btn-secondary" onclick="event.preventDefault(); app.editMemberWithLoading('${selectedTeam.id}', '${member.id}')" title="Edit Member">✏️</button>
+                                                <button class="btn btn-small btn-danger" onclick="app.handleActionClick(event, app.deleteMemberWithLoading.bind(app), '${selectedTeam.id}', '${member.id}')" title="Delete Member">🗑️</button>
                                             </div>
                                         </div>
                                     `;
@@ -1723,9 +1723,9 @@ class CheckInApp {
                                 ${mainReferee ? `<div class="match-referee">Referee: ${mainReferee.name}${assistantReferee ? `, ${assistantReferee.name}` : ''}</div>` : ''}
                                 ${cardsDisplay ? `<div class="match-cards">Cards: ${cardsDisplay}</div>` : ''}
                                 <div class="match-actions">
-                                    <button class="btn btn-small" onclick="app.viewMatch('${event.id}', '${match.id}')" title="View Match">👁️</button>
+                                    <button class="btn btn-small" onclick="event.preventDefault(); app.viewMatchWithLoading('${event.id}', '${match.id}')" title="View Match">👁️</button>
                                     <button class="btn btn-small" onclick="app.editMatch('${event.id}', '${match.id}')" title="Edit Match">✏️</button>
-                                    <button class="btn btn-small btn-secondary" onclick="app.editMatchResult('${event.id}', '${match.id}')" title="Edit Result">🏆</button>
+                                    <button class="btn btn-small btn-secondary" onclick="event.preventDefault(); app.editMatchResultWithLoading('${event.id}', '${match.id}')" title="Edit Result">🏆</button>
                                     <button class="btn btn-small btn-danger" onclick="app.deleteMatch('${event.id}', '${match.id}')" title="Delete Match">🗑️</button>
                                 </div>
                             </div>
@@ -1788,7 +1788,7 @@ class CheckInApp {
             </div>
             <div style="display: flex; gap: 10px; justify-content: flex-end;">
                 <button class="btn btn-secondary" onclick="app.closeModal()">Cancel</button>
-                <button class="btn" onclick="app.saveTeam()">${isEdit ? 'Update' : 'Create'} Team</button>
+                <button class="btn" onclick="app.handleActionClick(event, app.saveTeamWithLoading.bind(app))">${isEdit ? 'Update' : 'Create'} Team</button>
             </div>
         `);
         
@@ -1980,7 +1980,7 @@ Please check the browser console (F12) for more details.`);
             </div>
             <div style="display: flex; gap: 10px; justify-content: flex-end;">
                 <button class="btn btn-secondary" onclick="app.closeModal()">Cancel</button>
-                <button class="btn" onclick="app.saveMember('${teamId}')">${isEdit ? 'Update' : 'Add'} Member</button>
+                <button class="btn" onclick="app.handleActionClick(event, app.saveMemberWithLoading.bind(app), '${teamId}')">${isEdit ? 'Update' : 'Add'} Member</button>
             </div>
         `);
         
@@ -2852,6 +2852,127 @@ Please check the browser console (F12) for more details.`);
         }
     }
     
+    // 🔄 LOADING-WRAPPED USER ACTIONS: Common user actions with loading feedback
+    
+    // Wrapper for view player profile with loading
+    async viewPlayerProfileWithLoading(teamId, memberId, button = null) {
+        return this.handleModalAction(
+            () => this.viewPlayerProfile(teamId, memberId),
+            'Loading player profile and match history...'
+        );
+    }
+    
+    // Wrapper for edit member with loading  
+    async editMemberWithLoading(teamId, memberId, button = null) {
+        return this.handleModalAction(
+            () => this.editMember(teamId, memberId),
+            'Loading player information...'
+        );
+    }
+    
+    // Wrapper for delete actions with loading
+    async deleteTeamWithLoading(teamId, button = null) {
+        if (!confirm('Are you sure you want to delete this team? This action cannot be undone.')) {
+            return;
+        }
+        
+        return this.executeWithLoading(
+            () => this.deleteTeam(teamId),
+            {
+                message: 'Deleting team...',
+                button: button,
+                showModal: !button // Show modal if no button provided
+            }
+        );
+    }
+    
+    async deleteMemberWithLoading(teamId, memberId, button = null) {
+        if (!confirm('Are you sure you want to delete this member? This action cannot be undone.')) {
+            return;
+        }
+        
+        return this.executeWithLoading(
+            () => this.deleteMember(teamId, memberId),
+            {
+                message: 'Deleting member...',
+                button: button,
+                showModal: !button
+            }
+        );
+    }
+    
+    async deleteEventWithLoading(eventId, button = null) {
+        if (!confirm('Are you sure you want to delete this event? This action cannot be undone.')) {
+            return;
+        }
+        
+        return this.executeWithLoading(
+            () => this.deleteEvent(eventId),
+            {
+                message: 'Deleting event...',
+                button: button,
+                showModal: !button
+            }
+        );
+    }
+    
+    // Wrapper for form save actions with loading
+    async saveTeamWithLoading(button = null) {
+        return this.executeWithLoading(
+            () => this.saveTeam(),
+            {
+                message: 'Saving team...',
+                button: button,
+                showModal: !button
+            }
+        );
+    }
+    
+    async saveMemberWithLoading(teamId, button = null) {
+        return this.executeWithLoading(
+            () => this.saveMember(teamId),
+            {
+                message: 'Saving member...',
+                button: button,
+                showModal: !button
+            }
+        );
+    }
+    
+    async saveEventWithLoading(button = null) {
+        return this.executeWithLoading(
+            () => this.saveEvent(),
+            {
+                message: 'Saving event...',
+                button: button,  
+                showModal: !button
+            }
+        );
+    }
+    
+    // Wrapper for view match with loading
+    async viewMatchWithLoading(eventId, matchId, button = null) {
+        return this.handleModalAction(
+            () => this.viewMatch(eventId, matchId),
+            'Loading match details and player rosters...'
+        );
+    }
+    
+    // Wrapper for edit match result with loading
+    async editMatchResultWithLoading(eventId, matchId, button = null) {
+        return this.handleModalAction(
+            () => this.editMatchResult(eventId, matchId),
+            'Loading match information...'
+        );
+    }
+    
+    // Generic onclick handler that extracts button reference
+    handleActionClick(event, action, ...args) {
+        event.preventDefault();
+        const button = event.target.closest('button');
+        return action(...args, button);
+    }
+
     // Player Profile Management
     async viewPlayerProfile(teamId, memberId) {
         const team = this.teams.find(t => t.id === teamId);
@@ -6501,6 +6622,93 @@ Changes have been reverted.`);
         if (loadingModal) {
             loadingModal.remove();
         }
+    }
+    
+    // 🔄 GENERALIZED LOADING SYSTEM: Execute any action with loading feedback
+    async executeWithLoading(action, options = {}) {
+        const {
+            message = 'Processing...',
+            button = null,
+            showModal = true,
+            errorHandler = null
+        } = options;
+        
+        // Store original button state
+        let originalButtonText = '';
+        let originalButtonDisabled = false;
+        
+        try {
+            // Show loading feedback
+            if (showModal) {
+                this.showLoadingModal(message);
+            }
+            
+            // Disable and update button if provided
+            if (button) {
+                originalButtonText = button.innerHTML;
+                originalButtonDisabled = button.disabled;
+                button.disabled = true;
+                button.innerHTML = `
+                    <span style="display: inline-flex; align-items: center; gap: 8px;">
+                        <div style="
+                            width: 16px;
+                            height: 16px;
+                            border: 2px solid transparent;
+                            border-top: 2px solid currentColor;
+                            border-radius: 50%;
+                            animation: spin 1s linear infinite;
+                        "></div>
+                        Processing...
+                    </span>
+                `;
+            }
+            
+            // Execute the action
+            const result = await action();
+            
+            return result;
+            
+        } catch (error) {
+            console.error('Action failed:', error);
+            
+            // Use custom error handler if provided, otherwise show generic alert
+            if (errorHandler) {
+                errorHandler(error);
+            } else {
+                alert('Action failed. Please try again.');
+            }
+            
+            throw error;
+            
+        } finally {
+            // Always clean up loading state
+            if (showModal) {
+                this.closeLoadingModal();
+            }
+            
+            // Restore button state
+            if (button) {
+                button.disabled = originalButtonDisabled;
+                button.innerHTML = originalButtonText;
+            }
+        }
+    }
+    
+    // 🎯 Quick wrapper for button actions (most common use case)
+    async handleButtonAction(button, action, message = 'Processing...') {
+        return this.executeWithLoading(action, {
+            button: button,
+            message: message,
+            showModal: false // Don't show modal for button actions, just button feedback
+        });
+    }
+    
+    // 🎯 Quick wrapper for modal actions (actions that open modals)
+    async handleModalAction(action, message = 'Loading...') {
+        return this.executeWithLoading(action, {
+            message: message,
+            showModal: true
+        });
     }
     
     closeModal() {

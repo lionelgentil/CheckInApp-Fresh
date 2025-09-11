@@ -1,11 +1,11 @@
 /**
- * CheckIn App v6.0.0 - View Only Mode
+ * CheckIn App v6.1.0 - View Only Mode
  * Read-only version for public viewing
  * Enhanced with pure epoch timestamp support for reliable timezone handling
  */
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '6.0.0';
+const APP_VERSION = '6.1.0';
 
 // Utility function to convert epoch timestamp to Pacific timezone display
 function epochToPacificDate(epochTimestamp, options = {}) {
@@ -4470,6 +4470,110 @@ class CheckInViewApp {
         if (loadingModal) {
             loadingModal.remove();
         }
+    }
+    
+    // 🔄 GENERALIZED LOADING SYSTEM: Execute any action with loading feedback (View App)
+    async executeWithLoading(action, options = {}) {
+        const {
+            message = 'Loading...',
+            button = null,
+            showModal = true,
+            errorHandler = null
+        } = options;
+        
+        // Store original button state
+        let originalButtonText = '';
+        let originalButtonDisabled = false;
+        
+        try {
+            // Show loading feedback
+            if (showModal) {
+                this.showLoadingModal(message);
+            }
+            
+            // Disable and update button if provided
+            if (button) {
+                originalButtonText = button.innerHTML;
+                originalButtonDisabled = button.disabled;
+                button.disabled = true;
+                button.innerHTML = `
+                    <span style="display: inline-flex; align-items: center; gap: 8px;">
+                        <div style="
+                            width: 16px;
+                            height: 16px;
+                            border: 2px solid transparent;
+                            border-top: 2px solid currentColor;
+                            border-radius: 50%;
+                            animation: spin 1s linear infinite;
+                        "></div>
+                        Loading...
+                    </span>
+                `;
+            }
+            
+            // Execute the action
+            const result = await action();
+            
+            return result;
+            
+        } catch (error) {
+            console.error('Action failed:', error);
+            
+            // Use custom error handler if provided, otherwise show generic alert
+            if (errorHandler) {
+                errorHandler(error);
+            } else {
+                alert('Action failed. Please try again.');
+            }
+            
+            throw error;
+            
+        } finally {
+            // Always clean up loading state
+            if (showModal) {
+                this.closeLoadingModal();
+            }
+            
+            // Restore button state
+            if (button) {
+                button.disabled = originalButtonDisabled;
+                button.innerHTML = originalButtonText;
+            }
+        }
+    }
+    
+    // 🎯 Quick wrapper for modal actions (most common in view app)
+    async handleModalAction(action, message = 'Loading...') {
+        return this.executeWithLoading(action, {
+            message: message,
+            showModal: true
+        });
+    }
+    
+    // 🎯 Quick wrapper for button actions
+    async handleButtonAction(button, action, message = 'Loading...') {
+        return this.executeWithLoading(action, {
+            button: button,
+            message: message,
+            showModal: false // Don't show modal for button actions, just button feedback
+        });
+    }
+    
+    // Generic onclick handler that extracts button reference
+    handleActionClick(event, action, ...args) {
+        event.preventDefault();
+        const button = event.target.closest('button');
+        return action(...args, button);
+    }
+    
+    // 🔄 LOADING-WRAPPED USER ACTIONS: View app specific actions with loading feedback
+    
+    // Wrapper for view match with loading (already has loading but now standardized)
+    async viewMatchWithLoading(eventId, matchId, button = null) {
+        return this.handleModalAction(
+            () => this.viewMatch(eventId, matchId),
+            'Loading match details and player rosters...'
+        );
     }
     
     closeModal() {
