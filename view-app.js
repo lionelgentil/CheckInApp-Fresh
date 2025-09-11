@@ -719,48 +719,49 @@ class CheckInViewApp {
     
     // Player Profile Management  
     async viewPlayerProfile(teamId, memberId) {
-        const team = this.teams.find(t => t.id === teamId);
-        const member = team?.members.find(m => m.id === memberId);
-        
-        if (!team || !member) return;
-        
-        // Create team lookup cache for faster access
-        const teamLookup = new Map();
-        this.teams.forEach(t => teamLookup.set(t.id, t));
-        
-        // Get all current season cards for this player across all events - optimized version
-        const matchCards = [];
-        for (const event of this.events) {
-            for (const match of event.matches) {
-                if (!match.cards) continue;
-                
-                // Find cards for this member in one pass
-                const memberCards = match.cards.filter(card => card.memberId === memberId);
-                if (memberCards.length === 0) continue;
-                
-                // Cache team lookups per match (not per card)
-                const homeTeam = teamLookup.get(match.homeTeamId);
-                const awayTeam = teamLookup.get(match.awayTeamId);
-                const matchInfo = `${homeTeam?.name || 'Unknown'} vs ${awayTeam?.name || 'Unknown'}`;
-                
-                // Process all cards for this member in this match
-                memberCards.forEach(card => {
-                    matchCards.push({
-                        type: 'match',
-                        eventName: event.name,
-                        eventDate: new Date(event.date_epoch * 1000).toLocaleDateString('en-US', { 
-                            timeZone: 'America/Los_Angeles', 
-                            year: 'numeric', 
-                            month: '2-digit', 
-                            day: '2-digit' 
-                        }),
-                        eventDate_epoch: event.date_epoch, // Add epoch for template compatibility
-                        matchInfo,
-                        cardType: card.cardType,
-                        reason: card.reason,
-                        notes: card.notes,
-                        minute: card.minute
-                    });
+        return this.executeWithLoading(async () => {
+            const team = this.teams.find(t => t.id === teamId);
+            const member = team?.members.find(m => m.id === memberId);
+            
+            if (!team || !member) return;
+            
+            // Create team lookup cache for faster access
+            const teamLookup = new Map();
+            this.teams.forEach(t => teamLookup.set(t.id, t));
+            
+            // Get all current season cards for this player across all events - optimized version
+            const matchCards = [];
+            for (const event of this.events) {
+                for (const match of event.matches) {
+                    if (!match.cards) continue;
+                    
+                    // Find cards for this member in one pass
+                    const memberCards = match.cards.filter(card => card.memberId === memberId);
+                    if (memberCards.length === 0) continue;
+                    
+                    // Cache team lookups per match (not per card)
+                    const homeTeam = teamLookup.get(match.homeTeamId);
+                    const awayTeam = teamLookup.get(match.awayTeamId);
+                    const matchInfo = `${homeTeam?.name || 'Unknown'} vs ${awayTeam?.name || 'Unknown'}`;
+                    
+                    // Process all cards for this member in this match
+                    memberCards.forEach(card => {
+                        matchCards.push({
+                            type: 'match',
+                            eventName: event.name,
+                            eventDate: new Date(event.date_epoch * 1000).toLocaleDateString('en-US', { 
+                                timeZone: 'America/Los_Angeles', 
+                                year: 'numeric', 
+                                month: '2-digit', 
+                                day: '2-digit' 
+                            }),
+                            eventDate_epoch: event.date_epoch, // Add epoch for template compatibility
+                            matchInfo,
+                            cardType: card.cardType,
+                            reason: card.reason,
+                            notes: card.notes,
+                            minute: card.minute
+                        });
                 });
             }
         }
@@ -771,6 +772,11 @@ class CheckInViewApp {
         // Wait for disciplinary records and display
         const disciplinaryRecords = await disciplinaryPromise;
         this.displayPlayerProfile(team, member, matchCards, disciplinaryRecords);
+        
+        }, {
+            message: 'Loading player profile and disciplinary records...',
+            showModal: true
+        });
     }
     
     // Optimized helper method for fetching disciplinary records

@@ -1951,10 +1951,15 @@ Please check the browser console (F12) for more details.`);
         this.showMemberModal(teamId);
     }
     
-    editMember(teamId, memberId) {
-        const team = this.teams.find(t => t.id === teamId);
-        this.currentEditingMember = team.members.find(m => m.id === memberId);
-        this.showDetailedMemberModal(teamId, this.currentEditingMember);
+    async editMember(teamId, memberId) {
+        return this.executeWithLoading(async () => {
+            const team = this.teams.find(t => t.id === teamId);
+            this.currentEditingMember = team.members.find(m => m.id === memberId);
+            this.showDetailedMemberModal(teamId, this.currentEditingMember);
+        }, {
+            message: 'Loading player details...',
+            showModal: true
+        });
     }
     
     showMemberModal(teamId, member = null) {
