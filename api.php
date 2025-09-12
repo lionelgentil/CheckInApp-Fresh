@@ -758,7 +758,12 @@ function getTeams($db) {
                     // Check if it's a filename with valid extension (post-migration format)
                     if (preg_match('/\.(jpg|jpeg|png|webp)$/i', $photoValue)) {
                         // It's a filename - use direct static URL (bypass PHP for better performance)
-                        $photo = '/photos/' . $photoValue;
+                        // Check if it already starts with /photos/ to avoid double prefix
+                        if (strpos($photoValue, '/photos/') === 0) {
+                            $photo = $photoValue;
+                        } else {
+                            $photo = '/photos/' . $photoValue;
+                        }
                     } else {
                         // Legacy file-based storage - convert to API URL
                         // Handle different photo storage formats
@@ -791,7 +796,12 @@ function getTeams($db) {
                         }
                         // If it's already just a filename (preferred), use as-is
                         
-                        $photo = '/photos/' . $photoValue;
+                        // Check if it already starts with /photos/ to avoid double prefix
+                        if (strpos($photoValue, '/photos/') === 0) {
+                            $photo = $photoValue;
+                        } else {
+                            $photo = '/photos/' . $photoValue;
+                        }
                     }
                 }
             } elseif ($row['photo_data']) {
@@ -879,7 +889,12 @@ function getTeamsWithoutPhotos($db) {
                     // Check if it's a filename with valid extension (post-migration format)
                     if (preg_match('/\.(jpg|jpeg|png|webp)$/i', $row['photo'])) {
                         // It's a filename - use direct static URL (bypass PHP for better performance)
-                        $photo = '/photos/' . $row['photo'];
+                        // Check if it already starts with /photos/ to avoid double prefix
+                        if (strpos($row['photo'], '/photos/') === 0) {
+                            $photo = $row['photo'];
+                        } else {
+                            $photo = '/photos/' . $row['photo'];
+                        }
                     } else {
                         // Legacy file-based storage - convert to API URL
                         $photoValue = $row['photo'];
@@ -894,7 +909,12 @@ function getTeamsWithoutPhotos($db) {
                                 }
                             }
                         }
-                        $photo = '/photos/' . $photoValue;
+                        // Check if it already starts with /photos/ to avoid double prefix
+                        if (strpos($photoValue, '/photos/') === 0) {
+                            $photo = $photoValue;
+                        } else {
+                            $photo = '/photos/' . $photoValue;
+                        }
                     }
                 }
             } else {
@@ -1045,7 +1065,12 @@ function getSpecificTeams($db) {
                     // Check if it's a filename with valid extension (post-migration format)
                     if (preg_match('/\.(jpg|jpeg|png|webp)$/i', $photoValue)) {
                         // It's a filename - use direct static URL (bypass PHP for better performance)
-                        $photo = '/photos/' . $photoValue;
+                        // Check if it already starts with /photos/ to avoid double prefix
+                        if (strpos($photoValue, '/photos/') === 0) {
+                            $photo = $photoValue;
+                        } else {
+                            $photo = '/photos/' . $photoValue;
+                        }
                     } else {
                         // Legacy file-based storage - convert to API URL
                         // Handle different photo storage formats (same logic as getTeams)
@@ -1075,7 +1100,12 @@ function getSpecificTeams($db) {
                             }
                         }
                         
-                        $photo = '/photos/' . $photoValue;
+                        // Check if it already starts with /photos/ to avoid double prefix
+                        if (strpos($photoValue, '/photos/') === 0) {
+                            $photo = $photoValue;
+                        } else {
+                            $photo = '/photos/' . $photoValue;
+                        }
                     }
                 }
             } elseif ($row['photo_data']) {
