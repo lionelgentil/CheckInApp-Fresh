@@ -1371,22 +1371,22 @@
             overflow-x: hidden;
         }
         
-        /* Restore reasonable sizing for check-in modals with proper scrolling */
+        /* Grid container that sizes to content but scrolls when needed */
         .modal-content.checkin-wide .player-grid-container {
             max-width: 650px; /* Slightly wider for better fit in wide modal */
             grid-template-columns: repeat(3, 1fr); /* Ensure exactly 3 columns */
-            height: 100%; /* Take all available space in flex container */
-            max-height: none; /* Remove height restriction */
+            max-height: 70vh; /* Only scroll when content exceeds this height */
+            /* Remove fixed height - let it size to content */
             padding: 20px 15px; /* Normal padding */
             gap: 30px 20px; /* Normal spacing */
-            overflow-y: auto; /* Ensure scrolling works */
+            overflow-y: auto; /* Scroll when content exceeds max-height */
             overflow-x: hidden;
         }
         
-        /* Make the grid area flex to take remaining space */
+        /* Make the grid area size to content, not flex expand */
         .modal-content.checkin-wide .checkin-grid-area {
-            flex: 1;
-            overflow: hidden;
+            /* Remove flex: 1 to prevent expansion */
+            overflow: visible; /* Allow natural sizing */
             position: relative;
         }
         
@@ -2630,12 +2630,12 @@
             min-height: 400px;
         }
         
-        /* Wide modal for check-in interface - Override all base modal constraints */
+        /* Wide modal for check-in interface - Size to content but with max height */
         .modal-content.checkin-wide {
             max-width: 800px;
             width: 95%;
-            max-height: 90vh; /* Tall but not full screen */
-            height: 90vh; /* Force specific height */
+            max-height: 90vh; /* Maximum height when content is large */
+            /* Remove fixed height - let it size to content */
             overflow-y: hidden; /* Let the grid container handle scrolling */
             display: flex;
             flex-direction: column;
