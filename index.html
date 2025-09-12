@@ -1375,11 +1375,19 @@
         .modal-content.checkin-wide .player-grid-container {
             max-width: 650px; /* Slightly wider for better fit in wide modal */
             grid-template-columns: repeat(3, 1fr); /* Ensure exactly 3 columns */
-            max-height: calc(90vh - 100px); /* Take most of modal height minus header */
+            height: 100%; /* Take all available space in flex container */
+            max-height: none; /* Remove height restriction */
             padding: 20px 15px; /* Normal padding */
             gap: 30px 20px; /* Normal spacing */
             overflow-y: auto; /* Ensure scrolling works */
             overflow-x: hidden;
+        }
+        
+        /* Make the grid area flex to take remaining space */
+        .modal-content.checkin-wide .checkin-grid-area {
+            flex: 1;
+            overflow: hidden;
+            position: relative;
         }
         
         /* Normal sized cards for check-in modals */
@@ -2622,12 +2630,15 @@
             min-height: 400px;
         }
         
-        /* Wide modal for check-in interface - MUCH taller */
+        /* Wide modal for check-in interface - Override all base modal constraints */
         .modal-content.checkin-wide {
             max-width: 800px;
             width: 95%;
             max-height: 90vh; /* Tall but not full screen */
             height: 90vh; /* Force specific height */
+            overflow-y: hidden; /* Let the grid container handle scrolling */
+            display: flex;
+            flex-direction: column;
         }
         
         /* Fullscreen modal for check-in (like View app) */
