@@ -4152,10 +4152,26 @@ class CheckInViewApp {
         if (!match) return;
         
         // Get form values
-        const matchStatus = document.getElementById('match-status').value;
+        let matchStatus = document.getElementById('match-status').value;
         const homeScore = document.getElementById('home-score').value;
         const awayScore = document.getElementById('away-score').value;
         const matchNotes = document.getElementById('match-notes').value.trim();
+        
+        // Smart status suggestion: if entering scores but status is still "Scheduled", suggest "Completed"
+        const hasScores = homeScore !== '' || awayScore !== '';
+        if (hasScores && matchStatus === 'scheduled') {
+            const shouldComplete = await this.showConfirmDialog(
+                'Status Change Suggestion',
+                'You\'re entering match results but the status is still "Scheduled".\n\nWould you like to change the status to "Completed"?',
+                'Yes',
+                'No'
+            );
+            if (shouldComplete) {
+                matchStatus = 'completed';
+                // Update the form field to reflect the change
+                document.getElementById('match-status').value = 'completed';
+            }
+        }
         
         // Collect cards data
         const cardItems = document.querySelectorAll('.card-item-mobile');
@@ -4431,6 +4447,35 @@ class CheckInViewApp {
         });
         
         return modal;
+    }
+    
+    // Show confirmation dialog with Yes/No buttons
+    showConfirmDialog(title, message, yesText = 'Yes', noText = 'No') {
+        return new Promise((resolve) => {
+            const modal = this.createModal(title, `
+                <div class="modal-body">
+                    <p style="font-size: 16px; line-height: 1.5; white-space: pre-line;">${message}</p>
+                    <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px;">
+                        <button class="btn btn-secondary" onclick="app.resolveConfirmDialog(false)">${noText}</button>
+                        <button class="btn btn-primary" onclick="app.resolveConfirmDialog(true)">${yesText}</button>
+                    </div>
+                </div>
+            `);
+            
+            // Store the resolve function for the button handlers
+            this.confirmDialogResolve = resolve;
+            
+            document.body.appendChild(modal);
+        });
+    }
+    
+    // Resolve the confirmation dialog
+    resolveConfirmDialog(result) {
+        if (this.confirmDialogResolve) {
+            this.confirmDialogResolve(result);
+            this.confirmDialogResolve = null;
+        }
+        this.closeModal();
     }
     
     // LOADING SPINNER: Show loading modal
