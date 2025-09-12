@@ -5,7 +5,7 @@
  */
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '6.1.0';
+const APP_VERSION = '6.1.1';
 
 // Utility function to convert epoch timestamp to Pacific timezone display
 function epochToPacificDate(epochTimestamp, options = {}) {
@@ -1116,7 +1116,18 @@ class CheckInApp {
         if (selectedTeamId) {
             const selectedTeam = this.teams.find(team => team.id === selectedTeamId);
             if (selectedTeam) {
-                const captain = selectedTeam.captainId ? selectedTeam.members.find(m => m.id === selectedTeam.captainId) : null;
+                // Get captain information (support both legacy captainId and new captains array)
+                const captains = selectedTeam.captains || [];
+                const legacyCaptain = selectedTeam.captainId ? selectedTeam.members.find(m => m.id === selectedTeam.captainId) : null;
+                
+                // Combine legacy and new captain systems
+                const allCaptains = [...captains];
+                if (legacyCaptain && !captains.some(c => c.memberId === legacyCaptain.id)) {
+                    allCaptains.push({ memberId: legacyCaptain.id, memberName: legacyCaptain.name });
+                }
+                
+                // Create captain names list
+                const captainNames = allCaptains.map(c => c.memberName).join(', ');
                 
                 // Calculate roster statistics
                 const totalPlayers = selectedTeam.members.length;
@@ -1152,11 +1163,11 @@ class CheckInApp {
                                 <div>
                                     <div class="team-name">${selectedTeam.name}</div>
                                     <div class="team-category">${selectedTeam.category || ''}</div>
-                                    ${captain ? `<div class="team-captain">👑 Captain: ${captain.name}</div>` : ''}
+                                    ${allCaptains.length > 0 ? `<div class="team-captain">👑 Captain${allCaptains.length > 1 ? 's' : ''}: ${captainNames}</div>` : ''}
                                 </div>
                                 <div class="team-actions">
                                     <button class="btn btn-small" onclick="app.showAddMemberModal('${selectedTeam.id}')" title="Add Member">+</button>
-                                    ${selectedTeam.members.length > 0 ? `<button class="btn btn-small btn-captain" onclick="app.showCaptainModal('${selectedTeam.id}')" title="Set Captain">👑</button>` : ''}
+                                    ${selectedTeam.members.length > 0 ? `<button class="btn btn-small btn-captain" onclick="app.showCaptainsModal('${selectedTeam.id}')" title="Manage Captains">👑</button>` : ''}
                                     <button class="btn btn-small btn-secondary" onclick="app.editTeam('${selectedTeam.id}')" title="Edit Team">✏️</button>
                                     <button class="btn btn-small btn-danger" onclick="app.handleActionClick(event, app.deleteTeamWithLoading.bind(app), '${selectedTeam.id}')" title="Delete Team">🗑️</button>
                                 </div>
@@ -1209,7 +1220,7 @@ class CheckInApp {
                                             <div class="member-info">
                                                 ${this.getLazyImageHtml(member, 'member-photo')}
                                                 <div class="member-details">
-                                                    <div class="member-name">${member.name}${member.id === selectedTeam.captainId ? ' 👑' : ''}</div>
+                                                    <div class="member-name">${member.name}${allCaptains.some(c => c.memberId === member.id) ? ' 👑' : ''}</div>
                                                     <div class="member-meta" id="member-meta-${member.id}">
                                                         ${member.jerseyNumber ? `#${member.jerseyNumber}` : ''}
                                                         ${member.gender ? ` • ${member.gender}` : ''}
@@ -1954,6 +1965,123 @@ Please check the browser console (F12) for more details.`);
             this.closeModal();
         } catch (error) {
             alert('Failed to remove captain. Please try again.');
+        }
+    }
+    
+    // Multiple Captains Management (New System)
+    async showCaptainsModal(teamId) {
+        const team = this.teams.find(t => t.id === teamId);
+        if (!team || team.members.length === 0) {
+            alert('This team has no members yet. Add members first to manage captains.');
+            return;
+        }
+        
+        // Get current captains from the team data
+        const currentCaptains = team.captains || [];
+        const legacyCaptain = team.captainId ? team.members.find(m => m.id === team.captainId) : null;
+        
+        // Create checkboxes for each team member
+        const memberCheckboxes = team.members
+            .slice()
+            .sort((a, b) => a.name.localeCompare(b.name))
+            .map(member => {
+                const isCaptain = currentCaptains.some(c => c.memberId === member.id) || 
+                                 (legacyCaptain && legacyCaptain.id === member.id);
+                
+                return `
+                    <div class="form-group" style="margin-bottom: 8px;">
+                        <label style="display: flex; align-items: center; cursor: pointer;">
+                            <input type="checkbox" 
+                                   style="margin-right: 8px;" 
+                                   data-member-id="${member.id}" 
+                                   ${isCaptain ? 'checked' : ''}>
+                            <span>${member.name}${member.jerseyNumber ? ` (#${member.jerseyNumber})` : ''}</span>
+                        </label>
+                    </div>
+                `;
+            }).join('');
+        
+        const modal = this.createModal('Manage Team Captains', `
+            <div style="margin-bottom: 15px;">
+                <p style="color: #666; font-size: 0.9em; margin: 0;">
+                    Select multiple captains/co-captains for <strong>${team.name}</strong>. 
+                    This allows for delegation when primary captains are not present.
+                </p>
+            </div>
+            
+            <div style="max-height: 300px; overflow-y: auto; border: 1px solid #ddd; padding: 10px; border-radius: 4px;">
+                ${memberCheckboxes}
+            </div>
+            
+            <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px;">
+                <button class="btn btn-secondary" onclick="app.closeModal()">Cancel</button>
+                <button class="btn" onclick="app.saveCaptains('${teamId}')">Save Captains</button>
+            </div>
+        `);
+        
+        document.body.appendChild(modal);
+    }
+    
+    async saveCaptains(teamId) {
+        const team = this.teams.find(t => t.id === teamId);
+        if (!team) return;
+        
+        // Get all checked members
+        const checkboxes = document.querySelectorAll('[data-member-id]');
+        const selectedCaptainIds = Array.from(checkboxes)
+            .filter(cb => cb.checked)
+            .map(cb => cb.getAttribute('data-member-id'));
+        
+        try {
+            // Get current captains to determine what needs to be added/removed
+            const currentCaptains = team.captains || [];
+            const currentCaptainIds = currentCaptains.map(c => c.memberId);
+            
+            // Find captains to add and remove
+            const toAdd = selectedCaptainIds.filter(id => !currentCaptainIds.includes(id));
+            const toRemove = currentCaptainIds.filter(id => !selectedCaptainIds.includes(id));
+            
+            // Add new captains
+            for (const memberId of toAdd) {
+                await this.fetch('/api/captains', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        team_id: teamId,
+                        member_id: memberId
+                    })
+                });
+            }
+            
+            // Remove old captains
+            for (const memberId of toRemove) {
+                await this.fetch(`/api/captains?team_id=${teamId}&member_id=${memberId}`, {
+                    method: 'DELETE'
+                });
+            }
+            
+            // Update local team data
+            team.captains = selectedCaptainIds.map(memberId => {
+                const member = team.members.find(m => m.id === memberId);
+                return {
+                    memberId: memberId,
+                    memberName: member ? member.name : 'Unknown'
+                };
+            });
+            
+            // Clear legacy captain if all captains are now managed through new system
+            if (selectedCaptainIds.length > 0) {
+                team.captainId = null;
+            }
+            
+            this.renderTeams();
+            this.closeModal();
+            
+        } catch (error) {
+            console.error('Error saving captains:', error);
+            alert('Failed to save captains. Please try again.');
         }
     }
     

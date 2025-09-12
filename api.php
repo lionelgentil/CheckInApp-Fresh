@@ -8,7 +8,7 @@
 session_start();
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '6.1.0';
+const APP_VERSION = '6.1.1';
 
 // Authentication configuration
 const ADMIN_PASSWORD = 'checkin2024'; // Change this to your desired password
@@ -412,6 +412,56 @@ try {
             } elseif ($method === 'POST') {
                 requireAuth(); // Require authentication for modifications
                 saveReferees($db);
+            }
+            break;
+            
+        case 'captains':
+            // Captain management endpoints
+            if ($method === 'GET') {
+                // Get captains for a team
+                $teamId = $_GET['team_id'] ?? null;
+                if ($teamId) {
+                    echo json_encode(getTeamCaptains($db, $teamId));
+                } else {
+                    echo json_encode(getTeamCaptains($db));
+                }
+            } elseif ($method === 'POST') {
+                requireAuth();
+                // Add captain
+                $input = json_decode(file_get_contents('php://input'), true);
+                $teamId = $input['team_id'] ?? null;
+                $memberId = $input['member_id'] ?? null;
+                
+                if (!$teamId || !$memberId) {
+                    http_response_code(400);
+                    echo json_encode(['error' => 'team_id and member_id are required']);
+                    return;
+                }
+                
+                if (addTeamCaptain($db, $teamId, $memberId)) {
+                    echo json_encode(['success' => true, 'message' => 'Captain added successfully']);
+                } else {
+                    http_response_code(500);
+                    echo json_encode(['error' => 'Failed to add captain']);
+                }
+            } elseif ($method === 'DELETE') {
+                requireAuth();
+                // Remove captain
+                $teamId = $_GET['team_id'] ?? null;
+                $memberId = $_GET['member_id'] ?? null;
+                
+                if (!$teamId || !$memberId) {
+                    http_response_code(400);
+                    echo json_encode(['error' => 'team_id and member_id are required']);
+                    return;
+                }
+                
+                if (removeTeamCaptain($db, $teamId, $memberId)) {
+                    echo json_encode(['success' => true, 'message' => 'Captain removed successfully']);
+                } else {
+                    http_response_code(500);
+                    echo json_encode(['error' => 'Failed to remove captain']);
+                }
             }
             break;
             
@@ -830,6 +880,19 @@ function getTeams($db) {
         $teams[] = $currentTeam;
     }
     
+    // Add captain information from new team_captains table
+    $allCaptains = getTeamCaptains($db);
+    foreach ($teams as &$team) {
+        $team['captains'] = $allCaptains[$team['id']] ?? [];
+        
+        // For backward compatibility, also check if any of the captains match the legacy captainId
+        if ($team['captainId'] && empty($team['captains'])) {
+            // Legacy captain exists but not in new table - migrate it
+            addTeamCaptain($db, $team['id'], $team['captainId']);
+            $team['captains'] = getTeamCaptains($db, $team['id']);
+        }
+    }
+    
     echo json_encode($teams);
 }
 
@@ -936,6 +999,19 @@ function getTeamsWithoutPhotos($db) {
         $teams[] = $currentTeam;
     }
     
+    // Add captain information from new team_captains table
+    $allCaptains = getTeamCaptains($db);
+    foreach ($teams as &$team) {
+        $team['captains'] = $allCaptains[$team['id']] ?? [];
+        
+        // For backward compatibility, also check if any of the captains match the legacy captainId
+        if ($team['captainId'] && empty($team['captains'])) {
+            // Legacy captain exists but not in new table - migrate it
+            addTeamCaptain($db, $team['id'], $team['captainId']);
+            $team['captains'] = getTeamCaptains($db, $team['id']);
+        }
+    }
+    
     echo json_encode($teams);
 }
 
@@ -968,6 +1044,19 @@ function getTeamsBasic($db) {
             'captainId' => $row['captain_id'],
             'memberCount' => (int)$row['member_count']
         ];
+    }
+    
+    // Add captain information from new team_captains table
+    $allCaptains = getTeamCaptains($db);
+    foreach ($teams as &$team) {
+        $team['captains'] = $allCaptains[$team['id']] ?? [];
+        
+        // For backward compatibility, also check if any of the captains match the legacy captainId
+        if ($team['captainId'] && empty($team['captains'])) {
+            // Legacy captain exists but not in new table - migrate it
+            addTeamCaptain($db, $team['id'], $team['captainId']);
+            $team['captains'] = getTeamCaptains($db, $team['id']);
+        }
     }
     
     echo json_encode($teams);
@@ -1132,6 +1221,19 @@ function getSpecificTeams($db) {
     // Don't forget the last team
     if ($currentTeam) {
         $teams[] = $currentTeam;
+    }
+    
+    // Add captain information from new team_captains table
+    $allCaptains = getTeamCaptains($db);
+    foreach ($teams as &$team) {
+        $team['captains'] = $allCaptains[$team['id']] ?? [];
+        
+        // For backward compatibility, also check if any of the captains match the legacy captainId
+        if ($team['captainId'] && empty($team['captains'])) {
+            // Legacy captain exists but not in new table - migrate it
+            addTeamCaptain($db, $team['id'], $team['captainId']);
+            $team['captains'] = getTeamCaptains($db, $team['id']);
+        }
     }
     
     echo json_encode($teams);
@@ -2345,6 +2447,19 @@ function initializeDatabase($db) {
         )
     ');
     
+    // Create team_captains table for multiple captains support
+    $db->exec('
+        CREATE TABLE IF NOT EXISTS team_captains (
+            id SERIAL PRIMARY KEY,
+            team_id TEXT NOT NULL,
+            member_id TEXT NOT NULL,
+            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+            FOREIGN KEY (team_id) REFERENCES teams(id) ON DELETE CASCADE,
+            FOREIGN KEY (member_id) REFERENCES team_members(id) ON DELETE CASCADE,
+            UNIQUE(team_id, member_id)
+        )
+    ');
+    
     // Create indexes
     try {
         $db->exec('CREATE INDEX IF NOT EXISTS idx_team_members_team_id ON team_members(team_id)');
@@ -2372,6 +2487,10 @@ function initializeDatabase($db) {
         
         // Active members optimization
         $db->exec('CREATE INDEX IF NOT EXISTS idx_team_members_active ON team_members(active, team_id) WHERE active IS NULL OR active = TRUE');
+        
+        // Team captains indexes
+        $db->exec('CREATE INDEX IF NOT EXISTS idx_team_captains_team_id ON team_captains(team_id)');
+        $db->exec('CREATE INDEX IF NOT EXISTS idx_team_captains_member_id ON team_captains(member_id)');
         
     } catch (Exception $e) {
         // Indexes might already exist, ignore errors
@@ -3100,6 +3219,93 @@ function deleteSingleMatch($db) {
     } catch (Exception $e) {
         http_response_code(500);
         echo json_encode(['error' => 'Failed to delete match: ' . $e->getMessage()]);
+    }
+}
+
+// Helper function to get team captains
+function getTeamCaptains($db, $teamId = null) {
+    if ($teamId) {
+        // Get captains for specific team
+        $stmt = $db->prepare('
+            SELECT tc.team_id, tc.member_id, tm.name as member_name
+            FROM team_captains tc
+            JOIN team_members tm ON tc.member_id = tm.id
+            WHERE tc.team_id = ? AND (tm.active IS NULL OR tm.active = TRUE)
+            ORDER BY tc.created_at
+        ');
+        $stmt->execute([$teamId]);
+    } else {
+        // Get all captains
+        $stmt = $db->query('
+            SELECT tc.team_id, tc.member_id, tm.name as member_name
+            FROM team_captains tc
+            JOIN team_members tm ON tc.member_id = tm.id
+            WHERE tm.active IS NULL OR tm.active = TRUE
+            ORDER BY tc.team_id, tc.created_at
+        ');
+    }
+    
+    $captains = [];
+    while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+        if (!isset($captains[$row['team_id']])) {
+            $captains[$row['team_id']] = [];
+        }
+        $captains[$row['team_id']][] = [
+            'memberId' => $row['member_id'],
+            'memberName' => $row['member_name']
+        ];
+    }
+    
+    if ($teamId) {
+        return $captains[$teamId] ?? [];
+    }
+    
+    return $captains;
+}
+
+// Add captain to team
+function addTeamCaptain($db, $teamId, $memberId) {
+    try {
+        $stmt = $db->prepare('
+            INSERT INTO team_captains (team_id, member_id)
+            VALUES (?, ?)
+            ON CONFLICT (team_id, member_id) DO NOTHING
+        ');
+        return $stmt->execute([$teamId, $memberId]);
+    } catch (Exception $e) {
+        error_log("Error adding captain: " . $e->getMessage());
+        return false;
+    }
+}
+
+// Remove captain from team
+function removeTeamCaptain($db, $teamId, $memberId) {
+    try {
+        $stmt = $db->prepare('DELETE FROM team_captains WHERE team_id = ? AND member_id = ?');
+        return $stmt->execute([$teamId, $memberId]);
+    } catch (Exception $e) {
+        error_log("Error removing captain: " . $e->getMessage());
+        return false;
+    }
+}
+
+// Migrate legacy captain data to new table (one-time operation)
+function migrateLegacyCaptains($db) {
+    try {
+        // Get all teams with legacy captain_id
+        $stmt = $db->query('SELECT id, captain_id FROM teams WHERE captain_id IS NOT NULL');
+        $migrated = 0;
+        
+        while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+            if (addTeamCaptain($db, $row['id'], $row['captain_id'])) {
+                $migrated++;
+            }
+        }
+        
+        return $migrated;
+    } catch (Exception $e) {
+        error_log("Error migrating legacy captains: " . $e->getMessage());
+        return 0;
     }
 }
 ?>

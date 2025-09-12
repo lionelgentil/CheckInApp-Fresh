@@ -5,7 +5,7 @@
  */
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '6.1.0';
+const APP_VERSION = '6.1.1';
 
 // Utility function to convert epoch timestamp to Pacific timezone display
 function epochToPacificDate(epochTimestamp, options = {}) {
@@ -825,9 +825,24 @@ class CheckInViewApp {
                 <h3 style="margin: 0 0 4px 0; color: #333; font-size: 1.1em;">${member.name}</h3>
                 <p style="margin: 0; color: #666; font-size: 0.85em;">
                     ${team.name}${member.jerseyNumber ? ` • #${member.jerseyNumber}` : ''}${member.gender ? ` • ${member.gender}` : ''}
-                    ${member.id === team.captainId ? ' • 👑 Captain' : ''}
+                    ${this.isMemberCaptain(member, team) ? ' • 👑 Captain' : ''}
                 </p>
             </div>`;
+    }
+    
+    // Helper function to check if a member is a captain (supports both legacy and new system)
+    isMemberCaptain(member, team) {
+        // Check new captains system
+        if (team.captains && team.captains.some(c => c.memberId === member.id)) {
+            return true;
+        }
+        
+        // Check legacy captain system
+        if (team.captainId && member.id === team.captainId) {
+            return true;
+        }
+        
+        return false;
     }
     
     // Optimized method for rendering card items
@@ -988,7 +1003,8 @@ class CheckInViewApp {
         if (selectedTeamId) {
             const selectedTeam = this.teams.find(team => team.id === selectedTeamId);
             if (selectedTeam) {
-                const captain = selectedTeam.captainId ? selectedTeam.members.find(m => m.id === selectedTeam.captainId) : null;
+                const captains = selectedTeam.captains || [];
+                const captain = captains.length > 0 ? captains[0].memberName : null;
                 
                 // Calculate roster statistics
                 const totalPlayers = selectedTeam.members.length;
@@ -1024,7 +1040,7 @@ class CheckInViewApp {
                                 <div>
                                     <div class="team-name">${selectedTeam.name}</div>
                                     <div class="team-category">${selectedTeam.category || ''}</div>
-                                    ${captain ? `<div class="team-captain">👑 Captain: ${captain.name}</div>` : ''}
+                                    ${captain ? `<div class="team-captain">👑 Captain: ${captain}</div>` : ''}
                                 </div>
                             </div>
                             <div class="team-description">${selectedTeam.description || ''}</div>
@@ -1075,7 +1091,7 @@ class CheckInViewApp {
                                             <div class="member-info">
                                                 <img src="${this.getMemberPhotoUrl(member)}" alt="${member.name}" class="member-photo">
                                                 <div class="member-details">
-                                                    <div class="member-name">${member.name}${member.id === selectedTeam.captainId ? ' 👑' : ''}</div>
+                                                    <div class="member-name">${member.name}${this.isMemberCaptain(member, selectedTeam) ? ' 👑' : ''}</div>
                                                     <div class="member-meta" id="member-meta-${member.id}">
                                                         ${member.jerseyNumber ? `#${member.jerseyNumber}` : ''}
                                                         ${member.gender ? ` • ${member.gender}` : ''}
@@ -3363,7 +3379,7 @@ class CheckInViewApp {
                     <div class="player-grid-item ${isCheckedIn ? 'checked-in' : ''} ${isLocked ? 'locked' : ''}" 
                          ${!isLocked ? `onclick="app.toggleGridPlayerAttendance('${this.currentEventId}', '${this.currentMatchId}', '${member.id}', '${teamType}')"` : ''}
                          ${isLocked ? 'title="Check-in is locked for this match"' : ''}>
-                        ${member.id === team.captainId ? '<div class="grid-captain-icon">👑</div>' : ''}
+                        ${this.isMemberCaptain(member, team) ? '<div class="grid-captain-icon">👑</div>' : ''}
                         ${member.photo ? 
                             `<img src="${this.getMemberPhotoUrl(member)}" alt="${member.name}" class="player-grid-photo">` :
                             `<div class="player-grid-photo" style="background: #ddd; display: flex; align-items: center; justify-content: center; color: #666; font-size: 20px;">👤</div>`
@@ -3424,7 +3440,7 @@ class CheckInViewApp {
                 <div class="player-grid-item ${isCheckedIn ? 'checked-in' : ''}" 
                      onclick="app.toggleGridPlayerAttendance('${this.currentEventId}', '${this.currentMatchId}', '${member.id}', '${teamType}')">
                     <div class="grid-check-icon">✓</div>
-                    ${member.id === team.captainId ? '<div class="grid-captain-icon">👑</div>' : ''}
+                    ${this.isMemberCaptain(member, team) ? '<div class="grid-captain-icon">👑</div>' : ''}
                     <img src="${this.getMemberPhotoUrl(member)}" alt="${member.name}" class="player-grid-photo">
                     <div class="player-grid-content">
                         <div class="player-grid-name">${member.name}</div>

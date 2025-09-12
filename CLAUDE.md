@@ -1,11 +1,11 @@
 # CheckIn App - Claude Context & Development History
 
-## Current Version: 6.0.0
+## Current Version: 6.1.1
 
 ### Project Overview
 CheckIn App for BUSC PASS - A comprehensive soccer league management system with advanced mobile features, disciplinary tracking, and performance optimizations. Built with PHP backend (PostgreSQL) and modular JavaScript frontend, deployed on Railway cloud platform.
 
-## Current Architecture Status (v6.0.0)
+## Current Architecture Status (v6.1.1)
 
 ### File Structure & Line Counts
 - **app.js** (6,462 lines): Main admin application with full team management
@@ -25,7 +25,7 @@ Based on git history, significant work has been done on the view-app.js with mul
 
 ### Major Technical Features Implemented
 
-#### 🏆 Enhanced Mobile Experience (v6.0.0)
+#### 🏆 Enhanced Mobile Experience (v6.1.1)
 - **Collapsible Header**: Saves 20% of mobile screen space
 - **75px Player Photos**: Increased from 50px for better mobile visibility
 - **Collapsible Card Summary**: Team-specific disciplinary overview for referees
