@@ -4073,12 +4073,12 @@ class CheckInViewApp {
                         <select class="form-select-mobile" data-card-index="${newIndex}" data-field="memberId">
                             <option value="">Select Player</option>
                             ${homeTeam?.members
-                                .filter(m => this.currentMatch?.attendance && this.currentMatch.attendance.some(a => a.memberId === m.id && a.present))
+                                .filter(m => this.currentMatch?.homeTeamAttendees && this.currentMatch.homeTeamAttendees.some(a => a.memberId === m.id))
                                 .slice()
                                 .sort((a, b) => a.name.localeCompare(b.name))
                                 .map(m => `<option value="${m.id}">${m.name} (${homeTeam.name})</option>`).join('') || ''}
                             ${awayTeam?.members
-                                .filter(m => this.currentMatch?.attendance && this.currentMatch.attendance.some(a => a.memberId === m.id && a.present))
+                                .filter(m => this.currentMatch?.awayTeamAttendees && this.currentMatch.awayTeamAttendees.some(a => a.memberId === m.id))
                                 .slice()
                                 .sort((a, b) => a.name.localeCompare(b.name))
                                 .map(m => `<option value="${m.id}">${m.name} (${awayTeam.name})</option>`).join('') || ''}
