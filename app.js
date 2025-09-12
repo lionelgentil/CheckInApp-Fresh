@@ -6005,7 +6005,7 @@ Please check the browser console (F12) for more details.`);
         
         if (!matchStatusElement) {
             console.error('❌ match-status element not found');
-            this.showMessage('Error: Form elements not found. Please try again.', 'error');
+            alert('Error: Form elements not found. Please try again.');
             return;
         }
         
@@ -6161,12 +6161,12 @@ Please check the browser console (F12) for more details.`);
             }
             
             console.log('🎉 Match result saved successfully');
-            this.showMessage('Match result saved successfully!', 'success');
+            alert('Match result saved successfully!');
             this.renderEvents();
             this.closeModal();
         } catch (error) {
             console.error('❌ Failed to save match result:', error);
-            this.showMessage(`Failed to save match result: ${error.message}`, 'error');
+            alert(`Failed to save match result: ${error.message}`);
         }
     }
     
