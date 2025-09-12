@@ -1371,11 +1371,11 @@
             overflow-x: hidden;
         }
         
-        /* Grid container with its own scrolling within fixed area */
+        /* Grid container with smaller height to ensure both scrollbars are active */
         .modal-content.checkin-wide .player-grid-container {
             max-width: 650px; /* Slightly wider for better fit in wide modal */
             grid-template-columns: repeat(3, 1fr); /* Ensure exactly 3 columns */
-            max-height: 60vh; /* Fixed height for grid area - creates internal scrolling */ 
+            max-height: 45vh; /* Smaller height to force grid scrolling */ 
             padding: 20px 15px; /* Normal padding */
             gap: 30px 20px; /* Normal spacing */
             overflow-y: auto; /* Grid scrolls when players exceed this height */
@@ -2630,12 +2630,13 @@
             min-height: 400px;
         }
         
-        /* Wide modal for check-in interface - Modal level scrolling */
+        /* Wide modal for check-in interface - Force height to ensure both scrollbars */
         .modal-content.checkin-wide {
             max-width: 800px;
             width: 95%;
-            max-height: 90vh; /* Maximum height when content is large */
-            overflow-y: auto; /* Modal scrolls when content exceeds max-height */
+            height: 80vh; /* Force specific height to ensure modal scrollbar */
+            max-height: 80vh; /* Ensure it doesn't exceed this */
+            overflow-y: auto; /* Modal scrolls when content exceeds height */
             display: flex;
             flex-direction: column;
         }
