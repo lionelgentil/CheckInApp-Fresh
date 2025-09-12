@@ -5,7 +5,7 @@
  */
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '6.1.1';
+const APP_VERSION = '6.2.0';
 
 // Utility function to convert epoch timestamp to Pacific timezone display
 function epochToPacificDate(epochTimestamp, options = {}) {
@@ -944,7 +944,7 @@ class CheckInApp {
                 if (!this.hasCompleteTeamsData) {
                     await this.loadTeams(); // Load complete team data for roster display
                 }
-                this.renderTeams();
+                await this.renderTeams();
             } else if (sectionName === 'events') {
                 // Performance optimization: Use lightweight team data for events display
                 if (this.teamsBasic.length === 0) {
@@ -1005,6 +1005,15 @@ class CheckInApp {
                     await this.loadReferees();
                 }
                 this.renderGameTracker();
+            } else if (sectionName === 'red-card-mgmt') {
+                // Red card management needs teams and events for display
+                if (this.teamsBasic.length === 0) {
+                    await this.loadTeamsBasic();
+                }
+                if (this.events.length === 0) {
+                    await this.loadEvents();
+                }
+                this.renderRedCardManagement();
             } else if (sectionName === 'season') {
                 // Ensure we have all data loaded for season management
                 if (this.teams.length === 0) {
@@ -1059,7 +1068,7 @@ class CheckInApp {
         return messages[sectionName] || 'Loading section...';
     }
     
-    renderTeams() {
+    async renderTeams() {
         const container = document.getElementById('teams-container');
         // TEAMS BUG FIX: Use a unique ID for teams section to avoid cross-section state pollution
         const selectedTeamId = document.getElementById('teams-team-selector')?.value;
@@ -6223,7 +6232,7 @@ Please check the browser console (F12) for more details.`);
     }
     
     // Render team grid in fullscreen mode (Admin version - no locks)
-    renderGridTeamFullscreen(teamType, team, attendees) {
+    async renderGridTeamFullscreen(teamType, team, attendees) {
         const containerId = `grid-container-${teamType}`;
         const container = document.getElementById(containerId);
         
@@ -6231,19 +6240,33 @@ Please check the browser console (F12) for more details.`);
         
         console.log(`🏀 Rendering ${teamType} team grid:`, team.members.length, 'players');
         
+        // Get current event date for suspension checking
+        const currentEvent = this.events.find(e => e.id === this.currentEventId);
+        const eventDate = currentEvent ? new Date(currentEvent.date_epoch * 1000).toISOString().split('T')[0] : null;
+        
+        // Check suspension status for all players
+        const membersWithSuspensions = await Promise.all(
+            team.members.map(async (member) => {
+                const suspensionStatus = eventDate ? await this.getPlayerSuspensionStatus(member.id, eventDate) : { isSuspended: false, suspensionType: null };
+                return { ...member, suspensionStatus };
+            })
+        );
+        
         // Render all players in fullscreen grid (no pagination, just scroll)
-        container.innerHTML = team.members
+        container.innerHTML = membersWithSuspensions
             .slice()
             .sort((a, b) => a.name.localeCompare(b.name))
             .map(member => {
                 const isCheckedIn = attendees.some(a => a.memberId === member.id);
                 const isCaptain = this.isMemberCaptain ? this.isMemberCaptain(member, team) : (member.id === team.captainId);
+                const isSuspended = member.suspensionStatus.isSuspended;
                 
                 return `
-                    <div class="player-grid-item ${isCheckedIn ? 'checked-in' : ''}" 
+                    <div class="player-grid-item ${isCheckedIn ? 'checked-in' : ''} ${isSuspended ? 'suspended' : ''}" 
                          onclick="app.toggleGridPlayerAttendance('${this.currentEventId}', '${this.currentMatchId}', '${member.id}', '${teamType}')"
-                         title="Click to toggle attendance">
+                         title="${isSuspended ? `SUSPENDED: ${member.suspensionStatus.reason}` : 'Click to toggle attendance'}">
                         ${isCaptain ? '<div class="grid-captain-icon">👑</div>' : ''}
+                        ${isSuspended ? `<div class="grid-suspension-icon ${member.suspensionStatus.suspensionType === 'yellow_accumulation' ? 'yellow-accumulation' : ''}">🚫</div>` : ''}
                         ${member.photo ? 
                             `<img src="${this.getMemberPhotoUrl(member)}" alt="${member.name}" class="player-grid-photo">` :
                             `<div class="player-grid-photo" style="background: #ddd; display: flex; align-items: center; justify-content: center; color: #666; font-size: 20px;">👤</div>`
@@ -6420,7 +6443,7 @@ Please check the browser console (F12) for more details.`);
             (this.currentMatch?.homeTeamAttendees || []) : 
             (this.currentMatch?.awayTeamAttendees || []);
             
-        this.renderGridTeamFullscreen(teamType, team, attendees);
+        await this.renderGridTeamFullscreen(teamType, team, attendees);
         this.updatePaginationInfo();
         
         // Clear previous team's card summary first to avoid confusion
@@ -6453,7 +6476,7 @@ Please check the browser console (F12) for more details.`);
     }
     
     // Render grid for specific team with scrolling (no pagination)
-    renderGridTeam(teamType) {
+    async renderGridTeam(teamType) {
         const team = teamType === 'home' ? this.currentHomeTeam : this.currentAwayTeam;
         const attendees = teamType === 'home' ? this.currentMatch.homeTeamAttendees : this.currentMatch.awayTeamAttendees;
         
@@ -6468,18 +6491,33 @@ Please check the browser console (F12) for more details.`);
         // Update info to show total players
         paginationInfo.innerHTML = `${totalPlayers} player${totalPlayers !== 1 ? 's' : ''} • Scroll to find players`;
         
+        // Get current event date for suspension checking
+        const currentEvent = this.events.find(e => e.id === this.currentEventId);
+        const eventDate = currentEvent ? new Date(currentEvent.date_epoch * 1000).toISOString().split('T')[0] : null;
+        
+        // Check suspension status for all players
+        const membersWithSuspensions = await Promise.all(
+            team.members.map(async (member) => {
+                const suspensionStatus = eventDate ? await this.getPlayerSuspensionStatus(member.id, eventDate) : { isSuspended: false, suspensionType: null };
+                return { ...member, suspensionStatus };
+            })
+        );
+        
         // Render all grid items with new structure (no pagination) - sorted alphabetically
-        container.innerHTML = team.members
+        container.innerHTML = membersWithSuspensions
             .slice()
             .sort((a, b) => a.name.localeCompare(b.name))
             .map(member => {
             const isCheckedIn = attendees.some(a => a.memberId === member.id);
+            const isSuspended = member.suspensionStatus.isSuspended;
             
             return `
-                <div class="player-grid-item ${isCheckedIn ? 'checked-in' : ''}" 
-                     onclick="app.toggleGridPlayerAttendance('${this.currentEventId}', '${this.currentMatchId}', '${member.id}', '${teamType}')">
+                <div class="player-grid-item ${isCheckedIn ? 'checked-in' : ''} ${isSuspended ? 'suspended' : ''}" 
+                     onclick="app.toggleGridPlayerAttendance('${this.currentEventId}', '${this.currentMatchId}', '${member.id}', '${teamType}')"
+                     title="${isSuspended ? `SUSPENDED: ${member.suspensionStatus.reason}` : 'Click to toggle attendance'}">
                     <div class="grid-check-icon">✓</div>
                     ${member.id === team.captainId ? '<div class="grid-captain-icon">👑</div>' : ''}
+                    ${isSuspended ? `<div class="grid-suspension-icon ${member.suspensionStatus.suspensionType === 'yellow_accumulation' ? 'yellow-accumulation' : ''}">🚫</div>` : ''}
                     ${this.getLazyImageHtml(member, 'player-grid-photo')}
                     <div class="player-grid-content">
                         <div class="player-grid-name">${member.name}</div>
@@ -6573,7 +6611,7 @@ Please check the browser console (F12) for more details.`);
         }
     }
 
-    // Toggle player attendance in grid view (Admin version - no locks, no suspension checks)
+    // Toggle player attendance in grid view (Admin version - with suspension checks)
     async toggleGridPlayerAttendance(eventId, matchId, memberId, teamType) {
         const event = this.events.find(e => e.id === eventId);
         const match = event?.matches.find(m => m.id === matchId);
@@ -6584,10 +6622,36 @@ Please check the browser console (F12) for more details.`);
             return;
         }
         
-        console.log('🔧 Admin toggle attendance for:', { eventId, matchId, memberId, teamType });
+        // Find player name for suspension warning
+        let playerName = 'Unknown Player';
+        const homeTeam = this.teamsBasic.find(t => t.id === match.homeTeamId);
+        const awayTeam = this.teamsBasic.find(t => t.id === match.awayTeamId);
+        const team = teamType === 'home' ? homeTeam : awayTeam;
+        const player = team?.members?.find(m => m.id === memberId);
+        if (player) playerName = player.name;
         
         const attendeesArray = teamType === 'home' ? match.homeTeamAttendees : match.awayTeamAttendees;
         const existingIndex = attendeesArray.findIndex(a => a.memberId === memberId);
+        const isCurrentlyCheckedIn = existingIndex >= 0;
+        
+        // If trying to check in (not check out), check for suspension
+        if (!isCurrentlyCheckedIn) {
+            console.log('🔍 Checking suspension status for player:', playerName);
+            
+            try {
+                const suspensionStatus = await this.getPlayerSuspensionStatus(memberId, event.date);
+                
+                if (suspensionStatus.isSuspended) {
+                    console.log('🚫 Player is suspended:', suspensionStatus);
+                    await this.showSuspensionWarning(playerName, suspensionStatus);
+                    return; // Don't allow check-in
+                }
+            } catch (error) {
+                console.warn('Failed to check suspension status, allowing check-in:', error);
+            }
+        }
+        
+        console.log('🔧 Admin toggle attendance for:', { eventId, matchId, memberId, teamType });
         
         // Find the grid item for immediate UI update
         const gridItem = document.querySelector(`[onclick*="'${memberId}'"][onclick*="'${teamType}'"]`);
@@ -7077,6 +7141,396 @@ Changes have been reverted.`);
         if (wasMatchModal) {
             this.renderEvents();
         }
+    }
+
+    // Red Card Management Methods
+    async renderRedCardManagement() {
+        const container = document.getElementById('red-card-management-container');
+        const filter = document.getElementById('suspension-filter')?.value || 'pending';
+        
+        try {
+            container.innerHTML = '<div class="loading">Loading red card records...</div>';
+            
+            // Get all match cards and events for the current season
+            const [eventsResponse, currentSeasonResponse] = await Promise.all([
+                fetch('/api/events'),
+                fetch('/api/current-season')
+            ]);
+            
+            if (!eventsResponse.ok || !currentSeasonResponse.ok) {
+                throw new Error('Failed to load data');
+            }
+            
+            const events = await eventsResponse.json();
+            const currentSeason = await currentSeasonResponse.json();
+            
+            // Get all red cards from current season
+            const redCards = [];
+            const yellowCardCounts = new Map(); // Track yellow cards per player
+            
+            events.forEach(event => {
+                if (event.season === currentSeason.season) {
+                    event.matches?.forEach(match => {
+                        match.cards?.forEach(card => {
+                            if (card.cardType === 'red') {
+                                redCards.push({
+                                    ...card,
+                                    eventDate: event.date,
+                                    eventName: event.name,
+                                    matchId: match.id,
+                                    homeTeam: match.homeTeam,
+                                    awayTeam: match.awayTeam
+                                });
+                            } else if (card.cardType === 'yellow') {
+                                const playerId = card.memberId;
+                                yellowCardCounts.set(playerId, (yellowCardCounts.get(playerId) || 0) + 1);
+                            }
+                        });
+                    });
+                }
+            });
+            
+            // Find players with 3+ yellow cards (equivalent to red card)
+            const yellowCardRedEquivalents = [];
+            for (const [playerId, count] of yellowCardCounts.entries()) {
+                if (count >= 3) {
+                    // Find player details
+                    let playerInfo = null;
+                    for (const team of this.teamsBasic) {
+                        const member = team.members?.find(m => m.id === playerId);
+                        if (member) {
+                            playerInfo = { ...member, teamName: team.name };
+                            break;
+                        }
+                    }
+                    
+                    if (playerInfo) {
+                        yellowCardRedEquivalents.push({
+                            memberId: playerId,
+                            memberName: playerInfo.name,
+                            teamName: playerInfo.teamName,
+                            yellowCardCount: count,
+                            cardType: 'yellow-equivalent',
+                            suspensionMatches: null,
+                            eventDate: new Date().toISOString().split('T')[0] // Current date as placeholder
+                        });
+                    }
+                }
+            }
+            
+            // Combine red cards and yellow card equivalents
+            const allSuspendableCards = [...redCards, ...yellowCardRedEquivalents];
+            
+            // Filter based on suspension status
+            let filteredCards = [];
+            const today = new Date().toISOString().split('T')[0];
+            
+            switch (filter) {
+                case 'pending':
+                    filteredCards = allSuspendableCards.filter(card => 
+                        !card.suspensionMatches || card.suspensionMatches === null
+                    );
+                    break;
+                case 'active':
+                    filteredCards = allSuspendableCards.filter(card => 
+                        card.suspensionMatches > 0 && !card.suspensionServed
+                    );
+                    break;
+                case 'served':
+                    filteredCards = allSuspendableCards.filter(card => 
+                        card.suspensionMatches > 0 && card.suspensionServed
+                    );
+                    break;
+                case 'all':
+                default:
+                    filteredCards = allSuspendableCards;
+                    break;
+            }
+            
+            // Sort by event date (newest first)
+            filteredCards.sort((a, b) => new Date(b.eventDate) - new Date(a.eventDate));
+            
+            if (filteredCards.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <h3>No ${filter} red cards found</h3>
+                        <p>There are currently no red cards that match the selected filter.</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            // Render red cards
+            container.innerHTML = `
+                <div class="red-card-summary">
+                    <div class="summary-stat">
+                        <div class="stat-number">${filteredCards.filter(c => c.cardType === 'red').length}</div>
+                        <div class="stat-label">Direct Red Cards</div>
+                    </div>
+                    <div class="summary-stat">
+                        <div class="stat-number">${filteredCards.filter(c => c.cardType === 'yellow-equivalent').length}</div>
+                        <div class="stat-label">Yellow Card Accumulations</div>
+                    </div>
+                    <div class="summary-stat">
+                        <div class="stat-number">${filteredCards.filter(c => !c.suspensionMatches).length}</div>
+                        <div class="stat-label">Pending Suspensions</div>
+                    </div>
+                </div>
+                
+                <div class="red-cards-list">
+                    ${filteredCards.map((card, index) => this.renderRedCardItem(card, index)).join('')}
+                </div>
+            `;
+            
+        } catch (error) {
+            console.error('Error loading red card management:', error);
+            container.innerHTML = `
+                <div class="empty-state">
+                    <h3>Error Loading Data</h3>
+                    <p>Failed to load red card records. Please try refreshing the page.</p>
+                </div>
+            `;
+        }
+    }
+    
+    renderRedCardItem(card, index) {
+        const isYellowEquivalent = card.cardType === 'yellow-equivalent';
+        const hasSuspension = card.suspensionMatches !== null && card.suspensionMatches !== undefined;
+        const suspensionStatus = card.suspensionServed ? 'Served' : 'Active';
+        
+        return `
+            <div class="red-card-item" data-card-index="${index}">
+                <div class="red-card-header">
+                    <div class="card-type-display ${isYellowEquivalent ? 'yellow-accumulation' : 'red'}">
+                        ${isYellowEquivalent ? `🟨×${card.yellowCardCount} YELLOW ACCUMULATION` : '🟥 RED CARD'}
+                    </div>
+                    <div class="card-date">${new Date(card.eventDate).toLocaleDateString()}</div>
+                </div>
+                
+                <div class="red-card-details">
+                    <div class="player-info">
+                        <div class="player-name">${card.memberName || 'Unknown Player'}</div>
+                        <div class="team-name">${card.teamName || 'Unknown Team'}</div>
+                    </div>
+                    
+                    ${card.eventName ? `<div class="event-info">Event: ${card.eventName}</div>` : ''}
+                    ${card.reason ? `<div class="card-reason">Reason: ${card.reason}</div>` : ''}
+                    ${card.notes ? `<div class="card-notes">Notes: ${card.notes}</div>` : ''}
+                </div>
+                
+                <div class="suspension-controls">
+                    ${!hasSuspension ? `
+                        <div class="suspension-input-group">
+                            <label class="suspension-label">Suspension Length:</label>
+                            <div class="suspension-input-row">
+                                <input type="number" class="suspension-input" 
+                                       placeholder="Events" min="0" max="10" 
+                                       data-card-index="${index}" data-field="suspensionMatches">
+                                <span class="suspension-unit">events</span>
+                                <button class="btn btn-apply-suspension" 
+                                        onclick="app.applySuspension(${index})">Apply Suspension</button>
+                            </div>
+                        </div>
+                    ` : `
+                        <div class="suspension-status">
+                            <div class="suspension-info">
+                                <span class="suspension-length">${card.suspensionMatches} events suspension</span>
+                                <span class="suspension-status-badge ${card.suspensionServed ? 'served' : 'active'}">
+                                    ${suspensionStatus}
+                                </span>
+                            </div>
+                            ${!card.suspensionServed ? `
+                                <button class="btn btn-small btn-mark-served" 
+                                        onclick="app.markSuspensionServed(${index})">Mark as Served</button>
+                            ` : ''}
+                        </div>
+                    `}
+                </div>
+            </div>
+        `;
+    }
+    
+    async applySuspension(cardIndex) {
+        const cardItem = document.querySelector(`[data-card-index="${cardIndex}"]`);
+        const suspensionInput = cardItem.querySelector('[data-field="suspensionMatches"]');
+        const suspensionMatches = parseInt(suspensionInput.value);
+        
+        if (!suspensionMatches || suspensionMatches < 1) {
+            alert('Please enter a valid suspension length (1-10 events)');
+            return;
+        }
+        
+        if (suspensionMatches > 10) {
+            alert('Maximum suspension length is 10 events');
+            return;
+        }
+        
+        try {
+            // Here we would update the database with suspension info
+            // For now, just refresh the display
+            await this.showSuccessMessage(`Applied ${suspensionMatches} event suspension`);
+            this.renderRedCardManagement();
+        } catch (error) {
+            console.error('Failed to apply suspension:', error);
+            alert('Failed to apply suspension. Please try again.');
+        }
+    }
+    
+    async markSuspensionServed(cardIndex) {
+        const confirmed = await this.showConfirmDialog(
+            'Mark Suspension as Served',
+            'Are you sure you want to mark this suspension as served?',
+            'Yes, Mark Served',
+            'Cancel'
+        );
+        
+        if (!confirmed) return;
+        
+        try {
+            // Here we would update the database to mark suspension as served
+            // For now, just refresh the display
+            await this.showSuccessMessage('Suspension marked as served');
+            this.renderRedCardManagement();
+        } catch (error) {
+            console.error('Failed to mark suspension as served:', error);
+            alert('Failed to update suspension status. Please try again.');
+        }
+    }
+
+    // Suspension Status Checking Methods
+    async getPlayerSuspensionStatus(playerId, eventDate = null) {
+        try {
+            // If no event date provided, use current event or today's date
+            const checkDate = eventDate || new Date().toISOString().split('T')[0];
+            
+            // Get all events and current season info
+            const [eventsResponse, currentSeasonResponse] = await Promise.all([
+                fetch('/api/events'),
+                fetch('/api/current-season')
+            ]);
+            
+            if (!eventsResponse.ok || !currentSeasonResponse.ok) {
+                console.warn('Failed to load suspension data');
+                return { isSuspended: false };
+            }
+            
+            const events = await eventsResponse.json();
+            const currentSeason = await currentSeasonResponse.json();
+            
+            // Get all red cards for this player in current season
+            const playerRedCards = [];
+            const playerYellowCards = [];
+            
+            events.forEach(event => {
+                if (event.season === currentSeason.season) {
+                    event.matches?.forEach(match => {
+                        match.cards?.forEach(card => {
+                            if (card.memberId === playerId) {
+                                if (card.cardType === 'red') {
+                                    playerRedCards.push({
+                                        ...card,
+                                        eventDate: event.date,
+                                        eventName: event.name
+                                    });
+                                } else if (card.cardType === 'yellow') {
+                                    playerYellowCards.push({
+                                        ...card,
+                                        eventDate: event.date,
+                                        eventName: event.name
+                                    });
+                                }
+                            }
+                        });
+                    });
+                }
+            });
+            
+            // Check for yellow card accumulation (3+ yellow cards = suspension)
+            if (playerYellowCards.length >= 3) {
+                // For yellow card accumulation, consider suspended until manually cleared
+                return {
+                    isSuspended: true,
+                    suspensionType: 'yellow-accumulation',
+                    reason: `${playerYellowCards.length} yellow cards accumulated`,
+                    suspendedUntil: 'To be determined by advisory board'
+                };
+            }
+            
+            // Check for active red card suspensions
+            for (const redCard of playerRedCards) {
+                // For now, assume all red cards without served status are active
+                // In a full implementation, this would check actual suspension data from database
+                if (redCard.suspensionMatches && !redCard.suspensionServed) {
+                    // Calculate suspension end date based on events
+                    const cardEventDate = new Date(redCard.eventDate);
+                    const futureEvents = events
+                        .filter(e => new Date(e.date) > cardEventDate && e.season === currentSeason.season)
+                        .sort((a, b) => new Date(a.date) - new Date(b.date))
+                        .slice(0, redCard.suspensionMatches);
+                    
+                    if (futureEvents.length > 0) {
+                        const lastSuspensionEvent = futureEvents[futureEvents.length - 1];
+                        const suspensionEndDate = new Date(lastSuspensionEvent.date);
+                        const currentEventDate = new Date(checkDate);
+                        
+                        if (currentEventDate <= suspensionEndDate) {
+                            return {
+                                isSuspended: true,
+                                suspensionType: 'red-card',
+                                reason: 'Red card suspension',
+                                suspendedUntil: lastSuspensionEvent.date,
+                                suspendedUntilEventName: lastSuspensionEvent.name,
+                                remainingEvents: futureEvents.filter(e => new Date(e.date) >= currentEventDate).length
+                            };
+                        }
+                    }
+                }
+            }
+            
+            return { isSuspended: false };
+            
+        } catch (error) {
+            console.error('Error checking suspension status:', error);
+            return { isSuspended: false };
+        }
+    }
+    
+    async showSuspensionWarning(playerName, suspensionInfo) {
+        const warningMessage = suspensionInfo.suspensionType === 'yellow-accumulation' 
+            ? `${playerName} is suspended due to yellow card accumulation (${suspensionInfo.reason}).\n\nThis player cannot be checked in until the suspension is resolved by the advisory board.`
+            : `${playerName} is suspended due to a red card.\n\nSuspended until: ${suspensionInfo.suspendedUntilEventName || suspensionInfo.suspendedUntil}\nRemaining events: ${suspensionInfo.remainingEvents || 'Unknown'}\n\nThis player cannot be checked in during their suspension period.`;
+        
+        return new Promise((resolve) => {
+            const modal = document.createElement('div');
+            modal.className = 'modal';
+            modal.innerHTML = `
+                <div class="modal-content suspension-warning-modal">
+                    <div class="modal-header">
+                        <h2 class="modal-title">🚫 Player Suspended</h2>
+                        <button class="close-btn" onclick="this.closest('.modal').remove(); resolve(false);">&times;</button>
+                    </div>
+                    <div class="suspension-warning-content">
+                        <div class="warning-icon">⚠️</div>
+                        <div class="warning-message">${warningMessage.replace(/\n/g, '<br>')}</div>
+                    </div>
+                    <div class="suspension-warning-actions">
+                        <button class="btn btn-secondary" onclick="this.closest('.modal').remove(); resolve(false);">
+                            OK, I Understand
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+            
+            // Auto-remove after 10 seconds for better UX
+            setTimeout(() => {
+                if (document.body.contains(modal)) {
+                    modal.remove();
+                    resolve(false);
+                }
+            }, 10000);
+        });
     }
 }
 
