@@ -7170,7 +7170,7 @@ Changes have been reverted.`);
             const [eventsResponse, currentSeasonResponse, teamsResponse] = await Promise.all([
                 fetch('/api/events'),
                 fetch('/api/current-season'),
-                fetch('/api/teams-basic')
+                fetch('/api/teams-no-photos')
             ]);
             
             if (!eventsResponse.ok || !currentSeasonResponse.ok || !teamsResponse.ok) {
@@ -7197,7 +7197,7 @@ Changes have been reverted.`);
                             if (card.cardType === 'red') {
                                 // Find which team this player belongs to
                                 let playerTeam = null;
-                                for (const team of this.teamsBasic) {
+                                for (const team of teams) {
                                     const member = team.members?.find(m => m.id === card.memberId);
                                     if (member) {
                                         playerTeam = team;
@@ -7207,7 +7207,8 @@ Changes have been reverted.`);
                                 
                                 redCards.push({
                                     ...card,
-                                    eventDate: event.date,
+                                    eventDate: epochToPacificDate(event.date_epoch),
+                                    eventDate_epoch: event.date_epoch,
                                     eventName: event.name,
                                     matchId: match.id,
                                     homeTeam: match.homeTeam,
@@ -7230,7 +7231,7 @@ Changes have been reverted.`);
                 if (count >= 3) {
                     // Find player details
                     let playerInfo = null;
-                    for (const team of this.teamsBasic) {
+                    for (const team of teams) {
                         const member = team.members?.find(m => m.id === playerId);
                         if (member) {
                             playerInfo = { ...member, teamName: team.name };
@@ -7246,7 +7247,8 @@ Changes have been reverted.`);
                             yellowCardCount: count,
                             cardType: 'yellow-equivalent',
                             suspensionMatches: null,
-                            eventDate: new Date().toISOString().split('T')[0] // Current date as placeholder
+                            eventDate: epochToPacificDate(Math.floor(Date.now() / 1000)), // Current date properly formatted
+                            eventDate_epoch: Math.floor(Date.now() / 1000) // Current epoch timestamp
                         });
                     }
                 }
