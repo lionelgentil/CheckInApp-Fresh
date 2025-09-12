@@ -2806,12 +2806,12 @@ function updateMatchResults($db) {
         ');
         $result = $stmt->execute([$homeScore, $awayScore, $matchStatus, $matchNotes, $matchId]);
         
-        // Update cards
+        // Update cards - always process cards array (even if empty to allow deletion)
+        // Remove existing cards for this match first
+        $db->prepare('DELETE FROM match_cards WHERE match_id = ?')->execute([$matchId]);
+        
+        // Add new cards (if any)
         if (!empty($cards)) {
-            // Remove existing cards for this match
-            $db->prepare('DELETE FROM match_cards WHERE match_id = ?')->execute([$matchId]);
-            
-            // Add new cards
             foreach ($cards as $card) {
                 $stmt = $db->prepare('
                     INSERT INTO match_cards (match_id, member_id, team_type, card_type, reason, notes, minute)

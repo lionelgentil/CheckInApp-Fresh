@@ -5950,20 +5950,21 @@ Please check the browser console (F12) for more details.`);
         match.cards = cards;
         
         try {
-            // Use efficient single-match update endpoint for match results
-            const updateData = {
-                matchStatus: match.matchStatus,
-                homeScore: match.homeScore,
-                awayScore: match.awayScore,
-                notes: match.matchNotes
-            };
-            
-            const response = await fetch(`/api/match?match_id=${matchId}`, {
-                method: 'PUT',
+            // Use the match-results endpoint that properly handles cards
+            const response = await fetch('/api/match-results', {
+                method: 'POST',
                 headers: {
                     'Content-Type': 'application/json'
                 },
-                body: JSON.stringify(updateData)
+                body: JSON.stringify({
+                    eventId: eventId,
+                    matchId: matchId,
+                    homeScore: match.homeScore,
+                    awayScore: match.awayScore,
+                    matchStatus: match.matchStatus,
+                    matchNotes: match.matchNotes,
+                    cards: cards
+                })
             });
             
             if (!response.ok) {
