@@ -1371,22 +1371,19 @@
             overflow-x: hidden;
         }
         
-        /* Grid container that sizes to content but scrolls when needed */
+        /* Grid container without internal scrolling - modal handles scrolling */
         .modal-content.checkin-wide .player-grid-container {
             max-width: 650px; /* Slightly wider for better fit in wide modal */
             grid-template-columns: repeat(3, 1fr); /* Ensure exactly 3 columns */
-            max-height: 70vh; /* Only scroll when content exceeds this height */
-            /* Remove fixed height - let it size to content */
+            /* Remove max-height - let grid expand naturally */
             padding: 20px 15px; /* Normal padding */
             gap: 30px 20px; /* Normal spacing */
-            overflow-y: auto; /* Scroll when content exceeds max-height */
-            overflow-x: hidden;
+            /* Remove overflow - modal handles scrolling */
         }
         
-        /* Make the grid area size to content, not flex expand */
+        /* Grid area returns to normal layout */
         .modal-content.checkin-wide .checkin-grid-area {
-            /* Remove flex: 1 to prevent expansion */
-            overflow: visible; /* Allow natural sizing */
+            /* Back to normal - no special flex or overflow settings */
             position: relative;
         }
         
@@ -2630,15 +2627,13 @@
             min-height: 400px;
         }
         
-        /* Wide modal for check-in interface - Size to content but with max height */
+        /* Wide modal for check-in interface - Proper modal scrolling */
         .modal-content.checkin-wide {
             max-width: 800px;
             width: 95%;
             max-height: 90vh; /* Maximum height when content is large */
-            /* Remove fixed height - let it size to content */
-            overflow-y: hidden; /* Let the grid container handle scrolling */
-            display: flex;
-            flex-direction: column;
+            overflow-y: auto; /* Modal scrolls when content exceeds max-height */
+            /* Remove flex layout - use normal modal layout */
         }
         
         /* Fullscreen modal for check-in (like View app) */
