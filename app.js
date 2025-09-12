@@ -6309,7 +6309,7 @@ Please check the browser console (F12) for more details.`);
                     <div id="grid-pagination-info" class="pagination-info-compact"></div>
                 </div>
             </div>
-        `, 'checkin-modal');
+        `, 'checkin-wide');
         
         // LOADING SPINNER: Close loading modal before showing the main modal
         this.closeLoadingModal();
@@ -7024,11 +7024,11 @@ Changes have been reverted.`);
     }
     
     // Modal Management
-    createModal(title, content) {
+    createModal(title, content, cssClass = '') {
         const modal = document.createElement('div');
         modal.className = 'modal';
         modal.innerHTML = `
-            <div class="modal-content">
+            <div class="modal-content ${cssClass}">
                 <div class="modal-header">
                     <h2 class="modal-title">${title}</h2>
                     <button class="close-btn" onclick="app.closeModal()">&times;</button>

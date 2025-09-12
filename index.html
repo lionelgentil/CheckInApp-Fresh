@@ -1370,6 +1370,12 @@
             overflow-y: auto;
             overflow-x: hidden;
         }
+        
+        /* Force 3 columns even in wide modals */
+        .modal-content.checkin-wide .player-grid-container {
+            max-width: 650px; /* Slightly wider for better fit in wide modal */
+            grid-template-columns: repeat(3, 1fr); /* Ensure exactly 3 columns */
+        }
 
         /* Scrollbar styling for grid container */
         .player-grid-container::-webkit-scrollbar {
@@ -2478,6 +2484,21 @@
             display: flex;
             padding: 10px 20px;
             gap: 10px;
+        }
+        
+        /* Wide modal for check-in interface */
+        .modal-content.checkin-wide {
+            max-width: 800px;
+            width: 95%;
+        }
+        
+        /* Ensure mobile grid works properly */
+        @media (max-width: 768px) {
+            .modal-content.checkin-wide {
+                width: 98%;
+                max-width: none;
+                padding: 15px;
+            }
         }
         
     </style>
