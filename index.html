@@ -1375,7 +1375,7 @@
         .modal-content.checkin-wide .player-grid-container {
             max-width: 650px; /* Slightly wider for better fit in wide modal */
             grid-template-columns: repeat(3, 1fr); /* Ensure exactly 3 columns */
-            max-height: 85vh; /* Increased height for check-in modals to show all cards */
+            max-height: 70vh; /* Match View app exactly */
         }
 
         /* Scrollbar styling for grid container */
@@ -1565,27 +1565,42 @@
         @media (max-width: 768px) {
             .player-grid-container {
                 gap: 30px 15px; /* Slightly less spacing on mobile */
-                padding: 0 10px;
+                padding: 15px 10px;
             }
 
             .player-grid-item {
-                padding: 12px;
-                border-radius: 12px;
-                gap: 12px; /* More internal spacing between elements */
+                height: 120px; /* Slightly smaller on mobile */
+                padding: 8px;
+                /* Improve touch targets for mobile */
+                min-height: 44px; /* iOS recommended touch target */
+                touch-action: manipulation; /* Prevent zoom on double tap */
             }
 
             .player-grid-photo {
                 width: 50px;
                 height: 50px;
-                margin-bottom: 10px;
             }
 
             .player-grid-name {
-                font-size: 0.8em;
+                font-size: 12px;
+                margin: 6px 0 3px 0;
             }
 
-            .player-grid-info {
-                font-size: 0.7em;
+            .player-grid-jersey {
+                font-size: 10px;
+            }
+            
+            /* Improve team toggle buttons for mobile */
+            .team-toggle-btn {
+                min-height: 60px; /* Better touch target */
+                font-size: 0.9em;
+                touch-action: manipulation;
+            }
+            
+            /* Improve tap feedback */
+            .player-grid-item:active {
+                transform: scale(0.95);
+                transition: transform 0.1s ease;
             }
         }
         
