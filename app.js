@@ -6583,26 +6583,32 @@ Please check the browser console (F12) for more details.`);
         return false;
     }
     
-    // Toggle between home and away team in grid view
-    toggleGridTeam(teamType) {
+    // Toggle between home and away team in grid view (Admin version)
+    async toggleGridTeam(teamType) {
         this.currentGridTeam = teamType;
         
-        // Update button states
+        // Update toggle button states
         const homeToggle = document.getElementById('home-toggle');
         const awayToggle = document.getElementById('away-toggle');
+        
+        if (teamType === 'home') {
+            homeToggle.classList.add('active');
+            awayToggle.classList.remove('active');
+        } else {
+            homeToggle.classList.remove('active');
+            awayToggle.classList.add('active');
+        }
+        
+        // Show/hide team sections
         const homeSection = document.getElementById('grid-home-team');
         const awaySection = document.getElementById('grid-away-team');
         
         if (teamType === 'home') {
-            homeToggle?.classList.add('active');
-            awayToggle?.classList.remove('active');
-            homeSection?.classList.add('active');
-            awaySection?.classList.remove('active');
+            homeSection.classList.add('active');
+            awaySection.classList.remove('active');
         } else {
-            homeToggle?.classList.remove('active');
-            awayToggle?.classList.add('active');
-            homeSection?.classList.remove('active');
-            awaySection?.classList.add('active');
+            homeSection.classList.remove('active');
+            awaySection.classList.add('active');
         }
         
         // Render the selected team
@@ -6612,9 +6618,35 @@ Please check the browser console (F12) for more details.`);
             (this.currentMatch?.awayTeamAttendees || []);
             
         this.renderGridTeamFullscreen(teamType, team, attendees);
+        this.updatePaginationInfo();
         
-        // Update card summary for new team
-        this.updateCardSummary();
+        // Clear previous team's card summary first to avoid confusion
+        this.clearCardSummary();
+        
+        // Then update with new team's card summary
+        await this.updateCardSummary();
+    }
+    
+    // Clear card summary to avoid showing previous team's data
+    clearCardSummary() {
+        const summary = document.getElementById('team-card-summary');
+        const summaryText = document.getElementById('card-summary-text');
+        const summaryContent = document.getElementById('card-summary-content');
+        const summaryIcon = document.getElementById('card-summary-arrow');
+        
+        if (summary) {
+            summary.style.display = 'none';
+        }
+        if (summaryText) {
+            summaryText.textContent = 'ℹ️ 0 Players with cards';
+        }
+        if (summaryContent) {
+            summaryContent.innerHTML = '';
+            summaryContent.style.display = 'none';
+        }
+        if (summaryIcon) {
+            summaryIcon.textContent = '▼';
+        }
     }
     
     // Render grid for specific team with scrolling (no pagination)
