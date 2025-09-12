@@ -7385,7 +7385,7 @@ Changes have been reverted.`);
         try {
             // Here we would update the database with suspension info
             // For now, just refresh the display
-            await this.showSuccessMessage(`Applied ${suspensionMatches} event suspension`);
+            alert(`Applied ${suspensionMatches} event suspension`);
             this.renderRedCardManagement();
         } catch (error) {
             console.error('Failed to apply suspension:', error);
@@ -7406,7 +7406,7 @@ Changes have been reverted.`);
         try {
             // Here we would update the database to mark suspension as served
             // For now, just refresh the display
-            await this.showSuccessMessage('Suspension marked as served');
+            alert('Suspension marked as served');
             this.renderRedCardManagement();
         } catch (error) {
             console.error('Failed to mark suspension as served:', error);
