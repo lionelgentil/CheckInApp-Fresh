@@ -760,7 +760,9 @@ class CheckInViewApp {
                             cardType: card.cardType,
                             reason: card.reason,
                             notes: card.notes,
-                            minute: card.minute
+                            minute: card.minute,
+                            mainReferee: match.mainRefereeId ? this.referees.find(r => r.id === match.mainRefereeId) : null,
+                            assistantReferee: match.assistantRefereeId ? this.referees.find(r => r.id === match.assistantRefereeId) : null
                         });
                 });
             }
@@ -851,6 +853,12 @@ class CheckInViewApp {
                         <strong>Match:</strong> ${card.matchInfo}
                     </div>
                 ` : ''}
+                ${card.type === 'match' && (card.mainReferee || card.assistantReferee) ? `
+                    <div style="font-size: 0.8em; color: #666; margin-bottom: 3px;">
+                        <strong>Referee${card.mainReferee && card.assistantReferee ? 's' : ''}:</strong> 
+                        ${card.mainReferee ? `${card.mainReferee.name}` : ''}${card.mainReferee && card.assistantReferee ? ', ' : ''}${card.assistantReferee ? `${card.assistantReferee.name}` : ''}
+                    </div>
+                ` : ''}
                 ${card.reason ? `
                     <div style="font-size: 0.8em; color: #666; margin-bottom: 3px;">
                         <strong>Reason:</strong> ${card.reason}
@@ -883,6 +891,9 @@ class CheckInViewApp {
         const matchCardCount = matchCards.length;
         const priorCardCount = disciplinaryRecords.length;
         
+        // Check if player has any red cards
+        const hasRedCards = allCards.some(card => card.cardType === 'red');
+        
         // Pre-render card items for better performance
         const cardItemsHtml = totalCards > 0 ? allCards.map(card => this.renderCardItem(card)).join('') : '';
         
@@ -892,7 +903,7 @@ class CheckInViewApp {
             <div style="margin-bottom: 15px;">
                 <h4 style="margin: 0 0 12px 0; color: #333; display: flex; align-items: center; gap: 8px; font-size: 1em;">
                     📋 Complete Disciplinary Record 
-                    <span style="background: ${totalCards > 0 ? '#dc3545' : '#28a745'}; color: white; padding: 2px 6px; border-radius: 10px; font-size: 0.75em; font-weight: normal;">
+                    <span style="background: ${totalCards === 0 ? '#28a745' : hasRedCards ? '#dc3545' : '#ffc107'}; color: ${hasRedCards || totalCards === 0 ? 'white' : '#212529'}; padding: 2px 6px; border-radius: 10px; font-size: 0.75em; font-weight: normal;">
                         ${totalCards} total card${totalCards !== 1 ? 's' : ''}
                     </span>
                 </h4>
