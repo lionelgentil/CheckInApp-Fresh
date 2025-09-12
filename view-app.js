@@ -3936,10 +3936,12 @@ class CheckInViewApp {
                                             <select class="form-select-mobile" data-card-index="${index}" data-field="memberId">
                                                 <option value="">Select Player</option>
                                                 ${homeTeam.members
+                                                    .filter(m => match.attendance && match.attendance.some(a => a.memberId === m.id && a.present))
                                                     .slice()
                                                     .sort((a, b) => a.name.localeCompare(b.name))
                                                     .map(m => `<option value="${m.id}" ${card.memberId === m.id ? 'selected' : ''}>${m.name} (${homeTeam.name})</option>`).join('')}
                                                 ${awayTeam.members
+                                                    .filter(m => match.attendance && match.attendance.some(a => a.memberId === m.id && a.present))
                                                     .slice()
                                                     .sort((a, b) => a.name.localeCompare(b.name))
                                                     .map(m => `<option value="${m.id}" ${card.memberId === m.id ? 'selected' : ''}>${m.name} (${awayTeam.name})</option>`).join('')}
@@ -4071,10 +4073,12 @@ class CheckInViewApp {
                         <select class="form-select-mobile" data-card-index="${newIndex}" data-field="memberId">
                             <option value="">Select Player</option>
                             ${homeTeam?.members
+                                .filter(m => this.currentMatch?.attendance && this.currentMatch.attendance.some(a => a.memberId === m.id && a.present))
                                 .slice()
                                 .sort((a, b) => a.name.localeCompare(b.name))
                                 .map(m => `<option value="${m.id}">${m.name} (${homeTeam.name})</option>`).join('') || ''}
                             ${awayTeam?.members
+                                .filter(m => this.currentMatch?.attendance && this.currentMatch.attendance.some(a => a.memberId === m.id && a.present))
                                 .slice()
                                 .sort((a, b) => a.name.localeCompare(b.name))
                                 .map(m => `<option value="${m.id}">${m.name} (${awayTeam.name})</option>`).join('') || ''}
