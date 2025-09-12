@@ -1371,23 +1371,21 @@
             overflow-x: hidden;
         }
         
-        /* Grid container with smaller height to ensure both scrollbars are active */
+        /* Grid container with fixed height for internal scrolling */
         .modal-content.checkin-wide .player-grid-container {
-            max-width: 650px; /* Slightly wider for better fit in wide modal */
-            grid-template-columns: repeat(3, 1fr); /* Ensure exactly 3 columns */
-            max-height: 45vh; /* Smaller height to force grid scrolling */ 
-            padding: 20px 15px; /* Normal padding */
-            gap: 30px 20px; /* Normal spacing */
-            overflow-y: auto; /* Grid scrolls when players exceed this height */
+            max-width: 650px;
+            grid-template-columns: repeat(3, 1fr);
+            height: 400px; /* Fixed height - players will exceed this */
+            padding: 20px 15px;
+            gap: 30px 20px;
+            overflow-y: auto; /* Grid gets scrollbar when players exceed height */
             overflow-x: hidden;
         }
         
-        /* Grid area takes remaining flex space but constrains grid height */
+        /* Remove flex constraints from grid area */
         .modal-content.checkin-wide .checkin-grid-area {
-            flex: 1; /* Take remaining space in flex modal */
-            overflow: hidden; /* Contain the grid scrolling */
             position: relative;
-            min-height: 400px; /* Ensure minimum space for grid */
+            /* Remove all flex and overflow constraints */
         }
         
         /* Normal sized cards for check-in modals */
@@ -2630,15 +2628,13 @@
             min-height: 400px;
         }
         
-        /* Wide modal for check-in interface - Force height to ensure both scrollbars */
+        /* Wide modal for check-in interface - Simpler dual scrolling */
         .modal-content.checkin-wide {
             max-width: 800px;
             width: 95%;
-            height: 80vh; /* Force specific height to ensure modal scrollbar */
-            max-height: 80vh; /* Ensure it doesn't exceed this */
-            overflow-y: auto; /* Modal scrolls when content exceeds height */
-            display: flex;
-            flex-direction: column;
+            height: 85vh; /* Fixed height - content will exceed this */
+            overflow-y: auto; /* Modal gets scrollbar when content exceeds height */
+            /* Remove flex layout - use normal flow */
         }
         
         /* Fullscreen modal for check-in (like View app) */

@@ -6304,10 +6304,7 @@ Please check the browser console (F12) for more details.`);
                     </div>
                 </div>
                 
-                <!-- Quick Stats Footer - Hidden since info moved to team header -->
-                <div class="checkin-footer" style="display: none;">
-                    <div id="grid-pagination-info" class="pagination-info-compact"></div>
-                </div>
+                <!-- Quick Stats Footer - Remove hidden footer -->
             </div>
         `, 'checkin-wide');
         
