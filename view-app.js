@@ -1396,7 +1396,7 @@ class CheckInViewApp {
                                 ${cardsDisplay ? `<div class="match-cards">Cards: ${cardsDisplay}</div>` : ''}
                                 <div class="match-actions">
                                     <button class="btn btn-small" onclick="app.viewMatch('${event.id}', '${match.id}')" title="View Match">👁️</button>
-                                    <button class="btn btn-small btn-secondary" onclick="(async () => await app.editMatchResult('${event.id}', '${match.id}'))()" title="Edit Result">🏆</button>
+                                    <button class="btn btn-small btn-secondary" onclick="editMatchResult('${event.id}', '${match.id}')" title="Edit Result">🏆</button>
                                 </div>
                             </div>
                         `;
@@ -1994,7 +1994,7 @@ class CheckInViewApp {
                                 </td>
                                 <td class="actions-cell">
                                     ${game.status !== 'completed' && game.status !== 'cancelled' ? 
-                                        `<button class="btn btn-small" onclick="(async () => await app.editMatchResult('${game.eventId}', '${game.matchId}'))()" title="Edit Result">🏆</button>` 
+                                        `<button class="btn btn-small" onclick="editMatchResult('${game.eventId}', '${game.matchId}')" title="Edit Result">🏆</button>` 
                                         : ''}
                                 </td>
                             </tr>
@@ -2037,7 +2037,7 @@ class CheckInViewApp {
                                 
                                 ${game.status !== 'completed' && game.status !== 'cancelled' ? `
                                     <div class="detail-item">
-                                        <button class="btn btn-small" onclick="(async () => await app.editMatchResult('${game.eventId}', '${game.matchId}'))()">Edit Result 🏆</button>
+                                        <button class="btn btn-small" onclick="editMatchResult('${game.eventId}', '${game.matchId}')">Edit Result 🏆</button>
                                     </div>
                                 ` : ''}
                             </div>
@@ -4603,6 +4603,10 @@ class CheckInViewApp {
 // Global functions for onclick handlers
 async function showSection(sectionName) {
     await app.showSection(sectionName);
+}
+
+async function editMatchResult(eventId, matchId) {
+    await app.editMatchResult(eventId, matchId);
 }
 
 // Function to display Railway edge server info from any response
