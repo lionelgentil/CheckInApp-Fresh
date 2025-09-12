@@ -493,6 +493,12 @@ try {
             }
             break;
             
+        case 'current-season':
+            if ($method === 'GET') {
+                getCurrentSeason($db);
+            }
+            break;
+            
         default:
             http_response_code(404);
             echo json_encode(['error' => 'Endpoint not found']);
@@ -1494,6 +1500,36 @@ function getEvents($db) {
     
     // Convert to array and return
     echo json_encode(array_values($events));
+}
+
+function getCurrentSeason($db) {
+    // Define current season logic - two seasons per year
+    $currentYear = date('Y');
+    $currentMonth = (int)date('n'); // 1-12
+    
+    // Determine current season based on month
+    if ($currentMonth >= 1 && $currentMonth <= 6) {
+        // January 1st to June 30th -> Spring Season
+        $seasonType = 'Spring';
+        $seasonStart = strtotime("{$currentYear}-01-01");
+        $seasonEnd = strtotime("{$currentYear}-06-30 23:59:59");
+    } else {
+        // July 1st to December 31st -> Fall Season
+        $seasonType = 'Fall';
+        $seasonStart = strtotime("{$currentYear}-07-01");
+        $seasonEnd = strtotime("{$currentYear}-12-31 23:59:59");
+    }
+    
+    $currentSeason = "{$currentYear}-{$seasonType}";
+    
+    echo json_encode([
+        'season' => $currentSeason,
+        'season_name' => "{$seasonType} {$currentYear}",
+        'season_type' => $seasonType,
+        'year' => $currentYear,
+        'season_start' => $seasonStart,
+        'season_end' => $seasonEnd
+    ]);
 }
 
 function saveEvents($db) {

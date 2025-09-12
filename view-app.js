@@ -39,6 +39,21 @@ function epochToPacificTime(epochTimestamp, options = {}) {
     return date.toLocaleTimeString('en-US', { ...defaultOptions, ...options });
 }
 
+// Utility function to determine season from event date (matches API logic)
+function getEventSeason(eventEpoch) {
+    const eventDate = new Date(eventEpoch * 1000);
+    const eventYear = eventDate.getFullYear();
+    const eventMonth = eventDate.getMonth() + 1; // getMonth() returns 0-11, we need 1-12
+    
+    if (eventMonth >= 1 && eventMonth <= 6) {
+        // January 1st to June 30th -> Spring Season
+        return `${eventYear}-Spring`;
+    } else {
+        // July 1st to December 31st -> Fall Season
+        return `${eventYear}-Fall`;
+    }
+}
+
 // Utility function to convert epoch timestamp to Pacific timezone date and time
 function epochToPacificDateTime(epochTimestamp) {
     if (!epochTimestamp) return 'No date/time';
@@ -4761,7 +4776,9 @@ function displayRailwayEdgeFromResponse(response) {
             const playerYellowCards = [];
             
             events.forEach(event => {
-                if (event.season === currentSeason.season) {
+                // Use helper function to determine event season
+                const eventSeason = getEventSeason(event.date_epoch);
+                if (eventSeason === currentSeason.season) {
                     event.matches?.forEach(match => {
                         match.cards?.forEach(card => {
                             if (card.memberId === playerId) {
