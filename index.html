@@ -1371,51 +1371,53 @@
             overflow-x: hidden;
         }
         
-        /* Force 3 columns even in wide modals */
+        /* Restore reasonable sizing for check-in modals with proper scrolling */
         .modal-content.checkin-wide .player-grid-container {
             max-width: 650px; /* Slightly wider for better fit in wide modal */
             grid-template-columns: repeat(3, 1fr); /* Ensure exactly 3 columns */
-            max-height: 90vh; /* Maximum possible grid height */
-            padding: 10px; /* Minimal padding */
-            gap: 12px 10px; /* Minimal spacing to fit maximum rows */
+            max-height: calc(90vh - 100px); /* Take most of modal height minus header */
+            padding: 20px 15px; /* Normal padding */
+            gap: 30px 20px; /* Normal spacing */
+            overflow-y: auto; /* Ensure scrolling works */
+            overflow-x: hidden;
         }
         
-        /* Compact cards specifically for check-in modals to fit all players */
+        /* Normal sized cards for check-in modals */
         .modal-content.checkin-wide .player-grid-item {
-            height: 85px; /* Compact cards to fit maximum rows */
-            padding: 4px;
-            border-radius: 8px; /* Smaller border radius */
+            height: 120px; /* Reasonable card height */
+            padding: 8px;
+            border-radius: 12px; /* Normal border radius */
         }
         
         .modal-content.checkin-wide .player-grid-photo {
-            width: 35px;
-            height: 35px;
+            width: 50px;
+            height: 50px;
         }
         
         .modal-content.checkin-wide .player-grid-name {
-            font-size: 9px;
-            line-height: 1.0;
-            margin: 3px 0 1px 0;
+            font-size: 12px;
+            line-height: 1.2;
+            margin: 6px 0 3px 0;
         }
         
         .modal-content.checkin-wide .player-grid-jersey {
-            font-size: 7px;
+            font-size: 10px;
         }
         
         .modal-content.checkin-wide .grid-check-icon,
         .modal-content.checkin-wide .grid-captain-icon {
-            width: 18px;
-            height: 18px;
-            font-size: 10px;
-            top: 4px;
+            width: 20px;
+            height: 20px;
+            font-size: 12px;
+            top: 6px;
         }
         
         .modal-content.checkin-wide .grid-captain-icon {
-            left: 4px;
+            left: 6px;
         }
         
         .modal-content.checkin-wide .grid-check-icon {
-            right: 4px;
+            right: 6px;
         }
 
         /* Scrollbar styling for grid container */
@@ -2620,11 +2622,12 @@
             min-height: 400px;
         }
         
-        /* Wide modal for check-in interface */
+        /* Wide modal for check-in interface - MUCH taller */
         .modal-content.checkin-wide {
             max-width: 800px;
             width: 95%;
-            max-height: 98vh; /* Nearly full screen height */
+            max-height: 90vh; /* Tall but not full screen */
+            height: 90vh; /* Force specific height */
         }
         
         /* Fullscreen modal for check-in (like View app) */
