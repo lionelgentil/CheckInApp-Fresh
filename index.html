@@ -1084,16 +1084,24 @@
             }
             
             .main-nav {
-                flex-direction: column;
+                flex-direction: row; /* Keep horizontal layout */
+                justify-content: center;
                 align-items: center;
-                gap: 10px;
+                gap: 6px; /* Tighter gap between buttons */
+                flex-wrap: wrap; /* Allow wrapping to multiple lines */
+                margin-bottom: 20px; /* Less margin */
             }
             
             .nav-btn {
-                width: 100%;
-                max-width: 300px;
-                padding: 18px 25px; /* Larger touch targets */
-                font-size: 18px;
+                width: auto; /* Allow buttons to size to content */
+                max-width: none;
+                padding: 12px 16px; /* Smaller padding for compact layout */
+                font-size: 14px; /* Smaller font */
+                margin: 4px; /* Small margins between buttons */
+                flex: 1; /* Allow buttons to share space equally */
+                min-width: 0; /* Allow buttons to shrink below content width */
+                text-align: center;
+                line-height: 1.2; /* Tighter line height */
             }
             
             .content-section {
