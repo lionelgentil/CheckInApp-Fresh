@@ -6296,11 +6296,11 @@ Please check the browser console (F12) for more details.`);
                 <!-- Admin Player Grid Area -->
                 <div class="checkin-grid-area">
                     <div id="grid-home-team" class="team-grid-section active">
-                        <div id="grid-container-home" class="player-grid-container"></div>
+                        <div id="grid-container-home" class="player-grid-container-fullscreen"></div>
                     </div>
                     
                     <div id="grid-away-team" class="team-grid-section">
-                        <div id="grid-container-away" class="player-grid-container"></div>
+                        <div id="grid-container-away" class="player-grid-container-fullscreen"></div>
                     </div>
                 </div>
                 
@@ -7059,15 +7059,32 @@ Changes have been reverted.`);
     createModal(title, content, cssClass = '') {
         const modal = document.createElement('div');
         modal.className = 'modal';
-        modal.innerHTML = `
-            <div class="modal-content ${cssClass}">
-                <div class="modal-header">
-                    <h2 class="modal-title">${title}</h2>
-                    <button class="close-btn" onclick="app.closeModal()">&times;</button>
+        
+        if (cssClass === 'checkin-wide') {
+            // Full-screen check-in modal with sticky header (like View app)
+            modal.innerHTML = `
+                <div class="modal-content-fullscreen">
+                    <div class="modal-header-sticky">
+                        <h2 class="modal-title-compact">${title}</h2>
+                        <button class="close-btn-prominent" onclick="app.closeModal()">✕</button>
+                    </div>
+                    <div class="modal-body-scrollable">
+                        ${content}
+                    </div>
                 </div>
-                ${content}
-            </div>
-        `;
+            `;
+        } else {
+            // Standard modal
+            modal.innerHTML = `
+                <div class="modal-content ${cssClass}">
+                    <div class="modal-header">
+                        <h2 class="modal-title">${title}</h2>
+                        <button class="close-btn" onclick="app.closeModal()">&times;</button>
+                    </div>
+                    ${content}
+                </div>
+            `;
+        }
         
         // Close on outside click
         modal.addEventListener('click', (e) => {

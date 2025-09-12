@@ -2587,6 +2587,109 @@
             max-height: 90vh; /* Increased height for check-in modals */
         }
         
+        /* Fullscreen modal for check-in (like View app) */
+        .modal-content-fullscreen {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: white;
+            display: flex;
+            flex-direction: column;
+            z-index: 10001;
+        }
+        
+        .modal-header-sticky {
+            position: sticky;
+            top: 0;
+            background: white;
+            border-bottom: 2px solid #e9ecef;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            z-index: 10002;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        
+        .modal-title-compact {
+            font-size: 1.2em;
+            font-weight: 600;
+            color: #333;
+            margin: 0;
+        }
+        
+        .close-btn-prominent {
+            background: #6c757d;
+            color: white;
+            border: none;
+            border-radius: 50%;
+            width: 36px;
+            height: 36px;
+            font-size: 18px;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s;
+        }
+        
+        .close-btn-prominent:hover {
+            background: #5a6268;
+            transform: scale(1.1);
+        }
+        
+        .modal-body-scrollable {
+            flex: 1;
+            overflow-y: auto;
+            padding: 0;
+        }
+        
+        .player-grid-container-fullscreen {
+            display: grid;
+            grid-template-columns: repeat(3, 1fr);
+            gap: 15px;
+            padding: 20px;
+            height: 100%;
+            overflow-y: auto;
+            overflow-x: hidden;
+        }
+        
+        .checkin-footer {
+            padding: 10px 20px;
+            background: #f8f9fa;
+            border-top: 1px solid #e9ecef;
+            text-align: center;
+        }
+        
+        .pagination-info-compact {
+            font-size: 0.9em;
+            color: #666;
+            font-weight: 500;
+        }
+        
+        /* Override existing player grid items for fullscreen */
+        .player-grid-container-fullscreen .player-grid-item {
+            height: 120px;
+            padding: 8px;
+        }
+        
+        .player-grid-container-fullscreen .player-grid-photo {
+            width: 50px;
+            height: 50px;
+        }
+        
+        .player-grid-container-fullscreen .player-grid-name {
+            font-size: 12px;
+            line-height: 1.2;
+        }
+        
+        .player-grid-container-fullscreen .player-grid-jersey {
+            font-size: 10px;
+        }
+        
         /* Ensure mobile grid works properly */
         @media (max-width: 768px) {
             .modal-content.checkin-wide {
