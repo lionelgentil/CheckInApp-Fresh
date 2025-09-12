@@ -1371,20 +1371,23 @@
             overflow-x: hidden;
         }
         
-        /* Grid container without internal scrolling - modal handles scrolling */
+        /* Grid container with its own scrolling within fixed area */
         .modal-content.checkin-wide .player-grid-container {
             max-width: 650px; /* Slightly wider for better fit in wide modal */
             grid-template-columns: repeat(3, 1fr); /* Ensure exactly 3 columns */
-            /* Remove max-height - let grid expand naturally */
+            max-height: 60vh; /* Fixed height for grid area - creates internal scrolling */ 
             padding: 20px 15px; /* Normal padding */
             gap: 30px 20px; /* Normal spacing */
-            /* Remove overflow - modal handles scrolling */
+            overflow-y: auto; /* Grid scrolls when players exceed this height */
+            overflow-x: hidden;
         }
         
-        /* Grid area returns to normal layout */
+        /* Grid area takes remaining flex space but constrains grid height */
         .modal-content.checkin-wide .checkin-grid-area {
-            /* Back to normal - no special flex or overflow settings */
+            flex: 1; /* Take remaining space in flex modal */
+            overflow: hidden; /* Contain the grid scrolling */
             position: relative;
+            min-height: 400px; /* Ensure minimum space for grid */
         }
         
         /* Normal sized cards for check-in modals */
@@ -2627,13 +2630,14 @@
             min-height: 400px;
         }
         
-        /* Wide modal for check-in interface - Proper modal scrolling */
+        /* Wide modal for check-in interface - Modal level scrolling */
         .modal-content.checkin-wide {
             max-width: 800px;
             width: 95%;
             max-height: 90vh; /* Maximum height when content is large */
             overflow-y: auto; /* Modal scrolls when content exceeds max-height */
-            /* Remove flex layout - use normal modal layout */
+            display: flex;
+            flex-direction: column;
         }
         
         /* Fullscreen modal for check-in (like View app) */
