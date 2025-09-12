@@ -6245,16 +6245,10 @@ Please check the browser console (F12) for more details.`);
             </div>
         ` : '';
         
-        // Check if check-in is locked
-        const isLocked = this.isCheckInLocked(event, match);
-        const lockInfo = this.getLockTimeInfo(event, match);
-        const lockStatusDisplay = isLocked && lockInfo ? 
-            `🔒 Locked since ${lockInfo.lockDate} at ${lockInfo.lockTimeFormatted}` : '';
-        
         const modal = this.createModal(`${homeTeam.name} vs ${awayTeam.name}`, `
-            <!-- Mobile-Optimized Check-In Interface -->
+            <!-- Admin Check-In Interface (No Lock Restrictions) -->
             <div class="mobile-checkin-interface">
-                <!-- Optimized Header with All Match Details Inline -->
+                <!-- Match Header with Key Details -->
                 <div class="checkin-header">
                     <div class="match-info-left">
                         <div class="match-score-line">
@@ -6268,12 +6262,12 @@ Please check the browser console (F12) for more details.`);
                     </div>
                     <div class="match-info-right">
                         ${match.field ? `<div class="match-field">Field ${match.field}</div>` : ''}
-                        ${lockStatusDisplay ? `<div class="lock-status">${lockStatusDisplay}</div>` : ''}
+                        <div class="admin-badge">🔧 Admin Access</div>
                     </div>
                 </div>
                 
                 <!-- Team Toggle with Live Attendance Counts -->
-                <div class="team-toggle-container">
+                <div class="team-toggle-compact">
                     <button class="team-toggle-btn active" id="home-toggle" onclick="app.toggleGridTeam('home')" style="border-left: 4px solid ${homeTeam.colorData};">
                         <span class="team-name">${homeTeam.name}</span>
                         <div class="attendance-count" id="home-attendance-count">
@@ -6299,14 +6293,14 @@ Please check the browser console (F12) for more details.`);
                     <div id="card-summary-content" class="card-summary-content" style="display: none;"></div>
                 </div>
                 
-                <!-- Fullscreen Grid Area -->
+                <!-- Admin Player Grid Area -->
                 <div class="checkin-grid-area">
                     <div id="grid-home-team" class="team-grid-section active">
-                        <div id="grid-container-home" class="player-grid-container-fullscreen"></div>
+                        <div id="grid-container-home" class="player-grid-container"></div>
                     </div>
                     
                     <div id="grid-away-team" class="team-grid-section">
-                        <div id="grid-container-away" class="player-grid-container-fullscreen"></div>
+                        <div id="grid-container-away" class="player-grid-container"></div>
                     </div>
                 </div>
                 
@@ -6338,8 +6332,10 @@ Please check the browser console (F12) for more details.`);
         }
     }
     
-    // Initialize the check-in interface
+    // Initialize the check-in interface (Admin version - no locks)
     async initializeCheckInInterface(eventId, matchId, homeTeam, awayTeam, match) {
+        console.log('🚀 Initializing admin check-in interface');
+        
         // Store current match data
         this.currentEventId = eventId;
         this.currentMatchId = matchId;
@@ -6348,11 +6344,10 @@ Please check the browser console (F12) for more details.`);
         this.currentMatch = match;
         this.currentGridTeam = 'home'; // Default to home team
         
-        // Check if check-in is locked
-        const event = this.events.find(e => e.id === eventId);
-        this.currentCheckInLocked = this.isCheckInLocked(event, match);
+        // Admin always has access - no lock checking
+        this.currentCheckInLocked = false;
         
-        console.log('Check-in lock status:', this.currentCheckInLocked);
+        console.log('✅ Admin access confirmed - no restrictions');
         
         // Update attendance counts
         this.updateAttendanceCounts(match);
@@ -6424,12 +6419,14 @@ Please check the browser console (F12) for more details.`);
         }
     }
     
-    // New function to render team grid in fullscreen mode
+    // Render team grid in fullscreen mode (Admin version - no locks)
     renderGridTeamFullscreen(teamType, team, attendees) {
         const containerId = `grid-container-${teamType}`;
         const container = document.getElementById(containerId);
         
         if (!container || !team) return;
+        
+        console.log(`🏀 Rendering ${teamType} team grid:`, team.members.length, 'players');
         
         // Render all players in fullscreen grid (no pagination, just scroll)
         container.innerHTML = team.members
@@ -6437,13 +6434,12 @@ Please check the browser console (F12) for more details.`);
             .sort((a, b) => a.name.localeCompare(b.name))
             .map(member => {
                 const isCheckedIn = attendees.some(a => a.memberId === member.id);
-                const isLocked = this.currentCheckInLocked || false;
                 const isCaptain = this.isMemberCaptain ? this.isMemberCaptain(member, team) : (member.id === team.captainId);
                 
                 return `
-                    <div class="player-grid-item ${isCheckedIn ? 'checked-in' : ''} ${isLocked ? 'locked' : ''}" 
-                         ${!isLocked ? `onclick="app.toggleGridPlayerAttendance('${this.currentEventId}', '${this.currentMatchId}', '${member.id}', '${teamType}')"` : ''}
-                         ${isLocked ? 'title="Check-in is locked for this match"' : ''}>
+                    <div class="player-grid-item ${isCheckedIn ? 'checked-in' : ''}" 
+                         onclick="app.toggleGridPlayerAttendance('${this.currentEventId}', '${this.currentMatchId}', '${member.id}', '${teamType}')"
+                         title="Click to toggle attendance">
                         ${isCaptain ? '<div class="grid-captain-icon">👑</div>' : ''}
                         ${member.photo ? 
                             `<img src="${this.getMemberPhotoUrl(member)}" alt="${member.name}" class="player-grid-photo">` :
@@ -6453,7 +6449,7 @@ Please check the browser console (F12) for more details.`);
                             <div class="player-grid-name">${member.name}</div>
                             ${member.jerseyNumber ? `<div class="player-grid-jersey">#${member.jerseyNumber}</div>` : ''}
                         </div>
-                        <div class="grid-check-icon">${isLocked ? '🔒' : '✓'}</div>
+                        <div class="grid-check-icon">✓</div>
                     </div>
                 `;
             }).join('');
@@ -6742,9 +6738,8 @@ Please check the browser console (F12) for more details.`);
         }
     }
 
-    // Toggle player attendance in grid view (Enhanced from View app)
+    // Toggle player attendance in grid view (Admin version - no locks, no suspension checks)
     async toggleGridPlayerAttendance(eventId, matchId, memberId, teamType) {
-        // Check if check-in is locked first
         const event = this.events.find(e => e.id === eventId);
         const match = event?.matches.find(m => m.id === matchId);
         
@@ -6754,12 +6749,7 @@ Please check the browser console (F12) for more details.`);
             return;
         }
         
-        // Lock check - prevent any modifications if locked
-        if (this.currentCheckInLocked) {
-            console.log('Check-in is locked, preventing attendance change');
-            alert('Check-in is locked for this match. Changes cannot be made at this time.');
-            return;
-        }
+        console.log('🔧 Admin toggle attendance for:', { eventId, matchId, memberId, teamType });
         
         const attendeesArray = teamType === 'home' ? match.homeTeamAttendees : match.awayTeamAttendees;
         const existingIndex = attendeesArray.findIndex(a => a.memberId === memberId);
@@ -6772,7 +6762,7 @@ Please check the browser console (F12) for more details.`);
         const originalAttendees = [...attendeesArray];
         const wasCheckedIn = existingIndex >= 0;
         
-        // UPDATE UI IMMEDIATELY for instant feedback (same as before the suspension feature)
+        // UPDATE UI IMMEDIATELY for instant feedback
         if (gridItem) {
             if (wasCheckedIn) {
                 // Remove check-in
