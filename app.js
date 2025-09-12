@@ -7166,18 +7166,23 @@ Changes have been reverted.`);
         try {
             container.innerHTML = '<div class="loading">Loading red card records...</div>';
             
-            // Get all match cards and events for the current season
-            const [eventsResponse, currentSeasonResponse] = await Promise.all([
+            // Get all match cards, events, and teams for the current season
+            const [eventsResponse, currentSeasonResponse, teamsResponse] = await Promise.all([
                 fetch('/api/events'),
-                fetch('/api/current-season')
+                fetch('/api/current-season'),
+                fetch('/api/teams-basic')
             ]);
             
-            if (!eventsResponse.ok || !currentSeasonResponse.ok) {
+            if (!eventsResponse.ok || !currentSeasonResponse.ok || !teamsResponse.ok) {
                 throw new Error('Failed to load data');
             }
             
             const events = await eventsResponse.json();
             const currentSeason = await currentSeasonResponse.json();
+            const teams = await teamsResponse.json();
+            
+            // Store teams for team name lookup
+            this.teamsBasic = teams;
             
             // Get all red cards from current season
             const redCards = [];
@@ -7190,13 +7195,25 @@ Changes have been reverted.`);
                     event.matches?.forEach(match => {
                         match.cards?.forEach(card => {
                             if (card.cardType === 'red') {
+                                // Find which team this player belongs to
+                                let playerTeam = null;
+                                for (const team of this.teamsBasic) {
+                                    const member = team.members?.find(m => m.id === card.memberId);
+                                    if (member) {
+                                        playerTeam = team;
+                                        break;
+                                    }
+                                }
+                                
                                 redCards.push({
                                     ...card,
                                     eventDate: event.date,
                                     eventName: event.name,
                                     matchId: match.id,
                                     homeTeam: match.homeTeam,
-                                    awayTeam: match.awayTeam
+                                    awayTeam: match.awayTeam,
+                                    teamName: playerTeam?.name || 'Unknown Team',
+                                    memberName: playerTeam?.members?.find(m => m.id === card.memberId)?.name || 'Unknown Player'
                                 });
                             } else if (card.cardType === 'yellow') {
                                 const playerId = card.memberId;
