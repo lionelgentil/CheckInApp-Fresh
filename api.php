@@ -3006,6 +3006,33 @@ function updateSingleMatch($db) {
         $stmt = $db->prepare($sql);
         $result = $stmt->execute($params);
         
+        // Handle cards if provided
+        if (array_key_exists('cards', $input)) {
+            $cards = $input['cards'] ?? [];
+            
+            // Always delete existing cards first (allows card removal)
+            $db->prepare('DELETE FROM match_cards WHERE match_id = ?')->execute([$matchId]);
+            
+            // Add new cards (if any)
+            if (!empty($cards)) {
+                foreach ($cards as $card) {
+                    $stmt = $db->prepare('
+                        INSERT INTO match_cards (match_id, member_id, team_type, card_type, reason, notes, minute)
+                        VALUES (?, ?, ?, ?, ?, ?, ?)
+                    ');
+                    $stmt->execute([
+                        $matchId,
+                        $card['memberId'],
+                        $card['teamType'],
+                        $card['cardType'],
+                        $card['reason'] ?? null,
+                        $card['notes'] ?? null,
+                        $card['minute'] ?? null
+                    ]);
+                }
+            }
+        }
+        
         if ($result && $stmt->rowCount() > 0) {
             echo json_encode(['success' => true, 'message' => 'Match updated successfully']);
         } else {
