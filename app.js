@@ -961,7 +961,10 @@ class CheckInApp {
                 this.renderReferees();
             } else if (sectionName === 'standings') {
                 // Ensure we have both teams and events loaded for standings calculation
-                if (this.teams.length === 0) {
+                if (this.teams.length === 0 && this.teamsBasic.length === 0) {
+                    await this.loadTeams();
+                } else if (this.teams.length === 0 && this.teamsBasic.length > 0) {
+                    // We have basic data but need full data for standings
                     await this.loadTeams();
                 }
                 if (this.events.length === 0) {
@@ -970,7 +973,10 @@ class CheckInApp {
                 this.renderStandings();
             } else if (sectionName === 'cards') {
                 // Ensure we have all data loaded for card tracking
-                if (this.teams.length === 0) {
+                if (this.teams.length === 0 && this.teamsBasic.length === 0) {
+                    await this.loadTeams();
+                } else if (this.teams.length === 0 && this.teamsBasic.length > 0) {
+                    // We have basic data but need full data for cards
                     await this.loadTeams();
                 }
                 if (this.events.length === 0) {
@@ -985,7 +991,13 @@ class CheckInApp {
                 
                 this.renderCardTracker();
             } else if (sectionName === 'game-tracker') {
-                // Game tracker needs events and referees for display
+                // Game tracker needs teams, events and referees for display
+                if (this.teams.length === 0 && this.teamsBasic.length === 0) {
+                    await this.loadTeams();
+                } else if (this.teams.length === 0 && this.teamsBasic.length > 0) {
+                    // We have basic data but need full data for game tracker
+                    await this.loadTeams();
+                }
                 if (this.events.length === 0) {
                     await this.loadEvents();
                 }
