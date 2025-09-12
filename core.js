@@ -352,7 +352,7 @@ class CheckInCore {
             // Check if it's a direct filename with valid extension
             if ((member.photo.includes('.jpg') || member.photo.includes('.jpeg') || 
                 member.photo.includes('.png') || member.photo.includes('.webp')) &&
-                !member.photo.startsWith('/api/photos') && !member.photo.startsWith('http')) {
+                !member.photo.startsWith('/photos/') && !member.photo.startsWith('/api/photos') && !member.photo.startsWith('http')) {
                 // Convert filename to API URL without cache-busting to avoid corrupting URLs
                 return `/api/photos?filename=${encodeURIComponent(member.photo)}`;
             }
