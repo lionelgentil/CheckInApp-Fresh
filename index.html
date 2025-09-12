@@ -1375,8 +1375,47 @@
         .modal-content.checkin-wide .player-grid-container {
             max-width: 650px; /* Slightly wider for better fit in wide modal */
             grid-template-columns: repeat(3, 1fr); /* Ensure exactly 3 columns */
-            max-height: 80vh; /* Much taller grid to show all rows */
-            padding: 20px 15px; /* Better padding */
+            max-height: 90vh; /* Maximum possible grid height */
+            padding: 10px; /* Minimal padding */
+            gap: 12px 10px; /* Minimal spacing to fit maximum rows */
+        }
+        
+        /* Compact cards specifically for check-in modals to fit all players */
+        .modal-content.checkin-wide .player-grid-item {
+            height: 85px; /* Compact cards to fit maximum rows */
+            padding: 4px;
+            border-radius: 8px; /* Smaller border radius */
+        }
+        
+        .modal-content.checkin-wide .player-grid-photo {
+            width: 35px;
+            height: 35px;
+        }
+        
+        .modal-content.checkin-wide .player-grid-name {
+            font-size: 9px;
+            line-height: 1.0;
+            margin: 3px 0 1px 0;
+        }
+        
+        .modal-content.checkin-wide .player-grid-jersey {
+            font-size: 7px;
+        }
+        
+        .modal-content.checkin-wide .grid-check-icon,
+        .modal-content.checkin-wide .grid-captain-icon {
+            width: 18px;
+            height: 18px;
+            font-size: 10px;
+            top: 4px;
+        }
+        
+        .modal-content.checkin-wide .grid-captain-icon {
+            left: 4px;
+        }
+        
+        .modal-content.checkin-wide .grid-check-icon {
+            right: 4px;
         }
 
         /* Scrollbar styling for grid container */
@@ -2585,7 +2624,7 @@
         .modal-content.checkin-wide {
             max-width: 800px;
             width: 95%;
-            max-height: 95vh; /* Much taller for check-in modals */
+            max-height: 98vh; /* Nearly full screen height */
         }
         
         /* Fullscreen modal for check-in (like View app) */
