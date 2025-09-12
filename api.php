@@ -2933,8 +2933,8 @@ function updateMatchResults($db) {
         
         $eventId = $input['eventId'] ?? null;
         $matchId = $input['matchId'] ?? null;
-        $homeScore = $input['homeScore'] ?? null;
-        $awayScore = $input['awayScore'] ?? null;
+        $homeScore = ($input['homeScore'] !== '' && $input['homeScore'] !== null) ? (int)$input['homeScore'] : null;
+        $awayScore = ($input['awayScore'] !== '' && $input['awayScore'] !== null) ? (int)$input['awayScore'] : null;
         $matchStatus = $input['matchStatus'] ?? 'scheduled';
         $matchNotes = $input['matchNotes'] ?? '';
         $cards = $input['cards'] ?? [];
