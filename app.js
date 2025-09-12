@@ -5987,16 +5987,34 @@ Please check the browser console (F12) for more details.`);
     }
     
     async saveMatchResult(eventId, matchId) {
+        console.log('🔧 saveMatchResult called for:', eventId, matchId);
+        
         const event = this.events.find(e => e.id === eventId);
         const match = event.matches.find(m => m.id === matchId);
         
-        if (!match) return;
+        if (!match) {
+            console.error('❌ Match not found:', matchId);
+            return;
+        }
         
-        // Get form values
-        let matchStatus = document.getElementById('match-status').value;
-        const homeScore = document.getElementById('home-score').value;
-        const awayScore = document.getElementById('away-score').value;
-        const matchNotes = document.getElementById('match-notes').value.trim();
+        // Get form values with defensive checks
+        const matchStatusElement = document.getElementById('match-status');
+        const homeScoreElement = document.getElementById('home-score');
+        const awayScoreElement = document.getElementById('away-score');
+        const matchNotesElement = document.getElementById('match-notes');
+        
+        if (!matchStatusElement) {
+            console.error('❌ match-status element not found');
+            this.showMessage('Error: Form elements not found. Please try again.', 'error');
+            return;
+        }
+        
+        let matchStatus = matchStatusElement.value;
+        const homeScore = homeScoreElement ? homeScoreElement.value : '';
+        const awayScore = awayScoreElement ? awayScoreElement.value : '';
+        const matchNotes = matchNotesElement ? matchNotesElement.value.trim() : '';
+        
+        console.log('📝 Form values:', { matchStatus, homeScore, awayScore, matchNotes });
         
         // Smart status suggestion: if entering scores but status is still "Scheduled", suggest "Completed"
         const hasScores = homeScore !== '' || awayScore !== '';
@@ -6010,7 +6028,9 @@ Please check the browser console (F12) for more details.`);
             if (shouldComplete) {
                 matchStatus = 'completed';
                 // Update the form field to reflect the change
-                document.getElementById('match-status').value = 'completed';
+                if (matchStatusElement) {
+                    matchStatusElement.value = 'completed';
+                }
             }
         }
         
@@ -6026,58 +6046,90 @@ Please check the browser console (F12) for more details.`);
         const homeTeam = this.teams.find(t => t.id === match.homeTeamId);
         const awayTeam = this.teams.find(t => t.id === match.awayTeamId);
         
+        console.log('🃏 Found card items:', cardItems.length);
+        
         cardItems.forEach((cardItem, index) => {
-            const memberId = cardItem.querySelector('[data-field="memberId"]').value;
-            const cardType = cardItem.querySelector('[data-field="cardType"]').value;
-            const minute = cardItem.querySelector('[data-field="minute"]').value;
-            const reason = cardItem.querySelector('[data-field="reason"]').value;
-            const notes = cardItem.querySelector('[data-field="notes"]').value;
-            
-            // Collect suspension data for red cards
-            let suspensionMatches = null;
-            let suspensionServed = false;
-            let suspensionServedDate = null;
-            
-            if (cardType === 'red') {
-                const suspensionMatchesField = cardItem.querySelector('[data-field="suspensionMatches"]');
-                const suspensionServedField = cardItem.querySelector('[data-field="suspensionServed"]');
-                const suspensionServedDateField = cardItem.querySelector('[data-field="suspensionServedDate"]');
+            try {
+                const memberIdField = cardItem.querySelector('[data-field="memberId"]');
+                const cardTypeField = cardItem.querySelector('[data-field="cardType"]');
+                const minuteField = cardItem.querySelector('[data-field="minute"]');
+                const reasonField = cardItem.querySelector('[data-field="reason"]');
+                const notesField = cardItem.querySelector('[data-field="notes"]');
                 
-                if (suspensionMatchesField && suspensionMatchesField.value) {
-                    suspensionMatches = parseInt(suspensionMatchesField.value);
+                if (!memberIdField || !cardTypeField) {
+                    console.warn(`⚠️ Missing required fields in card ${index + 1}`);
+                    return;
                 }
                 
-                if (suspensionServedField) {
-                    suspensionServed = suspensionServedField.checked;
+                const memberId = memberIdField.value;
+                const cardType = cardTypeField.value;
+                const minute = minuteField ? minuteField.value : '';
+                const reason = reasonField ? reasonField.value : '';
+                const notes = notesField ? notesField.value : '';
+                
+                // Collect suspension data for red cards
+                let suspensionMatches = null;
+                let suspensionServed = false;
+                let suspensionServedDate = null;
+                
+                if (cardType === 'red') {
+                    const suspensionMatchesField = cardItem.querySelector('[data-field="suspensionMatches"]');
+                    const suspensionServedField = cardItem.querySelector('[data-field="suspensionServed"]');
+                    const suspensionServedDateField = cardItem.querySelector('[data-field="suspensionServedDate"]');
+                    
+                    if (suspensionMatchesField && suspensionMatchesField.value) {
+                        suspensionMatches = parseInt(suspensionMatchesField.value);
+                    }
+                    
+                    if (suspensionServedField) {
+                        suspensionServed = suspensionServedField.checked;
+                    }
+                    
+                    if (suspensionServed && suspensionServedDateField && suspensionServedDateField.value) {
+                        suspensionServedDate = suspensionServedDateField.value;
+                    }
                 }
                 
-                if (suspensionServed && suspensionServedDateField && suspensionServedDateField.value) {
-                    suspensionServedDate = suspensionServedDateField.value;
+                if (memberId && cardType) {
+                    // Determine team type
+                    const isHomePlayer = homeTeam.members.some(m => m.id === memberId);
+                    const teamType = isHomePlayer ? 'home' : 'away';
+                    
+                    const cardData = {
+                        memberId: memberId,
+                        teamType: teamType,
+                        cardType: cardType,
+                        minute: minute ? parseInt(minute) : null,
+                        reason: reason || null,
+                        notes: notes || null,
+                        suspensionMatches: suspensionMatches,
+                        suspensionServed: suspensionServed,
+                        suspensionServedDate: suspensionServedDate
+                    };
+                    
+                    cards.push(cardData);
+                    console.log(`✅ Added card ${index + 1}:`, cardData);
+                } else {
+                    console.warn(`⚠️ Skipping incomplete card ${index + 1}: memberId=${memberId}, cardType=${cardType}`);
                 }
-            }
-            
-            if (memberId && cardType) {
-                // Determine team type
-                const isHomePlayer = homeTeam.members.some(m => m.id === memberId);
-                const teamType = isHomePlayer ? 'home' : 'away';
-                
-                cards.push({
-                    memberId: memberId,
-                    teamType: teamType,
-                    cardType: cardType,
-                    minute: minute ? parseInt(minute) : null,
-                    reason: reason || null,
-                    notes: notes || null,
-                    suspensionMatches: suspensionMatches,
-                    suspensionServed: suspensionServed,
-                    suspensionServedDate: suspensionServedDate
-                });
+            } catch (error) {
+                console.error(`❌ Error processing card ${index + 1}:`, error);
             }
         });
         
+        console.log('🃏 Total cards collected:', cards.length);
         match.cards = cards;
         
         try {
+            console.log('💾 Saving match result with data:', {
+                matchId,
+                matchStatus: match.matchStatus,
+                homeScore: match.homeScore,
+                awayScore: match.awayScore,
+                notes: match.matchNotes,
+                cardsCount: cards.length
+            });
+            
             // Use efficient single-match update endpoint for match results with authentication
             const updateData = {
                 matchStatus: match.matchStatus,
@@ -6096,19 +6148,25 @@ Please check the browser console (F12) for more details.`);
             });
             
             if (!response.ok) {
+                const errorText = await response.text();
+                console.error('❌ API response error:', response.status, errorText);
                 throw new Error(`Failed to update match result: ${response.status} ${response.statusText}`);
             }
             
             const result = await response.json();
+            console.log('✅ API response:', result);
+            
             if (!result.success) {
                 throw new Error(result.error || 'Failed to update match result');
             }
             
+            console.log('🎉 Match result saved successfully');
+            this.showMessage('Match result saved successfully!', 'success');
             this.renderEvents();
             this.closeModal();
         } catch (error) {
-            console.error('Failed to save match result:', error);
-            alert('Failed to save match result. Please try again.');
+            console.error('❌ Failed to save match result:', error);
+            this.showMessage(`Failed to save match result: ${error.message}`, 'error');
         }
     }
     
@@ -6187,71 +6245,91 @@ Please check the browser console (F12) for more details.`);
             </div>
         ` : '';
         
-        const modal = this.createModal(`Match: ${homeTeam.name} vs ${awayTeam.name}`, `
-            <div style="margin-bottom: 20px; padding: 15px; background: #f8f9fa; border-radius: 8px;">
-                <p><strong>Date:</strong> ${epochToPacificDate(event.date_epoch)}</p>
-                <p><strong>Status:</strong> ${statusDisplay}</p>
-                ${match.field ? `<p><strong>Field:</strong> ${match.field}</p>` : ''}
-                ${match.time_epoch ? `<p><strong>Time:</strong> ${epochToPacificTime(match.time_epoch)}</p>` : ''}
-                ${mainReferee ? `<p><strong>Referee:</strong> ${mainReferee.name}${assistantReferee ? `, ${assistantReferee.name}` : ''}</p>` : ''}
-                ${match.notes ? `<p><strong>Notes:</strong> ${match.notes}</p>` : ''}
-            </div>
-            
-            ${scoreSection}
-            ${cardsSection}
-            
-            <!-- Team Selector for Grid View - Horizontal Layout -->
-            <div style="margin-bottom: 15px;">
-                <div id="grid-view-controls" style="display: flex; justify-content: center; gap: 30px; padding: 10px; background: #f8f9fa; border-radius: 8px;">
-                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-weight: 600;">
-                        <input type="radio" name="grid-team-toggle" value="home" checked onchange="app.toggleGridTeam('home')">
-                        <span>${homeTeam.name}</span>
-                    </label>
-                    <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-weight: 600;">
-                        <input type="radio" name="grid-team-toggle" value="away" onchange="app.toggleGridTeam('away')">
-                        <span>${awayTeam.name}</span>
-                    </label>
-                </div>
-            </div>
-            
-            <!-- ECNL-Style Grid Check-In View -->
-            <div id="grid-checkin-view" style="display: block;">
-                <div id="grid-home-team" style="display: block;">
-                    <div style="background: ${homeTeam.colorData}; color: white; padding: 8px 12px; border-radius: 6px; margin-bottom: 10px; text-align: center;">
-                        <h4 style="margin: 0; font-size: 1em; text-shadow: 1px 1px 2px rgba(0,0,0,0.3);">${homeTeam.name} Check-In</h4>
-                        <div style="font-size: 0.8em; opacity: 0.9; margin-top: 2px;">Tap players to check them in</div>
+        // Check if check-in is locked
+        const isLocked = this.isCheckInLocked(event, match);
+        const lockInfo = this.getLockTimeInfo(event, match);
+        const lockStatusDisplay = isLocked && lockInfo ? 
+            `🔒 Locked since ${lockInfo.lockDate} at ${lockInfo.lockTimeFormatted}` : '';
+        
+        const modal = this.createModal(`${homeTeam.name} vs ${awayTeam.name}`, `
+            <!-- Mobile-Optimized Check-In Interface -->
+            <div class="mobile-checkin-interface">
+                <!-- Optimized Header with All Match Details Inline -->
+                <div class="checkin-header">
+                    <div class="match-info-left">
+                        <div class="match-score-line">
+                            ${hasScore ? `<span class="score-display">${match.homeScore} - ${match.awayScore}</span>` : ''}
+                            <span class="match-status ${match.matchStatus}">${statusDisplay}</span>
+                        </div>
+                        <div class="match-details-inline">
+                            <span class="match-date">${epochToPacificDate(event.date_epoch)}</span>
+                            ${match.time_epoch ? `<span class="match-time">${epochToPacificTime(match.time_epoch)}</span>` : ''}
+                        </div>
                     </div>
-                    <div id="grid-pagination-info-home" style="text-align: center; margin-bottom: 10px; color: #666; font-size: 0.85em;"></div>
-                    <div id="grid-container-home" class="player-grid-container"></div>
-                    <div id="grid-pagination-home" style="text-align: center; margin-top: 10px;"></div>
+                    <div class="match-info-right">
+                        ${match.field ? `<div class="match-field">Field ${match.field}</div>` : ''}
+                        ${lockStatusDisplay ? `<div class="lock-status">${lockStatusDisplay}</div>` : ''}
+                    </div>
                 </div>
                 
-                <div id="grid-away-team" style="display: none;">
-                    <div style="background: ${awayTeam.colorData}; color: white; padding: 8px 12px; border-radius: 6px; margin-bottom: 10px; text-align: center;">
-                        <h4 style="margin: 0; font-size: 1em; text-shadow: 1px 1px 2px rgba(0,0,0,0.3);">${awayTeam.name} Check-In</h4>
-                        <div style="font-size: 0.8em; opacity: 0.9; margin-top: 2px;">Tap players to check them in</div>
+                <!-- Team Toggle with Live Attendance Counts -->
+                <div class="team-toggle-container">
+                    <button class="team-toggle-btn active" id="home-toggle" onclick="app.toggleGridTeam('home')" style="border-left: 4px solid ${homeTeam.colorData};">
+                        <span class="team-name">${homeTeam.name}</span>
+                        <div class="attendance-count" id="home-attendance-count">
+                            <div class="female-count">0/0 Female</div>
+                            <div class="male-count">0/0 Male</div>
+                        </div>
+                    </button>
+                    <button class="team-toggle-btn" id="away-toggle" onclick="app.toggleGridTeam('away')" style="border-left: 4px solid ${awayTeam.colorData};">
+                        <span class="team-name">${awayTeam.name}</span>
+                        <div class="attendance-count" id="away-attendance-count">
+                            <div class="female-count">0/0 Female</div>
+                            <div class="male-count">0/0 Male</div>
+                        </div>
+                    </button>
+                </div>
+                
+                <!-- Collapsible Card Summary -->
+                <div id="team-card-summary" class="team-card-summary" style="display: none;">
+                    <div class="card-summary-header" onclick="app.toggleCardSummary()">
+                        <span id="card-summary-text">ℹ️ 0 Players with cards</span>
+                        <span id="card-summary-arrow">▼</span>
                     </div>
-                    <div id="grid-pagination-info-away" style="text-align: center; margin-bottom: 10px; color: #666; font-size: 0.85em;"></div>
-                    <div id="grid-container-away" class="player-grid-container"></div>
-                    <div id="grid-pagination-away" style="text-align: center; margin-top: 10px;"></div>
+                    <div id="card-summary-content" class="card-summary-content" style="display: none;"></div>
+                </div>
+                
+                <!-- Fullscreen Grid Area -->
+                <div class="checkin-grid-area">
+                    <div id="grid-home-team" class="team-grid-section active">
+                        <div id="grid-container-home" class="player-grid-container-fullscreen"></div>
+                    </div>
+                    
+                    <div id="grid-away-team" class="team-grid-section">
+                        <div id="grid-container-away" class="player-grid-container-fullscreen"></div>
+                    </div>
+                </div>
+                
+                <!-- Quick Stats Footer - Hidden since info moved to team header -->
+                <div class="checkin-footer" style="display: none;">
+                    <div id="grid-pagination-info" class="pagination-info-compact"></div>
                 </div>
             </div>
-            
-            <div style="text-align: center; margin-top: 20px;">
-                <button class="btn btn-secondary" onclick="app.closeModal()">Close</button>
-            </div>
-        `);
+        `, 'checkin-modal');
         
         // LOADING SPINNER: Close loading modal before showing the main modal
         this.closeLoadingModal();
         
         document.body.appendChild(modal);
         
-        // Initialize grid view
-        this.initializeGridView(eventId, matchId, homeTeam, awayTeam, match);
+        // Initialize the check-in interface
+        await this.initializeCheckInInterface(eventId, matchId, homeTeam, awayTeam, match);
         
-        // Load lifetime cards for all players in the match
-        this.loadLifetimeCardsForMatch(homeTeam, awayTeam);
+        // Force update attendance counts after DOM is fully created
+        setTimeout(() => {
+            console.log('🔢 Force updating attendance counts after modal creation');
+            this.updateAttendanceCounts(match);
+        }, 200);
         
         } catch (error) {
             console.error('Error in viewMatch:', error);
@@ -6260,37 +6338,287 @@ Please check the browser console (F12) for more details.`);
         }
     }
     
-    // Initialize the grid view with data
-    initializeGridView(eventId, matchId, homeTeam, awayTeam, match) {
+    // Initialize the check-in interface
+    async initializeCheckInInterface(eventId, matchId, homeTeam, awayTeam, match) {
+        // Store current match data
         this.currentEventId = eventId;
         this.currentMatchId = matchId;
-        this.currentMatch = match;
         this.currentHomeTeam = homeTeam;
         this.currentAwayTeam = awayTeam;
-        this.currentGridTeam = 'home';
-        this.currentGridPage = 0;
+        this.currentMatch = match;
+        this.currentGridTeam = 'home'; // Default to home team
         
-        this.renderGridTeam('home');
-        this.renderGridTeam('away');
+        // Check if check-in is locked
+        const event = this.events.find(e => e.id === eventId);
+        this.currentCheckInLocked = this.isCheckInLocked(event, match);
+        
+        console.log('Check-in lock status:', this.currentCheckInLocked);
+        
+        // Update attendance counts
+        this.updateAttendanceCounts(match);
+        
+        // Initialize with home team displayed by default
+        this.renderGridTeamFullscreen('home', homeTeam, match.homeTeamAttendees || []);
+        this.updatePaginationInfo();
+        await this.updateCardSummary(); // Initialize card summary for home team
+        
+        // Load lifetime cards for all players in the match
+        this.loadLifetimeCardsForMatch(homeTeam, awayTeam);
+    }
+    
+    // Update attendance counts with gender breakdown
+    updateAttendanceCounts(match) {
+        console.log('🔢 updateAttendanceCounts called with:', {
+            homeAttendees: match.homeTeamAttendees?.length || 0,
+            awayAttendees: match.awayTeamAttendees?.length || 0
+        });
+        
+        const homeCountElement = document.getElementById('home-attendance-count');
+        const awayCountElement = document.getElementById('away-attendance-count');
+        
+        console.log('🔢 DOM elements found:', {
+            homeCountElement: !!homeCountElement,
+            awayCountElement: !!awayCountElement
+        });
+        
+        if (homeCountElement && this.currentHomeTeam) {
+            const homeMembers = this.currentHomeTeam.members;
+            const homeMaleTotal = homeMembers.filter(m => m.gender === 'male').length;
+            const homeFemaleTotal = homeMembers.filter(m => m.gender === 'female').length;
+            
+            const homeAttendees = match.homeTeamAttendees || [];
+            let homeMalePresent = 0, homeFemalePresent = 0;
+            homeAttendees.forEach(attendee => {
+                const member = homeMembers.find(m => m.id === attendee.memberId);
+                if (member) {
+                    if (member.gender === 'male') homeMalePresent++;
+                    else if (member.gender === 'female') homeFemalePresent++;
+                }
+            });
+            
+            homeCountElement.innerHTML = `
+                <div class="female-count">${homeFemalePresent}/${homeFemaleTotal} Female</div>
+                <div class="male-count">${homeMalePresent}/${homeMaleTotal} Male</div>
+            `;
+        }
+        
+        if (awayCountElement && this.currentAwayTeam) {
+            const awayMembers = this.currentAwayTeam.members;
+            const awayMaleTotal = awayMembers.filter(m => m.gender === 'male').length;
+            const awayFemaleTotal = awayMembers.filter(m => m.gender === 'female').length;
+            
+            const awayAttendees = match.awayTeamAttendees || [];
+            let awayMalePresent = 0, awayFemalePresent = 0;
+            awayAttendees.forEach(attendee => {
+                const member = awayMembers.find(m => m.id === attendee.memberId);
+                if (member) {
+                    if (member.gender === 'male') awayMalePresent++;
+                    else if (member.gender === 'female') awayFemalePresent++;
+                }
+            });
+            
+            awayCountElement.innerHTML = `
+                <div class="female-count">${awayFemalePresent}/${awayFemaleTotal} Female</div>
+                <div class="male-count">${awayMalePresent}/${awayMaleTotal} Male</div>
+            `;
+        }
+    }
+    
+    // New function to render team grid in fullscreen mode
+    renderGridTeamFullscreen(teamType, team, attendees) {
+        const containerId = `grid-container-${teamType}`;
+        const container = document.getElementById(containerId);
+        
+        if (!container || !team) return;
+        
+        // Render all players in fullscreen grid (no pagination, just scroll)
+        container.innerHTML = team.members
+            .slice()
+            .sort((a, b) => a.name.localeCompare(b.name))
+            .map(member => {
+                const isCheckedIn = attendees.some(a => a.memberId === member.id);
+                const isLocked = this.currentCheckInLocked || false;
+                const isCaptain = this.isMemberCaptain ? this.isMemberCaptain(member, team) : (member.id === team.captainId);
+                
+                return `
+                    <div class="player-grid-item ${isCheckedIn ? 'checked-in' : ''} ${isLocked ? 'locked' : ''}" 
+                         ${!isLocked ? `onclick="app.toggleGridPlayerAttendance('${this.currentEventId}', '${this.currentMatchId}', '${member.id}', '${teamType}')"` : ''}
+                         ${isLocked ? 'title="Check-in is locked for this match"' : ''}>
+                        ${isCaptain ? '<div class="grid-captain-icon">👑</div>' : ''}
+                        ${member.photo ? 
+                            `<img src="${this.getMemberPhotoUrl(member)}" alt="${member.name}" class="player-grid-photo">` :
+                            `<div class="player-grid-photo" style="background: #ddd; display: flex; align-items: center; justify-content: center; color: #666; font-size: 20px;">👤</div>`
+                        }
+                        <div class="player-grid-content">
+                            <div class="player-grid-name">${member.name}</div>
+                            ${member.jerseyNumber ? `<div class="player-grid-jersey">#${member.jerseyNumber}</div>` : ''}
+                        </div>
+                        <div class="grid-check-icon">${isLocked ? '🔒' : '✓'}</div>
+                    </div>
+                `;
+            }).join('');
+    }
+    
+    // Update pagination info for new interface
+    updatePaginationInfo() {
+        const infoElement = document.getElementById('grid-pagination-info');
+        if (!infoElement) return;
+        
+        const team = this.currentGridTeam === 'home' ? this.currentHomeTeam : this.currentAwayTeam;
+        if (!team) return;
+        
+        const attendees = this.currentGridTeam === 'home' ? 
+            (this.currentMatch?.homeTeamAttendees || []) : 
+            (this.currentMatch?.awayTeamAttendees || []);
+            
+        const totalPlayers = team.members.length;
+        const checkedIn = attendees.length;
+        
+        // infoElement.innerHTML = `${checkedIn}/${totalPlayers} players checked in • Tap to toggle`;
+    }
+    
+    // Check if check-in is locked for a match
+    isCheckInLocked(event, match) {
+        if (!match.time_epoch) return false;
+        
+        // Use epoch-based lock function
+        return this.isCheckInLockedForMatchEpoch(match.time_epoch);
+    }
+    
+    // Get lock time information
+    getLockTimeInfo(event, match) {
+        if (!match.time_epoch) return null;
+        
+        const lockTimeEpoch = match.time_epoch + (2 * 60 * 60 + 40 * 60); // 2h 40m after game start
+        const lockDate = epochToPacificDate(lockTimeEpoch);
+        const lockTimeFormatted = epochToPacificTime(lockTimeEpoch);
+        
+        return { lockDate, lockTimeFormatted };
+    }
+    
+    // Helper function to check if check-in is locked for a match (EPOCH-based)
+    isCheckInLockedForMatchEpoch(gameStartEpoch) {
+        if (!gameStartEpoch) {
+            return false; // Don't lock if we don't have time info
+        }
+        
+        try {
+            // Simple epoch arithmetic!
+            const lockTimeEpoch = gameStartEpoch + (2 * 60 * 60 + 40 * 60); // 2h 40m after game start
+            
+            const currentEpoch = Math.floor(Date.now() / 1000);
+            const isLocked = currentEpoch > lockTimeEpoch;
+            
+            return isLocked;
+        } catch (error) {
+            return false; // Don't lock on error
+        }
+    }
+    
+    // Toggle card summary display
+    toggleCardSummary() {
+        const content = document.getElementById('card-summary-content');
+        const arrow = document.getElementById('card-summary-arrow');
+        
+        if (content && arrow) {
+            const isVisible = content.style.display !== 'none';
+            content.style.display = isVisible ? 'none' : 'block';
+            arrow.textContent = isVisible ? '▼' : '▲';
+        }
+    }
+    
+    // Update card summary for current team
+    async updateCardSummary() {
+        const team = this.currentGridTeam === 'home' ? this.currentHomeTeam : this.currentAwayTeam;
+        if (!team) return;
+        
+        try {
+            const response = await fetch(`/api/team-card-summary?team_id=${team.id}`);
+            if (response.ok) {
+                const cardData = await response.json();
+                this.displayCardSummary(cardData);
+            }
+        } catch (error) {
+            console.error('Error loading card summary:', error);
+        }
+    }
+    
+    // Display card summary
+    displayCardSummary(cardData) {
+        const summaryElement = document.getElementById('team-card-summary');
+        const textElement = document.getElementById('card-summary-text');
+        const contentElement = document.getElementById('card-summary-content');
+        
+        if (!summaryElement || !textElement || !contentElement) return;
+        
+        if (cardData.length === 0) {
+            summaryElement.style.display = 'none';
+            return;
+        }
+        
+        summaryElement.style.display = 'block';
+        textElement.textContent = `ℹ️ ${cardData.length} Player${cardData.length !== 1 ? 's' : ''} with cards`;
+        
+        contentElement.innerHTML = cardData.map(player => `
+            <div class="card-summary-player">
+                <div class="player-name">${player.memberName}</div>
+                <div class="card-counts">
+                    ${player.currentSeasonYellow > 0 ? `🟨${player.currentSeasonYellow}` : ''}
+                    ${player.currentSeasonRed > 0 ? `🟥${player.currentSeasonRed}` : ''}
+                    ${player.lifetimeYellow > 0 || player.lifetimeRed > 0 ? 
+                        `<span class="lifetime-cards">(Lifetime: ${player.lifetimeYellow}🟨 ${player.lifetimeRed}🟥)</span>` : ''}
+                </div>
+            </div>
+        `).join('');
+    }
+    
+    // Helper function to check if a member is a captain (supports both legacy and new system)
+    isMemberCaptain(member, team) {
+        // Check new captains system
+        if (team.captains && team.captains.some(c => c.memberId === member.id)) {
+            return true;
+        }
+        
+        // Check legacy captain system
+        if (team.captainId && member.id === team.captainId) {
+            return true;
+        }
+        
+        return false;
     }
     
     // Toggle between home and away team in grid view
     toggleGridTeam(teamType) {
         this.currentGridTeam = teamType;
-        this.currentGridPage = 0; // Reset to first page
         
-        const homeTeamDiv = document.getElementById('grid-home-team');
-        const awayTeamDiv = document.getElementById('grid-away-team');
+        // Update button states
+        const homeToggle = document.getElementById('home-toggle');
+        const awayToggle = document.getElementById('away-toggle');
+        const homeSection = document.getElementById('grid-home-team');
+        const awaySection = document.getElementById('grid-away-team');
         
         if (teamType === 'home') {
-            homeTeamDiv.style.display = 'block';
-            awayTeamDiv.style.display = 'none';
+            homeToggle?.classList.add('active');
+            awayToggle?.classList.remove('active');
+            homeSection?.classList.add('active');
+            awaySection?.classList.remove('active');
         } else {
-            homeTeamDiv.style.display = 'none';
-            awayTeamDiv.style.display = 'block';
+            homeToggle?.classList.remove('active');
+            awayToggle?.classList.add('active');
+            homeSection?.classList.remove('active');
+            awaySection?.classList.add('active');
         }
         
-        this.renderGridTeam(teamType);
+        // Render the selected team
+        const team = teamType === 'home' ? this.currentHomeTeam : this.currentAwayTeam;
+        const attendees = teamType === 'home' ? 
+            (this.currentMatch?.homeTeamAttendees || []) : 
+            (this.currentMatch?.awayTeamAttendees || []);
+            
+        this.renderGridTeamFullscreen(teamType, team, attendees);
+        
+        // Update card summary for new team
+        this.updateCardSummary();
     }
     
     // Render grid for specific team with scrolling (no pagination)
@@ -6414,14 +6742,22 @@ Please check the browser console (F12) for more details.`);
         }
     }
 
-    // Toggle player attendance in grid view
+    // Toggle player attendance in grid view (Enhanced from View app)
     async toggleGridPlayerAttendance(eventId, matchId, memberId, teamType) {
+        // Check if check-in is locked first
         const event = this.events.find(e => e.id === eventId);
         const match = event?.matches.find(m => m.id === matchId);
         
         if (!event || !match) {
             console.error('Event or match not found');
             alert('Event or match not found. Please refresh and try again.');
+            return;
+        }
+        
+        // Lock check - prevent any modifications if locked
+        if (this.currentCheckInLocked) {
+            console.log('Check-in is locked, preventing attendance change');
+            alert('Check-in is locked for this match. Changes cannot be made at this time.');
             return;
         }
         
@@ -6457,12 +6793,15 @@ Please check the browser console (F12) for more details.`);
                 attendeesArray.push({
                     memberId: memberId,
                     name: member.name,
-                    checkedInAt: new Date().toISOString()
+                    checkedInAt_epoch: Math.floor(Date.now() / 1000)
                 });
                 gridItem.classList.add('checked-in');
                 console.log('Added attendance for member:', memberId);
             }
         }
+        
+        // Update attendance counts immediately
+        this.updateAttendanceCounts(match);
         
         // Check for suspensions AFTER UI update (for check-ins only) - this runs in background
         if (!wasCheckedIn) {
@@ -6475,6 +6814,9 @@ Please check the browser console (F12) for more details.`);
                         if (gridItem) {
                             gridItem.classList.remove('checked-in');
                         }
+                        
+                        // Update attendance counts after revert
+                        this.updateAttendanceCounts(match);
                         
                         // Show suspension alert
                         const team = this.teams.find(t => t.id === (teamType === 'home' ? match.homeTeamId : match.awayTeamId));
