@@ -6791,13 +6791,26 @@ Please check the browser console (F12) for more details.`);
             console.log('🔍 Checking suspension status for player:', playerName);
             
             try {
-                const suspensionStatus = await this.getPlayerSuspensionStatus(memberId, event.date);
+                // Ensure cached suspension data is loaded for this match
+                const homeTeam = this.teams.find(t => t.id === match.homeTeamId);
+                const awayTeam = this.teams.find(t => t.id === match.awayTeamId);
+                const matchTeamIds = [homeTeam?.id, awayTeam?.id].filter(Boolean);
                 
-                if (suspensionStatus.isSuspended) {
-                    console.log('🚫 Player is suspended:', suspensionStatus);
+                if (!this.cachedSuspensions) {
+                    this.cachedSuspensions = await this.loadTeamSuspensions(matchTeamIds, event.date_epoch);
+                }
+                
+                // Check if player is suspended using cached data (most reliable)
+                const suspensionStatus = this.cachedSuspensions[memberId];
+                
+                if (suspensionStatus && suspensionStatus.isSuspended) {
+                    console.log('🚫 Player is suspended (cached data):', suspensionStatus);
                     await this.showSuspensionWarning(playerName, suspensionStatus);
                     return; // Don't allow check-in
                 }
+                
+                console.log('✅ Player is clear to check in (cached data confirms no active suspension)');
+                
             } catch (error) {
                 console.warn('Failed to check suspension status, allowing check-in:', error);
             }
