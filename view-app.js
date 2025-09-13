@@ -1,7 +1,7 @@
 /**
- * CheckIn App v6.1.0 - View Only Mode
+ * CheckIn App v6.3.0 - View Only Mode
  * Read-only version for public viewing
- * Enhanced with pure epoch timestamp support for reliable timezone handling
+ * Enhanced with referee personalization and event filtering
  */
 
 // Utility function to convert epoch timestamp to Pacific timezone display
@@ -82,6 +82,8 @@ class CheckInViewApp {
         this.referees = [];
         this.currentModalType = null;
         this.cachedSuspensions = null; // Cache for suspension data
+        this.selectedRefereeId = null; // Track selected referee for filtering
+        this.selectedRefereeName = null; // Track selected referee name for display
         
         this.init();
     }
@@ -152,18 +154,19 @@ class CheckInViewApp {
         try {
             console.log('🚀 Initializing view app...');
             
-            // Load events and basic team info (lightweight) for initial display
-            await Promise.all([
-                this.loadEvents(),
-                this.loadTeamsBasic() // Much faster - no player photos or details
-            ]);
+            // Check if referee is already selected from localStorage
+            const savedRefereeId = localStorage.getItem('selectedRefereeId');
+            const savedRefereeName = localStorage.getItem('selectedRefereeName');
             
-            console.log('✅ Data loaded, rendering events...');
-            await this.renderEvents();
-            
-            console.log('✅ Events rendered, showing events section...');
-            // Ensure Events section is shown by default
-            this.showSection('events');
+            if (savedRefereeId && savedRefereeName) {
+                console.log('📋 Found saved referee selection:', savedRefereeName);
+                this.selectedRefereeId = savedRefereeId;
+                this.selectedRefereeName = savedRefereeName;
+                await this.initializeApp();
+            } else {
+                console.log('👤 No referee selected, showing selection interface...');
+                await this.showRefereeSelection();
+            }
             
             console.log('✅ View app initialization complete');
         } catch (error) {
@@ -179,6 +182,199 @@ class CheckInViewApp {
                     </div>
                 `;
             }
+        }
+    }
+
+    // Show referee selection interface
+    async showRefereeSelection() {
+        try {
+            // Load referees data
+            await this.loadReferees();
+            
+            // Hide all sections and show referee selection
+            document.querySelectorAll('.content-section').forEach(section => {
+                section.classList.remove('active');
+            });
+            
+            // Create referee selection HTML
+            const container = document.querySelector('.container');
+            
+            // Create referee selection section
+            let refereeSection = document.getElementById('referee-selection-section');
+            if (!refereeSection) {
+                refereeSection = document.createElement('div');
+                refereeSection.id = 'referee-selection-section';
+                refereeSection.className = 'content-section active';
+                container.appendChild(refereeSection);
+            } else {
+                refereeSection.classList.add('active');
+            }
+            
+            refereeSection.innerHTML = `
+                <div class="section-header">
+                    <h2 class="section-title">Select Your Name</h2>
+                </div>
+                <div class="referee-selection-content">
+                    <p>Please select your name from the list below to view only the games you are officiating:</p>
+                    <div id="referee-list-container">
+                        <div class="loading">Loading referees...</div>
+                    </div>
+                </div>
+            `;
+            
+            // Render referee list
+            this.renderRefereeSelectionList();
+            
+        } catch (error) {
+            console.error('❌ Failed to show referee selection:', error);
+        }
+    }
+
+    // Render the referee selection list
+    renderRefereeSelectionList() {
+        const container = document.getElementById('referee-list-container');
+        if (!container) return;
+        
+        if (!this.referees || this.referees.length === 0) {
+            container.innerHTML = '<div class="empty-state">No referees found</div>';
+            return;
+        }
+        
+        // Sort referees alphabetically, but keep "Guest" at the end
+        const sortedReferees = [...this.referees].sort((a, b) => a.name.localeCompare(b.name));
+        
+        // Add Guest referee at the end
+        const guestReferee = {
+            id: 'guest',
+            name: 'Guest',
+            contact: 'Can view all games'
+        };
+        sortedReferees.push(guestReferee);
+        
+        const refereeListHtml = sortedReferees.map(referee => `
+            <div class="referee-selection-item" onclick="app.selectReferee('${referee.id}', '${referee.name.replace(/'/g, "\\'")}')">
+                <div class="referee-info">
+                    <div class="referee-name">${referee.name}</div>
+                    <div class="referee-contact">${referee.contact || ''}</div>
+                </div>
+                <div class="select-arrow">→</div>
+            </div>
+        `).join('');
+        
+        container.innerHTML = `
+            <div class="referee-list">
+                ${refereeListHtml}
+            </div>
+        `;
+    }
+
+    // Handle referee selection
+    async selectReferee(refereeId, refereeName) {
+        try {
+            console.log(`🎯 Referee selected: ${refereeName} (${refereeId})`);
+            
+            this.selectedRefereeId = refereeId;
+            this.selectedRefereeName = refereeName;
+            
+            // Save selection to localStorage
+            localStorage.setItem('selectedRefereeId', refereeId);
+            localStorage.setItem('selectedRefereeName', refereeName);
+            
+            // Hide referee selection and initialize app
+            document.getElementById('referee-selection-section').classList.remove('active');
+            
+            await this.initializeApp();
+            
+        } catch (error) {
+            console.error('❌ Failed to select referee:', error);
+        }
+    }
+
+    // Initialize the main app after referee selection
+    async initializeApp() {
+        try {
+            console.log(`🚀 Initializing app for referee: ${this.selectedRefereeName}`);
+            
+            // Update header to show selected referee
+            this.updateHeaderWithReferee();
+            
+            // Load events and basic team info (lightweight) for initial display
+            await Promise.all([
+                this.loadEvents(),
+                this.loadTeamsBasic() // Much faster - no player photos or details
+            ]);
+            
+            console.log('✅ Data loaded, rendering events...');
+            await this.renderEvents();
+            
+            console.log('✅ Events rendered, showing events section...');
+            // Ensure Events section is shown by default
+            this.showSection('events');
+            
+        } catch (error) {
+            console.error('❌ App initialization failed:', error);
+            throw error;
+        }
+    }
+
+    // Update header to show current referee and change option
+    updateHeaderWithReferee() {
+        const headerContent = document.getElementById('header-content');
+        if (headerContent && this.selectedRefereeName) {
+            // Find existing referee info or create it
+            let refereeInfo = document.getElementById('referee-info');
+            if (!refereeInfo) {
+                refereeInfo = document.createElement('div');
+                refereeInfo.id = 'referee-info';
+                refereeInfo.style.cssText = `
+                    background: rgba(255, 255, 255, 0.2);
+                    padding: 5px 15px;
+                    border-radius: 15px;
+                    margin-top: 10px;
+                    font-size: 0.85em;
+                    display: flex;
+                    align-items: center;
+                    justify-content: space-between;
+                    gap: 10px;
+                `;
+                headerContent.appendChild(refereeInfo);
+            }
+            
+            refereeInfo.innerHTML = `
+                <span>👤 ${this.selectedRefereeName}</span>
+                <button onclick="app.changeReferee()" style="
+                    background: rgba(255, 255, 255, 0.3);
+                    border: 1px solid rgba(255, 255, 255, 0.5);
+                    border-radius: 12px;
+                    padding: 4px 8px;
+                    font-size: 0.8em;
+                    color: white;
+                    cursor: pointer;
+                    transition: all 0.2s ease;
+                " onmouseover="this.style.background='rgba(255, 255, 255, 0.5)'" 
+                   onmouseout="this.style.background='rgba(255, 255, 255, 0.3)'">
+                    Change
+                </button>
+            `;
+        }
+    }
+
+    // Allow user to change referee selection
+    async changeReferee() {
+        try {
+            console.log('🔄 Changing referee selection...');
+            
+            // Clear current selection
+            this.selectedRefereeId = null;
+            this.selectedRefereeName = null;
+            localStorage.removeItem('selectedRefereeId');
+            localStorage.removeItem('selectedRefereeName');
+            
+            // Show referee selection again
+            await this.showRefereeSelection();
+            
+        } catch (error) {
+            console.error('❌ Failed to change referee:', error);
         }
     }
     
@@ -1342,6 +1538,25 @@ class CheckInViewApp {
                 return eventEpoch >= todayEpoch; // Show only future events
             }
         });
+
+        // Filter events based on selected referee (if not Guest)
+        if (this.selectedRefereeId && this.selectedRefereeId !== 'guest') {
+            console.log(`🎯 Filtering events for referee: ${this.selectedRefereeName} (${this.selectedRefereeId})`);
+            
+            eventsToShow = eventsToShow.filter(event => {
+                // Check if this event has any matches that this referee is officiating
+                const hasMatchForReferee = event.matches && event.matches.some(match => {
+                    return match.mainRefereeId === this.selectedRefereeId || 
+                           match.assistantRefereeId === this.selectedRefereeId;
+                });
+                
+                return hasMatchForReferee;
+            });
+            
+            console.log(`📊 Found ${eventsToShow.length} events for referee ${this.selectedRefereeName}`);
+        } else if (this.selectedRefereeId === 'guest') {
+            console.log('👤 Guest referee - showing all events');
+        }
         
         // Sort chronologically (future events ascending, past events descending)
         eventsToShow.sort((a, b) => {

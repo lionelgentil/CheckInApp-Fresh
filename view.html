@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PASS CheckIn App v6.2.0 - View Only</title>
+    <title>PASS CheckIn App v6.3.0 - View Only</title>
     <meta name="theme-color" content="#2196F3">
     <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/x-icon" href="favicon.ico">
@@ -2452,6 +2452,104 @@
             color: #495057;
         }
         
+        /* Referee Selection Styles */
+        .referee-selection-content {
+            text-align: center;
+            padding: 20px 0;
+        }
+        
+        .referee-selection-content p {
+            color: #666;
+            font-size: 1.1em;
+            margin-bottom: 30px;
+            line-height: 1.5;
+        }
+        
+        .referee-list {
+            display: flex;
+            flex-direction: column;
+            gap: 15px;
+            max-width: 600px;
+            margin: 0 auto;
+        }
+        
+        .referee-selection-item {
+            display: flex;
+            align-items: center;
+            justify-content: space-between;
+            padding: 20px 25px;
+            background: white;
+            border: 2px solid #e9ecef;
+            border-radius: 12px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .referee-selection-item:hover {
+            border-color: #2196F3;
+            transform: translateY(-2px);
+            box-shadow: 0 4px 15px rgba(33, 150, 243, 0.15);
+        }
+        
+        .referee-info {
+            flex: 1;
+            text-align: left;
+        }
+        
+        .referee-name {
+            font-size: 1.3em;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 5px;
+        }
+        
+        .referee-contact {
+            font-size: 0.9em;
+            color: #666;
+        }
+        
+        .select-arrow {
+            font-size: 1.5em;
+            color: #2196F3;
+            font-weight: bold;
+            margin-left: 20px;
+        }
+        
+        .referee-selection-item:hover .select-arrow {
+            transform: translateX(5px);
+            transition: transform 0.3s ease;
+        }
+        
+        /* Mobile responsive for referee selection */
+        @media (max-width: 768px) {
+            .referee-selection-content p {
+                font-size: 1em;
+                padding: 0 15px;
+            }
+            
+            .referee-list {
+                padding: 0 15px;
+            }
+            
+            .referee-selection-item {
+                padding: 15px 20px;
+            }
+            
+            .referee-name {
+                font-size: 1.1em;
+            }
+            
+            .referee-contact {
+                font-size: 0.85em;
+            }
+            
+            .select-arrow {
+                font-size: 1.3em;
+                margin-left: 15px;
+            }
+        }
+
     </style>
 </head>
 <body>

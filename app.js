@@ -1,7 +1,7 @@
 /**
- * CheckIn App v6.1.0 - JavaScript Frontend
+ * CheckIn App v6.3.0 - JavaScript Frontend
  * Works with PHP/PostgreSQL backend
- * Enhanced with pure epoch timestamp support for reliable timezone handling
+ * Enhanced with suspension system fixes and referee personalization in View app
  */
 
 // Utility function to convert epoch timestamp to Pacific timezone display
