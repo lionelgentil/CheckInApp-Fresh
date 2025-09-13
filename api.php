@@ -511,6 +511,15 @@ try {
             }
             break;
             
+        case 'suspension-cleanup':
+            if ($method === 'POST') {
+                requireAuth();
+                cleanupOrphanedSuspensions($db);
+            } elseif ($method === 'GET') {
+                checkOrphanedSuspensions($db);
+            }
+            break;
+            
         default:
             http_response_code(404);
             echo json_encode(['error' => 'Endpoint not found']);
@@ -3572,6 +3581,87 @@ function getSuspensions($db) {
         error_log("Error getting suspensions: " . $e->getMessage());
         http_response_code(500);
         echo json_encode(['error' => 'Database error while retrieving suspensions']);
+    }
+}
+
+// Check for orphaned suspensions (suspensions without corresponding cards)
+function checkOrphanedSuspensions($db) {
+    try {
+        // Find suspensions that reference card_source_id but the card no longer exists
+        $stmt = $db->query('
+            SELECT ps.*, tm.name as member_name, t.name as team_name
+            FROM player_suspensions ps
+            JOIN team_members tm ON ps.member_id = tm.id
+            JOIN teams t ON tm.team_id = t.id
+            WHERE ps.card_source_id IS NOT NULL 
+            AND ps.card_source_id NOT IN (
+                SELECT DISTINCT match_id FROM match_cards
+                UNION
+                SELECT DISTINCT id FROM matches WHERE id IN (SELECT card_source_id FROM player_suspensions)
+            )
+            ORDER BY ps.created_at_epoch DESC
+        ');
+        
+        $orphanedSuspensions = [];
+        while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+            $orphanedSuspensions[] = [
+                'id' => (int)$row['id'],
+                'memberId' => $row['member_id'],
+                'memberName' => $row['member_name'],
+                'teamName' => $row['team_name'],
+                'cardType' => $row['card_type'],
+                'cardSourceId' => $row['card_source_id'],
+                'suspensionEvents' => (int)$row['suspension_events'],
+                'eventsRemaining' => (int)$row['events_remaining'],
+                'status' => $row['status'],
+                'createdAt' => (int)$row['created_at_epoch']
+            ];
+        }
+        
+        echo json_encode([
+            'orphanedCount' => count($orphanedSuspensions),
+            'orphanedSuspensions' => $orphanedSuspensions
+        ]);
+        
+    } catch (Exception $e) {
+        error_log("Error checking orphaned suspensions: " . $e->getMessage());
+        http_response_code(500);
+        echo json_encode(['error' => 'Database error while checking orphaned suspensions']);
+    }
+}
+
+// Clean up orphaned suspensions
+function cleanupOrphanedSuspensions($db) {
+    try {
+        $db->beginTransaction();
+        
+        // Delete suspensions that reference card_source_id but the card no longer exists
+        $stmt = $db->prepare('
+            DELETE FROM player_suspensions
+            WHERE card_source_id IS NOT NULL 
+            AND card_source_id NOT IN (
+                SELECT DISTINCT match_id FROM match_cards
+                UNION
+                SELECT DISTINCT id FROM matches WHERE id IN (SELECT card_source_id FROM player_suspensions)
+            )
+        ');
+        
+        $result = $stmt->execute();
+        $deletedCount = $stmt->rowCount();
+        
+        $db->commit();
+        
+        echo json_encode([
+            'success' => true,
+            'message' => "Cleaned up {$deletedCount} orphaned suspension records",
+            'deletedCount' => $deletedCount
+        ]);
+        
+    } catch (Exception $e) {
+        $db->rollback();
+        error_log("Error cleaning up orphaned suspensions: " . $e->getMessage());
+        http_response_code(500);
+        echo json_encode(['error' => 'Database error while cleaning up orphaned suspensions']);
     }
 }
 
