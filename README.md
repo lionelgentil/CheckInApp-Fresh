@@ -1,6 +1,6 @@
-# CheckIn App v6.0.0
+# CheckIn App v6.3.0
 
-A comprehensive soccer league management system designed for recreational adult leagues. Features team management, event scheduling, player check-ins, disciplinary tracking, and season management with advanced PostgreSQL backend.
+A comprehensive soccer league management system designed for recreational adult leagues. Features team management, event scheduling, player check-ins, disciplinary tracking, referee personalization, and season management with advanced PostgreSQL backend.
 
 ## 🏆 Features
 
@@ -17,6 +17,14 @@ A comprehensive soccer league management system designed for recreational adult 
 - **Real-time Check-ins**: ECNL-style grid interface with 75px player photos for mobile
 - **Match Results**: Score tracking, match status, and referee assignment
 - **Check-in Locking**: Automatic lock 2h 40min after match start to preserve integrity
+
+### Referee Personalization System ⭐ NEW
+- **Individual Referee Access**: Each referee selects their name on first app load
+- **Personalized Game View**: Referees only see matches they are officiating
+- **Guest Mode**: Special "Guest" access to view all games for supervisors
+- **Mobile-Optimized Interface**: 3-column grid layout for efficient referee selection
+- **Persistent Selection**: Referee choice stored locally for seamless experience
+- **Navigation Lock**: Prevents access to other sections until referee is selected
 
 ### Advanced Disciplinary System
 - **Card Tracking**: Issue yellow and red cards with detailed reasons and match context
@@ -47,12 +55,15 @@ A comprehensive soccer league management system designed for recreational adult 
 - Season management and data migration
 - Complete CRUD operations with optimistic UI updates
 
-### View-Only Interface (`view.html`)
-- Public viewing access without admin authentication
-- Mobile-optimized with collapsible header (saves 20% screen space)
+### View-Only Interface (`view.html`) ⭐ ENHANCED
+- **Referee Personalization**: Individual referee selection on first load
+- **Filtered Game View**: Shows only matches for selected referee
+- **Guest Access Mode**: Full visibility for league supervisors
+- **Mobile-Optimized Design**: 3-column referee selection grid
+- **Enhanced Security**: Navigation disabled until referee selection
+- **Mobile-optimized** with collapsible header (saves 20% screen space)
 - Player check-ins with enhanced card summary for referees
 - Real-time disciplinary information display
-- Optimized for mobile referee use during matches
 
 ## 🏗️ Technical Architecture
 
@@ -85,7 +96,7 @@ POST      /api/match-results      - Match results for view interface
 POST      /api/players/cards      - Card assignment for referees
 GET       /api/health             - System health with database ping
 GET       /api/keep-alive         - Database warming endpoint
-GET       /api/version            - Version information (v6.0.0)
+GET       /api/version            - Version information (v6.3.0)
 ```
 
 ## 🚀 Getting Started
@@ -199,7 +210,25 @@ GET       /api/version            - Version information (v6.0.0)
 
 ## 📝 Version History
 
-### v6.0.0 (Current) - Major Mobile & Performance Update
+### v6.3.0 (Current) - Referee Personalization System
+- 🎯 **Revolutionary Referee Experience**:
+  - 👤 Individual referee selection on app launch
+  - 🎮 Personalized game filtering - referees only see their assigned matches
+  - 👨‍💼 Guest mode for supervisors with full visibility
+  - 📱 Mobile-optimized 3-column referee selection grid
+  - 🔒 Navigation lock prevents access until referee selection
+  - 💾 Persistent referee selection stored locally
+- 🐛 **Interface Improvements**:
+  - 🎨 Consistent styling for Guest referee option (removed blue theme)
+  - 📱 Enhanced mobile layout - 3 columns for iPhone 16 Pro and similar devices
+  - 🔍 Advanced debugging with detailed match filtering logs
+  - ⚡ Optimized event and match-level filtering logic
+- 🛡️ **Enhanced Security & UX**:
+  - 🚫 Complete navigation disable until referee selection
+  - 👁️ Visual feedback with dimmed unavailable sections
+  - 🔄 Smooth referee change workflow with localStorage management
+
+### v6.0.0 (Previous) - Major Mobile & Performance Update
 - 🏆 **Enhanced Mobile Check-in Experience**:
   - 📱 Collapsible header saves 20% of mobile screen space
   - 📸 Increased player photos from 50px to 75px for better visibility
@@ -261,5 +290,5 @@ This application is designed for recreational soccer league management with focu
 
 ---
 
-**CheckIn App v6.0.0** - Advanced Soccer League Management System
-*Optimized for Mobile Referees • PostgreSQL Powered • Railway Cloud Ready*
+**CheckIn App v6.3.0** - Advanced Soccer League Management System
+*Referee Personalization • Mobile Optimized • PostgreSQL Powered • Railway Cloud Ready*
