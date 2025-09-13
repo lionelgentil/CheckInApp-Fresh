@@ -1,9 +1,6 @@
 // CheckIn App Configuration
 // This file contains configuration data that can be easily modified without touching the main application code
 
-// App version constant
-const APP_VERSION = '6.2.0';
-
 window.CheckInAppConfig = {
     // Card reasons for yellow and red cards
     cardReasons: [
