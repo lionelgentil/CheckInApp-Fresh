@@ -4757,7 +4757,7 @@ function displayRailwayEdgeFromResponse(response) {
     }
     
     // Suspension management functions for view app - simplified API-based version
-    async getPlayerSuspensionStatus(playerId, eventDate = null) {
+    async function getPlayerSuspensionStatus(playerId, eventDate = null) {
         try {
             // Use the /api/suspensions endpoint to get active suspensions
             const response = await fetch(`/api/suspensions?status=active&memberId=${playerId}`);
@@ -4790,7 +4790,7 @@ function displayRailwayEdgeFromResponse(response) {
         }
     }
     
-    async showSuspensionWarning(playerName, suspensionInfo) {
+    async function showSuspensionWarning(playerName, suspensionInfo) {
         const warningMessage = suspensionInfo.suspensionType === 'yellow-accumulation' 
             ? `${playerName} is suspended due to yellow card accumulation (${suspensionInfo.reason}).\n\nThis player cannot be checked in until the suspension is resolved by the advisory board.`
             : `${playerName} is suspended due to a red card.\n\nSuspended until: ${suspensionInfo.suspendedUntilEventName || suspensionInfo.suspendedUntil}\nRemaining events: ${suspensionInfo.remainingEvents || 'Unknown'}\n\nThis player cannot be checked in during their suspension period.`;
