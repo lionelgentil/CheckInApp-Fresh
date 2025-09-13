@@ -2556,7 +2556,7 @@
             border-color: #1976d2;
         }
         
-        /* Mobile responsive for referee selection */
+        /* Mobile responsive for referee selection - 3 columns for most phones */
         @media (max-width: 768px) {
             .referee-selection-content p {
                 font-size: 0.9em;
@@ -2591,8 +2591,8 @@
             }
         }
         
-        /* Extra compact for small phones */
-        @media (max-width: 480px) {
+        /* Only very small phones get 2 columns */
+        @media (max-width: 360px) {
             .referee-list {
                 grid-template-columns: repeat(2, 1fr);
                 gap: 6px;
