@@ -6721,6 +6721,89 @@ Please check the browser console (F12) for more details.`);
         }
     }
 
+    // Refresh suspension cache and update visual indicators without full page reload
+    async refreshSuspensionCache() {
+        try {
+            // Only refresh if we have current match context
+            if (!this.currentEventId || !this.currentMatchId) {
+                return;
+            }
+
+            const currentEvent = this.events.find(e => e.id === this.currentEventId);
+            if (!currentEvent) {
+                return;
+            }
+
+            const homeTeam = this.teams.find(t => t.id === this.currentHomeTeam?.id);
+            const awayTeam = this.teams.find(t => t.id === this.currentAwayTeam?.id);
+            const matchTeamIds = [homeTeam?.id, awayTeam?.id].filter(Boolean);
+            
+            // Refresh suspension cache with current event date
+            this.cachedSuspensions = await this.loadTeamSuspensions(matchTeamIds, currentEvent.date_epoch);
+            
+            // Update visual indicators on existing grid items
+            this.updateGridSuspensionIndicators();
+            
+            console.log('🔄 Suspension cache refreshed and visual indicators updated');
+            
+        } catch (error) {
+            console.warn('Failed to refresh suspension cache:', error);
+        }
+    }
+
+    // Update suspension visual indicators on existing grid items
+    updateGridSuspensionIndicators() {
+        try {
+            // Update both home and away team grids
+            ['home', 'away'].forEach(teamType => {
+                const container = document.getElementById(`grid-container-${teamType}`);
+                if (!container) return;
+
+                const team = teamType === 'home' ? this.currentHomeTeam : this.currentAwayTeam;
+                if (!team) return;
+
+                team.members.forEach(member => {
+                    const gridItem = container.querySelector(`[onclick*="'${member.id}'"][onclick*="'${teamType}'"]`);
+                    if (!gridItem) return;
+
+                    const suspensionStatus = this.cachedSuspensions[member.id];
+                    const isSuspended = suspensionStatus && suspensionStatus.isSuspended;
+
+                    // Update suspension class and icon
+                    if (isSuspended) {
+                        gridItem.classList.add('suspended');
+                        gridItem.title = `SUSPENDED: ${suspensionStatus.reason}`;
+                        
+                        // Add suspension icon if not present
+                        if (!gridItem.querySelector('.grid-suspension-icon')) {
+                            const captainIcon = gridItem.querySelector('.grid-captain-icon');
+                            const suspensionIcon = document.createElement('div');
+                            suspensionIcon.className = `grid-suspension-icon ${suspensionStatus.suspensionType === 'yellow_accumulation' ? 'yellow-accumulation' : ''}`;
+                            suspensionIcon.textContent = '🚫';
+                            
+                            if (captainIcon) {
+                                captainIcon.insertAdjacentElement('afterend', suspensionIcon);
+                            } else {
+                                gridItem.insertBefore(suspensionIcon, gridItem.firstChild);
+                            }
+                        }
+                    } else {
+                        gridItem.classList.remove('suspended');
+                        gridItem.title = 'Click to toggle attendance';
+                        
+                        // Remove suspension icon if present
+                        const suspensionIcon = gridItem.querySelector('.grid-suspension-icon');
+                        if (suspensionIcon) {
+                            suspensionIcon.remove();
+                        }
+                    }
+                });
+            });
+        } catch (error) {
+            console.warn('Failed to update suspension indicators:', error);
+        }
+    }
+
     // Check if player is currently suspended (now uses cached data)
     async checkPlayerSuspensionStatus(memberId) {
         try {
@@ -6885,8 +6968,8 @@ Please check the browser console (F12) for more details.`);
             return response.json();
         }).then(result => {
             console.log('Attendance updated successfully:', result);
-            // Note: No need to call renderEvents() - the UI is already updated locally
-            // and renderEvents() can cause race conditions with server data
+            // Refresh suspension cache to update visual indicators without full page reload
+            this.refreshSuspensionCache();
         }).catch(error => {
             console.error('Failed to save events:', error);
             
@@ -7026,8 +7109,8 @@ Please check the browser console (F12) for more details.`);
             const result = await response.json();
             console.log('Attendance updated successfully:', result);
             
-            // Note: No need to call renderEvents() - the UI is already updated locally
-            // and renderEvents() can cause race conditions with server data
+            // Refresh suspension cache to update visual indicators without full page reload
+            this.refreshSuspensionCache();
         } catch (error) {
             console.error('Failed to save events:', error);
             
