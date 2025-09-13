@@ -7166,20 +7166,22 @@ Changes have been reverted.`);
         try {
             container.innerHTML = '<div class="loading">Loading red card records...</div>';
             
-            // Get all match cards, events, and teams for the current season
-            const [eventsResponse, currentSeasonResponse, teamsResponse] = await Promise.all([
+            // Get all match cards, events, teams, and existing suspensions for the current season
+            const [eventsResponse, currentSeasonResponse, teamsResponse, suspensionsResponse] = await Promise.all([
                 fetch('/api/events'),
                 fetch('/api/current-season'),
-                fetch('/api/teams-no-photos')
+                fetch('/api/teams-no-photos'),
+                fetch('/api/suspensions?status=all')
             ]);
             
-            if (!eventsResponse.ok || !currentSeasonResponse.ok || !teamsResponse.ok) {
+            if (!eventsResponse.ok || !currentSeasonResponse.ok || !teamsResponse.ok || !suspensionsResponse.ok) {
                 throw new Error('Failed to load data');
             }
             
             const events = await eventsResponse.json();
             const currentSeason = await currentSeasonResponse.json();
             const teams = await teamsResponse.json();
+            const existingSuspensions = await suspensionsResponse.json();
             
             // Store teams for team name lookup
             this.teamsBasic = teams;
@@ -7257,6 +7259,23 @@ Changes have been reverted.`);
             // Combine red cards and yellow card equivalents
             const allSuspendableCards = [...redCards, ...yellowCardRedEquivalents];
             
+            // Merge with existing suspension data
+            allSuspendableCards.forEach(card => {
+                // Find existing suspension for this member and card type
+                const existingSuspension = existingSuspensions.find(suspension => 
+                    suspension.memberId === card.memberId && 
+                    ((card.cardType === 'red' && suspension.cardType === 'red') ||
+                     (card.cardType === 'yellow-equivalent' && suspension.cardType === 'yellow_accumulation'))
+                );
+                
+                if (existingSuspension) {
+                    card.suspensionMatches = existingSuspension.suspensionEvents;
+                    card.suspensionServed = existingSuspension.status === 'served';
+                    card.suspensionId = existingSuspension.id;
+                    card.eventsRemaining = existingSuspension.eventsRemaining;
+                }
+            });
+            
             // Filter based on suspension status
             let filteredCards = [];
             const today = new Date().toISOString().split('T')[0];
@@ -7295,6 +7314,9 @@ Changes have been reverted.`);
                 `;
                 return;
             }
+            
+            // Store filtered cards for use in other functions
+            this.currentRedCards = filteredCards;
             
             // Render red cards
             container.innerHTML = `
@@ -7401,14 +7423,56 @@ Changes have been reverted.`);
             return;
         }
         
+        // Get the card data from our stored array
+        const cardData = this.currentRedCards[cardIndex];
+        if (!cardData) {
+            alert('Card data not found. Please refresh the page and try again.');
+            return;
+        }
+        
         try {
-            // Here we would update the database with suspension info
-            // For now, just refresh the display
-            alert(`Applied ${suspensionMatches} event suspension`);
+            // Show loading state
+            const applyButton = cardItem.querySelector('.btn-apply-suspension');
+            const originalText = applyButton.textContent;
+            applyButton.textContent = 'Applying...';
+            applyButton.disabled = true;
+            
+            // Call the API to save the suspension
+            const response = await fetch('/api/suspensions', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    memberId: cardData.memberId,
+                    cardType: cardData.cardType === 'yellow-equivalent' ? 'yellow_accumulation' : 'red',
+                    cardSourceId: cardData.matchId || 'accumulation',
+                    suspensionEvents: suspensionMatches,
+                    notes: `Applied via Red Card Management for ${cardData.memberName} (${cardData.teamName})`
+                })
+            });
+            
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Failed to save suspension');
+            }
+            
+            const result = await response.json();
+            alert(`Applied ${suspensionMatches} event suspension successfully`);
+            
+            // Refresh the display to show updated status
             this.renderRedCardManagement();
+            
         } catch (error) {
             console.error('Failed to apply suspension:', error);
-            alert('Failed to apply suspension. Please try again.');
+            alert('Failed to apply suspension: ' + error.message);
+            
+            // Restore button state
+            const applyButton = cardItem.querySelector('.btn-apply-suspension');
+            if (applyButton) {
+                applyButton.textContent = 'Apply Suspension';
+                applyButton.disabled = false;
+            }
         }
     }
     
@@ -7422,14 +7486,40 @@ Changes have been reverted.`);
         
         if (!confirmed) return;
         
+        // Get the card data from our stored array
+        const cardData = this.currentRedCards[cardIndex];
+        if (!cardData || !cardData.suspensionId) {
+            alert('Suspension data not found. Please refresh the page and try again.');
+            return;
+        }
+        
         try {
-            // Here we would update the database to mark suspension as served
-            // For now, just refresh the display
-            alert('Suspension marked as served');
+            // Call the API to mark suspension as served
+            const response = await fetch('/api/suspensions', {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    suspensionId: cardData.suspensionId,
+                    action: 'mark_served'
+                })
+            });
+            
+            if (!response.ok) {
+                const errorData = await response.json();
+                throw new Error(errorData.error || 'Failed to update suspension');
+            }
+            
+            const result = await response.json();
+            alert('Suspension marked as served successfully');
+            
+            // Refresh the display to show updated status
             this.renderRedCardManagement();
+            
         } catch (error) {
             console.error('Failed to mark suspension as served:', error);
-            alert('Failed to update suspension status. Please try again.');
+            alert('Failed to update suspension status: ' + error.message);
         }
     }
 

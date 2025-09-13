@@ -499,6 +499,18 @@ try {
             }
             break;
             
+        case 'suspensions':
+            if ($method === 'POST') {
+                requireAuth();
+                applySuspension($db);
+            } elseif ($method === 'PUT') {
+                requireAuth();
+                updateSuspension($db);
+            } elseif ($method === 'GET') {
+                getSuspensions($db);
+            }
+            break;
+            
         default:
             http_response_code(404);
             echo json_encode(['error' => 'Endpoint not found']);
@@ -2483,6 +2495,26 @@ function initializeDatabase($db) {
         )
     ');
     
+    // Create player_suspensions table for tracking event-based suspensions
+    $db->exec('
+        CREATE TABLE IF NOT EXISTS player_suspensions (
+            id SERIAL PRIMARY KEY,
+            member_id TEXT NOT NULL,
+            card_type TEXT NOT NULL CHECK(card_type IN (\'red\', \'yellow_accumulation\')),
+            card_source TEXT, -- \'match_card\' or \'disciplinary_record\' 
+            card_source_id TEXT, -- ID from match cards or disciplinary records
+            suspension_events INTEGER NOT NULL,
+            suspension_start_date_epoch INTEGER NOT NULL,
+            suspension_end_date_epoch INTEGER,
+            events_remaining INTEGER NOT NULL,
+            status TEXT DEFAULT \'active\' CHECK(status IN (\'active\', \'served\')),
+            created_at_epoch INTEGER DEFAULT EXTRACT(EPOCH FROM CURRENT_TIMESTAMP),
+            served_at_epoch INTEGER DEFAULT NULL,
+            notes TEXT,
+            FOREIGN KEY (member_id) REFERENCES team_members(id) ON DELETE CASCADE
+        )
+    ');
+    
     // Create team_captains table for multiple captains support
     $db->exec('
         CREATE TABLE IF NOT EXISTS team_captains (
@@ -3344,4 +3376,199 @@ function migrateLegacyCaptains($db) {
         return 0;
     }
 }
+
+// Suspension Management Functions
+function applySuspension($db) {
+    $input = json_decode(file_get_contents('php://input'), true);
+    if (!$input) {
+        http_response_code(400);
+        echo json_encode(['error' => 'Invalid JSON data']);
+        return;
+    }
+    
+    $memberId = $input['memberId'] ?? null;
+    $cardType = $input['cardType'] ?? null;
+    $cardSourceId = $input['cardSourceId'] ?? null;
+    $suspensionEvents = (int)($input['suspensionEvents'] ?? 0);
+    $notes = $input['notes'] ?? null;
+    
+    if (!$memberId || !$cardType || $suspensionEvents < 1) {
+        http_response_code(400);
+        echo json_encode(['error' => 'Missing required fields: memberId, cardType, suspensionEvents']);
+        return;
+    }
+    
+    try {
+        $db->beginTransaction();
+        
+        // Calculate suspension dates
+        $currentEpoch = time();
+        
+        // Insert suspension record
+        $stmt = $db->prepare('
+            INSERT INTO player_suspensions (
+                member_id, card_type, card_source_id, suspension_events,
+                suspension_start_date_epoch, events_remaining, status, notes
+            ) VALUES (?, ?, ?, ?, ?, ?, \'active\', ?)
+        ');
+        
+        $stmt->execute([
+            $memberId,
+            $cardType,
+            $cardSourceId,
+            $suspensionEvents,
+            $currentEpoch,
+            $suspensionEvents,
+            $notes
+        ]);
+        
+        $suspensionId = $db->lastInsertId();
+        
+        $db->commit();
+        
+        echo json_encode([
+            'success' => true,
+            'suspensionId' => $suspensionId,
+            'message' => "Applied {$suspensionEvents} event suspension"
+        ]);
+        
+    } catch (Exception $e) {
+        $db->rollback();
+        error_log("Error applying suspension: " . $e->getMessage());
+        http_response_code(500);
+        echo json_encode(['error' => 'Database error while applying suspension']);
+    }
+}
+
+function updateSuspension($db) {
+    $input = json_decode(file_get_contents('php://input'), true);
+    if (!$input) {
+        http_response_code(400);
+        echo json_encode(['error' => 'Invalid JSON data']);
+        return;
+    }
+    
+    $suspensionId = $input['suspensionId'] ?? null;
+    $action = $input['action'] ?? null; // 'mark_served' or 'update_events'
+    
+    if (!$suspensionId || !$action) {
+        http_response_code(400);
+        echo json_encode(['error' => 'Missing required fields: suspensionId, action']);
+        return;
+    }
+    
+    try {
+        $db->beginTransaction();
+        
+        if ($action === 'mark_served') {
+            $stmt = $db->prepare('
+                UPDATE player_suspensions 
+                SET status = \'served\', served_at_epoch = ?, events_remaining = 0
+                WHERE id = ?
+            ');
+            $stmt->execute([time(), $suspensionId]);
+            
+            echo json_encode([
+                'success' => true,
+                'message' => 'Suspension marked as served'
+            ]);
+            
+        } elseif ($action === 'reduce_events') {
+            // Reduce events remaining (called when player misses an event)
+            $stmt = $db->prepare('
+                UPDATE player_suspensions 
+                SET events_remaining = GREATEST(events_remaining - 1, 0),
+                    status = CASE WHEN events_remaining <= 1 THEN \'served\' ELSE \'active\' END,
+                    served_at_epoch = CASE WHEN events_remaining <= 1 THEN ? ELSE served_at_epoch END
+                WHERE id = ? AND status = \'active\'
+            ');
+            $stmt->execute([time(), $suspensionId]);
+            
+            echo json_encode([
+                'success' => true,
+                'message' => 'Suspension events reduced'
+            ]);
+        }
+        
+        $db->commit();
+        
+    } catch (Exception $e) {
+        $db->rollback();
+        error_log("Error updating suspension: " . $e->getMessage());
+        http_response_code(500);
+        echo json_encode(['error' => 'Database error while updating suspension']);
+    }
+}
+
+function getSuspensions($db) {
+    $memberId = $_GET['memberId'] ?? null;
+    $status = $_GET['status'] ?? 'active'; // 'active', 'served', 'all'
+    
+    try {
+        $sql = '
+            SELECT 
+                ps.id,
+                ps.member_id,
+                ps.card_type,
+                ps.card_source_id,
+                ps.suspension_events,
+                ps.suspension_start_date_epoch,
+                ps.events_remaining,
+                ps.status,
+                ps.created_at_epoch,
+                ps.served_at_epoch,
+                ps.notes,
+                tm.name as member_name,
+                t.name as team_name
+            FROM player_suspensions ps
+            JOIN team_members tm ON ps.member_id = tm.id
+            JOIN teams t ON tm.team_id = t.id
+            WHERE 1=1
+        ';
+        
+        $params = [];
+        
+        if ($memberId) {
+            $sql .= ' AND ps.member_id = ?';
+            $params[] = $memberId;
+        }
+        
+        if ($status !== 'all') {
+            $sql .= ' AND ps.status = ?';
+            $params[] = $status;
+        }
+        
+        $sql .= ' ORDER BY ps.created_at_epoch DESC';
+        
+        $stmt = $db->prepare($sql);
+        $stmt->execute($params);
+        
+        $suspensions = [];
+        while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+            $suspensions[] = [
+                'id' => (int)$row['id'],
+                'memberId' => $row['member_id'],
+                'memberName' => $row['member_name'],
+                'teamName' => $row['team_name'],
+                'cardType' => $row['card_type'],
+                'cardSourceId' => $row['card_source_id'],
+                'suspensionEvents' => (int)$row['suspension_events'],
+                'suspensionStartEpoch' => (int)$row['suspension_start_date_epoch'],
+                'eventsRemaining' => (int)$row['events_remaining'],
+                'status' => $row['status'],
+                'createdAtEpoch' => (int)$row['created_at_epoch'],
+                'servedAtEpoch' => $row['served_at_epoch'] ? (int)$row['served_at_epoch'] : null,
+                'notes' => $row['notes']
+            ];
+        }
+        
+        echo json_encode($suspensions);
+        
+    } catch (Exception $e) {
+        error_log("Error getting suspensions: " . $e->getMessage());
+        http_response_code(500);
+        echo json_encode(['error' => 'Database error while retrieving suspensions']);
+    }
+}
+
 ?>
