@@ -4756,11 +4756,26 @@ class CheckInViewApp {
                 const processedSuspensions = [];
                 
                 for (const suspension of memberSuspensions) {
+                    // Try to find the actual event date when the red card occurred using cardSourceId (match ID)
+                    let actualSuspensionStartEpoch = suspension.suspensionStartEpoch; // Default to DB value
+                    
+                    if (suspension.cardSourceId && suspension.cardSourceId !== 'accumulation') {
+                        // Find the match that corresponds to this suspension
+                        for (const event of this.events) {
+                            const match = event.matches?.find(m => m.id === suspension.cardSourceId);
+                            if (match) {
+                                // Use the event date when the red card actually occurred
+                                actualSuspensionStartEpoch = event.date_epoch;
+                                break;
+                            }
+                        }
+                    }
+                    
                     // Get all events since suspension start date, ordered chronologically
                     // Only count events that occurred BEFORE the event we're trying to check into
                     const cutoffDate = eventDate || (Date.now() / 1000); // Use event date if provided, otherwise current time
                     const eventsSinceSuspension = this.events
-                        .filter(event => event.date_epoch > suspension.suspensionStartEpoch && event.date_epoch < cutoffDate)
+                        .filter(event => event.date_epoch > actualSuspensionStartEpoch && event.date_epoch < cutoffDate)
                         .sort((a, b) => a.date_epoch - b.date_epoch);
                     
                     // Calculate how many events have passed since suspension
@@ -4774,7 +4789,20 @@ class CheckInViewApp {
                     processedSuspensions.push({
                         ...suspension,
                         calculatedRemaining: remainingForThisSuspension,
-                        eventsPassed: eventsPassedCount
+                        eventsPassed: eventsPassedCount,
+                        actualStartDate: actualSuspensionStartEpoch // Store the corrected start date
+                    });
+                    
+                    // Debug logging with corrected dates
+                    console.log(`🔍 Check-in Suspension Debug for player (loadTeamSuspensions):`, {
+                        memberId: Object.keys(suspensionsByMember).find(id => suspensionsByMember[id].includes(suspension)),
+                        dbSuspensionStartDate: new Date(suspension.suspensionStartEpoch * 1000).toISOString().split('T')[0],
+                        actualSuspensionStartDate: new Date(actualSuspensionStartEpoch * 1000).toISOString().split('T')[0],
+                        cardSourceId: suspension.cardSourceId,
+                        suspensionEvents: suspension.suspensionEvents,
+                        eventsPassedCount,
+                        eventsSinceSuspension: eventsSinceSuspension.map(e => new Date(e.date_epoch * 1000).toISOString().split('T')[0]),
+                        calculatedRemaining: remainingForThisSuspension
                     });
                 }
                 
@@ -4831,20 +4859,37 @@ class CheckInViewApp {
             const processedSuspensions = [];
             
             for (const suspension of activeSuspensions) {
+                // Try to find the actual event date when the red card occurred using cardSourceId (match ID)
+                let actualSuspensionStartEpoch = suspension.suspensionStartEpoch; // Default to DB value
+                
+                if (suspension.cardSourceId && suspension.cardSourceId !== 'accumulation') {
+                    // Find the match that corresponds to this suspension
+                    for (const event of this.events) {
+                        const match = event.matches?.find(m => m.id === suspension.cardSourceId);
+                        if (match) {
+                            // Use the event date when the red card actually occurred
+                            actualSuspensionStartEpoch = event.date_epoch;
+                            break;
+                        }
+                    }
+                }
+                
                 // Get all events since suspension start date, ordered chronologically
                 // Only count events that occurred BEFORE the event we're trying to check into
                 const cutoffDate = eventDate || (Date.now() / 1000); // Use event date if provided, otherwise current time
                 const eventsSinceSuspension = this.events
-                    .filter(event => event.date_epoch > suspension.suspensionStartEpoch && event.date_epoch < cutoffDate)
+                    .filter(event => event.date_epoch > actualSuspensionStartEpoch && event.date_epoch < cutoffDate)
                     .sort((a, b) => a.date_epoch - b.date_epoch);
                 
                 // Calculate how many events have passed since suspension
                 const eventsPassedCount = eventsSinceSuspension.length;
                 
                 // Debug logging for suspension calculation
-                console.log(`🔍 Suspension Debug for player ${playerId}:`, {
-                    suspensionStartDate: new Date(suspension.suspensionStartEpoch * 1000).toISOString().split('T')[0],
+                console.log(`🔍 Check-in Suspension Debug for player ${playerId} (getPlayerSuspensionStatus):`, {
+                    dbSuspensionStartDate: new Date(suspension.suspensionStartEpoch * 1000).toISOString().split('T')[0],
+                    actualSuspensionStartDate: new Date(actualSuspensionStartEpoch * 1000).toISOString().split('T')[0],
                     eventDate: eventDate ? new Date(eventDate * 1000).toISOString().split('T')[0] : 'current time',
+                    cardSourceId: suspension.cardSourceId,
                     suspensionEvents: suspension.suspensionEvents,
                     eventsPassedCount,
                     eventsSinceSuspension: eventsSinceSuspension.map(e => new Date(e.date_epoch * 1000).toISOString().split('T')[0]),

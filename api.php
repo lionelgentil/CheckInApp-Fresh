@@ -3406,6 +3406,7 @@ function applySuspension($db) {
     $cardType = $input['cardType'] ?? null;
     $cardSourceId = $input['cardSourceId'] ?? null;
     $suspensionEvents = (int)($input['suspensionEvents'] ?? 0);
+    $suspensionStartEpoch = $input['suspensionStartEpoch'] ?? null; // Use provided start date
     $notes = $input['notes'] ?? null;
     
     if (!$memberId || !$cardType || $suspensionEvents < 1) {
@@ -3417,8 +3418,8 @@ function applySuspension($db) {
     try {
         $db->beginTransaction();
         
-        // Calculate suspension dates
-        $currentEpoch = time();
+        // Use the provided suspension start date (event date) or fall back to current time
+        $suspensionStartDate = $suspensionStartEpoch ?: time();
         
         // Insert suspension record
         $stmt = $db->prepare('
@@ -3433,7 +3434,7 @@ function applySuspension($db) {
             $cardType,
             $cardSourceId,
             $suspensionEvents,
-            $currentEpoch,
+            $suspensionStartDate, // Use event date instead of current time
             $suspensionEvents,
             $notes
         ]);
