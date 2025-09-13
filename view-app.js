@@ -426,6 +426,81 @@ class CheckInViewApp {
                 </button>
             `;
         }
+        
+        // Add mobile-specific referee info that's always visible
+        this.updateMobileRefereeInfo();
+    }
+
+    // Add persistent referee info for mobile (always visible)
+    updateMobileRefereeInfo() {
+        if (!this.selectedRefereeName) return;
+        
+        const container = document.querySelector('.container');
+        if (!container) return;
+        
+        // Find existing mobile referee info or create it
+        let mobileRefereeInfo = document.getElementById('mobile-referee-info');
+        if (!mobileRefereeInfo) {
+            mobileRefereeInfo = document.createElement('div');
+            mobileRefereeInfo.id = 'mobile-referee-info';
+            mobileRefereeInfo.style.cssText = `
+                background: rgba(255, 255, 255, 0.95);
+                padding: 8px 15px;
+                margin: 0 -20px 15px -20px;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                gap: 10px;
+                font-size: 0.9em;
+                color: #333;
+                border-bottom: 1px solid rgba(0, 0, 0, 0.1);
+                position: sticky;
+                top: 0;
+                z-index: 100;
+            `;
+            
+            // Insert after the header but before main nav
+            const mainNav = document.querySelector('.main-nav');
+            if (mainNav) {
+                container.insertBefore(mobileRefereeInfo, mainNav);
+            } else {
+                container.insertBefore(mobileRefereeInfo, container.firstChild);
+            }
+        }
+        
+        mobileRefereeInfo.innerHTML = `
+            <span style="font-weight: 600;">👤 ${this.selectedRefereeName}</span>
+            <button onclick="app.changeReferee()" style="
+                background: #007bff;
+                color: white;
+                border: none;
+                border-radius: 6px;
+                padding: 6px 12px;
+                font-size: 0.8em;
+                font-weight: 600;
+                cursor: pointer;
+                transition: all 0.2s ease;
+                touch-action: manipulation;
+            " onmouseover="this.style.background='#0056b3'" 
+               onmouseout="this.style.background='#007bff'"
+               ontouchstart="this.style.transform='scale(0.95)'"
+               ontouchend="this.style.transform='scale(1)'">
+                Change Referee
+            </button>
+        `;
+        
+        // Show mobile info only on mobile devices
+        const mediaQuery = window.matchMedia('(max-width: 768px)');
+        const updateMobileVisibility = () => {
+            if (mediaQuery.matches) {
+                mobileRefereeInfo.style.display = 'flex';
+            } else {
+                mobileRefereeInfo.style.display = 'none';
+            }
+        };
+        
+        updateMobileVisibility();
+        mediaQuery.addListener(updateMobileVisibility);
     }
 
     // Allow user to change referee selection
