@@ -6555,67 +6555,25 @@ Please check the browser console (F12) for more details.`);
     // Check if player is currently suspended
     async checkPlayerSuspensionStatus(memberId) {
         try {
-            // Check both disciplinary records AND match cards for suspensions
-            const response = await fetch(`/api/disciplinary-records?member_id=${memberId}`);
-            let disciplinaryRecords = [];
+            // Use the suspension API endpoint for consistency
+            const response = await fetch(`/api/suspensions?memberId=${memberId}&status=active`);
             
-            if (response.ok) {
-                disciplinaryRecords = await response.json();
-            } else {
-                console.warn('Could not check disciplinary records:', response.status);
+            if (!response.ok) {
+                console.warn('Could not check suspension status:',response.status);
+                return { suspended: false }; // Allow check-in if there's an error
             }
             
-            // Find any unserved suspensions from disciplinary records
-            const activeDisciplinaryRecords = disciplinaryRecords.filter(record => 
-                record.cardType === 'red' && 
-                record.suspensionMatches && 
-                record.suspensionMatches > 0 && 
-                !record.suspensionServed
-            );
+            const activeSuspensions = await response.json();
             
-            // Also check for unserved suspensions from match cards
-            const activeMatchCards = [];
-            this.events.forEach(event => {
-                event.matches.forEach(match => {
-                    if (match.cards) {
-                        match.cards.forEach(card => {
-                            if (card.memberId === memberId && 
-                                card.cardType === 'red' && 
-                                card.suspensionMatches && 
-                                card.suspensionMatches > 0 && 
-                                !card.suspensionServed) {
-                                activeMatchCards.push({
-                                    eventName: event.name,
-                                    eventDate: new Date(event.date_epoch * 1000).toLocaleDateString('en-US', { 
-                            timeZone: 'America/Los_Angeles', 
-                            year: 'numeric', 
-                            month: '2-digit', 
-                            day: '2-digit' 
-                        }),
-                                    suspensionMatches: card.suspensionMatches,
-                                    reason: card.reason
-                                });
-                            }
-                        });
-                    }
-                });
-            });
-            
-            const totalActiveSuspensions = [...activeDisciplinaryRecords, ...activeMatchCards];
-            
-            if (totalActiveSuspensions.length > 0) {
-                const totalMatches = totalActiveSuspensions.reduce((sum, record) => {
-                    return sum + (record.suspensionMatches || 0);
+            if (activeSuspensions.length > 0) {
+                const totalMatches = activeSuspensions.reduce((sum, suspension) => {
+                    return sum + suspension.eventsRemaining;
                 }, 0);
                 
                 return {
                     suspended: true,
                     totalMatches: totalMatches,
-                    records: totalActiveSuspensions,
-                    sources: {
-                        disciplinary: activeDisciplinaryRecords.length,
-                        matches: activeMatchCards.length
-                    }
+                    suspensions: activeSuspensions
                 };
             }
             
@@ -7207,14 +7165,22 @@ Changes have been reverted.`);
                                     }
                                 }
                                 
+                                // Find team names for match display
+                                const homeTeamData = teams.find(t => t.id === match.homeTeamId);
+                                const awayTeamData = teams.find(t => t.id === match.awayTeamId);
+                                
                                 redCards.push({
                                     ...card,
                                     eventDate: epochToPacificDate(event.date_epoch),
                                     eventDate_epoch: event.date_epoch,
                                     eventName: event.name,
                                     matchId: match.id,
-                                    homeTeam: match.homeTeam,
-                                    awayTeam: match.awayTeam,
+                                    matchInfo: {
+                                        homeTeam: homeTeamData?.name || 'Unknown Team',
+                                        awayTeam: awayTeamData?.name || 'Unknown Team',
+                                        homeTeamId: match.homeTeamId,
+                                        awayTeamId: match.awayTeamId
+                                    },
                                     teamName: playerTeam?.name || 'Unknown Team',
                                     memberName: playerTeam?.members?.find(m => m.id === card.memberId)?.name || 'Unknown Player'
                                 });
@@ -7372,6 +7338,7 @@ Changes have been reverted.`);
                     </div>
                     
                     ${card.eventName ? `<div class="event-info">Event: ${card.eventName}</div>` : ''}
+                    ${card.matchInfo ? `<div class="match-info">Match: ${card.matchInfo.homeTeam} vs ${card.matchInfo.awayTeam}</div>` : ''}
                     ${card.reason ? `<div class="card-reason">Reason: ${card.reason}</div>` : ''}
                     ${card.notes ? `<div class="card-notes">Notes: ${card.notes}</div>` : ''}
                 </div>
@@ -7526,96 +7493,38 @@ Changes have been reverted.`);
     // Suspension Status Checking Methods
     async getPlayerSuspensionStatus(playerId, eventDate = null) {
         try {
-            // If no event date provided, use current event or today's date
-            const checkDate = eventDate || new Date().toISOString().split('T')[0];
+            // Use the suspension API endpoint instead of fetching all events
+            const suspensionsResponse = await fetch(`/api/suspensions?memberId=${playerId}&status=active`);
             
-            // Get all events and current season info
-            const [eventsResponse, currentSeasonResponse] = await Promise.all([
-                fetch('/api/events'),
-                fetch('/api/current-season')
-            ]);
-            
-            if (!eventsResponse.ok || !currentSeasonResponse.ok) {
+            if (!suspensionsResponse.ok) {
                 console.warn('Failed to load suspension data');
                 return { isSuspended: false };
             }
             
-            const events = await eventsResponse.json();
-            const currentSeason = await currentSeasonResponse.json();
+            const activeSuspensions = await suspensionsResponse.json();
             
-            // Get all red cards for this player in current season
-            const playerRedCards = [];
-            const playerYellowCards = [];
-            
-            events.forEach(event => {
-                // Use helper function to determine event season
-                const eventSeason = getEventSeason(event.date_epoch);
-                if (eventSeason === currentSeason.season) {
-                    event.matches?.forEach(match => {
-                        match.cards?.forEach(card => {
-                            if (card.memberId === playerId) {
-                                if (card.cardType === 'red') {
-                                    playerRedCards.push({
-                                        ...card,
-                                        eventDate: event.date,
-                                        eventName: event.name
-                                    });
-                                } else if (card.cardType === 'yellow') {
-                                    playerYellowCards.push({
-                                        ...card,
-                                        eventDate: event.date,
-                                        eventName: event.name
-                                    });
-                                }
-                            }
-                        });
-                    });
-                }
-            });
-            
-            // Check for yellow card accumulation (3+ yellow cards = suspension)
-            if (playerYellowCards.length >= 3) {
-                // For yellow card accumulation, consider suspended until manually cleared
-                return {
-                    isSuspended: true,
-                    suspensionType: 'yellow-accumulation',
-                    reason: `${playerYellowCards.length} yellow cards accumulated`,
-                    suspendedUntil: 'To be determined by advisory board'
+            // Check if player has any active suspensions
+            if (activeSuspensions.length === 0) {
+                return { 
+                    isSuspended: false, 
+                    suspensionType: null,
+                    totalMatches: 0 
                 };
             }
             
-            // Check for active red card suspensions
-            for (const redCard of playerRedCards) {
-                // For now, assume all red cards without served status are active
-                // In a full implementation, this would check actual suspension data from database
-                if (redCard.suspensionMatches && !redCard.suspensionServed) {
-                    // Calculate suspension end date based on events
-                    const cardEventDate = new Date(redCard.eventDate);
-                    const futureEvents = events
-                        .filter(e => new Date(e.date) > cardEventDate && e.season === currentSeason.season)
-                        .sort((a, b) => new Date(a.date) - new Date(b.date))
-                        .slice(0, redCard.suspensionMatches);
-                    
-                    if (futureEvents.length > 0) {
-                        const lastSuspensionEvent = futureEvents[futureEvents.length - 1];
-                        const suspensionEndDate = new Date(lastSuspensionEvent.date);
-                        const currentEventDate = new Date(checkDate);
-                        
-                        if (currentEventDate <= suspensionEndDate) {
-                            return {
-                                isSuspended: true,
-                                suspensionType: 'red-card',
-                                reason: 'Red card suspension',
-                                suspendedUntil: lastSuspensionEvent.date,
-                                suspendedUntilEventName: lastSuspensionEvent.name,
-                                remainingEvents: futureEvents.filter(e => new Date(e.date) >= currentEventDate).length
-                            };
-                        }
-                    }
-                }
-            }
+            // Sum up all active suspension events remaining
+            const totalEventsRemaining = activeSuspensions.reduce((total, suspension) => {
+                return total + suspension.eventsRemaining;
+            }, 0);
             
-            return { isSuspended: false };
+            return {
+                isSuspended: true,
+                suspensionType: activeSuspensions.length > 1 ? 'multiple' : activeSuspensions[0].cardType,
+                totalMatches: totalEventsRemaining,
+                suspensions: activeSuspensions,
+                reason: `${activeSuspensions.length} active suspension${activeSuspensions.length > 1 ? 's' : ''}`,
+                remainingEvents: totalEventsRemaining
+            };
             
         } catch (error) {
             console.error('Error checking suspension status:', error);
