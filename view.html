@@ -2459,13 +2459,19 @@
             opacity: 0.3;
         }
         
-        .referee-selection-active .content-section {
+        .referee-selection-active .content-section:not(#referee-selection-section) {
             pointer-events: none;
             opacity: 0.3;
         }
         
         .referee-selection-active .nav-btn {
             cursor: not-allowed;
+        }
+        
+        /* Ensure referee selection section remains fully functional */
+        .referee-selection-active #referee-selection-section {
+            pointer-events: auto;
+            opacity: 1;
         }
 
         .referee-selection-content {
