@@ -499,7 +499,9 @@ class CheckInApp {
             
             // Clear cache after successful save to ensure fresh data on next load
             this.clearCache();
-            console.log('🧹 Cache cleared after events save');
+            // Also clear suspension cache since cards may have been deleted
+            this.cachedSuspensions = null;
+            console.log('🧹 Cache cleared after events save (including suspensions)');
             
             return result;
         } catch (error) {
@@ -5815,6 +5817,9 @@ Please check the browser console (F12) for more details.`);
         const cardItems = document.querySelectorAll('.card-item-mobile, .card-item');
         if (cardItems[index]) {
             cardItems[index].remove();
+            
+            // Clear suspension cache since cards changed - this will force a refresh of suspension status
+            this.cachedSuspensions = null;
             
             // Re-index remaining cards
             const remainingCards = document.querySelectorAll('.card-item-mobile, .card-item');

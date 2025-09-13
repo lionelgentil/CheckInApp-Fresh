@@ -151,15 +151,37 @@ class CheckInViewApp {
     }
     
     async init() {
-        // Load events and basic team info (lightweight) for initial display
-        await Promise.all([
-            this.loadEvents(),
-            this.loadTeamsBasic() // Much faster - no player photos or details
-        ]);
-        await this.renderEvents();
-        
-        // Ensure Events section is shown by default
-        this.showSection('events');
+        try {
+            console.log('🚀 Initializing view app...');
+            
+            // Load events and basic team info (lightweight) for initial display
+            await Promise.all([
+                this.loadEvents(),
+                this.loadTeamsBasic() // Much faster - no player photos or details
+            ]);
+            
+            console.log('✅ Data loaded, rendering events...');
+            await this.renderEvents();
+            
+            console.log('✅ Events rendered, showing events section...');
+            // Ensure Events section is shown by default
+            this.showSection('events');
+            
+            console.log('✅ View app initialization complete');
+        } catch (error) {
+            console.error('❌ View app initialization failed:', error);
+            // Show error to user instead of infinite loading
+            const eventsContainer = document.getElementById('events-container');
+            if (eventsContainer) {
+                eventsContainer.innerHTML = `
+                    <div class="error-message">
+                        <h3>Failed to Load Application</h3>
+                        <p>Error: ${error.message}</p>
+                        <button onclick="location.reload()" class="btn btn-primary">Retry</button>
+                    </div>
+                `;
+            }
+        }
     }
     
     // Season Management
@@ -167,45 +189,24 @@ class CheckInViewApp {
         const now = new Date();
         const year = now.getFullYear();
         const month = now.getMonth() + 1; // JavaScript months are 0-indexed
-        const day = now.getDate();
         
-        // Spring season: Feb 15th to June 30th
-        if ((month === 2 && day >= 15) || (month >= 3 && month <= 6)) {
+        // Updated to match main app logic:
+        // Spring season: Jan 1st to Jun 30th
+        // Fall season: Jul 1st to Dec 31st
+        if (month >= 1 && month <= 6) {
             return {
                 type: 'Spring',
                 year: year,
-                startDate: new Date(year, 1, 15), // Feb 15
-                endDate: new Date(year, 5, 30)    // June 30
+                startDate: new Date(year, 0, 1),  // Jan 1
+                endDate: new Date(year, 5, 30)   // Jun 30
             };
-        }
-        // Fall season: Aug 1st to Dec 31st
-        else if (month >= 8 && month <= 12) {
+        } else {
             return {
                 type: 'Fall',
                 year: year,
-                startDate: new Date(year, 7, 1),  // Aug 1
+                startDate: new Date(year, 6, 1),  // Jul 1  
                 endDate: new Date(year, 11, 31)  // Dec 31
             };
-        }
-        // Between seasons - determine which season we're closer to
-        else {
-            if (month === 1 || (month === 2 && day < 15)) {
-                // January or early February - closer to upcoming Spring season
-                return {
-                    type: 'Spring',
-                    year: year,
-                    startDate: new Date(year, 1, 15), // Feb 15
-                    endDate: new Date(year, 5, 30)    // June 30
-                };
-            } else {
-                // July - closer to upcoming Fall season
-                return {
-                    type: 'Fall',
-                    year: year,
-                    startDate: new Date(year, 7, 1),  // Aug 1
-                    endDate: new Date(year, 11, 31)  // Dec 31
-                };
-            }
         }
     }
     
@@ -218,11 +219,12 @@ class CheckInViewApp {
     // Lightweight team loading (just basic info for events display)
     async loadTeamsBasic() {
         try {
+            console.log('🔄 Loading basic teams data...');
             const data = await this.fetch(`/api/teams-basic?_t=${Date.now()}`);
             this.teamsBasic = data;
-            console.log('🚀 Loaded basic teams data:', this.teamsBasic.length, 'teams');
+            console.log(`✅ Loaded basic teams data: ${this.teamsBasic.length} teams`);
         } catch (error) {
-            console.warn('Teams-basic API not available, falling back to full teams API:', error);
+            console.warn('❌ Teams-basic API not available, falling back to full teams API:', error);
             // Fallback to full API but extract only needed data
             await this.loadTeams();
             this.teamsBasic = this.teams.map(team => ({
@@ -232,6 +234,7 @@ class CheckInViewApp {
                 colorData: team.colorData,
                 memberCount: team.members ? team.members.length : 0
             }));
+            console.log(`✅ Fallback: extracted basic data from ${this.teamsBasic.length} teams`);
         }
     }
 
@@ -320,15 +323,17 @@ class CheckInViewApp {
     
     async loadEvents() {
         try {
+            console.log('🔄 Loading events...');
             const response = await fetch(`/api/events?_t=${Date.now()}`);
             if (response.ok) {
                 this.events = await response.json();
+                console.log(`✅ Loaded ${this.events.length} events`);
             } else {
-                console.error('Failed to load events');
+                console.error('❌ Failed to load events, status:', response.status);
                 this.events = [];
             }
         } catch (error) {
-            console.error('Error loading events:', error);
+            console.error('❌ Error loading events:', error);
             this.events = [];
         }
     }

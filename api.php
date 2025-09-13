@@ -631,7 +631,8 @@ function updateSingleEvent($db) {
         
         // Update matches if provided (replace all matches for this event)
         if (isset($input['matches'])) {
-            // Remove existing matches for this event
+            // Remove existing matches for this event and cleanup related suspensions
+            $db->prepare('DELETE FROM player_suspensions WHERE card_source_id IN (SELECT id FROM matches WHERE event_id = ?)')->execute([$eventId]);
             $db->prepare('DELETE FROM match_cards WHERE match_id IN (SELECT id FROM matches WHERE event_id = ?)')->execute([$eventId]);
             $db->prepare('DELETE FROM match_attendees WHERE match_id IN (SELECT id FROM matches WHERE event_id = ?)')->execute([$eventId]);
             $db->prepare('DELETE FROM matches WHERE event_id = ?')->execute([$eventId]);
@@ -1555,6 +1556,7 @@ function saveEvents($db) {
     $db->beginTransaction();
     
     try {
+        $db->exec('DELETE FROM player_suspensions'); // Clear suspensions when rebuilding all events
         $db->exec('DELETE FROM match_cards');
         $db->exec('DELETE FROM general_attendees');
         $db->exec('DELETE FROM match_attendees');
@@ -3024,7 +3026,8 @@ function updateMatchResults($db) {
         $result = $stmt->execute([$homeScore, $awayScore, $matchStatus, $matchNotes, $matchId]);
         
         // Update cards - always process cards array (even if empty to allow deletion)
-        // Remove existing cards for this match first
+        // Remove existing cards for this match first, and cleanup related suspensions
+        $db->prepare('DELETE FROM player_suspensions WHERE card_source_id = ?')->execute([$matchId]);
         $db->prepare('DELETE FROM match_cards WHERE match_id = ?')->execute([$matchId]);
         
         // Add new cards (if any)
@@ -3227,7 +3230,8 @@ function updateSingleMatch($db) {
         if (array_key_exists('cards', $input)) {
             $cards = $input['cards'] ?? [];
             
-            // Always delete existing cards first (allows card removal)
+            // Always delete existing cards first (allows card removal) and cleanup related suspensions
+            $db->prepare('DELETE FROM player_suspensions WHERE card_source_id = ?')->execute([$matchId]);
             $db->prepare('DELETE FROM match_cards WHERE match_id = ?')->execute([$matchId]);
             
             // Add new cards (if any)
