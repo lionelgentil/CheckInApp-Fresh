@@ -1600,9 +1600,13 @@ class CheckInViewApp {
         // Filter events based on date and toggle
         const todayEpoch = Math.floor(new Date().setHours(0, 0, 0, 0) / 1000); // Convert to epoch seconds
         
+        console.log(`📅 Today's epoch: ${todayEpoch}, Show past events: ${showPastEvents}`);
+        
         let eventsToShow = this.events.filter(event => {
             // Use epoch timestamp for comparison (much simpler!)
             const eventEpoch = event.date_epoch;
+            
+            console.log(`📅 Event "${event.name}": epoch=${eventEpoch}, today=${todayEpoch}, isPast=${eventEpoch < todayEpoch}, isFuture=${eventEpoch >= todayEpoch}`);
             
             if (showPastEvents) {
                 return eventEpoch < todayEpoch; // Show only past events
@@ -1610,11 +1614,13 @@ class CheckInViewApp {
                 return eventEpoch >= todayEpoch; // Show only future events
             }
         });
+        
+        console.log(`📅 After date filtering: ${eventsToShow.length} events (${eventsToShow.map(e => e.name).join(', ')})`);
 
         // Filter events based on selected referee (if not Guest)
         if (this.selectedRefereeId && this.selectedRefereeId !== 'guest') {
             console.log(`🎯 Filtering events for referee: ${this.selectedRefereeName} (${this.selectedRefereeId})`);
-            console.log(`📋 Total events before filtering: ${eventsToShow.length}`);
+            console.log(`📋 Total events before referee filtering: ${eventsToShow.length}`);
             
             // Debug: Log first event structure
             if (eventsToShow.length > 0) {
@@ -1651,26 +1657,8 @@ class CheckInViewApp {
                 return hasMatchForReferee;
             });
             
-            console.log(`📊 Found ${eventsToShow.length} events for referee ${this.selectedRefereeName}`);
-            
-            // If no events found, provide helpful debug info
-            if (eventsToShow.length === 0) {
-                console.warn('⚠️ No events found for selected referee. Possible issues:');
-                console.warn('1. Referee ID mismatch');
-                console.warn('2. No matches assigned to this referee');
-                console.warn('3. Event/match data not loaded properly');
-                
-                // Show all referee IDs in events for debugging
-                const allRefereeIds = new Set();
-                this.events.forEach(event => {
-                    event.matches?.forEach(match => {
-                        if (match.mainRefereeId) allRefereeIds.add(String(match.mainRefereeId));
-                        if (match.assistantRefereeId) allRefereeIds.add(String(match.assistantRefereeId));
-                    });
-                });
-                console.log('🔍 All referee IDs found in events:', Array.from(allRefereeIds));
-                console.log('🎯 Selected referee ID:', String(this.selectedRefereeId));
-            }
+            console.log(`📊 Found ${eventsToShow.length} events for referee ${this.selectedRefereeName} after both filters`);
+            console.log('🎯 Final events after referee filtering:', eventsToShow.map(e => e.name));
             
         } else if (this.selectedRefereeId === 'guest') {
             console.log('👤 Guest referee - showing all events');
