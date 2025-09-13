@@ -2468,63 +2468,92 @@
         
         .referee-list {
             display: grid;
-            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
-            gap: 12px;
-            max-width: 900px;
+            grid-template-columns: repeat(4, 1fr);
+            grid-template-rows: repeat(5, 1fr);
+            gap: 10px;
+            max-width: 1000px;
             margin: 0 auto;
             padding: 0 15px;
+            min-height: 400px;
         }
         
         .referee-selection-item {
             display: flex;
+            flex-direction: column;
             align-items: center;
-            justify-content: space-between;
-            padding: 15px 18px;
+            justify-content: center;
+            padding: 12px 8px;
             background: white;
             border: 2px solid #e9ecef;
-            border-radius: 10px;
+            border-radius: 8px;
             cursor: pointer;
             transition: all 0.3s ease;
             box-shadow: 0 2px 6px rgba(0,0,0,0.08);
-            min-height: 60px;
+            text-align: center;
+            min-height: 75px;
         }
         
         .referee-selection-item:hover {
             border-color: #2196F3;
             transform: translateY(-1px);
             box-shadow: 0 4px 12px rgba(33, 150, 243, 0.15);
+            background: #f8f9fa;
         }
         
         .referee-info {
-            flex: 1;
-            text-align: left;
+            width: 100%;
+            text-align: center;
         }
         
         .referee-name {
-            font-size: 1.1em;
+            font-size: 0.9em;
             font-weight: 600;
             color: #333;
-            margin-bottom: 3px;
+            margin-bottom: 2px;
             line-height: 1.2;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            display: -webkit-box;
+            -webkit-line-clamp: 2;
+            -webkit-box-orient: vertical;
         }
         
         .referee-contact {
-            font-size: 0.8em;
+            font-size: 0.7em;
             color: #666;
-            line-height: 1.2;
+            line-height: 1.1;
+            opacity: 0.8;
+            overflow: hidden;
+            text-overflow: ellipsis;
+            white-space: nowrap;
         }
         
         .select-arrow {
-            font-size: 1.3em;
-            color: #2196F3;
-            font-weight: bold;
-            margin-left: 15px;
-            flex-shrink: 0;
+            display: none; /* Hidden in grid layout */
         }
         
-        .referee-selection-item:hover .select-arrow {
-            transform: translateX(3px);
-            transition: transform 0.3s ease;
+        /* Special styling for Guest referee */
+        .referee-selection-item.guest-referee {
+            background: linear-gradient(135deg, #e3f2fd, #bbdefb);
+            border-color: #2196F3;
+            grid-column: span 2;
+            min-height: 60px;
+        }
+        
+        .referee-selection-item.guest-referee .referee-name {
+            color: #1976d2;
+            font-weight: 700;
+            font-size: 1em;
+        }
+        
+        .referee-selection-item.guest-referee .referee-contact {
+            color: #1976d2;
+            font-weight: 500;
+        }
+        
+        .referee-selection-item.guest-referee:hover {
+            background: linear-gradient(135deg, #bbdefb, #90caf9);
+            border-color: #1976d2;
         }
         
         /* Mobile responsive for referee selection */
@@ -2536,54 +2565,56 @@
             }
             
             .referee-list {
-                grid-template-columns: 1fr;
+                grid-template-columns: repeat(3, 1fr);
+                grid-template-rows: repeat(auto, 1fr);
                 gap: 8px;
                 padding: 0 10px;
+                min-height: 300px;
             }
             
             .referee-selection-item {
-                padding: 12px 15px;
-                min-height: 50px;
-                border-radius: 8px;
+                padding: 10px 6px;
+                min-height: 65px;
             }
             
             .referee-name {
-                font-size: 1em;
-                margin-bottom: 2px;
+                font-size: 0.85em;
             }
             
             .referee-contact {
-                font-size: 0.75em;
+                font-size: 0.65em;
             }
             
-            .select-arrow {
-                font-size: 1.2em;
-                margin-left: 12px;
+            .referee-selection-item.guest-referee {
+                grid-column: span 3;
+                min-height: 50px;
             }
         }
         
         /* Extra compact for small phones */
         @media (max-width: 480px) {
-            .referee-selection-content {
-                padding: 10px 0;
-            }
-            
             .referee-list {
+                grid-template-columns: repeat(2, 1fr);
                 gap: 6px;
                 padding: 0 8px;
             }
             
             .referee-selection-item {
-                padding: 10px 12px;
-                min-height: 45px;
+                padding: 8px 4px;
+                min-height: 60px;
             }
             
             .referee-name {
-                font-size: 0.95em;
+                font-size: 0.8em;
             }
             
             .referee-contact {
-                font-size: 0.7em;
+                font-size: 0.6em;
+            }
+            
+            .referee-selection-item.guest-referee {
+                grid-column: span 2;
+                min-height: 45px;
             }
         }
 

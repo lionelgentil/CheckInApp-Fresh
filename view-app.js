@@ -160,7 +160,18 @@ class CheckInViewApp {
             
             console.log(`🔍 localStorage check: ID="${savedRefereeId}" (${typeof savedRefereeId}), Name="${savedRefereeName}"`);
             
-            if (savedRefereeId && savedRefereeName) {
+            // Add URL parameter check to force referee selection
+            const urlParams = new URLSearchParams(window.location.search);
+            const forceSelection = urlParams.get('selectReferee') === 'true';
+            
+            if (forceSelection) {
+                console.log('🔄 Force referee selection requested via URL parameter');
+                localStorage.removeItem('selectedRefereeId');
+                localStorage.removeItem('selectedRefereeName');
+                this.selectedRefereeId = null;
+                this.selectedRefereeName = null;
+                await this.showRefereeSelection();
+            } else if (savedRefereeId && savedRefereeName) {
                 console.log('📋 Found saved referee selection:', savedRefereeName);
                 this.selectedRefereeId = savedRefereeId;
                 this.selectedRefereeName = savedRefereeName;
@@ -254,15 +265,18 @@ class CheckInViewApp {
         };
         sortedReferees.push(guestReferee);
         
-        const refereeListHtml = sortedReferees.map(referee => `
-            <div class="referee-selection-item" onclick="app.selectReferee('${referee.id}', '${referee.name.replace(/'/g, "\\'")}')">
-                <div class="referee-info">
-                    <div class="referee-name">${referee.name}</div>
-                    <div class="referee-contact">${referee.contact || ''}</div>
+        const refereeListHtml = sortedReferees.map(referee => {
+            const isGuest = referee.id === 'guest';
+            return `
+                <div class="referee-selection-item ${isGuest ? 'guest-referee' : ''}" onclick="app.selectReferee('${referee.id}', '${referee.name.replace(/'/g, "\\'")}')">
+                    <div class="referee-info">
+                        <div class="referee-name">${referee.name}</div>
+                        <div class="referee-contact">${referee.contact || ''}</div>
+                    </div>
+                    <div class="select-arrow">→</div>
                 </div>
-                <div class="select-arrow">→</div>
-            </div>
-        `).join('');
+            `;
+        }).join('');
         
         container.innerHTML = `
             <div class="referee-list">
@@ -310,6 +324,9 @@ class CheckInViewApp {
                 this.loadTeamsBasic() // Much faster - no player photos or details
             ]);
             
+            // Debug referee and event data after loading
+            this.debugRefereeEventData();
+            
             console.log('✅ Data loaded, rendering events...');
             await this.renderEvents();
             
@@ -321,6 +338,46 @@ class CheckInViewApp {
             console.error('❌ App initialization failed:', error);
             throw error;
         }
+    }
+
+    // Debug method to check referee and event data
+    debugRefereeEventData() {
+        console.log('🔍 DEBUG: Referee and Event Data Analysis');
+        console.log(`Selected Referee: "${this.selectedRefereeName}" (ID: "${this.selectedRefereeId}")`);
+        console.log(`Total referees loaded: ${this.referees.length}`);
+        console.log(`Total events loaded: ${this.events.length}`);
+        
+        // Show all referee IDs in the system
+        const allRefereeIds = this.referees.map(r => ({id: r.id, name: r.name}));
+        console.log('All referee IDs in system:', allRefereeIds);
+        
+        // Check if selected referee exists in referee list
+        const selectedRefereeExists = this.referees.find(r => String(r.id) === String(this.selectedRefereeId));
+        console.log('Selected referee exists in system:', selectedRefereeExists ? 'YES' : 'NO');
+        
+        // Analyze events and matches
+        let totalMatches = 0;
+        let matchesWithSelectedReferee = 0;
+        
+        this.events.forEach((event, eventIndex) => {
+            console.log(`Event ${eventIndex + 1}: "${event.name}" (${event.matches?.length || 0} matches)`);
+            
+            if (event.matches) {
+                event.matches.forEach((match, matchIndex) => {
+                    totalMatches++;
+                    const mainRefId = String(match.mainRefereeId || '');
+                    const assistantRefId = String(match.assistantRefereeId || '');
+                    const selectedRefId = String(this.selectedRefereeId || '');
+                    
+                    const hasSelectedReferee = (mainRefId === selectedRefId || assistantRefId === selectedRefId);
+                    if (hasSelectedReferee) matchesWithSelectedReferee++;
+                    
+                    console.log(`  Match ${matchIndex + 1}: Main=${mainRefId}, Assistant=${assistantRefId}, HasSelected=${hasSelectedReferee}`);
+                });
+            }
+        });
+        
+        console.log(`📊 Summary: ${totalMatches} total matches, ${matchesWithSelectedReferee} matches with selected referee`);
     }
 
     // Update header to show current referee and change option
@@ -382,6 +439,15 @@ class CheckInViewApp {
         } catch (error) {
             console.error('❌ Failed to change referee:', error);
         }
+    }
+
+    // Global function for debugging - reset referee selection
+    resetRefereeSelection() {
+        console.log('🔄 Resetting referee selection...');
+        localStorage.removeItem('selectedRefereeId');
+        localStorage.removeItem('selectedRefereeName');
+        console.log('✅ Referee selection cleared. Reloading page...');
+        window.location.reload();
     }
     
     // Season Management
