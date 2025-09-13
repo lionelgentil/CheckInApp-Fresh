@@ -6728,7 +6728,7 @@ Please check the browser console (F12) for more details.`);
             if (this.cachedSuspensions && this.cachedSuspensions[memberId]) {
                 const suspensionStatus = this.cachedSuspensions[memberId];
                 return {
-                    suspended: true,
+                    suspended: suspensionStatus.isSuspended, // Use the actual suspension status, not just existence of data
                     totalMatches: suspensionStatus.totalMatches,
                     suspensions: suspensionStatus.suspensions
                 };
@@ -7620,10 +7620,31 @@ Changes have been reverted.`);
                     ` : `
                         <div class="suspension-status">
                             <div class="suspension-info">
-                                <span class="suspension-length">${card.suspensionMatches} events suspension</span>
-                                <span class="suspension-status-badge ${card.suspensionServed ? 'served' : 'active'}">
-                                    ${suspensionStatus}
-                                </span>
+                                <div class="suspension-summary">
+                                    <span class="suspension-length">${card.suspensionMatches} events suspension</span>
+                                    <span class="suspension-status-badge ${card.suspensionServed ? 'served' : 'active'}">
+                                        ${suspensionStatus}
+                                    </span>
+                                </div>
+                                
+                                <div class="suspension-timeline">
+                                    <div class="timeline-item">
+                                        <strong>🟥 Red card given:</strong> ${card.eventDate}
+                                    </div>
+                                    ${this.getSuspensionServedDates(card).map(date => 
+                                        `<div class="timeline-item">
+                                            <strong>⏰ Suspension served:</strong> ${date}
+                                        </div>`
+                                    ).join('')}
+                                    ${card.suspensionServed ? 
+                                        `<div class="timeline-item complete">
+                                            <strong>✅ Suspension completed</strong>
+                                        </div>` : 
+                                        `<div class="timeline-item pending">
+                                            <strong>⏳ ${card.eventsRemaining} event${card.eventsRemaining !== 1 ? 's' : ''} remaining</strong>
+                                        </div>`
+                                    }
+                                </div>
                             </div>
                             ${!card.suspensionServed ? `
                                 <button class="btn btn-small btn-mark-served" 
@@ -7634,6 +7655,21 @@ Changes have been reverted.`);
                 </div>
             </div>
         `;
+    }
+    
+    // Helper method to get the dates when suspension events occurred
+    getSuspensionServedDates(card) {
+        if (!this.events || !card.eventDate_epoch) {
+            return [];
+        }
+        
+        // Find events that occurred after the red card and count them up to suspension length
+        const eventsAfterCard = this.events
+            .filter(event => event.date_epoch > card.eventDate_epoch)
+            .sort((a, b) => a.date_epoch - b.date_epoch)
+            .slice(0, card.suspensionMatches || 0); // Only take the number of suspension events
+        
+        return eventsAfterCard.map(event => epochToPacificDate(event.date_epoch));
     }
     
     async applySuspension(cardIndex) {
