@@ -6317,7 +6317,7 @@ Please check the browser console (F12) for more details.`);
         const awayTeam = this.currentAwayTeam;
         const matchTeamIds = [homeTeam?.id, awayTeam?.id].filter(Boolean);
         if (!this.cachedSuspensions) {
-            this.cachedSuspensions = await this.loadTeamSuspensions(matchTeamIds);
+            this.cachedSuspensions = await this.loadTeamSuspensions(matchTeamIds, currentEvent ? currentEvent.date_epoch : null);
         }
         
         // Add suspension status to members using cached data
@@ -6574,7 +6574,7 @@ Please check the browser console (F12) for more details.`);
         const awayTeam = this.currentAwayTeam;
         const matchTeamIds = [homeTeam?.id, awayTeam?.id].filter(Boolean);
         if (!this.cachedSuspensions) {
-            this.cachedSuspensions = await this.loadTeamSuspensions(matchTeamIds);
+            this.cachedSuspensions = await this.loadTeamSuspensions(matchTeamIds, currentEvent ? currentEvent.date_epoch : null);
         }
         
         // Add suspension status to members using cached data
@@ -6618,7 +6618,7 @@ Please check the browser console (F12) for more details.`);
     }
     
     // Bulk load suspensions for multiple teams (similar to captain loading pattern)
-    async loadTeamSuspensions(teamIds) {
+    async loadTeamSuspensions(teamIds, eventDate = null) {
         try {
             // Get all active suspensions for members of these teams
             const response = await fetch(`/api/suspensions?status=active`);
@@ -6650,9 +6650,10 @@ Please check the browser console (F12) for more details.`);
                 
                 for (const suspension of memberSuspensions) {
                     // Get all events since suspension start date, ordered chronologically
-                    // Don't count future events - only events that have already occurred
+                    // Only count events that occurred BEFORE the event we're trying to check into
+                    const cutoffDate = eventDate || (Date.now() / 1000); // Use event date if provided, otherwise current time
                     const eventsSinceSuspension = this.events
-                        .filter(event => event.date_epoch > suspension.suspensionStartEpoch && event.date_epoch <= Date.now() / 1000)
+                        .filter(event => event.date_epoch > suspension.suspensionStartEpoch && event.date_epoch < cutoffDate)
                         .sort((a, b) => a.date_epoch - b.date_epoch);
                     
                     // Calculate how many events have passed since suspension
@@ -7716,9 +7717,10 @@ Changes have been reverted.`);
             
             for (const suspension of activeSuspensions) {
                 // Get all events since suspension start date, ordered chronologically
-                // Don't count future events - only events that have already occurred
+                // Only count events that occurred BEFORE the event we're trying to check into
+                const cutoffDate = eventDate || (Date.now() / 1000); // Use event date if provided, otherwise current time
                 const eventsSinceSuspension = this.events
-                    .filter(event => event.date_epoch > suspension.suspensionStartEpoch && event.date_epoch <= Date.now() / 1000)
+                    .filter(event => event.date_epoch > suspension.suspensionStartEpoch && event.date_epoch < cutoffDate)
                     .sort((a, b) => a.date_epoch - b.date_epoch);
                 
                 // Calculate how many events have passed since suspension

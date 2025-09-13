@@ -3402,7 +3402,7 @@ class CheckInViewApp {
         
         // Load suspensions for all teams involved in this match (cached)
         if (!this.cachedSuspensions) {
-            this.cachedSuspensions = await this.loadTeamSuspensions(matchTeamIds);
+            this.cachedSuspensions = await this.loadTeamSuspensions(matchTeamIds, event ? event.date_epoch : null);
         }
         
         // Add suspension status to members using cached data
@@ -4725,7 +4725,7 @@ class CheckInViewApp {
     }
 
     // Suspension Status Checking Methods
-    async loadTeamSuspensions(teamIds) {
+    async loadTeamSuspensions(teamIds, eventDate = null) {
         try {
             // Get all active suspensions for members of these teams
             const response = await fetch(`/api/suspensions?status=active`);
@@ -4757,9 +4757,10 @@ class CheckInViewApp {
                 
                 for (const suspension of memberSuspensions) {
                     // Get all events since suspension start date, ordered chronologically
-                    // Don't count future events - only events that have already occurred
+                    // Only count events that occurred BEFORE the event we're trying to check into
+                    const cutoffDate = eventDate || (Date.now() / 1000); // Use event date if provided, otherwise current time
                     const eventsSinceSuspension = this.events
-                        .filter(event => event.date_epoch > suspension.suspensionStartEpoch && event.date_epoch <= Date.now() / 1000)
+                        .filter(event => event.date_epoch > suspension.suspensionStartEpoch && event.date_epoch < cutoffDate)
                         .sort((a, b) => a.date_epoch - b.date_epoch);
                     
                     // Calculate how many events have passed since suspension
@@ -4831,13 +4832,24 @@ class CheckInViewApp {
             
             for (const suspension of activeSuspensions) {
                 // Get all events since suspension start date, ordered chronologically
-                // Don't count future events - only events that have already occurred
+                // Only count events that occurred BEFORE the event we're trying to check into
+                const cutoffDate = eventDate || (Date.now() / 1000); // Use event date if provided, otherwise current time
                 const eventsSinceSuspension = this.events
-                    .filter(event => event.date_epoch > suspension.suspensionStartEpoch && event.date_epoch <= Date.now() / 1000)
+                    .filter(event => event.date_epoch > suspension.suspensionStartEpoch && event.date_epoch < cutoffDate)
                     .sort((a, b) => a.date_epoch - b.date_epoch);
                 
                 // Calculate how many events have passed since suspension
                 const eventsPassedCount = eventsSinceSuspension.length;
+                
+                // Debug logging for suspension calculation
+                console.log(`🔍 Suspension Debug for player ${playerId}:`, {
+                    suspensionStartDate: new Date(suspension.suspensionStartEpoch * 1000).toISOString().split('T')[0],
+                    eventDate: eventDate ? new Date(eventDate * 1000).toISOString().split('T')[0] : 'current time',
+                    suspensionEvents: suspension.suspensionEvents,
+                    eventsPassedCount,
+                    eventsSinceSuspension: eventsSinceSuspension.map(e => new Date(e.date_epoch * 1000).toISOString().split('T')[0]),
+                    calculatedRemaining: Math.max(0, suspension.suspensionEvents - eventsPassedCount)
+                });
                 
                 // Calculate remaining events for this suspension
                 const remainingForThisSuspension = Math.max(0, suspension.suspensionEvents - eventsPassedCount);
