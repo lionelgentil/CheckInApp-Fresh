@@ -3624,17 +3624,26 @@ function deleteSuspension($db) {
 // Check for orphaned suspensions (suspensions without corresponding cards)
 function checkOrphanedSuspensions($db) {
     try {
-        // Find suspensions that reference card_source_id but the card no longer exists
+        // Find suspensions that reference card_source_id but no corresponding card exists
+        // The improved logic checks if the card_source_id corresponds to any existing card
         $stmt = $db->query('
             SELECT ps.*, tm.name as member_name, t.name as team_name
             FROM player_suspensions ps
             JOIN team_members tm ON ps.member_id = tm.id
             JOIN teams t ON tm.team_id = t.id
-            WHERE ps.card_source_id IS NOT NULL 
-            AND ps.card_source_id NOT IN (
-                SELECT DISTINCT match_id FROM match_cards
-                UNION
-                SELECT DISTINCT id FROM matches WHERE id IN (SELECT card_source_id FROM player_suspensions)
+            WHERE ps.status = \'active\'
+            AND ps.card_source_id IS NOT NULL 
+            AND NOT EXISTS (
+                -- Check if there\'s a match card that could correspond to this suspension
+                SELECT 1 
+                FROM match_cards mc
+                JOIN matches m ON mc.match_id = m.id
+                WHERE mc.member_id = ps.member_id 
+                AND mc.card_type = \'red\'
+                AND ps.card_type = \'red\'
+                -- Allow some flexibility in matching by checking recent cards for the same player
+                AND m.match_time_epoch >= ps.suspension_start_date_epoch - 86400 -- Within 24 hours
+                AND m.match_time_epoch <= ps.suspension_start_date_epoch + 86400
             )
             ORDER BY ps.created_at_epoch DESC
         ');
@@ -3672,14 +3681,22 @@ function cleanupOrphanedSuspensions($db) {
     try {
         $db->beginTransaction();
         
-        // Delete suspensions that reference card_source_id but the card no longer exists
+        // Delete suspensions using the same improved logic as the check function
         $stmt = $db->prepare('
             DELETE FROM player_suspensions
-            WHERE card_source_id IS NOT NULL 
-            AND card_source_id NOT IN (
-                SELECT DISTINCT match_id FROM match_cards
-                UNION
-                SELECT DISTINCT id FROM matches WHERE id IN (SELECT card_source_id FROM player_suspensions)
+            WHERE status = \'active\'
+            AND card_source_id IS NOT NULL 
+            AND NOT EXISTS (
+                -- Check if there\'s a match card that could correspond to this suspension
+                SELECT 1 
+                FROM match_cards mc
+                JOIN matches m ON mc.match_id = m.id
+                WHERE mc.member_id = player_suspensions.member_id 
+                AND mc.card_type = \'red\'
+                AND player_suspensions.card_type = \'red\'
+                -- Allow some flexibility in matching by checking recent cards for the same player
+                AND m.match_time_epoch >= player_suspensions.suspension_start_date_epoch - 86400 -- Within 24 hours
+                AND m.match_time_epoch <= player_suspensions.suspension_start_date_epoch + 86400
             )
         ');
         
