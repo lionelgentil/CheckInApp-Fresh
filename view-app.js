@@ -1021,8 +1021,18 @@ class CheckInViewApp {
         if (selectedTeamId) {
             const selectedTeam = this.teams.find(team => team.id === selectedTeamId);
             if (selectedTeam) {
+                // Get captain information (support both legacy captainId and new captains array)
                 const captains = selectedTeam.captains || [];
-                const captain = captains.length > 0 ? captains[0].memberName : null;
+                const legacyCaptain = selectedTeam.captainId ? selectedTeam.members.find(m => m.id === selectedTeam.captainId) : null;
+                
+                // Combine legacy and new captain systems
+                const allCaptains = [...captains];
+                if (legacyCaptain && !captains.some(c => c.memberId === legacyCaptain.id)) {
+                    allCaptains.push({ memberId: legacyCaptain.id, memberName: legacyCaptain.name });
+                }
+                
+                // Create captain names list
+                const captainNames = allCaptains.map(c => c.memberName).join(', ');
                 
                 // Calculate roster statistics
                 const totalPlayers = selectedTeam.members.length;
@@ -1058,7 +1068,7 @@ class CheckInViewApp {
                                 <div>
                                     <div class="team-name">${selectedTeam.name}</div>
                                     <div class="team-category">${selectedTeam.category || ''}</div>
-                                    ${captain ? `<div class="team-captain">👑 Captain: ${captain}</div>` : ''}
+                                    ${allCaptains.length > 0 ? `<div class="team-captain">👑 Captain${allCaptains.length > 1 ? 's' : ''}: ${captainNames}</div>` : ''}
                                 </div>
                             </div>
                             <div class="team-description">${selectedTeam.description || ''}</div>
@@ -4736,25 +4746,51 @@ class CheckInViewApp {
                 suspensionsByMember[suspension.memberId].push(suspension);
             });
             
-            // Convert to the format expected by the UI
+            // Convert to the format expected by the UI using AUTOMATIC CALCULATION
             const memberSuspensionStatus = {};
             Object.keys(suspensionsByMember).forEach(memberId => {
                 const memberSuspensions = suspensionsByMember[memberId];
-                const totalEventsRemaining = memberSuspensions.reduce((total, suspension) => {
-                    return total + suspension.eventsRemaining;
-                }, 0);
                 
-                memberSuspensionStatus[memberId] = {
-                    isSuspended: true,
-                    suspensionType: memberSuspensions.length > 1 ? 'multiple' : memberSuspensions[0].cardType,
-                    totalMatches: totalEventsRemaining,
-                    suspensions: memberSuspensions,
-                    reason: `${memberSuspensions.length} active suspension${memberSuspensions.length > 1 ? 's' : ''}`,
-                    remainingEvents: totalEventsRemaining
-                };
+                // Calculate actual remaining events based on event dates (AUTOMATIC LOGIC)
+                let totalEventsRemaining = 0;
+                const processedSuspensions = [];
+                
+                for (const suspension of memberSuspensions) {
+                    // Get all events since suspension start date, ordered chronologically
+                    // Don't count future events - only events that have already occurred
+                    const eventsSinceSuspension = this.events
+                        .filter(event => event.date_epoch > suspension.suspensionStartEpoch && event.date_epoch <= Date.now() / 1000)
+                        .sort((a, b) => a.date_epoch - b.date_epoch);
+                    
+                    // Calculate how many events have passed since suspension
+                    const eventsPassedCount = eventsSinceSuspension.length;
+                    
+                    // Calculate remaining events for this suspension
+                    const remainingForThisSuspension = Math.max(0, suspension.suspensionEvents - eventsPassedCount);
+                    
+                    totalEventsRemaining += remainingForThisSuspension;
+                    
+                    processedSuspensions.push({
+                        ...suspension,
+                        calculatedRemaining: remainingForThisSuspension,
+                        eventsPassed: eventsPassedCount
+                    });
+                }
+                
+                // Only add to cache if there are remaining events (truly suspended)
+                if (totalEventsRemaining > 0) {
+                    memberSuspensionStatus[memberId] = {
+                        isSuspended: true,
+                        suspensionType: memberSuspensions.length > 1 ? 'multiple' : memberSuspensions[0].cardType,
+                        totalMatches: totalEventsRemaining,
+                        suspensions: processedSuspensions,
+                        reason: `${memberSuspensions.length} suspension${memberSuspensions.length > 1 ? 's' : ''} (${totalEventsRemaining} events remaining)`,
+                        remainingEvents: totalEventsRemaining
+                    };
+                }
             });
             
-            console.log(`📋 Loaded suspensions for ${Object.keys(memberSuspensionStatus).length} suspended players`);
+            console.log(`📋 Loaded suspensions for ${Object.keys(memberSuspensionStatus).length} suspended players (automatic calculation)`);
             return memberSuspensionStatus;
             
         } catch (error) {
@@ -4789,17 +4825,45 @@ class CheckInViewApp {
                 };
             }
             
-            // Sum up all active suspension events remaining
-            const totalEventsRemaining = activeSuspensions.reduce((total, suspension) => {
-                return total + suspension.eventsRemaining;
-            }, 0);
+            // Calculate actual remaining events based on event dates (AUTOMATIC LOGIC)
+            let totalEventsRemaining = 0;
+            const processedSuspensions = [];
+            
+            for (const suspension of activeSuspensions) {
+                // Get all events since suspension start date, ordered chronologically
+                // Don't count future events - only events that have already occurred
+                const eventsSinceSuspension = this.events
+                    .filter(event => event.date_epoch > suspension.suspensionStartEpoch && event.date_epoch <= Date.now() / 1000)
+                    .sort((a, b) => a.date_epoch - b.date_epoch);
+                
+                // Calculate how many events have passed since suspension
+                const eventsPassedCount = eventsSinceSuspension.length;
+                
+                // Calculate remaining events for this suspension
+                const remainingForThisSuspension = Math.max(0, suspension.suspensionEvents - eventsPassedCount);
+                
+                totalEventsRemaining += remainingForThisSuspension;
+                
+                processedSuspensions.push({
+                    ...suspension,
+                    calculatedRemaining: remainingForThisSuspension,
+                    eventsPassed: eventsPassedCount
+                });
+                
+                console.log(`📊 Suspension calculation for ${playerId}:`, {
+                    originalEvents: suspension.suspensionEvents,
+                    eventsPassed: eventsPassedCount,
+                    remaining: remainingForThisSuspension,
+                    suspensionStartDate: new Date(suspension.suspensionStartEpoch * 1000).toLocaleDateString()
+                });
+            }
             
             return {
-                isSuspended: true,
+                isSuspended: totalEventsRemaining > 0,
                 suspensionType: activeSuspensions.length > 1 ? 'multiple' : activeSuspensions[0].cardType,
                 totalMatches: totalEventsRemaining,
-                suspensions: activeSuspensions,
-                reason: `${activeSuspensions.length} active suspension${activeSuspensions.length > 1 ? 's' : ''}`,
+                suspensions: processedSuspensions,
+                reason: `${activeSuspensions.length} suspension${activeSuspensions.length > 1 ? 's' : ''} (${totalEventsRemaining} events remaining)`,
                 remainingEvents: totalEventsRemaining
             };
             
@@ -4807,6 +4871,52 @@ class CheckInViewApp {
             console.error('Error checking suspension status:', error);
             return { isSuspended: false };
         }
+    }
+
+    async showSuspensionWarning(playerName, suspensionInfo) {
+        const warningMessage = suspensionInfo.suspensionType === 'yellow-accumulation' 
+            ? `${playerName} is suspended due to yellow card accumulation (${suspensionInfo.reason}).\n\nThis player cannot be checked in until the suspension is resolved by the advisory board.`
+            : `${playerName} is suspended due to a red card.\n\nRemaining events: ${suspensionInfo.remainingEvents || 0}\n\nThis player cannot be checked in during their suspension period.`;
+        
+        return new Promise((resolve) => {
+            const modal = document.createElement('div');
+            modal.className = 'modal';
+            modal.innerHTML = `
+                <div class="modal-content suspension-warning-modal">
+                    <div class="modal-header">
+                        <h2 class="modal-title">🚫 Player Suspended</h2>
+                        <button class="close-btn" onclick="this.closest('.modal').remove()">&times;</button>
+                    </div>
+                    <div class="suspension-warning-content">
+                        <div class="warning-icon">⚠️</div>
+                        <div class="warning-message">${warningMessage.replace(/\n/g, '<br>')}</div>
+                    </div>
+                    <div class="suspension-warning-actions">
+                        <button class="btn btn-secondary" onclick="this.closest('.modal').remove()">
+                            OK, I Understand
+                        </button>
+                    </div>
+                </div>
+            `;
+            
+            document.body.appendChild(modal);
+            
+            // Auto-remove after 10 seconds for better UX
+            setTimeout(() => {
+                if (document.body.contains(modal)) {
+                    modal.remove();
+                }
+                resolve(false);
+            }, 10000);
+            
+            // Also remove on click outside
+            modal.addEventListener('click', (e) => {
+                if (e.target === modal) {
+                    modal.remove();
+                    resolve(false);
+                }
+            });
+        });
     }
 }
 
