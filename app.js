@@ -6259,13 +6259,19 @@ Please check the browser console (F12) for more details.`);
         const currentEvent = this.events.find(e => e.id === this.currentEventId);
         const eventDate = currentEvent ? new Date(currentEvent.date_epoch * 1000).toISOString().split('T')[0] : null;
         
-        // Check suspension status for all players
-        const membersWithSuspensions = await Promise.all(
-            team.members.map(async (member) => {
-                const suspensionStatus = eventDate ? await this.getPlayerSuspensionStatus(member.id, eventDate) : { isSuspended: false, suspensionType: null };
-                return { ...member, suspensionStatus };
-            })
-        );
+        // Load suspension data for all teams involved in this match (bulk load)
+        const homeTeam = this.currentHomeTeam;
+        const awayTeam = this.currentAwayTeam;
+        const matchTeamIds = [homeTeam?.id, awayTeam?.id].filter(Boolean);
+        if (!this.cachedSuspensions) {
+            this.cachedSuspensions = await this.loadTeamSuspensions(matchTeamIds);
+        }
+        
+        // Add suspension status to members using cached data
+        const membersWithSuspensions = team.members.map(member => {
+            const suspensionStatus = this.cachedSuspensions[member.id] || { isSuspended: false, suspensionType: null };
+            return { ...member, suspensionStatus };
+        });
         
         // Render all players in fullscreen grid (no pagination, just scroll)
         container.innerHTML = membersWithSuspensions
@@ -6510,13 +6516,19 @@ Please check the browser console (F12) for more details.`);
         const currentEvent = this.events.find(e => e.id === this.currentEventId);
         const eventDate = currentEvent ? new Date(currentEvent.date_epoch * 1000).toISOString().split('T')[0] : null;
         
-        // Check suspension status for all players
-        const membersWithSuspensions = await Promise.all(
-            team.members.map(async (member) => {
-                const suspensionStatus = eventDate ? await this.getPlayerSuspensionStatus(member.id, eventDate) : { isSuspended: false, suspensionType: null };
-                return { ...member, suspensionStatus };
-            })
-        );
+        // Load suspension data for all teams involved in this match (bulk load)
+        const homeTeam = this.currentHomeTeam;
+        const awayTeam = this.currentAwayTeam;
+        const matchTeamIds = [homeTeam?.id, awayTeam?.id].filter(Boolean);
+        if (!this.cachedSuspensions) {
+            this.cachedSuspensions = await this.loadTeamSuspensions(matchTeamIds);
+        }
+        
+        // Add suspension status to members using cached data
+        const membersWithSuspensions = team.members.map(member => {
+            const suspensionStatus = this.cachedSuspensions[member.id] || { isSuspended: false, suspensionType: null };
+            return { ...member, suspensionStatus };
+        });
         
         // Render all grid items with new structure (no pagination) - sorted alphabetically
         container.innerHTML = membersWithSuspensions
@@ -6552,15 +6564,73 @@ Please check the browser console (F12) for more details.`);
         console.log('🖼️ Match grid photos use direct URLs');
     }
     
-    // Check if player is currently suspended
+    // Bulk load suspensions for multiple teams (similar to captain loading pattern)
+    async loadTeamSuspensions(teamIds) {
+        try {
+            // Get all active suspensions for members of these teams
+            const response = await fetch(`/api/suspensions?status=active`);
+            
+            if (!response.ok) {
+                console.warn('Failed to load suspension data:', response.status);
+                return {};
+            }
+            
+            const allSuspensions = await response.json();
+            
+            // Group suspensions by member ID for quick lookup
+            const suspensionsByMember = {};
+            allSuspensions.forEach(suspension => {
+                if (!suspensionsByMember[suspension.memberId]) {
+                    suspensionsByMember[suspension.memberId] = [];
+                }
+                suspensionsByMember[suspension.memberId].push(suspension);
+            });
+            
+            // Convert to the format expected by the UI
+            const memberSuspensionStatus = {};
+            Object.keys(suspensionsByMember).forEach(memberId => {
+                const memberSuspensions = suspensionsByMember[memberId];
+                const totalEventsRemaining = memberSuspensions.reduce((total, suspension) => {
+                    return total + suspension.eventsRemaining;
+                }, 0);
+                
+                memberSuspensionStatus[memberId] = {
+                    isSuspended: true,
+                    suspensionType: memberSuspensions.length > 1 ? 'multiple' : memberSuspensions[0].cardType,
+                    totalMatches: totalEventsRemaining,
+                    suspensions: memberSuspensions,
+                    reason: `${memberSuspensions.length} active suspension${memberSuspensions.length > 1 ? 's' : ''}`,
+                    remainingEvents: totalEventsRemaining
+                };
+            });
+            
+            return memberSuspensionStatus;
+            
+        } catch (error) {
+            console.error('Error loading team suspensions:', error);
+            return {};
+        }
+    }
+
+    // Check if player is currently suspended (now uses cached data)
     async checkPlayerSuspensionStatus(memberId) {
         try {
-            // Use the suspension API endpoint for consistency
+            // If we have cached suspension data, use it
+            if (this.cachedSuspensions && this.cachedSuspensions[memberId]) {
+                const suspensionStatus = this.cachedSuspensions[memberId];
+                return {
+                    suspended: true,
+                    totalMatches: suspensionStatus.totalMatches,
+                    suspensions: suspensionStatus.suspensions
+                };
+            }
+            
+            // Fallback to individual API call if no cached data
             const response = await fetch(`/api/suspensions?memberId=${memberId}&status=active`);
             
             if (!response.ok) {
-                console.warn('Could not check suspension status:',response.status);
-                return { suspended: false }; // Allow check-in if there's an error
+                console.warn('Could not check suspension status:', response.status);
+                return { suspended: false };
             }
             
             const activeSuspensions = await response.json();
@@ -6580,7 +6650,7 @@ Please check the browser console (F12) for more details.`);
             return { suspended: false };
         } catch (error) {
             console.error('Error checking suspension status:', error);
-            return { suspended: false }; // Allow check-in if there's an error
+            return { suspended: false };
         }
     }
 
@@ -7427,6 +7497,9 @@ Changes have been reverted.`);
             const result = await response.json();
             alert(`Applied ${suspensionMatches} event suspension successfully`);
             
+            // Clear cached suspension data so it gets refreshed
+            this.cachedSuspensions = null;
+            
             // Refresh the display to show updated status
             this.renderRedCardManagement();
             
@@ -7481,6 +7554,9 @@ Changes have been reverted.`);
             const result = await response.json();
             alert('Suspension marked as served successfully');
             
+            // Clear cached suspension data so it gets refreshed
+            this.cachedSuspensions = null;
+            
             // Refresh the display to show updated status
             this.renderRedCardManagement();
             
@@ -7493,7 +7569,12 @@ Changes have been reverted.`);
     // Suspension Status Checking Methods
     async getPlayerSuspensionStatus(playerId, eventDate = null) {
         try {
-            // Use the suspension API endpoint instead of fetching all events
+            // If we have cached suspension data, use it
+            if (this.cachedSuspensions && this.cachedSuspensions[playerId]) {
+                return this.cachedSuspensions[playerId];
+            }
+            
+            // Fallback to individual API call if no cached data
             const suspensionsResponse = await fetch(`/api/suspensions?memberId=${playerId}&status=active`);
             
             if (!suspensionsResponse.ok) {
