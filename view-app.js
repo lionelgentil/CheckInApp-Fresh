@@ -4756,96 +4756,30 @@ function displayRailwayEdgeFromResponse(response) {
         }, 10000);
     }
     
-    // Suspension management functions for view app
+    // Suspension management functions for view app - simplified API-based version
     async getPlayerSuspensionStatus(playerId, eventDate = null) {
         try {
-            // If no event date provided, use current event or today's date
-            const checkDate = eventDate || new Date().toISOString().split('T')[0];
+            // Use the /api/suspensions endpoint to get active suspensions
+            const response = await fetch(`/api/suspensions?status=active&memberId=${playerId}`);
             
-            // Get all events and current season info
-            const [eventsResponse, currentSeasonResponse] = await Promise.all([
-                fetch('/api/events'),
-                fetch('/api/current-season')
-            ]);
-            
-            if (!eventsResponse.ok || !currentSeasonResponse.ok) {
+            if (!response.ok) {
                 console.warn('Failed to load suspension data');
                 return { isSuspended: false };
             }
             
-            const events = await eventsResponse.json();
-            const currentSeason = await currentSeasonResponse.json();
+            const suspensions = await response.json();
             
-            // Get all red cards for this player in current season
-            const playerRedCards = [];
-            const playerYellowCards = [];
-            
-            events.forEach(event => {
-                // Use helper function to determine event season
-                const eventSeason = getEventSeason(event.date_epoch);
-                if (eventSeason === currentSeason.season) {
-                    event.matches?.forEach(match => {
-                        match.cards?.forEach(card => {
-                            if (card.memberId === playerId) {
-                                if (card.cardType === 'red') {
-                                    playerRedCards.push({
-                                        ...card,
-                                        eventDate: event.date,
-                                        eventName: event.name
-                                    });
-                                } else if (card.cardType === 'yellow') {
-                                    playerYellowCards.push({
-                                        ...card,
-                                        eventDate: event.date,
-                                        eventName: event.name
-                                    });
-                                }
-                            }
-                        });
-                    });
-                }
-            });
-            
-            // Check for yellow card accumulation (3+ yellow cards = suspension)
-            if (playerYellowCards.length >= 3) {
-                // For yellow card accumulation, consider suspended until manually cleared
+            // Check if player has any active suspensions
+            if (suspensions && suspensions.length > 0) {
+                const suspension = suspensions[0]; // Get the first active suspension
                 return {
                     isSuspended: true,
-                    suspensionType: 'yellow_accumulation',
-                    reason: `${playerYellowCards.length} yellow cards accumulated`,
-                    suspendedUntil: 'To be determined by advisory board'
+                    suspensionType: suspension.suspensionType || 'red_card',
+                    reason: suspension.reason || 'Disciplinary suspension',
+                    suspendedUntil: suspension.suspendedUntil,
+                    suspendedUntilEventName: suspension.suspendedUntilEventName,
+                    remainingEvents: suspension.remainingMatches || 0
                 };
-            }
-            
-            // Check for active red card suspensions
-            for (const redCard of playerRedCards) {
-                // For now, assume all red cards without served status are active
-                // In a full implementation, this would check actual suspension data from database
-                if (redCard.suspensionMatches && !redCard.suspensionServed) {
-                    // Calculate suspension end date based on events
-                    const cardEventDate = new Date(redCard.eventDate);
-                    const futureEvents = events
-                        .filter(e => new Date(e.date) > cardEventDate && e.season === currentSeason.season)
-                        .sort((a, b) => new Date(a.date) - new Date(b.date))
-                        .slice(0, redCard.suspensionMatches);
-                    
-                    if (futureEvents.length > 0) {
-                        const lastSuspensionEvent = futureEvents[futureEvents.length - 1];
-                        const suspensionEndDate = new Date(lastSuspensionEvent.date);
-                        const currentEventDate = new Date(checkDate);
-                        
-                        if (currentEventDate <= suspensionEndDate) {
-                            return {
-                                isSuspended: true,
-                                suspensionType: 'red_card',
-                                reason: 'Red card suspension',
-                                suspendedUntil: lastSuspensionEvent.date,
-                                suspendedUntilEventName: lastSuspensionEvent.name,
-                                remainingEvents: futureEvents.filter(e => new Date(e.date) >= currentEventDate).length
-                            };
-                        }
-                    }
-                }
             }
             
             return { isSuspended: false };

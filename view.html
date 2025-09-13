@@ -2657,8 +2657,17 @@
                     script.src = `view-app.js?v=${version}&cb=${Date.now()}`;
                     script.onload = function() {
                         // Set version numbers from JavaScript constant after script loads
-                        document.getElementById('app-version').textContent = APP_VERSION;
-                        document.getElementById('footer-version').textContent = APP_VERSION;
+                        // Use timeout to ensure APP_VERSION is available
+                        setTimeout(() => {
+                            try {
+                                document.getElementById('app-version').textContent = APP_VERSION;
+                                document.getElementById('footer-version').textContent = APP_VERSION;
+                            } catch (error) {
+                                console.warn('APP_VERSION not available:', error);
+                                document.getElementById('app-version').textContent = '6.2.0';
+                                document.getElementById('footer-version').textContent = '6.2.0';
+                            }
+                        }, 100);
                     };
                     document.body.appendChild(script);
                 };
