@@ -4351,6 +4351,268 @@ class CheckInViewApp {
     }
     
     async editMatchResult(eventId, matchId) {
+        // Check if we're on mobile and use mobile interface
+        if (window.innerWidth <= 768) {
+            return this.editMatchResultMobile(eventId, matchId);
+        }
+        
+        // Desktop version (existing code)
+        return this.editMatchResultDesktop(eventId, matchId);
+    }
+    
+    // Mobile-optimized match result interface
+    async editMatchResultMobile(eventId, matchId) {
+        // Ensure full team data is loaded for player dropdowns
+        if (this.teams.length === 0) {
+            await this.loadTeams(); // Need full team data for card player selection
+        }
+        
+        const event = this.events.find(e => e.id === eventId);
+        const match = event.matches.find(m => m.id === matchId);
+        const homeTeam = this.teams.find(t => t.id === match.homeTeamId);
+        const awayTeam = this.teams.find(t => t.id === match.awayTeamId);
+        const mainReferee = match.mainRefereeId ? this.referees.find(r => r.id === match.mainRefereeId) : null;
+        const assistantReferee = match.assistantRefereeId ? this.referees.find(r => r.id === match.assistantRefereeId) : null;
+        
+        if (!match) return;
+        
+        // Store current match for card functions
+        this.currentMatch = match;
+        this.currentMatchCards = [...(match.cards || [])];
+        
+        // Create mobile modal
+        const modal = document.createElement('div');
+        modal.className = 'mobile-match-result-modal active';
+        modal.innerHTML = `
+            <div class="mobile-match-result-content">
+                <div class="mobile-match-header">
+                    <h3 class="mobile-match-title">Match Result</h3>
+                    <button class="mobile-close-btn" onclick="app.closeMobileMatchResult()">×</button>
+                </div>
+                
+                <div class="mobile-match-body">
+                    <!-- Match Info Banner -->
+                    <div class="mobile-match-info-banner">
+                        <div class="mobile-match-info-grid">
+                            <div class="mobile-info-badge date">
+                                📅 ${epochToPacificDate(event.date_epoch)}
+                            </div>
+                            <div class="mobile-info-badge time">
+                                ⏰ ${match.time_epoch ? epochToPacificTime(match.time_epoch) : 'TBD'}
+                            </div>
+                            <div class="mobile-info-badge field">
+                                🏟️ ${match.field ? `Field ${match.field}` : 'TBD'}
+                            </div>
+                            <div class="mobile-info-badge referee">
+                                👨‍⚽️ ${mainReferee ? mainReferee.name : 'TBD'}
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Team Matchup -->
+                    <div class="mobile-team-matchup">
+                        <div class="mobile-team-names">
+                            <span>${homeTeam.name}</span>
+                            <span class="mobile-vs-text">vs</span>
+                            <span>${awayTeam.name}</span>
+                        </div>
+                        <div class="mobile-team-categories">
+                            <span>(${homeTeam.category})</span>
+                            <span>(${awayTeam.category})</span>
+                        </div>
+                    </div>
+                    
+                    <!-- Score Entry -->
+                    <div class="mobile-score-section">
+                        <div class="mobile-score-header">Final Score</div>
+                        <div class="mobile-score-container">
+                            <div class="mobile-team-score">
+                                <div class="mobile-team-score-label">${homeTeam.name}</div>
+                                <div class="mobile-score-input-container">
+                                    <button class="mobile-score-btn" onclick="app.adjustMobileScore('home', -1)">−</button>
+                                    <div class="mobile-score-display" id="mobile-home-score">${match.homeScore !== null ? match.homeScore : 0}</div>
+                                    <button class="mobile-score-btn" onclick="app.adjustMobileScore('home', 1)">+</button>
+                                </div>
+                            </div>
+                            <div class="mobile-vs-divider">VS</div>
+                            <div class="mobile-team-score">
+                                <div class="mobile-team-score-label">${awayTeam.name}</div>
+                                <div class="mobile-score-input-container">
+                                    <button class="mobile-score-btn" onclick="app.adjustMobileScore('away', -1)">−</button>
+                                    <div class="mobile-score-display" id="mobile-away-score">${match.awayScore !== null ? match.awayScore : 0}</div>
+                                    <button class="mobile-score-btn" onclick="app.adjustMobileScore('away', 1)">+</button>
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                    
+                    <!-- Cards & Disciplinary -->
+                    <div class="mobile-cards-section">
+                        <div class="mobile-section-header">
+                            🟨 Cards & Disciplinary Actions
+                        </div>
+                        <div id="mobile-cards-container">
+                            ${this.renderMobileCards()}
+                        </div>
+                        <div class="mobile-add-card-buttons">
+                            <button class="mobile-add-card-btn yellow" onclick="app.addMobileCard('yellow')">
+                                🟨 Add Yellow Card
+                            </button>
+                            <button class="mobile-add-card-btn red" onclick="app.addMobileCard('red')">
+                                🟥 Add Red Card  
+                            </button>
+                        </div>
+                    </div>
+                    
+                    <!-- Notes -->
+                    <div class="mobile-notes-section">
+                        <div class="mobile-section-header">
+                            📝 Match Notes
+                        </div>
+                        <textarea class="mobile-notes-textarea" id="mobile-match-notes" placeholder="Add any notes about the match...">${match.matchNotes || ''}</textarea>
+                    </div>
+                </div>
+                
+                <!-- Action Buttons -->
+                <div class="mobile-action-buttons">
+                    <button class="mobile-action-btn cancel" onclick="app.closeMobileMatchResult()">
+                        Cancel
+                    </button>
+                    <button class="mobile-action-btn save" onclick="app.saveMobileMatchResult(${eventId}, ${matchId})">
+                        Save Result
+                    </button>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(modal);
+        
+        // Prevent body scroll
+        document.body.style.overflow = 'hidden';
+    }
+    
+    // Mobile match result helper functions
+    renderMobileCards() {
+        if (!this.currentMatchCards || this.currentMatchCards.length === 0) {
+            return '<div class="mobile-no-cards">No cards issued for this match</div>';
+        }
+        
+        return this.currentMatchCards.map((card, index) => {
+            const homeTeam = this.teams.find(t => t.id === this.currentMatch.homeTeamId);
+            const awayTeam = this.teams.find(t => t.id === this.currentMatch.awayTeamId);
+            const allPlayers = [...(homeTeam?.members || []), ...(awayTeam?.members || [])];
+            const player = allPlayers.find(p => p.id === card.memberId);
+            const playerTeam = homeTeam?.members.find(p => p.id === card.memberId) ? homeTeam : awayTeam;
+            
+            return `
+                <div class="mobile-card-item ${card.cardType}">
+                    <div class="mobile-card-info">
+                        <div class="mobile-card-player">
+                            ${card.cardType === 'yellow' ? '🟨' : '🟥'} ${player?.name || 'Unknown Player'} (${playerTeam?.name || 'Unknown Team'})
+                        </div>
+                        <div class="mobile-card-details">
+                            Minute: ${card.minute || 'N/A'} • ${card.reason || 'No reason specified'}
+                        </div>
+                    </div>
+                    <button class="mobile-card-remove" onclick="app.removeMobileCard(${index})">×</button>
+                </div>
+            `;
+        }).join('');
+    }
+    
+    adjustMobileScore(team, delta) {
+        const scoreElement = document.getElementById(`mobile-${team}-score`);
+        let currentScore = parseInt(scoreElement.textContent) || 0;
+        const newScore = Math.max(0, Math.min(99, currentScore + delta));
+        scoreElement.textContent = newScore;
+    }
+    
+    addMobileCard(cardType) {
+        // For now, create a simple card - in a full implementation, 
+        // you'd want a player selection interface
+        const newCard = {
+            cardType: cardType,
+            memberId: null,
+            minute: null,
+            reason: cardType === 'yellow' ? 'Unsporting Behavior' : 'Serious Foul Play'
+        };
+        
+        this.currentMatchCards.push(newCard);
+        
+        // Re-render cards
+        const container = document.getElementById('mobile-cards-container');
+        container.innerHTML = this.renderMobileCards();
+    }
+    
+    removeMobileCard(index) {
+        this.currentMatchCards.splice(index, 1);
+        
+        // Re-render cards
+        const container = document.getElementById('mobile-cards-container');
+        container.innerHTML = this.renderMobileCards();
+    }
+    
+    closeMobileMatchResult() {
+        const modal = document.querySelector('.mobile-match-result-modal');
+        if (modal) {
+            modal.remove();
+        }
+        
+        // Restore body scroll
+        document.body.style.overflow = '';
+        
+        // Clear current match data
+        this.currentMatch = null;
+        this.currentMatchCards = null;
+    }
+    
+    async saveMobileMatchResult(eventId, matchId) {
+        try {
+            const homeScore = parseInt(document.getElementById('mobile-home-score').textContent) || 0;
+            const awayScore = parseInt(document.getElementById('mobile-away-score').textContent) || 0;
+            const notes = document.getElementById('mobile-match-notes').value.trim();
+            
+            const matchResult = {
+                eventId: eventId,
+                matchId: matchId,
+                homeScore: homeScore,
+                awayScore: awayScore,
+                matchStatus: 'completed',
+                matchNotes: notes,
+                cards: this.currentMatchCards || []
+            };
+            
+            console.log('Saving mobile match result:', matchResult);
+            
+            const response = await fetch('/api/match-results', {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(matchResult)
+            });
+            
+            if (response.ok) {
+                console.log('✅ Match result saved successfully');
+                this.closeMobileMatchResult();
+                
+                // Refresh events to show updated results
+                await this.loadEvents();
+                await this.renderEvents();
+                
+                // Show success message
+                alert('Match result saved successfully!');
+            } else {
+                const error = await response.text();
+                console.error('❌ Failed to save match result:', error);
+                alert('Failed to save match result. Please try again.');
+            }
+        } catch (error) {
+            console.error('❌ Error saving match result:', error);
+            alert('Error saving match result. Please try again.');
+        }
+    }
+
+    // Desktop version (renamed from original)  
+    async editMatchResultDesktop(eventId, matchId) {
         // Ensure full team data is loaded for player dropdowns
         if (this.teams.length === 0) {
             await this.loadTeams(); // Need full team data for card player selection
