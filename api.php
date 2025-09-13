@@ -506,6 +506,9 @@ try {
             } elseif ($method === 'PUT') {
                 requireAuth();
                 updateSuspension($db);
+            } elseif ($method === 'DELETE') {
+                requireAuth();
+                deleteSuspension($db);
             } elseif ($method === 'GET') {
                 getSuspensions($db);
             }
@@ -3581,6 +3584,40 @@ function getSuspensions($db) {
         error_log("Error getting suspensions: " . $e->getMessage());
         http_response_code(500);
         echo json_encode(['error' => 'Database error while retrieving suspensions']);
+    }
+}
+
+// Delete a specific suspension by ID
+function deleteSuspension($db) {
+    try {
+        // Get suspension ID from query parameters
+        $suspensionId = $_GET['id'] ?? null;
+        
+        if (!$suspensionId) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Missing suspension ID']);
+            return;
+        }
+        
+        // Delete the suspension record
+        $stmt = $db->prepare('DELETE FROM player_suspensions WHERE id = ?');
+        $result = $stmt->execute([$suspensionId]);
+        
+        if ($stmt->rowCount() > 0) {
+            echo json_encode([
+                'success' => true,
+                'message' => 'Suspension deleted successfully',
+                'deletedId' => (int)$suspensionId
+            ]);
+        } else {
+            http_response_code(404);
+            echo json_encode(['error' => 'Suspension not found']);
+        }
+        
+    } catch (Exception $e) {
+        error_log("Error deleting suspension: " . $e->getMessage());
+        http_response_code(500);
+        echo json_encode(['error' => 'Database error while deleting suspension']);
     }
 }
 

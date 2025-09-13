@@ -5962,6 +5962,57 @@ Please check the browser console (F12) for more details.`);
                 cardsCount: cards.length
             });
             
+            // UPSTREAM FIX: Delete suspension records for removed red cards
+            // Compare old cards with new cards to find removed red cards
+            const oldCards = match.cards || [];
+            const removedRedCards = oldCards.filter(oldCard => {
+                // Only check red cards (since only red cards create suspensions)
+                if (oldCard.cardType !== 'red') return false;
+                
+                // Check if this card still exists in the new cards array
+                const stillExists = cards.some(newCard => 
+                    newCard.memberId === oldCard.memberId && 
+                    newCard.cardType === oldCard.cardType &&
+                    newCard.minute === oldCard.minute // Additional match to ensure it's the same card instance
+                );
+                
+                return !stillExists; // This card was removed
+            });
+            
+            // Delete suspension records for removed red cards
+            if (removedRedCards.length > 0) {
+                console.log(`🧹 Found ${removedRedCards.length} removed red cards, cleaning up associated suspensions...`);
+                
+                for (const removedCard of removedRedCards) {
+                    try {
+                        // Find and delete suspension records for this member
+                        const suspensionResponse = await fetch(`/api/suspensions?memberId=${removedCard.memberId}&status=active`);
+                        if (suspensionResponse.ok) {
+                            const suspensions = await suspensionResponse.json();
+                            
+                            for (const suspension of suspensions) {
+                                // Delete the suspension record
+                                const deleteResponse = await fetch(`/api/suspensions?id=${suspension.id}`, {
+                                    method: 'DELETE'
+                                });
+                                
+                                if (deleteResponse.ok) {
+                                    console.log(`✅ Deleted suspension ${suspension.id} for removed red card (player: ${removedCard.memberId})`);
+                                } else {
+                                    console.warn(`⚠️ Failed to delete suspension ${suspension.id}:`, deleteResponse.status);
+                                }
+                            }
+                        }
+                    } catch (error) {
+                        console.error(`❌ Error cleaning up suspensions for removed card:`, error);
+                        // Continue with other cards even if one fails
+                    }
+                }
+                
+                // Clear suspension cache since we modified suspension data
+                this.cachedSuspensions = null;
+            }
+            
             // Use efficient single-match update endpoint for match results with authentication
             const updateData = {
                 matchStatus: match.matchStatus,
@@ -7314,6 +7365,40 @@ Changes have been reverted.`);
                 }
             });
             
+            // Also add orphaned suspensions (suspensions without corresponding cards in events)
+            const processedSuspensionIds = new Set();
+            allSuspendableCards.forEach(card => {
+                if (card.suspensionId) {
+                    processedSuspensionIds.add(card.suspensionId);
+                }
+            });
+            
+            // Find orphaned suspensions and add them as cards
+            existingSuspensions.forEach(suspension => {
+                if (!processedSuspensionIds.has(suspension.id)) {
+                    // This is an orphaned suspension - create a pseudo-card for it
+                    const suspensionCard = {
+                        memberId: suspension.memberId,
+                        memberName: suspension.memberName || 'Unknown Player',
+                        teamName: suspension.teamName || 'Unknown Team',
+                        cardType: suspension.cardType === 'yellow_accumulation' ? 'yellow-equivalent' : suspension.cardType,
+                        suspensionMatches: suspension.suspensionEvents,
+                        suspensionServed: suspension.status === 'served',
+                        suspensionId: suspension.id,
+                        eventsRemaining: suspension.eventsRemaining,
+                        eventDate: epochToPacificDate(suspension.createdAtEpoch),
+                        eventDate_epoch: suspension.createdAtEpoch,
+                        eventName: 'Orphaned Suspension',
+                        matchInfo: {
+                            homeTeam: 'N/A',
+                            awayTeam: 'N/A'
+                        },
+                        isOrphaned: true // Flag to identify orphaned suspensions
+                    };
+                    allSuspendableCards.push(suspensionCard);
+                }
+            });
+            
             // Filter based on suspension status
             let filteredCards = [];
             const today = new Date().toISOString().split('T')[0];
@@ -7393,12 +7478,14 @@ Changes have been reverted.`);
         const isYellowEquivalent = card.cardType === 'yellow-equivalent';
         const hasSuspension = card.suspensionMatches !== null && card.suspensionMatches !== undefined;
         const suspensionStatus = card.suspensionServed ? 'Served' : 'Active';
+        const isOrphaned = card.isOrphaned || false;
         
         return `
-            <div class="red-card-item" data-card-index="${index}">
+            <div class="red-card-item ${isOrphaned ? 'orphaned-suspension' : ''}" data-card-index="${index}">
                 <div class="red-card-header">
                     <div class="card-type-display ${isYellowEquivalent ? 'yellow-accumulation' : 'red'}">
-                        ${isYellowEquivalent ? `🟨×${card.yellowCardCount} YELLOW ACCUMULATION` : '🟥 RED CARD'}
+                        ${isOrphaned ? '⚠️ ' : ''}${isYellowEquivalent ? `🟨×${card.yellowCardCount || '?'} YELLOW ACCUMULATION` : '🟥 RED CARD'}
+                        ${isOrphaned ? ' (ORPHANED)' : ''}
                     </div>
                     <div class="card-date">${new Date(card.eventDate).toLocaleDateString()}</div>
                 </div>
@@ -7413,6 +7500,7 @@ Changes have been reverted.`);
                     ${card.matchInfo ? `<div class="match-info">Match: ${card.matchInfo.homeTeam} vs ${card.matchInfo.awayTeam}</div>` : ''}
                     ${card.reason ? `<div class="card-reason">Reason: ${card.reason}</div>` : ''}
                     ${card.notes ? `<div class="card-notes">Notes: ${card.notes}</div>` : ''}
+                    ${isOrphaned ? `<div class="orphaned-warning">⚠️ This suspension exists but its original card is missing from events data.</div>` : ''}
                 </div>
                 
                 <div class="suspension-controls">

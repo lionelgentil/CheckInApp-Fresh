@@ -2235,3 +2235,26 @@ body {
         display: flex;
     }
 }
+
+/* Orphaned Suspension Styles */
+.red-card-item.orphaned-suspension {
+    border-left: 4px solid #ff6b35;
+    background: linear-gradient(to right, #fff5f1, #ffffff);
+}
+
+.orphaned-warning {
+    background: #fff3cd;
+    border: 1px solid #ffeaa7;
+    color: #856404;
+    padding: 8px 12px;
+    border-radius: 6px;
+    margin-top: 10px;
+    font-size: 0.9em;
+    font-weight: 500;
+}
+
+.red-card-item.orphaned-suspension .card-type-display {
+    background: linear-gradient(135deg, #ff6b35, #ff8c42);
+    color: white;
+    border: 1px solid #e55a2b;
+}
