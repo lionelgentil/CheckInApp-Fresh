@@ -4754,7 +4754,7 @@ function displayRailwayEdgeFromResponse(response) {
     }
     
     // Suspension management functions for view app - simplified API-based version
-    async function getPlayerSuspensionStatus(playerId, eventDate = null) {
+    async getPlayerSuspensionStatus(playerId, eventDate = null) {
         try {
             // Use the /api/suspensions endpoint to get active suspensions
             const response = await fetch(`/api/suspensions?status=active&memberId=${playerId}`);
@@ -4787,35 +4787,32 @@ function displayRailwayEdgeFromResponse(response) {
         }
     }
     
-    async function showSuspensionWarning(playerName, suspensionInfo) {
+    async showSuspensionWarning(playerName, suspensionInfo) {
         const warningMessage = suspensionInfo.suspensionType === 'yellow-accumulation' 
             ? `${playerName} is suspended due to yellow card accumulation (${suspensionInfo.reason}).\n\nThis player cannot be checked in until the suspension is resolved by the advisory board.`
             : `${playerName} is suspended due to a red card.\n\nSuspended until: ${suspensionInfo.suspendedUntilEventName || suspensionInfo.suspendedUntil}\nRemaining events: ${suspensionInfo.remainingEvents || 'Unknown'}\n\nThis player cannot be checked in during their suspension period.`;
         
         return new Promise((resolve) => {
             const modal = document.createElement('div');
-            modal.className = 'modal';
+            modal.className = 'modal suspension-warning-modal';
             modal.innerHTML = `
-                <div class="modal-content suspension-warning-modal">
-                    <div class="modal-header">
-                        <h2 class="modal-title">🚫 Player Suspended</h2>
-                        <button class="close-btn" onclick="this.closest('.modal').remove(); resolve(false);">&times;</button>
-                    </div>
+                <div class="modal-content">
                     <div class="suspension-warning-content">
                         <div class="warning-icon">⚠️</div>
-                        <div class="warning-message">${warningMessage.replace(/\n/g, '<br>')}</div>
-                    </div>
-                    <div class="suspension-warning-actions">
-                        <button class="btn btn-secondary" onclick="this.closest('.modal').remove(); resolve(false);">
-                            OK, I Understand
-                        </button>
+                        <div class="warning-message">${warningMessage}</div>
+                        <div class="suspension-warning-actions">
+                            <button class="btn btn-secondary" onclick="this.closest('.modal').remove(); arguments[0].target.getRootNode().resolve(false);">OK</button>
+                        </div>
                     </div>
                 </div>
             `;
             
+            // Store resolve function on modal for access
+            modal.resolve = resolve;
+            
             document.body.appendChild(modal);
             
-            // Auto-remove after 10 seconds for better UX
+            // Auto-remove after 10 seconds
             setTimeout(() => {
                 if (document.body.contains(modal)) {
                     modal.remove();
