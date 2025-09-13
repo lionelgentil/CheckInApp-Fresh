@@ -6885,8 +6885,8 @@ Please check the browser console (F12) for more details.`);
             return response.json();
         }).then(result => {
             console.log('Attendance updated successfully:', result);
-            // Update the events display in the background (no modal refresh)
-            this.renderEvents();
+            // Note: No need to call renderEvents() - the UI is already updated locally
+            // and renderEvents() can cause race conditions with server data
         }).catch(error => {
             console.error('Failed to save events:', error);
             
@@ -7026,8 +7026,8 @@ Please check the browser console (F12) for more details.`);
             const result = await response.json();
             console.log('Attendance updated successfully:', result);
             
-            // Update the events display in the background (no modal refresh)
-            this.renderEvents();
+            // Note: No need to call renderEvents() - the UI is already updated locally
+            // and renderEvents() can cause race conditions with server data
         } catch (error) {
             console.error('Failed to save events:', error);
             
