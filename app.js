@@ -7376,7 +7376,7 @@ Changes have been reverted.`);
             // Combine red cards and yellow card equivalents
             const allSuspendableCards = [...redCards, ...yellowCardRedEquivalents];
             
-            // Merge with existing suspension data
+            // Merge with existing suspension data and calculate automatic status
             allSuspendableCards.forEach(card => {
                 // Find existing suspension for this member and card type
                 const existingSuspension = existingSuspensions.find(suspension => 
@@ -7386,10 +7386,30 @@ Changes have been reverted.`);
                 );
                 
                 if (existingSuspension) {
+                    // Calculate actual remaining events based on event dates (AUTOMATIC LOGIC)
+                    const eventsSinceSuspension = events
+                        .filter(event => event.date_epoch > existingSuspension.suspensionStartEpoch)
+                        .sort((a, b) => a.date_epoch - b.date_epoch);
+                    
+                    const eventsPassedCount = eventsSinceSuspension.length;
+                    const calculatedRemaining = Math.max(0, existingSuspension.suspensionEvents - eventsPassedCount);
+                    const isServed = calculatedRemaining === 0;
+                    
+                    // Use calculated values instead of database values
                     card.suspensionMatches = existingSuspension.suspensionEvents;
-                    card.suspensionServed = existingSuspension.status === 'served';
+                    card.suspensionServed = isServed;
                     card.suspensionId = existingSuspension.id;
-                    card.eventsRemaining = existingSuspension.eventsRemaining;
+                    card.eventsRemaining = calculatedRemaining;
+                    
+                    // Debug logging
+                    console.log(`🔍 Red Card Management - Suspension for ${card.memberName}:`, {
+                        suspensionStartDate: new Date(existingSuspension.suspensionStartEpoch * 1000).toISOString().split('T')[0],
+                        suspensionEvents: existingSuspension.suspensionEvents,
+                        eventsPassedCount,
+                        eventsSinceSuspension: eventsSinceSuspension.map(e => new Date(e.date_epoch * 1000).toISOString().split('T')[0]),
+                        calculatedRemaining,
+                        isServed
+                    });
                 }
             });
             
@@ -7404,6 +7424,15 @@ Changes have been reverted.`);
             // Find orphaned suspensions and add them as cards
             existingSuspensions.forEach(suspension => {
                 if (!processedSuspensionIds.has(suspension.id)) {
+                    // Calculate actual remaining events for orphaned suspension (AUTOMATIC LOGIC)
+                    const eventsSinceSuspension = events
+                        .filter(event => event.date_epoch > suspension.suspensionStartEpoch)
+                        .sort((a, b) => a.date_epoch - b.date_epoch);
+                    
+                    const eventsPassedCount = eventsSinceSuspension.length;
+                    const calculatedRemaining = Math.max(0, suspension.suspensionEvents - eventsPassedCount);
+                    const isServed = calculatedRemaining === 0;
+                    
                     // This is an orphaned suspension - create a pseudo-card for it
                     const suspensionCard = {
                         memberId: suspension.memberId,
@@ -7411,9 +7440,9 @@ Changes have been reverted.`);
                         teamName: suspension.teamName || 'Unknown Team',
                         cardType: suspension.cardType === 'yellow_accumulation' ? 'yellow-equivalent' : suspension.cardType,
                         suspensionMatches: suspension.suspensionEvents,
-                        suspensionServed: suspension.status === 'served',
+                        suspensionServed: isServed, // Use calculated value
                         suspensionId: suspension.id,
-                        eventsRemaining: suspension.eventsRemaining,
+                        eventsRemaining: calculatedRemaining, // Use calculated value
                         eventDate: epochToPacificDate(suspension.createdAtEpoch),
                         eventDate_epoch: suspension.createdAtEpoch,
                         eventName: 'Orphaned Suspension',
@@ -7423,6 +7452,16 @@ Changes have been reverted.`);
                         },
                         isOrphaned: true // Flag to identify orphaned suspensions
                     };
+                    
+                    // Debug logging for orphaned suspensions
+                    console.log(`🔍 Red Card Management - Orphaned Suspension for ${suspensionCard.memberName}:`, {
+                        suspensionStartDate: new Date(suspension.suspensionStartEpoch * 1000).toISOString().split('T')[0],
+                        suspensionEvents: suspension.suspensionEvents,
+                        eventsPassedCount,
+                        eventsSinceSuspension: eventsSinceSuspension.map(e => new Date(e.date_epoch * 1000).toISOString().split('T')[0]),
+                        calculatedRemaining,
+                        isServed
+                    });
                     allSuspendableCards.push(suspensionCard);
                 }
             });
