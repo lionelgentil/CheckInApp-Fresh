@@ -6796,9 +6796,8 @@ Please check the browser console (F12) for more details.`);
                 const awayTeam = this.teams.find(t => t.id === match.awayTeamId);
                 const matchTeamIds = [homeTeam?.id, awayTeam?.id].filter(Boolean);
                 
-                if (!this.cachedSuspensions) {
-                    this.cachedSuspensions = await this.loadTeamSuspensions(matchTeamIds, event.date_epoch);
-                }
+                // Always refresh suspension cache for check-in to ensure most up-to-date calculation
+                this.cachedSuspensions = await this.loadTeamSuspensions(matchTeamIds, event.date_epoch);
                 
                 // Check if player is suspended using cached data (most reliable)
                 const suspensionStatus = this.cachedSuspensions[memberId];
@@ -6857,35 +6856,7 @@ Please check the browser console (F12) for more details.`);
         // Update attendance counts immediately
         this.updateAttendanceCounts(match);
         
-        // Check for suspensions AFTER UI update (for check-ins only) - this runs in background
-        if (!wasCheckedIn) {
-            this.checkPlayerSuspensionStatus(memberId).then(suspensionStatus => {
-                if (suspensionStatus.suspended) {
-                    // Revert the check-in if player is suspended
-                    const currentIndex = attendeesArray.findIndex(a => a.memberId === memberId);
-                    if (currentIndex >= 0) {
-                        attendeesArray.splice(currentIndex, 1);
-                        if (gridItem) {
-                            gridItem.classList.remove('checked-in');
-                        }
-                        
-                        // Update attendance counts after revert
-                        this.updateAttendanceCounts(match);
-                        
-                        // Show suspension alert
-                        const team = this.teams.find(t => t.id === (teamType === 'home' ? match.homeTeamId : match.awayTeamId));
-                        const member = team?.members.find(m => m.id === memberId);
-                        
-                        alert(`❌ ${member?.name || 'Player'} is currently suspended and cannot be checked in.\n\n🚫 Active suspension: ${suspensionStatus.totalMatches} match${suspensionStatus.totalMatches > 1 ? 'es' : ''} remaining\n\n⚖️ This suspension must be served before the player can participate in matches.`);
-                        
-                        console.log('Reverted check-in due to suspension:', memberId);
-                    }
-                }
-            }).catch(error => {
-                console.error('Error checking suspension status:', error);
-                // Don't revert on error - allow the check-in to stand
-            });
-        }
+        // Note: Suspension checks are now done BEFORE UI update above, so no need for background revert checks
         
         // Save to server in background (don't await for UI responsiveness)
         fetch('/api/attendance', {
