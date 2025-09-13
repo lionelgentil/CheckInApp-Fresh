@@ -1721,7 +1721,40 @@ class CheckInViewApp {
                 </div>
                 <div class="event-description">${event.description || ''}</div>
                 <div class="matches-container">
-                    ${event.matches
+                    ${(() => {
+                        console.log(`🏟️ Rendering matches for event "${event.name}"`);
+                        console.log(`📊 Total matches in event: ${event.matches?.length || 0}`);
+                        console.log(`🎯 Selected referee: ${this.selectedRefereeName} (${this.selectedRefereeId})`);
+                        
+                        return event.matches
+                            .filter(match => {
+                                // If a specific referee is selected (not Guest), filter matches to only show ones they officiate
+                                if (this.selectedRefereeId && this.selectedRefereeId !== 'guest') {
+                                    const mainRefereeId = String(match.mainRefereeId || '');
+                                    const assistantRefereeId = String(match.assistantRefereeId || '');
+                                    const selectedRefereeId = String(this.selectedRefereeId || '');
+                                    
+                                    const isOfficating = (mainRefereeId === selectedRefereeId || assistantRefereeId === selectedRefereeId);
+                                    
+                                    // Enhanced debug logging for match filtering
+                                    const homeTeam = this.teamsBasic.find(t => t.id === match.homeTeamId);
+                                    const awayTeam = this.teamsBasic.find(t => t.id === match.awayTeamId);
+                                    const matchLabel = `${homeTeam?.name || 'Unknown'} vs ${awayTeam?.name || 'Unknown'}`;
+                                    
+                                    if (!isOfficating) {
+                                        console.log(`🚫 FILTERING OUT match ${match.id} (${matchLabel}): main=${mainRefereeId}, assistant=${assistantRefereeId}, selected=${selectedRefereeId}`);
+                                    } else {
+                                        console.log(`✅ KEEPING match ${match.id} (${matchLabel}): referee is officiating (main=${mainRefereeId === selectedRefereeId ? 'YES' : 'NO'}, assistant=${assistantRefereeId === selectedRefereeId ? 'YES' : 'NO'})`);
+                                    }
+                                    
+                                    return isOfficating;
+                                }
+                                
+                                // Show all matches for Guest referee or no referee selected
+                                console.log(`👤 Guest referee - showing all matches`);
+                                return true;
+                            });
+                    })()
                         .sort((a, b) => {
                             // Sort by time first (using epoch timestamps)
                             if (a.time_epoch && b.time_epoch) {
