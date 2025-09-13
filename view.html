@@ -2453,6 +2453,21 @@
         }
         
         /* Referee Selection Styles */
+        /* Disable navigation when referee selection is active */
+        .referee-selection-active .main-nav {
+            pointer-events: none;
+            opacity: 0.3;
+        }
+        
+        .referee-selection-active .content-section {
+            pointer-events: none;
+            opacity: 0.3;
+        }
+        
+        .referee-selection-active .nav-btn {
+            cursor: not-allowed;
+        }
+
         .referee-selection-content {
             text-align: center;
             padding: 15px 0;
@@ -2532,28 +2547,28 @@
             display: none; /* Hidden in grid layout */
         }
         
-        /* Special styling for Guest referee */
+        /* Special styling for Guest referee - same colors as regular referees */
         .referee-selection-item.guest-referee {
-            background: linear-gradient(135deg, #e3f2fd, #bbdefb);
-            border-color: #2196F3;
+            background: white;
+            border-color: #e9ecef;
             grid-column: span 2;
             min-height: 60px;
         }
         
         .referee-selection-item.guest-referee .referee-name {
-            color: #1976d2;
+            color: #333;
             font-weight: 700;
             font-size: 1em;
         }
         
         .referee-selection-item.guest-referee .referee-contact {
-            color: #1976d2;
+            color: #666;
             font-weight: 500;
         }
         
         .referee-selection-item.guest-referee:hover {
-            background: linear-gradient(135deg, #bbdefb, #90caf9);
-            border-color: #1976d2;
+            background: #f8f9fa;
+            border-color: #2196F3;
         }
         
         /* Mobile responsive for referee selection - 3 columns for most phones */

@@ -202,6 +202,9 @@ class CheckInViewApp {
     // Show referee selection interface
     async showRefereeSelection() {
         try {
+            // Add CSS class to disable navigation
+            document.body.classList.add('referee-selection-active');
+            
             // Load referees data
             await this.loadReferees();
             
@@ -299,6 +302,9 @@ class CheckInViewApp {
             localStorage.setItem('selectedRefereeName', refereeName);
             
             console.log(`💾 Saved to localStorage: ${localStorage.getItem('selectedRefereeId')}, ${localStorage.getItem('selectedRefereeName')}`);
+            
+            // Remove CSS class to re-enable navigation
+            document.body.classList.remove('referee-selection-active');
             
             // Hide referee selection and initialize app
             document.getElementById('referee-selection-section').classList.remove('active');
@@ -433,7 +439,7 @@ class CheckInViewApp {
             localStorage.removeItem('selectedRefereeId');
             localStorage.removeItem('selectedRefereeName');
             
-            // Show referee selection again
+            // Show referee selection again (this will add the CSS class to disable navigation)
             await this.showRefereeSelection();
             
         } catch (error) {
