@@ -4752,6 +4752,53 @@ function displayRailwayEdgeFromResponse(response) {
             isVisible = false;
         }, 10000);
     }
+
+    // Suspension Status Checking Methods
+    async getPlayerSuspensionStatus(playerId, eventDate = null) {
+        try {
+            // If we have cached suspension data, use it
+            if (this.cachedSuspensions && this.cachedSuspensions[playerId]) {
+                return this.cachedSuspensions[playerId];
+            }
+            
+            // Fallback to individual API call if no cached data
+            const suspensionsResponse = await fetch(`/api/suspensions?memberId=${playerId}&status=active`);
+            
+            if (!suspensionsResponse.ok) {
+                console.warn('Failed to load suspension data');
+                return { isSuspended: false };
+            }
+            
+            const activeSuspensions = await suspensionsResponse.json();
+            
+            // Check if player has any active suspensions
+            if (activeSuspensions.length === 0) {
+                return { 
+                    isSuspended: false, 
+                    suspensionType: null,
+                    totalMatches: 0 
+                };
+            }
+            
+            // Sum up all active suspension events remaining
+            const totalEventsRemaining = activeSuspensions.reduce((total, suspension) => {
+                return total + suspension.eventsRemaining;
+            }, 0);
+            
+            return {
+                isSuspended: true,
+                suspensionType: activeSuspensions.length > 1 ? 'multiple' : activeSuspensions[0].cardType,
+                totalMatches: totalEventsRemaining,
+                suspensions: activeSuspensions,
+                reason: `${activeSuspensions.length} active suspension${activeSuspensions.length > 1 ? 's' : ''}`,
+                remainingEvents: totalEventsRemaining
+            };
+            
+        } catch (error) {
+            console.error('Error checking suspension status:', error);
+            return { isSuspended: false };
+        }
+    }
 }
 
 // Initialize app
