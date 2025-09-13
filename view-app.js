@@ -643,8 +643,15 @@ class CheckInViewApp {
                 }
                 this.renderTeams();
             } else if (sectionName === 'events') {
-                // Events already loaded with basic team info in init()
-                await this.renderEvents();
+                // Events already loaded and rendered with referee filtering in initializeApp()
+                // Only re-render if events container is empty or not yet rendered
+                const container = document.getElementById('events-container');
+                if (!container || container.innerHTML.includes('Loading events...') || container.children.length === 0) {
+                    console.log('🔄 Re-rendering events because container is empty or still loading');
+                    await this.renderEvents();
+                } else {
+                    console.log('✅ Events already rendered with referee filtering, skipping re-render');
+                }
             } else if (sectionName === 'referees') {
                 if (this.referees.length === 0) {
                     await this.loadReferees();
@@ -1577,6 +1584,7 @@ class CheckInViewApp {
     
     async renderEvents() {
         console.log('🔍 renderEvents called - teams loaded:', this.teams.length, 'events loaded:', this.events.length, 'referees loaded:', this.referees.length);
+        console.log('📞 renderEvents call stack:', new Error().stack?.split('\n').slice(1, 4).join('\n  '));
         
         // Ensure referees are loaded for referee name display
         if (this.referees.length === 0) {
