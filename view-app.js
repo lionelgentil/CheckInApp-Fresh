@@ -158,10 +158,13 @@ class CheckInViewApp {
             const savedRefereeId = localStorage.getItem('selectedRefereeId');
             const savedRefereeName = localStorage.getItem('selectedRefereeName');
             
+            console.log(`🔍 localStorage check: ID="${savedRefereeId}" (${typeof savedRefereeId}), Name="${savedRefereeName}"`);
+            
             if (savedRefereeId && savedRefereeName) {
                 console.log('📋 Found saved referee selection:', savedRefereeName);
                 this.selectedRefereeId = savedRefereeId;
                 this.selectedRefereeName = savedRefereeName;
+                console.log(`🎯 Set internal referee: ${this.selectedRefereeName} (${this.selectedRefereeId})`);
                 await this.initializeApp();
             } else {
                 console.log('👤 No referee selected, showing selection interface...');
@@ -272,6 +275,7 @@ class CheckInViewApp {
     async selectReferee(refereeId, refereeName) {
         try {
             console.log(`🎯 Referee selected: ${refereeName} (${refereeId})`);
+            console.log(`🔍 Referee ID type: ${typeof refereeId}, value: "${refereeId}"`);
             
             this.selectedRefereeId = refereeId;
             this.selectedRefereeName = refereeName;
@@ -279,6 +283,8 @@ class CheckInViewApp {
             // Save selection to localStorage
             localStorage.setItem('selectedRefereeId', refereeId);
             localStorage.setItem('selectedRefereeName', refereeName);
+            
+            console.log(`💾 Saved to localStorage: ${localStorage.getItem('selectedRefereeId')}, ${localStorage.getItem('selectedRefereeName')}`);
             
             // Hide referee selection and initialize app
             document.getElementById('referee-selection-section').classList.remove('active');
@@ -1542,20 +1548,68 @@ class CheckInViewApp {
         // Filter events based on selected referee (if not Guest)
         if (this.selectedRefereeId && this.selectedRefereeId !== 'guest') {
             console.log(`🎯 Filtering events for referee: ${this.selectedRefereeName} (${this.selectedRefereeId})`);
+            console.log(`📋 Total events before filtering: ${eventsToShow.length}`);
+            
+            // Debug: Log first event structure
+            if (eventsToShow.length > 0) {
+                console.log('📊 Sample event structure:', {
+                    name: eventsToShow[0].name,
+                    matchCount: eventsToShow[0].matches?.length || 0,
+                    firstMatch: eventsToShow[0].matches?.[0] ? {
+                        id: eventsToShow[0].matches[0].id,
+                        mainRefereeId: eventsToShow[0].matches[0].mainRefereeId,
+                        assistantRefereeId: eventsToShow[0].matches[0].assistantRefereeId
+                    } : 'No matches'
+                });
+            }
             
             eventsToShow = eventsToShow.filter(event => {
                 // Check if this event has any matches that this referee is officiating
                 const hasMatchForReferee = event.matches && event.matches.some(match => {
-                    return match.mainRefereeId === this.selectedRefereeId || 
-                           match.assistantRefereeId === this.selectedRefereeId;
+                    // Convert IDs to strings for comparison to avoid type mismatches
+                    const mainRefereeId = String(match.mainRefereeId || '');
+                    const assistantRefereeId = String(match.assistantRefereeId || '');
+                    const selectedRefereeId = String(this.selectedRefereeId || '');
+                    
+                    const isMainReferee = mainRefereeId === selectedRefereeId;
+                    const isAssistantReferee = assistantRefereeId === selectedRefereeId;
+                    
+                    // Debug logging for first few matches
+                    if (match === event.matches[0]) {
+                        console.log(`🔍 Match ${match.id}: main=${mainRefereeId}, assistant=${assistantRefereeId}, selected=${selectedRefereeId}, isMain=${isMainReferee}, isAssistant=${isAssistantReferee}`);
+                    }
+                    
+                    return isMainReferee || isAssistantReferee;
                 });
                 
                 return hasMatchForReferee;
             });
             
             console.log(`📊 Found ${eventsToShow.length} events for referee ${this.selectedRefereeName}`);
+            
+            // If no events found, provide helpful debug info
+            if (eventsToShow.length === 0) {
+                console.warn('⚠️ No events found for selected referee. Possible issues:');
+                console.warn('1. Referee ID mismatch');
+                console.warn('2. No matches assigned to this referee');
+                console.warn('3. Event/match data not loaded properly');
+                
+                // Show all referee IDs in events for debugging
+                const allRefereeIds = new Set();
+                this.events.forEach(event => {
+                    event.matches?.forEach(match => {
+                        if (match.mainRefereeId) allRefereeIds.add(String(match.mainRefereeId));
+                        if (match.assistantRefereeId) allRefereeIds.add(String(match.assistantRefereeId));
+                    });
+                });
+                console.log('🔍 All referee IDs found in events:', Array.from(allRefereeIds));
+                console.log('🎯 Selected referee ID:', String(this.selectedRefereeId));
+            }
+            
         } else if (this.selectedRefereeId === 'guest') {
             console.log('👤 Guest referee - showing all events');
+        } else {
+            console.log('⚠️ No referee selected - this should not happen');
         }
         
         // Sort chronologically (future events ascending, past events descending)
@@ -1565,12 +1619,31 @@ class CheckInViewApp {
         });
         
         if (eventsToShow.length === 0) {
-            const message = showPastEvents ? 'No past events' : 'No upcoming events';
-            const subtext = showPastEvents ? 'Past events will appear here' : 'Upcoming events will appear here';
+            let message, subtext;
+            
+            if (this.selectedRefereeId && this.selectedRefereeId !== 'guest') {
+                // No events found for selected referee
+                message = `No games assigned to ${this.selectedRefereeName}`;
+                subtext = showPastEvents 
+                    ? `${this.selectedRefereeName} has no past games assigned`
+                    : `${this.selectedRefereeName} has no upcoming games assigned`;
+            } else {
+                // Generic no events message
+                message = showPastEvents ? 'No past events' : 'No upcoming events';
+                subtext = showPastEvents ? 'Past events will appear here' : 'Upcoming events will appear here';
+            }
+            
             container.innerHTML = `
                 <div class="empty-state">
                     <h3>${message}</h3>
                     <p>${subtext}</p>
+                    ${this.selectedRefereeId && this.selectedRefereeId !== 'guest' ? `
+                        <p style="margin-top: 15px;">
+                            <button onclick="app.changeReferee()" class="btn">
+                                Select Different Referee
+                            </button>
+                        </p>
+                    ` : ''}
                 </div>
             `;
             return;

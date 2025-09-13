@@ -2455,41 +2455,44 @@
         /* Referee Selection Styles */
         .referee-selection-content {
             text-align: center;
-            padding: 20px 0;
+            padding: 15px 0;
         }
         
         .referee-selection-content p {
             color: #666;
-            font-size: 1.1em;
-            margin-bottom: 30px;
-            line-height: 1.5;
+            font-size: 1em;
+            margin-bottom: 20px;
+            line-height: 1.4;
+            padding: 0 20px;
         }
         
         .referee-list {
-            display: flex;
-            flex-direction: column;
-            gap: 15px;
-            max-width: 600px;
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+            gap: 12px;
+            max-width: 900px;
             margin: 0 auto;
+            padding: 0 15px;
         }
         
         .referee-selection-item {
             display: flex;
             align-items: center;
             justify-content: space-between;
-            padding: 20px 25px;
+            padding: 15px 18px;
             background: white;
             border: 2px solid #e9ecef;
-            border-radius: 12px;
+            border-radius: 10px;
             cursor: pointer;
             transition: all 0.3s ease;
-            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            box-shadow: 0 2px 6px rgba(0,0,0,0.08);
+            min-height: 60px;
         }
         
         .referee-selection-item:hover {
             border-color: #2196F3;
-            transform: translateY(-2px);
-            box-shadow: 0 4px 15px rgba(33, 150, 243, 0.15);
+            transform: translateY(-1px);
+            box-shadow: 0 4px 12px rgba(33, 150, 243, 0.15);
         }
         
         .referee-info {
@@ -2498,55 +2501,89 @@
         }
         
         .referee-name {
-            font-size: 1.3em;
+            font-size: 1.1em;
             font-weight: 600;
             color: #333;
-            margin-bottom: 5px;
+            margin-bottom: 3px;
+            line-height: 1.2;
         }
         
         .referee-contact {
-            font-size: 0.9em;
+            font-size: 0.8em;
             color: #666;
+            line-height: 1.2;
         }
         
         .select-arrow {
-            font-size: 1.5em;
+            font-size: 1.3em;
             color: #2196F3;
             font-weight: bold;
-            margin-left: 20px;
+            margin-left: 15px;
+            flex-shrink: 0;
         }
         
         .referee-selection-item:hover .select-arrow {
-            transform: translateX(5px);
+            transform: translateX(3px);
             transition: transform 0.3s ease;
         }
         
         /* Mobile responsive for referee selection */
         @media (max-width: 768px) {
             .referee-selection-content p {
-                font-size: 1em;
+                font-size: 0.9em;
                 padding: 0 15px;
+                margin-bottom: 15px;
             }
             
             .referee-list {
-                padding: 0 15px;
+                grid-template-columns: 1fr;
+                gap: 8px;
+                padding: 0 10px;
             }
             
             .referee-selection-item {
-                padding: 15px 20px;
+                padding: 12px 15px;
+                min-height: 50px;
+                border-radius: 8px;
             }
             
             .referee-name {
-                font-size: 1.1em;
+                font-size: 1em;
+                margin-bottom: 2px;
             }
             
             .referee-contact {
-                font-size: 0.85em;
+                font-size: 0.75em;
             }
             
             .select-arrow {
-                font-size: 1.3em;
-                margin-left: 15px;
+                font-size: 1.2em;
+                margin-left: 12px;
+            }
+        }
+        
+        /* Extra compact for small phones */
+        @media (max-width: 480px) {
+            .referee-selection-content {
+                padding: 10px 0;
+            }
+            
+            .referee-list {
+                gap: 6px;
+                padding: 0 8px;
+            }
+            
+            .referee-selection-item {
+                padding: 10px 12px;
+                min-height: 45px;
+            }
+            
+            .referee-name {
+                font-size: 0.95em;
+            }
+            
+            .referee-contact {
+                font-size: 0.7em;
             }
         }
 
