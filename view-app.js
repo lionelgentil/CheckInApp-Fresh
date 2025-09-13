@@ -4,9 +4,6 @@
  * Enhanced with pure epoch timestamp support for reliable timezone handling
  */
 
-// Version constant - update this single location to change version everywhere
-const APP_VERSION = '6.2.0';
-
 // Utility function to convert epoch timestamp to Pacific timezone display
 function epochToPacificDate(epochTimestamp, options = {}) {
     if (!epochTimestamp) return 'No date';
