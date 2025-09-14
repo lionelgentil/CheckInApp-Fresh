@@ -4711,10 +4711,27 @@ class CheckInViewApp {
             }
         }
         
+        // Determine which team the player belongs to
+        const homeTeam = this.teams.find(t => t.id === this.currentMatch.homeTeamId);
+        const awayTeam = this.teams.find(t => t.id === this.currentMatch.awayTeamId);
+        
+        let teamType = null;
+        if (homeTeam?.members?.find(p => p.id === playerId)) {
+            teamType = 'home';
+        } else if (awayTeam?.members?.find(p => p.id === playerId)) {
+            teamType = 'away';
+        }
+        
+        if (!teamType) {
+            alert('Error: Could not determine which team the player belongs to');
+            return;
+        }
+        
         // Create new card
         const newCard = {
             cardType: selectedType.dataset.type,
             memberId: playerId, // Keep as string (UUID format)
+            teamType: teamType, // Add required teamType field
             minute: minute ? parseInt(minute) : null,
             reason: reason,
             notes: notes || null
@@ -4777,6 +4794,7 @@ class CheckInViewApp {
                 matchNotes: notes,
                 cards: this.currentMatchCards.map(card => ({
                     memberId: card.memberId,
+                    teamType: card.teamType, // Include required teamType field
                     cardType: card.cardType,
                     minute: card.minute,
                     reason: card.reason,
