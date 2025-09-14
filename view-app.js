@@ -4753,8 +4753,6 @@ class CheckInViewApp {
     }
     
     async saveMobileMatchResult(eventId, matchId) {
-        // Add debugging to see if function is called
-        alert('Save button clicked! Starting save process...');
         console.log('🔄 saveMobileMatchResult called with:', { eventId, matchId });
         
         try {
@@ -4765,13 +4763,21 @@ class CheckInViewApp {
             console.log('📊 Collected data:', { homeScore, awayScore, notes, cards: this.currentMatchCards });
             
             const matchResult = {
-                eventId: eventId,
-                matchId: matchId,
+                eventId: parseInt(eventId),
+                matchId: parseInt(matchId),
                 homeScore: homeScore,
                 awayScore: awayScore,
                 matchStatus: 'completed',
                 matchNotes: notes,
-                cards: this.currentMatchCards || []
+                cards: this.currentMatchCards.map(card => ({
+                    memberId: card.memberId,
+                    cardType: card.cardType,
+                    minute: card.minute,
+                    reason: card.reason,
+                    notes: card.notes,
+                    eventId: parseInt(eventId),
+                    matchId: parseInt(matchId)
+                }))
             };
             
             console.log('Saving mobile match result:', matchResult);
