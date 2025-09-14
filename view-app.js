@@ -4485,9 +4485,26 @@ class CheckInViewApp {
         return this.currentMatchCards.map((card, index) => {
             const homeTeam = this.teams.find(t => t.id === this.currentMatch.homeTeamId);
             const awayTeam = this.teams.find(t => t.id === this.currentMatch.awayTeamId);
-            const allPlayers = [...(homeTeam?.members || []), ...(awayTeam?.members || [])];
-            const player = allPlayers.find(p => p.id === card.memberId);
-            const playerTeam = homeTeam?.members.find(p => p.id === card.memberId) ? homeTeam : awayTeam;
+            
+            // Find player in both team rosters and checked-in players
+            let player = null;
+            let playerTeam = null;
+            
+            // First try to find in home team
+            if (homeTeam?.members) {
+                player = homeTeam.members.find(p => p.id === card.memberId);
+                if (player) {
+                    playerTeam = homeTeam;
+                }
+            }
+            
+            // If not found in home team, try away team
+            if (!player && awayTeam?.members) {
+                player = awayTeam.members.find(p => p.id === card.memberId);
+                if (player) {
+                    playerTeam = awayTeam;
+                }
+            }
             
             return `
                 <div class="mobile-card-item ${card.cardType}">
@@ -4578,14 +4595,6 @@ class CheckInViewApp {
                 
                 <div class="card-form-group">
                     <label class="card-form-label">Player</label>
-                    <!-- DEBUG INFO -->
-                    <div style="background: #f0f0f0; padding: 10px; margin-bottom: 10px; font-size: 12px; border-radius: 5px;">
-                        <strong>Debug Info:</strong><br>
-                        Home Attendees: ${this.currentMatch.homeTeamAttendees ? JSON.stringify(this.currentMatch.homeTeamAttendees) : 'null'}<br>
-                        Away Attendees: ${this.currentMatch.awayTeamAttendees ? JSON.stringify(this.currentMatch.awayTeamAttendees) : 'null'}<br>
-                        Home Players Found: ${checkedInPlayers.home.length}<br>
-                        Away Players Found: ${checkedInPlayers.away.length}
-                    </div>
                     <select class="card-form-select" id="card-player-select">
                         <option value="">Select Player</option>
                         ${checkedInPlayers.home.length > 0 ? `
@@ -4610,7 +4619,7 @@ class CheckInViewApp {
                 
                 <div class="card-form-group">
                     <label class="card-form-label">Minute</label>
-                    <input type="number" class="card-form-select" id="card-minute" min="1" max="120" placeholder="Match minute">
+                    <input type="number" class="card-form-select" id="card-minute" min="1" max="200" step="1" placeholder="Match minute (1-200)">
                 </div>
                 
                 <div class="card-form-group">
@@ -4677,6 +4686,12 @@ class CheckInViewApp {
         
         if (!reason) {
             alert('Please select a reason');
+            return;
+        }
+        
+        // Validate minute if provided
+        if (minute && (parseInt(minute) < 1 || parseInt(minute) > 200)) {
+            alert('Minute must be between 1 and 200');
             return;
         }
         
