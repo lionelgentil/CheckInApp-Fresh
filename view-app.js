@@ -4690,9 +4690,16 @@ class CheckInViewApp {
         }
         
         // Validate minute if provided
-        if (minute && (parseInt(minute) < 1 || parseInt(minute) > 200)) {
-            alert('Minute must be between 1 and 200');
-            return;
+        if (minute && minute.trim() !== '') {
+            const minuteNum = parseInt(minute);
+            if (isNaN(minuteNum)) {
+                alert('Minute must be a valid number');
+                return;
+            }
+            if (minuteNum < 1 || minuteNum > 200) {
+                alert('Minute must be between 1 and 200');
+                return;
+            }
         }
         
         // Create new card
@@ -4737,10 +4744,16 @@ class CheckInViewApp {
     }
     
     async saveMobileMatchResult(eventId, matchId) {
+        // Add debugging to see if function is called
+        alert('Save button clicked! Starting save process...');
+        console.log('🔄 saveMobileMatchResult called with:', { eventId, matchId });
+        
         try {
             const homeScore = parseInt(document.getElementById('mobile-home-score').textContent) || 0;
             const awayScore = parseInt(document.getElementById('mobile-away-score').textContent) || 0;
             const notes = document.getElementById('mobile-match-notes').value.trim();
+            
+            console.log('📊 Collected data:', { homeScore, awayScore, notes, cards: this.currentMatchCards });
             
             const matchResult = {
                 eventId: eventId,
