@@ -4528,7 +4528,28 @@ class CheckInViewApp {
     showAddCardModal() {
         const homeTeam = this.teams.find(t => t.id === this.currentMatch.homeTeamId);
         const awayTeam = this.teams.find(t => t.id === this.currentMatch.awayTeamId);
-        const allPlayers = [...(homeTeam?.members || []), ...(awayTeam?.members || [])];
+        
+        // Only show checked-in players
+        const checkedInPlayers = {
+            home: [],
+            away: []
+        };
+        
+        // Get attendance data for this match to filter only checked-in players
+        if (this.currentMatch.attendance) {
+            this.currentMatch.attendance.forEach(attendance => {
+                if (attendance.status === 'present') {
+                    const homePlayer = homeTeam?.members.find(p => p.id === attendance.memberId);
+                    const awayPlayer = awayTeam?.members.find(p => p.id === attendance.memberId);
+                    
+                    if (homePlayer) {
+                        checkedInPlayers.home.push(homePlayer);
+                    } else if (awayPlayer) {
+                        checkedInPlayers.away.push(awayPlayer);
+                    }
+                }
+            });
+        }
         
         const modal = document.createElement('div');
         modal.className = 'card-creation-modal';
@@ -4554,16 +4575,23 @@ class CheckInViewApp {
                     <label class="card-form-label">Player</label>
                     <select class="card-form-select" id="card-player-select">
                         <option value="">Select Player</option>
-                        <optgroup label="${homeTeam.name}">
-                            ${homeTeam.members.map(player => `
-                                <option value="${player.id}">${player.name} (#${player.jerseyNumber || 'N/A'})</option>
-                            `).join('')}
-                        </optgroup>
-                        <optgroup label="${awayTeam.name}">
-                            ${awayTeam.members.map(player => `
-                                <option value="${player.id}">${player.name} (#${player.jerseyNumber || 'N/A'})</option>
-                            `).join('')}
-                        </optgroup>
+                        ${checkedInPlayers.home.length > 0 ? `
+                            <optgroup label="${homeTeam.name}">
+                                ${checkedInPlayers.home.map(player => `
+                                    <option value="${player.id}">${player.name} (#${player.jerseyNumber || 'N/A'})</option>
+                                `).join('')}
+                            </optgroup>
+                        ` : ''}
+                        ${checkedInPlayers.away.length > 0 ? `
+                            <optgroup label="${awayTeam.name}">
+                                ${checkedInPlayers.away.map(player => `
+                                    <option value="${player.id}">${player.name} (#${player.jerseyNumber || 'N/A'})</option>
+                                `).join('')}
+                            </optgroup>
+                        ` : ''}
+                        ${checkedInPlayers.home.length === 0 && checkedInPlayers.away.length === 0 ? 
+                            '<option value="" disabled>No checked-in players available</option>' : ''
+                        }
                     </select>
                 </div>
                 
@@ -4576,15 +4604,9 @@ class CheckInViewApp {
                     <label class="card-form-label">Reason</label>
                     <select class="card-form-select" id="card-reason-select">
                         <option value="">Select Reason</option>
-                        <option value="Unsporting Behavior">Unsporting Behavior</option>
-                        <option value="Dissent">Dissent</option>
-                        <option value="Persistent Fouling">Persistent Fouling</option>
-                        <option value="Delaying Game">Delaying Game</option>
-                        <option value="Serious Foul Play">Serious Foul Play</option>
-                        <option value="Violent Conduct">Violent Conduct</option>
-                        <option value="Offensive Language">Offensive Language</option>
-                        <option value="Second Yellow Card">Second Yellow Card</option>
-                        <option value="Other">Other</option>
+                        ${window.CheckInAppConfig.cardReasons.map(reason => 
+                            `<option value="${reason}">${reason}</option>`
+                        ).join('')}
                     </select>
                 </div>
                 
@@ -4607,30 +4629,6 @@ class CheckInViewApp {
             option.addEventListener('click', (e) => {
                 modal.querySelectorAll('.card-type-option').forEach(opt => opt.classList.remove('selected'));
                 e.target.classList.add('selected');
-                
-                // Update reason options based on card type
-                const reasonSelect = modal.querySelector('#card-reason-select');
-                const cardType = e.target.dataset.type;
-                
-                if (cardType === 'yellow') {
-                    reasonSelect.innerHTML = `
-                        <option value="">Select Reason</option>
-                        <option value="Unsporting Behavior">Unsporting Behavior</option>
-                        <option value="Dissent">Dissent</option>
-                        <option value="Persistent Fouling">Persistent Fouling</option>
-                        <option value="Delaying Game">Delaying Game</option>
-                        <option value="Other">Other</option>
-                    `;
-                } else {
-                    reasonSelect.innerHTML = `
-                        <option value="">Select Reason</option>
-                        <option value="Serious Foul Play">Serious Foul Play</option>
-                        <option value="Violent Conduct">Violent Conduct</option>
-                        <option value="Offensive Language">Offensive Language</option>
-                        <option value="Second Yellow Card">Second Yellow Card</option>
-                        <option value="Other">Other</option>
-                    `;
-                }
             });
         });
         
