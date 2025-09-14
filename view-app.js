@@ -4545,14 +4545,8 @@ class CheckInViewApp {
                 }
             });
         } else {
-            console.log('No attendance data found or not an array');
-            // Fallback: if no attendance data, show all players
-            if (homeTeam?.members) {
-                checkedInPlayers.home = [...homeTeam.members];
-            }
-            if (awayTeam?.members) {
-                checkedInPlayers.away = [...awayTeam.members];
-            }
+            console.log('No attendance data found or not an array - showing no players');
+            // Don't show any players if no attendance data is available
         }
         
         console.log('Final checked-in players:', checkedInPlayers);
