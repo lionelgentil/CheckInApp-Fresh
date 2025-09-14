@@ -4463,7 +4463,7 @@ class CheckInViewApp {
                     <button class="mobile-action-btn cancel" onclick="app.closeMobileMatchResult()">
                         Cancel
                     </button>
-                    <button class="mobile-action-btn save" onclick="alert('TEST: Save button works!'); app.saveMobileMatchResult(${eventId}, ${matchId});">
+                    <button class="mobile-action-btn save" id="mobile-save-btn">
                         Save Result
                     </button>
                 </div>
@@ -4471,6 +4471,15 @@ class CheckInViewApp {
         `;
         
         document.body.appendChild(modal);
+        
+        // Add event listener for save button
+        const saveBtn = document.getElementById('mobile-save-btn');
+        if (saveBtn) {
+            saveBtn.addEventListener('click', () => {
+                console.log('Save button clicked via event listener');
+                this.saveMobileMatchResult(eventId, matchId);
+            });
+        }
         
         // Prevent body scroll
         document.body.style.overflow = 'hidden';
