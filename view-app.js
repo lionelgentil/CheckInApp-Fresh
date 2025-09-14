@@ -4370,23 +4370,6 @@ class CheckInViewApp {
         const event = this.events.find(e => e.id === eventId);
         const match = event.matches.find(m => m.id === matchId);
         
-        // Load attendance data for this specific match
-        try {
-            console.log(`🔄 Loading attendance data for match ${matchId}...`);
-            const attendanceResponse = await fetch(`/api/events/${eventId}/matches/${matchId}/attendance`);
-            if (attendanceResponse.ok) {
-                const attendanceData = await attendanceResponse.json();
-                match.attendance = attendanceData;
-                console.log('✅ Loaded attendance data:', attendanceData);
-            } else {
-                console.warn('⚠️ Failed to load attendance data, status:', attendanceResponse.status);
-                match.attendance = [];
-            }
-        } catch (error) {
-            console.error('❌ Error loading attendance data:', error);
-            match.attendance = [];
-        }
-        
         const homeTeam = this.teams.find(t => t.id === match.homeTeamId);
         const awayTeam = this.teams.find(t => t.id === match.awayTeamId);
         const mainReferee = match.mainRefereeId ? this.referees.find(r => r.id === match.mainRefereeId) : null;
@@ -4534,7 +4517,7 @@ class CheckInViewApp {
         const homeTeam = this.teams.find(t => t.id === this.currentMatch.homeTeamId);
         const awayTeam = this.teams.find(t => t.id === this.currentMatch.awayTeamId);
         
-        // Only show checked-in players
+        // Only show checked-in players using the View app's data structure
         const checkedInPlayers = {
             home: [],
             away: []
@@ -4543,28 +4526,28 @@ class CheckInViewApp {
         console.log('Current match:', this.currentMatch);
         console.log('Home team members:', homeTeam?.members);
         console.log('Away team members:', awayTeam?.members);
-        console.log('Match attendance:', this.currentMatch.attendance);
+        console.log('Match homeTeamAttendees:', this.currentMatch.homeTeamAttendees);
+        console.log('Match awayTeamAttendees:', this.currentMatch.awayTeamAttendees);
         
-        // Get attendance data for this match to filter only checked-in players
-        if (this.currentMatch.attendance && Array.isArray(this.currentMatch.attendance)) {
-            this.currentMatch.attendance.forEach(attendance => {
-                console.log('Processing attendance:', attendance);
-                if (attendance.status === 'present' || attendance.status === 'checked_in') {
-                    const homePlayer = homeTeam?.members?.find(p => p.id === attendance.memberId || p.id === attendance.member_id);
-                    const awayPlayer = awayTeam?.members?.find(p => p.id === attendance.memberId || p.id === attendance.member_id);
-                    
-                    if (homePlayer) {
-                        console.log('Adding home player:', homePlayer.name);
-                        checkedInPlayers.home.push(homePlayer);
-                    } else if (awayPlayer) {
-                        console.log('Adding away player:', awayPlayer.name);
-                        checkedInPlayers.away.push(awayPlayer);
-                    }
+        // Use the View app's attendance data structure
+        if (this.currentMatch.homeTeamAttendees && Array.isArray(this.currentMatch.homeTeamAttendees)) {
+            this.currentMatch.homeTeamAttendees.forEach(attendeeId => {
+                const player = homeTeam?.members?.find(p => p.id === attendeeId);
+                if (player) {
+                    console.log('Adding home player:', player.name);
+                    checkedInPlayers.home.push(player);
                 }
             });
-        } else {
-            console.log('No attendance data found or not an array - showing no players');
-            // Don't show any players if no attendance data is available
+        }
+        
+        if (this.currentMatch.awayTeamAttendees && Array.isArray(this.currentMatch.awayTeamAttendees)) {
+            this.currentMatch.awayTeamAttendees.forEach(attendeeId => {
+                const player = awayTeam?.members?.find(p => p.id === attendeeId);
+                if (player) {
+                    console.log('Adding away player:', player.name);
+                    checkedInPlayers.away.push(player);
+                }
+            });
         }
         
         console.log('Final checked-in players:', checkedInPlayers);
