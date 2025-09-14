@@ -4698,7 +4698,7 @@ class CheckInViewApp {
         // Create new card
         const newCard = {
             cardType: selectedType.dataset.type,
-            memberId: parseInt(playerId),
+            memberId: playerId, // Keep as string (UUID format)
             minute: minute ? parseInt(minute) : null,
             reason: reason,
             notes: notes || null
