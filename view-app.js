@@ -4409,19 +4409,6 @@ class CheckInViewApp {
                         </div>
                     </div>
                     
-                    <!-- Team Matchup -->
-                    <div class="mobile-team-matchup">
-                        <div class="mobile-team-names">
-                            <span>${homeTeam.name}</span>
-                            <span class="mobile-vs-text">vs</span>
-                            <span>${awayTeam.name}</span>
-                        </div>
-                        <div class="mobile-team-categories">
-                            <span>(${homeTeam.category})</span>
-                            <span>(${awayTeam.category})</span>
-                        </div>
-                    </div>
-                    
                     <!-- Score Entry -->
                     <div class="mobile-score-section">
                         <div class="mobile-score-header">Final Score</div>
@@ -4535,21 +4522,40 @@ class CheckInViewApp {
             away: []
         };
         
+        console.log('Current match:', this.currentMatch);
+        console.log('Home team members:', homeTeam?.members);
+        console.log('Away team members:', awayTeam?.members);
+        console.log('Match attendance:', this.currentMatch.attendance);
+        
         // Get attendance data for this match to filter only checked-in players
-        if (this.currentMatch.attendance) {
+        if (this.currentMatch.attendance && Array.isArray(this.currentMatch.attendance)) {
             this.currentMatch.attendance.forEach(attendance => {
-                if (attendance.status === 'present') {
-                    const homePlayer = homeTeam?.members.find(p => p.id === attendance.memberId);
-                    const awayPlayer = awayTeam?.members.find(p => p.id === attendance.memberId);
+                console.log('Processing attendance:', attendance);
+                if (attendance.status === 'present' || attendance.status === 'checked_in') {
+                    const homePlayer = homeTeam?.members?.find(p => p.id === attendance.memberId || p.id === attendance.member_id);
+                    const awayPlayer = awayTeam?.members?.find(p => p.id === attendance.memberId || p.id === attendance.member_id);
                     
                     if (homePlayer) {
+                        console.log('Adding home player:', homePlayer.name);
                         checkedInPlayers.home.push(homePlayer);
                     } else if (awayPlayer) {
+                        console.log('Adding away player:', awayPlayer.name);
                         checkedInPlayers.away.push(awayPlayer);
                     }
                 }
             });
+        } else {
+            console.log('No attendance data found or not an array');
+            // Fallback: if no attendance data, show all players
+            if (homeTeam?.members) {
+                checkedInPlayers.home = [...homeTeam.members];
+            }
+            if (awayTeam?.members) {
+                checkedInPlayers.away = [...awayTeam.members];
+            }
         }
+        
+        console.log('Final checked-in players:', checkedInPlayers);
         
         const modal = document.createElement('div');
         modal.className = 'card-creation-modal';
