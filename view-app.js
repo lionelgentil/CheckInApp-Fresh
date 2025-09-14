@@ -4463,7 +4463,7 @@ class CheckInViewApp {
                     <button class="mobile-action-btn cancel" onclick="app.closeMobileMatchResult()">
                         Cancel
                     </button>
-                    <button class="mobile-action-btn save" onclick="app.saveMobileMatchResult(${eventId}, ${matchId})">
+                    <button class="mobile-action-btn save" onclick="alert('TEST: Save button works!'); app.saveMobileMatchResult(${eventId}, ${matchId});">
                         Save Result
                     </button>
                 </div>
