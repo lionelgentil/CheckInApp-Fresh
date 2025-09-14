@@ -4753,7 +4753,7 @@ class CheckInViewApp {
     }
     
     async saveMobileMatchResult(eventId, matchId) {
-        console.log('🔄 saveMobileMatchResult called with:', { eventId, matchId });
+        console.log('🔄 saveMobileMatchResult called with:', { eventId, matchId, types: { eventId: typeof eventId, matchId: typeof matchId } });
         
         try {
             const homeScore = parseInt(document.getElementById('mobile-home-score').textContent) || 0;
@@ -4762,9 +4762,20 @@ class CheckInViewApp {
             
             console.log('📊 Collected data:', { homeScore, awayScore, notes, cards: this.currentMatchCards });
             
+            // Ensure eventId and matchId are properly converted
+            const numericEventId = parseInt(eventId);
+            const numericMatchId = parseInt(matchId);
+            
+            console.log('🔢 Converted IDs:', { numericEventId, numericMatchId, isValidEvent: !isNaN(numericEventId), isValidMatch: !isNaN(numericMatchId) });
+            
+            if (isNaN(numericEventId) || isNaN(numericMatchId)) {
+                alert(`Invalid IDs: eventId=${eventId}, matchId=${matchId}`);
+                return;
+            }
+            
             const matchResult = {
-                eventId: parseInt(eventId),
-                matchId: parseInt(matchId),
+                eventId: numericEventId,
+                matchId: numericMatchId,
                 homeScore: homeScore,
                 awayScore: awayScore,
                 matchStatus: 'completed',
@@ -4775,8 +4786,8 @@ class CheckInViewApp {
                     minute: card.minute,
                     reason: card.reason,
                     notes: card.notes,
-                    eventId: parseInt(eventId),
-                    matchId: parseInt(matchId)
+                    eventId: numericEventId,
+                    matchId: numericMatchId
                 }))
             };
             
