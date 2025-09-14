@@ -4574,6 +4574,14 @@ class CheckInViewApp {
                 
                 <div class="card-form-group">
                     <label class="card-form-label">Player</label>
+                    <!-- DEBUG INFO -->
+                    <div style="background: #f0f0f0; padding: 10px; margin-bottom: 10px; font-size: 12px; border-radius: 5px;">
+                        <strong>Debug Info:</strong><br>
+                        Home Attendees: ${this.currentMatch.homeTeamAttendees ? JSON.stringify(this.currentMatch.homeTeamAttendees) : 'null'}<br>
+                        Away Attendees: ${this.currentMatch.awayTeamAttendees ? JSON.stringify(this.currentMatch.awayTeamAttendees) : 'null'}<br>
+                        Home Players Found: ${checkedInPlayers.home.length}<br>
+                        Away Players Found: ${checkedInPlayers.away.length}
+                    </div>
                     <select class="card-form-select" id="card-player-select">
                         <option value="">Select Player</option>
                         ${checkedInPlayers.home.length > 0 ? `
