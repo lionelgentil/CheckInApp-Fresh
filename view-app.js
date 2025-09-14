@@ -4369,6 +4369,24 @@ class CheckInViewApp {
         
         const event = this.events.find(e => e.id === eventId);
         const match = event.matches.find(m => m.id === matchId);
+        
+        // Load attendance data for this specific match
+        try {
+            console.log(`🔄 Loading attendance data for match ${matchId}...`);
+            const attendanceResponse = await fetch(`/api/events/${eventId}/matches/${matchId}/attendance`);
+            if (attendanceResponse.ok) {
+                const attendanceData = await attendanceResponse.json();
+                match.attendance = attendanceData;
+                console.log('✅ Loaded attendance data:', attendanceData);
+            } else {
+                console.warn('⚠️ Failed to load attendance data, status:', attendanceResponse.status);
+                match.attendance = [];
+            }
+        } catch (error) {
+            console.error('❌ Error loading attendance data:', error);
+            match.attendance = [];
+        }
+        
         const homeTeam = this.teams.find(t => t.id === match.homeTeamId);
         const awayTeam = this.teams.find(t => t.id === match.awayTeamId);
         const mainReferee = match.mainRefereeId ? this.referees.find(r => r.id === match.mainRefereeId) : null;
