@@ -4455,11 +4455,8 @@ class CheckInViewApp {
                             ${this.renderMobileCards()}
                         </div>
                         <div class="mobile-add-card-buttons">
-                            <button class="mobile-add-card-btn yellow" onclick="app.addMobileCard('yellow')">
-                                🟨 Add Yellow Card
-                            </button>
-                            <button class="mobile-add-card-btn red" onclick="app.addMobileCard('red')">
-                                🟥 Add Red Card  
+                            <button class="mobile-add-card-btn" onclick="app.showAddCardModal()">
+                                ➕ Add Card
                             </button>
                         </div>
                     </div>
@@ -4512,6 +4509,7 @@ class CheckInViewApp {
                         </div>
                         <div class="mobile-card-details">
                             Minute: ${card.minute || 'N/A'} • ${card.reason || 'No reason specified'}
+                            ${card.notes ? `<br><em>Notes: ${card.notes}</em>` : ''}
                         </div>
                     </div>
                     <button class="mobile-card-remove" onclick="app.removeMobileCard(${index})">×</button>
@@ -4527,14 +4525,157 @@ class CheckInViewApp {
         scoreElement.textContent = newScore;
     }
     
-    addMobileCard(cardType) {
-        // For now, create a simple card - in a full implementation, 
-        // you'd want a player selection interface
+    showAddCardModal() {
+        const homeTeam = this.teams.find(t => t.id === this.currentMatch.homeTeamId);
+        const awayTeam = this.teams.find(t => t.id === this.currentMatch.awayTeamId);
+        const allPlayers = [...(homeTeam?.members || []), ...(awayTeam?.members || [])];
+        
+        const modal = document.createElement('div');
+        modal.className = 'card-creation-modal';
+        modal.innerHTML = `
+            <div class="card-creation-content">
+                <div class="card-creation-header">
+                    <h3 class="card-creation-title">Add Card</h3>
+                </div>
+                
+                <div class="card-form-group">
+                    <label class="card-form-label">Card Type</label>
+                    <div class="card-type-selector">
+                        <div class="card-type-option yellow" data-type="yellow">
+                            🟨 Yellow Card
+                        </div>
+                        <div class="card-type-option red" data-type="red">
+                            🟥 Red Card
+                        </div>
+                    </div>
+                </div>
+                
+                <div class="card-form-group">
+                    <label class="card-form-label">Player</label>
+                    <select class="card-form-select" id="card-player-select">
+                        <option value="">Select Player</option>
+                        <optgroup label="${homeTeam.name}">
+                            ${homeTeam.members.map(player => `
+                                <option value="${player.id}">${player.name} (#${player.jerseyNumber || 'N/A'})</option>
+                            `).join('')}
+                        </optgroup>
+                        <optgroup label="${awayTeam.name}">
+                            ${awayTeam.members.map(player => `
+                                <option value="${player.id}">${player.name} (#${player.jerseyNumber || 'N/A'})</option>
+                            `).join('')}
+                        </optgroup>
+                    </select>
+                </div>
+                
+                <div class="card-form-group">
+                    <label class="card-form-label">Minute</label>
+                    <input type="number" class="card-form-select" id="card-minute" min="1" max="120" placeholder="Match minute">
+                </div>
+                
+                <div class="card-form-group">
+                    <label class="card-form-label">Reason</label>
+                    <select class="card-form-select" id="card-reason-select">
+                        <option value="">Select Reason</option>
+                        <option value="Unsporting Behavior">Unsporting Behavior</option>
+                        <option value="Dissent">Dissent</option>
+                        <option value="Persistent Fouling">Persistent Fouling</option>
+                        <option value="Delaying Game">Delaying Game</option>
+                        <option value="Serious Foul Play">Serious Foul Play</option>
+                        <option value="Violent Conduct">Violent Conduct</option>
+                        <option value="Offensive Language">Offensive Language</option>
+                        <option value="Second Yellow Card">Second Yellow Card</option>
+                        <option value="Other">Other</option>
+                    </select>
+                </div>
+                
+                <div class="card-form-group">
+                    <label class="card-form-label">Notes (Optional)</label>
+                    <textarea class="card-form-textarea" id="card-notes" placeholder="Additional details about the incident..."></textarea>
+                </div>
+                
+                <div class="card-creation-actions">
+                    <button class="card-action-btn cancel" onclick="app.closeAddCardModal()">Cancel</button>
+                    <button class="card-action-btn save" onclick="app.saveNewCard()">Add Card</button>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(modal);
+        
+        // Add event listeners for card type selection
+        modal.querySelectorAll('.card-type-option').forEach(option => {
+            option.addEventListener('click', (e) => {
+                modal.querySelectorAll('.card-type-option').forEach(opt => opt.classList.remove('selected'));
+                e.target.classList.add('selected');
+                
+                // Update reason options based on card type
+                const reasonSelect = modal.querySelector('#card-reason-select');
+                const cardType = e.target.dataset.type;
+                
+                if (cardType === 'yellow') {
+                    reasonSelect.innerHTML = `
+                        <option value="">Select Reason</option>
+                        <option value="Unsporting Behavior">Unsporting Behavior</option>
+                        <option value="Dissent">Dissent</option>
+                        <option value="Persistent Fouling">Persistent Fouling</option>
+                        <option value="Delaying Game">Delaying Game</option>
+                        <option value="Other">Other</option>
+                    `;
+                } else {
+                    reasonSelect.innerHTML = `
+                        <option value="">Select Reason</option>
+                        <option value="Serious Foul Play">Serious Foul Play</option>
+                        <option value="Violent Conduct">Violent Conduct</option>
+                        <option value="Offensive Language">Offensive Language</option>
+                        <option value="Second Yellow Card">Second Yellow Card</option>
+                        <option value="Other">Other</option>
+                    `;
+                }
+            });
+        });
+        
+        // Auto-select yellow card by default
+        modal.querySelector('.card-type-option.yellow').click();
+    }
+    
+    closeAddCardModal() {
+        const modal = document.querySelector('.card-creation-modal');
+        if (modal) {
+            modal.remove();
+        }
+    }
+    
+    saveNewCard() {
+        const modal = document.querySelector('.card-creation-modal');
+        const selectedType = modal.querySelector('.card-type-option.selected');
+        const playerId = modal.querySelector('#card-player-select').value;
+        const minute = modal.querySelector('#card-minute').value;
+        const reason = modal.querySelector('#card-reason-select').value;
+        const notes = modal.querySelector('#card-notes').value.trim();
+        
+        // Validation
+        if (!selectedType) {
+            alert('Please select a card type');
+            return;
+        }
+        
+        if (!playerId) {
+            alert('Please select a player');
+            return;
+        }
+        
+        if (!reason) {
+            alert('Please select a reason');
+            return;
+        }
+        
+        // Create new card
         const newCard = {
-            cardType: cardType,
-            memberId: null,
-            minute: null,
-            reason: cardType === 'yellow' ? 'Unsporting Behavior' : 'Serious Foul Play'
+            cardType: selectedType.dataset.type,
+            memberId: parseInt(playerId),
+            minute: minute ? parseInt(minute) : null,
+            reason: reason,
+            notes: notes || null
         };
         
         this.currentMatchCards.push(newCard);
@@ -4542,6 +4683,9 @@ class CheckInViewApp {
         // Re-render cards
         const container = document.getElementById('mobile-cards-container');
         container.innerHTML = this.renderMobileCards();
+        
+        // Close modal
+        this.closeAddCardModal();
     }
     
     removeMobileCard(index) {

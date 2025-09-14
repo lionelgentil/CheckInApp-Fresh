@@ -2593,12 +2593,13 @@
         .mobile-score-container {
             display: flex;
             align-items: center;
-            justify-content: space-between;
-            gap: 15px;
+            justify-content: center;
+            gap: 20px;
         }
 
         .mobile-team-score {
             flex: 1;
+            max-width: 140px;
             text-align: center;
         }
 
@@ -2607,6 +2608,11 @@
             color: #666;
             margin-bottom: 8px;
             font-weight: 500;
+            min-height: 32px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            text-align: center;
         }
 
         .mobile-score-input-container {
@@ -2618,6 +2624,7 @@
             border-radius: 12px;
             padding: 8px;
             border: 2px solid #dee2e6;
+            width: 100%;
         }
 
         .mobile-score-btn {
@@ -2739,11 +2746,146 @@
 
         .mobile-add-card-buttons {
             display: flex;
-            gap: 10px;
+            justify-content: center;
             margin-top: 15px;
         }
 
         .mobile-add-card-btn {
+            background: #28a745;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 12px 24px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s;
+            touch-action: manipulation;
+            font-size: 1em;
+        }
+
+        .mobile-add-card-btn:hover {
+            background: #218838;
+        }
+
+        /* Card Creation Modal Styles */
+        .card-creation-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            z-index: 10002;
+        }
+
+        .card-creation-content {
+            background: white;
+            border-radius: 12px;
+            padding: 20px;
+            width: 90%;
+            max-width: 400px;
+            max-height: 80vh;
+            overflow-y: auto;
+        }
+
+        .card-creation-header {
+            text-align: center;
+            margin-bottom: 20px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+
+        .card-creation-title {
+            font-size: 1.2em;
+            font-weight: 600;
+            color: #333;
+            margin: 0;
+        }
+
+        .card-form-group {
+            margin-bottom: 20px;
+        }
+
+        .card-form-label {
+            display: block;
+            font-size: 0.9em;
+            font-weight: 600;
+            color: #495057;
+            margin-bottom: 8px;
+        }
+
+        .card-type-selector {
+            display: flex;
+            gap: 10px;
+            margin-bottom: 15px;
+        }
+
+        .card-type-option {
+            flex: 1;
+            padding: 12px;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            background: white;
+            cursor: pointer;
+            text-align: center;
+            font-weight: 600;
+            transition: all 0.2s;
+        }
+
+        .card-type-option.yellow {
+            border-color: #ffc107;
+            color: #856404;
+        }
+
+        .card-type-option.yellow.selected {
+            background: #fff3cd;
+            border-color: #ffc107;
+        }
+
+        .card-type-option.red {
+            border-color: #dc3545;
+            color: #721c24;
+        }
+
+        .card-type-option.red.selected {
+            background: #f8d7da;
+            border-color: #dc3545;
+        }
+
+        .card-form-select,
+        .card-form-textarea {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #dee2e6;
+            border-radius: 8px;
+            font-size: 1em;
+            background: white;
+            color: #495057;
+        }
+
+        .card-form-select:focus,
+        .card-form-textarea:focus {
+            border-color: #007bff;
+            outline: none;
+            box-shadow: 0 0 0 3px rgba(0, 123, 255, 0.1);
+        }
+
+        .card-form-textarea {
+            min-height: 80px;
+            resize: vertical;
+            font-family: inherit;
+        }
+
+        .card-creation-actions {
+            display: flex;
+            gap: 10px;
+            margin-top: 20px;
+        }
+
+        .card-action-btn {
             flex: 1;
             padding: 12px;
             border: none;
@@ -2754,24 +2896,22 @@
             touch-action: manipulation;
         }
 
-        .mobile-add-card-btn.yellow {
-            background: #fff3cd;
-            color: #856404;
-            border: 1px solid #ffeaa7;
+        .card-action-btn.cancel {
+            background: #6c757d;
+            color: white;
         }
 
-        .mobile-add-card-btn.yellow:hover {
-            background: #ffeaa7;
+        .card-action-btn.cancel:hover {
+            background: #5a6268;
         }
 
-        .mobile-add-card-btn.red {
-            background: #f8d7da;
-            color: #721c24;
-            border: 1px solid #f5c6cb;
+        .card-action-btn.save {
+            background: #007bff;
+            color: white;
         }
 
-        .mobile-add-card-btn.red:hover {
-            background: #f5c6cb;
+        .card-action-btn.save:hover {
+            background: #0056b3;
         }
 
         .mobile-no-cards {
