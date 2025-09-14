@@ -4753,7 +4753,7 @@ class CheckInViewApp {
     }
     
     async saveMobileMatchResult(eventId, matchId) {
-        console.log('🔄 saveMobileMatchResult called with:', { eventId, matchId, types: { eventId: typeof eventId, matchId: typeof matchId } });
+        console.log('🔄 saveMobileMatchResult called with:', { eventId, matchId });
         
         try {
             const homeScore = parseInt(document.getElementById('mobile-home-score').textContent) || 0;
@@ -4762,20 +4762,15 @@ class CheckInViewApp {
             
             console.log('📊 Collected data:', { homeScore, awayScore, notes, cards: this.currentMatchCards });
             
-            // Ensure eventId and matchId are properly converted
-            const numericEventId = parseInt(eventId);
-            const numericMatchId = parseInt(matchId);
-            
-            console.log('🔢 Converted IDs:', { numericEventId, numericMatchId, isValidEvent: !isNaN(numericEventId), isValidMatch: !isNaN(numericMatchId) });
-            
-            if (isNaN(numericEventId) || isNaN(numericMatchId)) {
-                alert(`Invalid IDs: eventId=${eventId}, matchId=${matchId}`);
+            // Validate that eventId and matchId are present (keep as UUIDs, don't convert to int)
+            if (!eventId || !matchId) {
+                alert(`Missing IDs: eventId=${eventId}, matchId=${matchId}`);
                 return;
             }
             
             const matchResult = {
-                eventId: numericEventId,
-                matchId: numericMatchId,
+                eventId: eventId, // Keep as UUID string
+                matchId: matchId, // Keep as UUID string
                 homeScore: homeScore,
                 awayScore: awayScore,
                 matchStatus: 'completed',
@@ -4786,8 +4781,8 @@ class CheckInViewApp {
                     minute: card.minute,
                     reason: card.reason,
                     notes: card.notes,
-                    eventId: numericEventId,
-                    matchId: numericMatchId
+                    eventId: eventId, // Keep as UUID string
+                    matchId: matchId  // Keep as UUID string
                 }))
             };
             
