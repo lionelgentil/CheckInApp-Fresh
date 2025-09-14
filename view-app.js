@@ -4531,8 +4531,10 @@ class CheckInViewApp {
         
         // Use the View app's attendance data structure
         if (this.currentMatch.homeTeamAttendees && Array.isArray(this.currentMatch.homeTeamAttendees)) {
-            this.currentMatch.homeTeamAttendees.forEach(attendeeId => {
-                const player = homeTeam?.members?.find(p => p.id === attendeeId);
+            this.currentMatch.homeTeamAttendees.forEach(attendee => {
+                // Handle both object format {memberId: X} and direct ID format
+                const playerId = typeof attendee === 'object' ? attendee.memberId : attendee;
+                const player = homeTeam?.members?.find(p => p.id === playerId);
                 if (player) {
                     console.log('Adding home player:', player.name);
                     checkedInPlayers.home.push(player);
@@ -4541,8 +4543,10 @@ class CheckInViewApp {
         }
         
         if (this.currentMatch.awayTeamAttendees && Array.isArray(this.currentMatch.awayTeamAttendees)) {
-            this.currentMatch.awayTeamAttendees.forEach(attendeeId => {
-                const player = awayTeam?.members?.find(p => p.id === attendeeId);
+            this.currentMatch.awayTeamAttendees.forEach(attendee => {
+                // Handle both object format {memberId: X} and direct ID format
+                const playerId = typeof attendee === 'object' ? attendee.memberId : attendee;
+                const player = awayTeam?.members?.find(p => p.id === playerId);
                 if (player) {
                     console.log('Adding away player:', player.name);
                     checkedInPlayers.away.push(player);
