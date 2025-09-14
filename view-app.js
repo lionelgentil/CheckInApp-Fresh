@@ -4778,9 +4778,14 @@ class CheckInViewApp {
             
             const response = await fetch('/api/match-results', {
                 method: 'POST',
-                headers: { 'Content-Type': 'application/json' },
+                headers: { 
+                    'Content-Type': 'application/json',
+                    'X-View-Only': 'true'  // Indicate this is from View app
+                },
                 body: JSON.stringify(matchResult)
             });
+            
+            console.log('📥 Response received:', response.status, response.statusText);
             
             if (response.ok) {
                 console.log('✅ Match result saved successfully');
@@ -4793,9 +4798,11 @@ class CheckInViewApp {
                 // Show success message
                 alert('Match result saved successfully!');
             } else {
-                const error = await response.text();
-                console.error('❌ Failed to save match result:', error);
-                alert('Failed to save match result. Please try again.');
+                const errorText = await response.text();
+                console.error('❌ Failed to save match result:', response.status, errorText);
+                
+                // Show detailed error for debugging
+                alert(`Failed to save match result.\nStatus: ${response.status}\nError: ${errorText}\n\nThis might be because the View app doesn't have permission to save results.`);
             }
         } catch (error) {
             console.error('❌ Error saving match result:', error);
