@@ -2285,7 +2285,12 @@ class CheckInViewApp {
                     ${filteredCards.map(card => `
                         <tr>
                             <td class="team-name-badge">${card.teamName}</td>
-                            <td class="player-name-cell">${card.playerName}</td>
+                            <td class="player-name-cell">
+                                ${card.teamId && card.memberId ? 
+                                    `<a href="#" onclick="app.viewPlayerProfile('${card.teamId}', '${card.memberId}'); return false;" style="color: #007bff; text-decoration: none; font-weight: 600;" title="View ${card.playerName}'s profile">${card.playerName}</a>` : 
+                                    card.playerName
+                                }
+                            </td>
                             <td class="center-cell">
                                 <span class="card-type-badge card-type-${card.cardType}">
                                     ${card.cardType === 'yellow' ? '🟨 Yellow' : '🟥 Red'}
@@ -2320,7 +2325,12 @@ class CheckInViewApp {
                         
                         <div class="card-record-details">
                             <div class="player-team-info">
-                                <div class="player-name-large">${card.playerName}</div>
+                                <div class="player-name-large">
+                                    ${card.teamId && card.memberId ? 
+                                        `<a href="#" onclick="app.viewPlayerProfile('${card.teamId}', '${card.memberId}'); return false;" style="color: #007bff; text-decoration: none; font-weight: 600;" title="View ${card.playerName}'s profile">${card.playerName}</a>` : 
+                                        card.playerName
+                                    }
+                                </div>
                                 <div class="team-name-large">${card.teamName}</div>
                             </div>
                             
@@ -2454,7 +2464,10 @@ class CheckInViewApp {
                         // Add match time and field for enhanced sorting
                         matchTime: match.time,
                         matchTimeEpoch: match.time_epoch,
-                        matchField: match.field
+                        matchField: match.field,
+                        // Add team and member IDs for clickable player profiles
+                        teamId: playerTeam?.id,
+                        memberId: card.memberId
                     });
                 });
             });
