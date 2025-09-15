@@ -93,9 +93,6 @@ class CheckInViewApp {
         try {
             const response = await fetch(url, options);
             
-            // Display Railway edge info from this response (only once)
-            displayRailwayEdgeFromResponse(response);
-            
             // Handle 401 Unauthorized - session expired
             if (response.status === 401) {
                 console.warn('🔐 Session expired (401), redirecting to re-authenticate...');
@@ -4775,9 +4772,11 @@ class CheckInViewApp {
         try {
             const homeScore = parseInt(document.getElementById('mobile-home-score').textContent) || 0;
             const awayScore = parseInt(document.getElementById('mobile-away-score').textContent) || 0;
-            const notes = document.getElementById('mobile-match-notes').value.trim();
+            const notesElement = document.getElementById('mobile-match-notes');
+            const notes = notesElement ? notesElement.value.trim() : '';
             
-            console.log('📊 Collected data:', { homeScore, awayScore, notes, cards: this.currentMatchCards });
+            console.log('📊 Collected data:', { homeScore, awayScore, notes, notesLength: notes.length, cards: this.currentMatchCards });
+            console.log('📝 Notes element found:', !!notesElement, 'Notes value:', `"${notes}"`);
             
             // Validate that eventId and matchId are present (keep as UUIDs, don't convert to int)
             if (!eventId || !matchId) {
@@ -4805,6 +4804,7 @@ class CheckInViewApp {
             };
             
             console.log('Saving mobile match result:', matchResult);
+            console.log('📝 Match notes in request:', matchResult.matchNotes, 'Length:', matchResult.matchNotes?.length);
             
             const response = await fetch('/api/match-results', {
                 method: 'POST',
@@ -5939,52 +5939,6 @@ async function showSection(sectionName) {
 
 async function editMatchResult(eventId, matchId) {
     await app.editMatchResult(eventId, matchId);
-}
-
-// Function to display Railway edge server info from any response
-function displayRailwayEdgeFromResponse(response) {
-    // Only create the display once
-    if (document.getElementById('railway-edge-info')) {
-        return;
-    }
-    
-    const railwayEdge = response.headers.get('x-railway-edge');
-    
-    if (railwayEdge) {
-        // Create edge info display
-        const edgeInfo = document.createElement('div');
-        edgeInfo.id = 'railway-edge-info';
-        edgeInfo.style.cssText = `
-            position: fixed;
-            top: 10px;
-            left: 10px;
-            background: rgba(0, 0, 0, 0.8);
-            color: white;
-            padding: 8px 12px;
-            border-radius: 6px;
-            font-size: 12px;
-            font-family: monospace;
-            z-index: 1001;
-            cursor: pointer;
-            transition: opacity 0.3s ease;
-        `;
-        edgeInfo.textContent = `Railway Edge: ${railwayEdge}`;
-        
-        // Click to hide/show
-        let isVisible = true;
-        edgeInfo.addEventListener('click', () => {
-            isVisible = !isVisible;
-            edgeInfo.style.opacity = isVisible ? '1' : '0.3';
-        });
-        
-        document.body.appendChild(edgeInfo);
-        
-        // Auto-hide after 10 seconds, then show faded
-        setTimeout(() => {
-            edgeInfo.style.opacity = '0.3';
-            isVisible = false;
-        }, 10000);
-    }
 }
 
 // Initialize app
