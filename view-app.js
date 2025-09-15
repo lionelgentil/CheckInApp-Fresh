@@ -2240,7 +2240,7 @@ class CheckInViewApp {
         
         console.log('📊 Displaying', filteredCards.length, 'cards');
         
-        // Sort by combined date + time (most recent first), then by field number
+        // Sort by combined date + time (most recent first), then by match, then by field number
         filteredCards.sort((a, b) => {
             const dateTimeA = this.getCardDateTime(a);
             const dateTimeB = this.getCardDateTime(b);
@@ -2258,7 +2258,12 @@ class CheckInViewApp {
                 return fieldA - fieldB;
             }
             
-            // Tertiary sort: by team name for consistency
+            // Tertiary sort: by match (to group cards from same game together)
+            if (a.matchInfo !== b.matchInfo) {
+                return a.matchInfo.localeCompare(b.matchInfo);
+            }
+            
+            // Quaternary sort: by team name for consistency within same match
             return a.teamName.localeCompare(b.teamName);
         });
         
