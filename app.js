@@ -3643,6 +3643,52 @@ Please check the browser console (F12) for more details.`);
         };
     }
     
+    // Helper function to create combined datetime for Card Tracker sorting
+    getCardDateTime(card) {
+        const baseDate = new Date(card.eventDate_epoch * 1000);
+        
+        if (card.matchTime && typeof card.matchTime === 'string') {
+            // Parse time string (e.g., "13:30" or "1:30 PM")
+            const timeStr = card.matchTime.trim();
+            
+            // Handle different time formats
+            if (timeStr.includes(':')) {
+                const [hoursStr, minutesStr] = timeStr.split(':');
+                let hours = parseInt(hoursStr) || 0;
+                let minutes = parseInt(minutesStr) || 0;
+                
+                // Handle AM/PM format
+                if (timeStr.toLowerCase().includes('pm') && hours < 12) {
+                    hours += 12;
+                } else if (timeStr.toLowerCase().includes('am') && hours === 12) {
+                    hours = 0;
+                }
+                
+                return new Date(
+                    baseDate.getFullYear(),
+                    baseDate.getMonth(),
+                    baseDate.getDate(),
+                    hours,
+                    minutes,
+                    0
+                );
+            }
+        }
+        
+        // No time available, use just the date (00:00:00)
+        return baseDate;
+    }
+
+    // Helper function to extract field number for Card Tracker sorting
+    getCardFieldNumber(card) {
+        if (!card.matchField) return 999999; // Put cards without field at end
+        
+        // Extract numeric part from field (e.g., "Field 1" -> 1, "1" -> 1)
+        const fieldStr = card.matchField.toString().toLowerCase();
+        const match = fieldStr.match(/(\d+)/);
+        return match ? parseInt(match[1]) : 999999;
+    }
+
     renderCardTracker() {
         console.log('🎯 renderCardTracker called');
         const container = document.getElementById('cards-tracker-container');
@@ -3677,11 +3723,25 @@ Please check the browser console (F12) for more details.`);
         
         console.log('📊 Displaying', filteredCards.length, 'cards');
         
-        // Sort by date (most recent first), then by team name
+        // Sort by combined date + time (most recent first), then by field number
         filteredCards.sort((a, b) => {
-            const dateA = new Date(a.eventDate);
-            const dateB = new Date(b.eventDate);
-            if (dateB - dateA !== 0) return dateB - dateA;
+            const dateTimeA = this.getCardDateTime(a);
+            const dateTimeB = this.getCardDateTime(b);
+            
+            // Primary sort: by most recent datetime first (descending)
+            if (dateTimeA.getTime() !== dateTimeB.getTime()) {
+                return dateTimeB - dateTimeA;
+            }
+            
+            // Secondary sort: by field number (ascending) for cards at same datetime
+            const fieldA = this.getCardFieldNumber(a);
+            const fieldB = this.getCardFieldNumber(b);
+            
+            if (fieldA !== fieldB) {
+                return fieldA - fieldB;
+            }
+            
+            // Tertiary sort: by team name for consistency
             return a.teamName.localeCompare(b.teamName);
         });
         
@@ -3893,7 +3953,11 @@ Please check the browser console (F12) for more details.`);
                         reason: card.reason,
                         notes: card.notes,
                         minute: card.minute,
-                        refereeName: mainReferee?.name
+                        refereeName: mainReferee?.name,
+                        // Add match time and field for enhanced sorting
+                        matchTime: match.time,
+                        matchTimeEpoch: match.time_epoch,
+                        matchField: match.field
                     });
                 });
             });

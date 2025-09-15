@@ -2159,6 +2159,53 @@ class CheckInViewApp {
         };
     }
     
+    // Helper function to create combined datetime for Card Tracker sorting
+    getCardDateTime(card) {
+        const baseDate = new Date(card.eventDate_epoch * 1000);
+        
+        if (card.matchTimeEpoch) {
+            // Use time epoch directly if available
+            const timeDate = new Date(card.matchTimeEpoch * 1000);
+            // Combine date from event with time from time_epoch
+            return new Date(
+                baseDate.getFullYear(),
+                baseDate.getMonth(), 
+                baseDate.getDate(),
+                timeDate.getHours(),
+                timeDate.getMinutes(),
+                timeDate.getSeconds()
+            );
+        } else if (card.matchTime && typeof card.matchTime === 'string') {
+            // Parse time string (e.g., "13:30" or "1:30 PM")
+            const timeStr = card.matchTime.trim();
+            const [hours, minutes] = timeStr.includes(':') 
+                ? timeStr.split(':').map(n => parseInt(n)) 
+                : [0, 0];
+            
+            return new Date(
+                baseDate.getFullYear(),
+                baseDate.getMonth(),
+                baseDate.getDate(),
+                hours || 0,
+                minutes || 0,
+                0
+            );
+        } else {
+            // No time available, use just the date (00:00:00)
+            return baseDate;
+        }
+    }
+
+    // Helper function to extract field number for Card Tracker sorting
+    getCardFieldNumber(card) {
+        if (!card.matchField) return 999999; // Put cards without field at end
+        
+        // Extract numeric part from field (e.g., "Field 1" -> 1, "1" -> 1)
+        const fieldStr = card.matchField.toString().toLowerCase();
+        const match = fieldStr.match(/(\d+)/);
+        return match ? parseInt(match[1]) : 999999;
+    }
+
     renderCardTracker() {
         console.log('🎯 renderCardTracker called');
         const container = document.getElementById('cards-tracker-container');
@@ -2193,11 +2240,25 @@ class CheckInViewApp {
         
         console.log('📊 Displaying', filteredCards.length, 'cards');
         
-        // Sort by date (most recent first), then by team name
+        // Sort by combined date + time (most recent first), then by field number
         filteredCards.sort((a, b) => {
-            const dateA = a.eventDate_epoch;
-            const dateB = b.eventDate_epoch;
-            if (dateB - dateA !== 0) return dateB - dateA;
+            const dateTimeA = this.getCardDateTime(a);
+            const dateTimeB = this.getCardDateTime(b);
+            
+            // Primary sort: by most recent datetime first (descending)
+            if (dateTimeA.getTime() !== dateTimeB.getTime()) {
+                return dateTimeB - dateTimeA;
+            }
+            
+            // Secondary sort: by field number (ascending) for cards at same datetime
+            const fieldA = this.getCardFieldNumber(a);
+            const fieldB = this.getCardFieldNumber(b);
+            
+            if (fieldA !== fieldB) {
+                return fieldA - fieldB;
+            }
+            
+            // Tertiary sort: by team name for consistency
             return a.teamName.localeCompare(b.teamName);
         });
         
@@ -2384,7 +2445,11 @@ class CheckInViewApp {
                         reason: card.reason,
                         notes: card.notes,
                         minute: card.minute,
-                        refereeName: mainReferee?.name
+                        refereeName: mainReferee?.name,
+                        // Add match time and field for enhanced sorting
+                        matchTime: match.time,
+                        matchTimeEpoch: match.time_epoch,
+                        matchField: match.field
                     });
                 });
             });
