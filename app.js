@@ -4868,15 +4868,15 @@ Please check the browser console (F12) for more details.`);
         
         console.log('📊 Displaying', filteredGames.length, 'games');
         
-        // REQUESTED CHANGE: Sort by date ascending (oldest first), then by time
+        // Sort by date descending (most recent first), then by time descending
         filteredGames.sort((a, b) => {
             const dateA = new Date(a.eventDate);
             const dateB = new Date(b.eventDate);
-            if (dateA - dateB !== 0) return dateA - dateB; // Changed to ascending order
+            if (dateA - dateB !== 0) return dateB - dateA; // Changed to descending order (most recent first)
             
-            // Then sort by time if same date
+            // Then sort by time if same date (most recent first)
             if (a.time && b.time) {
-                return a.time.localeCompare(b.time);
+                return b.time.localeCompare(a.time); // Changed to descending order
             }
             return 0;
         });

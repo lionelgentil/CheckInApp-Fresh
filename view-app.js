@@ -2449,14 +2449,14 @@ class CheckInViewApp {
         
         console.log('📊 Displaying', filteredGames.length, 'games');
         
-        // REQUESTED CHANGE: Sort by date ascending (oldest first), then by time
+        // Sort by date descending (most recent first), then by time descending
         filteredGames.sort((a, b) => {
-            // Sort by event epoch first
-            if (a.eventDate_epoch - b.eventDate_epoch !== 0) return a.eventDate_epoch - b.eventDate_epoch; // Changed to ascending order
+            // Sort by event epoch first (most recent first)
+            if (a.eventDate_epoch - b.eventDate_epoch !== 0) return b.eventDate_epoch - a.eventDate_epoch; // Changed to descending order
             
-            // Then sort by time epoch if same date
+            // Then sort by time epoch if same date (most recent first)
             if (a.time_epoch && b.time_epoch) {
-                return a.time_epoch - b.time_epoch;
+                return b.time_epoch - a.time_epoch; // Changed to descending order
             } else if (a.time_epoch && !b.time_epoch) {
                 return -1;
             } else if (!a.time_epoch && b.time_epoch) {
