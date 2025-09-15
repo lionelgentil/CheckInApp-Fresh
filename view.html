@@ -1425,6 +1425,70 @@
             color: #6c757d;
         }
         
+        /* Team Result Bubbles for Game Tracker */
+        .team-result-bubble {
+            display: inline-block;
+            padding: 4px 12px;
+            border-radius: 16px;
+            font-weight: 600;
+            font-size: 0.9em;
+            margin: 0 4px;
+            transition: all 0.2s ease;
+        }
+        
+        .team-result-bubble.winner {
+            background: #dc3545;
+            color: white;
+            border: 2px solid #c82333;
+        }
+        
+        .team-result-bubble.loser {
+            background: #6c757d;
+            color: white;
+            border: 2px solid #5a6268;
+        }
+        
+        .team-result-bubble.tie {
+            background: #007bff;
+            color: white;
+            border: 2px solid #0056b3;
+        }
+        
+        .team-result-bubble.no-result {
+            background: #f8f9fa;
+            color: #495057;
+            border: 2px solid #dee2e6;
+        }
+        
+        .match-teams-bubbled {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            flex-wrap: wrap;
+            gap: 4px;
+        }
+        
+        .vs-separator {
+            color: #666;
+            font-weight: 600;
+            margin: 0 8px;
+            font-size: 0.9em;
+        }
+        
+        /* Mobile adjustments for team bubbles */
+        @media (max-width: 768px) {
+            .team-result-bubble {
+                padding: 3px 10px;
+                font-size: 0.85em;
+                margin: 0 2px;
+            }
+            
+            .vs-separator {
+                margin: 0 4px;
+                font-size: 0.8em;
+            }
+        }
+        
         /* Essential match display styles */
         .match-score-line {
             display: flex;

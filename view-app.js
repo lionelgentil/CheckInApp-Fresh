@@ -2393,6 +2393,47 @@ class CheckInViewApp {
         return cardRecords;
     }
     
+    // Helper function to create team result bubbles for Game Tracker
+    getTeamResultBubbles(homeTeam, awayTeam, homeScore, awayScore, hasScore) {
+        if (!hasScore || homeScore === null || awayScore === null) {
+            // No result available - show both teams as no-result
+            return `
+                <div class="match-teams-bubbled">
+                    <span class="team-result-bubble no-result">${homeTeam}</span>
+                    <span class="vs-separator">VS</span>
+                    <span class="team-result-bubble no-result">${awayTeam}</span>
+                </div>
+            `;
+        }
+        
+        const homeScoreNum = parseInt(homeScore);
+        const awayScoreNum = parseInt(awayScore);
+        
+        let homeClass, awayClass;
+        
+        if (homeScoreNum > awayScoreNum) {
+            // Home team wins
+            homeClass = 'winner';
+            awayClass = 'loser';
+        } else if (awayScoreNum > homeScoreNum) {
+            // Away team wins
+            homeClass = 'loser';
+            awayClass = 'winner';
+        } else {
+            // Tie
+            homeClass = 'tie';
+            awayClass = 'tie';
+        }
+        
+        return `
+            <div class="match-teams-bubbled">
+                <span class="team-result-bubble ${homeClass}">${homeTeam}</span>
+                <span class="vs-separator">VS</span>
+                <span class="team-result-bubble ${awayClass}">${awayTeam}</span>
+            </div>
+        `;
+    }
+
     renderGameTracker() {
         console.log('🎯 renderGameTracker called');
         const container = document.getElementById('game-tracker-container');
@@ -2449,20 +2490,67 @@ class CheckInViewApp {
         
         console.log('📊 Displaying', filteredGames.length, 'games');
         
-        // Sort by date descending (most recent first), then by time descending
+        // Sort by combined date + time (most recent datetime first)
         filteredGames.sort((a, b) => {
-            // Sort by event epoch first (most recent first)
-            if (a.eventDate_epoch - b.eventDate_epoch !== 0) return b.eventDate_epoch - a.eventDate_epoch; // Changed to descending order
+            // Create combined datetime for proper chronological sorting
+            const getGameDateTime = (game) => {
+                const baseDate = new Date(game.eventDate_epoch * 1000);
+                
+                if (game.time_epoch) {
+                    // Use time epoch directly if available
+                    const timeDate = new Date(game.time_epoch * 1000);
+                    // Combine date from event with time from time_epoch
+                    return new Date(
+                        baseDate.getFullYear(),
+                        baseDate.getMonth(), 
+                        baseDate.getDate(),
+                        timeDate.getHours(),
+                        timeDate.getMinutes(),
+                        timeDate.getSeconds()
+                    );
+                } else if (game.time && typeof game.time === 'string') {
+                    // Parse time string (e.g., "13:30" or "1:30 PM")
+                    const timeStr = game.time.trim();
+                    const [hours, minutes] = timeStr.includes(':') 
+                        ? timeStr.split(':').map(n => parseInt(n)) 
+                        : [0, 0];
+                    
+                    return new Date(
+                        baseDate.getFullYear(),
+                        baseDate.getMonth(),
+                        baseDate.getDate(),
+                        hours || 0,
+                        minutes || 0,
+                        0
+                    );
+                } else {
+                    // No time available, use just the date (00:00:00)
+                    return baseDate;
+                }
+            };
             
-            // Then sort by time epoch if same date (most recent first)
-            if (a.time_epoch && b.time_epoch) {
-                return b.time_epoch - a.time_epoch; // Changed to descending order
-            } else if (a.time_epoch && !b.time_epoch) {
-                return -1;
-            } else if (!a.time_epoch && b.time_epoch) {
-                return 1;
+            const dateTimeA = getGameDateTime(a);
+            const dateTimeB = getGameDateTime(b);
+            
+            // Primary sort: by most recent datetime first (descending)
+            if (dateTimeA.getTime() !== dateTimeB.getTime()) {
+                return dateTimeB - dateTimeA;
             }
-            return 0;
+            
+            // Secondary sort: by field number (ascending) for games at same datetime
+            const getFieldNumber = (game) => {
+                if (!game.field) return 999999; // Put games without field at end
+                
+                // Extract numeric part from field (e.g., "Field 1" -> 1, "1" -> 1)
+                const fieldStr = game.field.toString().toLowerCase();
+                const match = fieldStr.match(/(\d+)/);
+                return match ? parseInt(match[1]) : 999999;
+            };
+            
+            const fieldA = getFieldNumber(a);
+            const fieldB = getFieldNumber(b);
+            
+            return fieldA - fieldB; // Ascending order by field number
         });
         
         container.innerHTML = `
@@ -2492,7 +2580,7 @@ class CheckInViewApp {
                                     <div class="event-name">${game.eventName}</div>
                                 </td>
                                 <td class="match-cell">
-                                    <div class="match-teams">${game.homeTeam} vs ${game.awayTeam}</div>
+                                    ${this.getTeamResultBubbles(game.homeTeam, game.awayTeam, game.homeScore, game.awayScore, game.hasScore)}
                                 </td>
                                 <td class="score-cell">
                                     ${game.status === 'completed' && game.hasScore ? `${game.homeScore} - ${game.awayScore}` : '—'}
@@ -2536,7 +2624,7 @@ class CheckInViewApp {
                         <div class="game-record-details">
                             <div class="event-info">
                                 <div class="event-name-large">${game.eventName}</div>
-                                <div class="match-teams-large">${game.homeTeam} vs ${game.awayTeam}</div>
+                                ${this.getTeamResultBubbles(game.homeTeam, game.awayTeam, game.homeScore, game.awayScore, game.hasScore)}
                             </div>
                             
                             <div class="game-details-grid">

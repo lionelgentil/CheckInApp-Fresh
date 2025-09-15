@@ -4812,6 +4812,47 @@ Please check the browser console (F12) for more details.`);
     }
     
     // Game Tracker Methods
+    // Helper function to create team result bubbles for Game Tracker
+    getTeamResultBubbles(homeTeam, awayTeam, homeScore, awayScore, hasScore) {
+        if (!hasScore || homeScore === null || awayScore === null) {
+            // No result available - show both teams as no-result
+            return `
+                <div class="match-teams-bubbled">
+                    <span class="team-result-bubble no-result">${homeTeam}</span>
+                    <span class="vs-separator">VS</span>
+                    <span class="team-result-bubble no-result">${awayTeam}</span>
+                </div>
+            `;
+        }
+        
+        const homeScoreNum = parseInt(homeScore);
+        const awayScoreNum = parseInt(awayScore);
+        
+        let homeClass, awayClass;
+        
+        if (homeScoreNum > awayScoreNum) {
+            // Home team wins
+            homeClass = 'winner';
+            awayClass = 'loser';
+        } else if (awayScoreNum > homeScoreNum) {
+            // Away team wins
+            homeClass = 'loser';
+            awayClass = 'winner';
+        } else {
+            // Tie
+            homeClass = 'tie';
+            awayClass = 'tie';
+        }
+        
+        return `
+            <div class="match-teams-bubbled">
+                <span class="team-result-bubble ${homeClass}">${homeTeam}</span>
+                <span class="vs-separator">VS</span>
+                <span class="team-result-bubble ${awayClass}">${awayTeam}</span>
+            </div>
+        `;
+    }
+
     renderGameTracker() {
         console.log('🎯 renderGameTracker called');
         const container = document.getElementById('game-tracker-container');
@@ -4868,17 +4909,66 @@ Please check the browser console (F12) for more details.`);
         
         console.log('📊 Displaying', filteredGames.length, 'games');
         
-        // Sort by date descending (most recent first), then by time descending
+        // Sort by combined date + time (most recent datetime first)
         filteredGames.sort((a, b) => {
-            const dateA = new Date(a.eventDate);
-            const dateB = new Date(b.eventDate);
-            if (dateA - dateB !== 0) return dateB - dateA; // Changed to descending order (most recent first)
+            // Create combined datetime for proper chronological sorting
+            const getGameDateTime = (game) => {
+                const baseDate = new Date(game.eventDate);
+                
+                if (game.time && typeof game.time === 'string') {
+                    // Parse time string (e.g., "13:30" or "1:30 PM")
+                    const timeStr = game.time.trim();
+                    
+                    // Handle different time formats
+                    if (timeStr.includes(':')) {
+                        const [hoursStr, minutesStr] = timeStr.split(':');
+                        let hours = parseInt(hoursStr) || 0;
+                        let minutes = parseInt(minutesStr) || 0;
+                        
+                        // Handle AM/PM format
+                        if (timeStr.toLowerCase().includes('pm') && hours < 12) {
+                            hours += 12;
+                        } else if (timeStr.toLowerCase().includes('am') && hours === 12) {
+                            hours = 0;
+                        }
+                        
+                        return new Date(
+                            baseDate.getFullYear(),
+                            baseDate.getMonth(),
+                            baseDate.getDate(),
+                            hours,
+                            minutes,
+                            0
+                        );
+                    }
+                }
+                
+                // No time available, use just the date (00:00:00)
+                return baseDate;
+            };
             
-            // Then sort by time if same date (most recent first)
-            if (a.time && b.time) {
-                return b.time.localeCompare(a.time); // Changed to descending order
+            const dateTimeA = getGameDateTime(a);
+            const dateTimeB = getGameDateTime(b);
+            
+            // Primary sort: by most recent datetime first (descending)
+            if (dateTimeA.getTime() !== dateTimeB.getTime()) {
+                return dateTimeB - dateTimeA;
             }
-            return 0;
+            
+            // Secondary sort: by field number (ascending) for games at same datetime
+            const getFieldNumber = (game) => {
+                if (!game.field) return 999999; // Put games without field at end
+                
+                // Extract numeric part from field (e.g., "Field 1" -> 1, "1" -> 1)
+                const fieldStr = game.field.toString().toLowerCase();
+                const match = fieldStr.match(/(\d+)/);
+                return match ? parseInt(match[1]) : 999999;
+            };
+            
+            const fieldA = getFieldNumber(a);
+            const fieldB = getFieldNumber(b);
+            
+            return fieldA - fieldB; // Ascending order by field number
         });
         
         container.innerHTML = `
@@ -4908,7 +4998,7 @@ Please check the browser console (F12) for more details.`);
                                     <div class="event-name">${game.eventName}</div>
                                 </td>
                                 <td class="match-cell">
-                                    <div class="match-teams">${game.homeTeam} vs ${game.awayTeam}</div>
+                                    ${this.getTeamResultBubbles(game.homeTeam, game.awayTeam, game.homeScore, game.awayScore, game.hasScore)}
                                 </td>
                                 <td class="score-cell">
                                     ${game.status === 'completed' && game.hasScore ? `${game.homeScore} - ${game.awayScore}` : '—'}
@@ -4952,7 +5042,7 @@ Please check the browser console (F12) for more details.`);
                         <div class="game-record-details">
                             <div class="event-info">
                                 <div class="event-name-large">${game.eventName}</div>
-                                <div class="match-teams-large">${game.homeTeam} vs ${game.awayTeam}</div>
+                                ${this.getTeamResultBubbles(game.homeTeam, game.awayTeam, game.homeScore, game.awayScore, game.hasScore)}
                             </div>
                             
                             <div class="game-details-grid">
