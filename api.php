@@ -523,6 +523,22 @@ try {
             }
             break;
             
+        case 'db-schema':
+            // Database schema inspection endpoint
+            if ($method === 'GET') {
+                requireAuth();
+                getDbSchema($db);
+            }
+            break;
+            
+        case 'db-maintenance':
+            // Database maintenance operations
+            if ($method === 'POST') {
+                requireAuth();
+                executeDbMaintenance($db);
+            }
+            break;
+            
         default:
             http_response_code(404);
             echo json_encode(['error' => 'Endpoint not found']);
@@ -3717,6 +3733,222 @@ function cleanupOrphanedSuspensions($db) {
         error_log("Error cleaning up orphaned suspensions: " . $e->getMessage());
         http_response_code(500);
         echo json_encode(['error' => 'Database error while cleaning up orphaned suspensions']);
+    }
+}
+
+// Database schema inspection function
+function getDbSchema($db) {
+    try {
+        $schema = [];
+        $timestamp = time();
+        
+        // Get all tables
+        $stmt = $db->query("
+            SELECT table_name, table_type 
+            FROM information_schema.tables 
+            WHERE table_schema = 'public' 
+            ORDER BY table_name
+        ");
+        $tables = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        
+        $totalTables = count($tables);
+        $totalRows = 0;
+        $totalColumns = 0;
+        $totalConstraints = 0;
+        
+        foreach ($tables as $table) {
+            $tableName = $table['table_name'];
+            
+            // Get table row count
+            try {
+                $countStmt = $db->query("SELECT COUNT(*) as row_count FROM {$tableName}");
+                $rowCount = (int)$countStmt->fetch(PDO::FETCH_ASSOC)['row_count'];
+                $totalRows += $rowCount;
+            } catch (Exception $e) {
+                $rowCount = 0; // Handle tables with no access
+            }
+            
+            // Get column information
+            $colStmt = $db->prepare("
+                SELECT 
+                    column_name,
+                    data_type,
+                    is_nullable,
+                    column_default,
+                    character_maximum_length,
+                    numeric_precision,
+                    numeric_scale
+                FROM information_schema.columns 
+                WHERE table_schema = 'public' AND table_name = ?
+                ORDER BY ordinal_position
+            ");
+            $colStmt->execute([$tableName]);
+            $columns = $colStmt->fetchAll(PDO::FETCH_ASSOC);
+            $totalColumns += count($columns);
+            
+            // Get constraints
+            $constraintStmt = $db->prepare("
+                SELECT DISTINCT
+                    tc.constraint_name,
+                    tc.constraint_type,
+                    kcu.column_name,
+                    ccu.table_name AS foreign_table_name,
+                    ccu.column_name AS foreign_column_name
+                FROM information_schema.table_constraints tc
+                LEFT JOIN information_schema.key_column_usage kcu 
+                    ON tc.constraint_name = kcu.constraint_name
+                    AND tc.table_schema = kcu.table_schema
+                LEFT JOIN information_schema.constraint_column_usage ccu 
+                    ON tc.constraint_name = ccu.constraint_name
+                    AND tc.table_schema = ccu.table_schema
+                WHERE tc.table_schema = 'public' AND tc.table_name = ?
+                ORDER BY tc.constraint_type, kcu.column_name
+            ");
+            $constraintStmt->execute([$tableName]);
+            $constraints = $constraintStmt->fetchAll(PDO::FETCH_ASSOC);
+            $totalConstraints += count($constraints);
+            
+            $schema[$tableName] = [
+                'table_name' => $tableName,
+                'table_type' => $table['table_type'],
+                'row_count' => $rowCount,
+                'columns' => $columns,
+                'constraints' => $constraints
+            ];
+        }
+        
+        echo json_encode([
+            'success' => true,
+            'timestamp' => $timestamp,
+            'table_count' => $totalTables,
+            'total_rows' => $totalRows,
+            'total_columns' => $totalColumns,
+            'total_constraints' => $totalConstraints,
+            'schema' => $schema
+        ]);
+        
+    } catch (Exception $e) {
+        http_response_code(500);
+        echo json_encode([
+            'success' => false,
+            'error' => 'Failed to retrieve database schema: ' . $e->getMessage()
+        ]);
+    }
+}
+
+// Database maintenance operations
+function executeDbMaintenance($db) {
+    try {
+        $input = json_decode(file_get_contents('php://input'), true);
+        
+        if (!$input) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Invalid JSON data']);
+            return;
+        }
+        
+        // Support both formats: {query: "..."} from HTML and {operation: "...", sql: "..."} from API
+        $sql = $input['query'] ?? $input['sql'] ?? '';
+        $operation = $input['operation'] ?? 'QUERY';
+        
+        if (empty($sql)) {
+            http_response_code(400);
+            echo json_encode(['error' => 'SQL statement is required']);
+            return;
+        }
+        
+        // Security: Only allow safe operations
+        $allowedOperations = [
+            'SELECT',
+            'UPDATE',
+            'DELETE',
+            'CREATE INDEX',
+            'DROP INDEX', 
+            'ANALYZE',
+            'VACUUM',
+            'REINDEX'
+        ];
+        
+        $operationAllowed = false;
+        $sqlUpper = strtoupper(trim($sql));
+        
+        foreach ($allowedOperations as $allowed) {
+            if (strpos($sqlUpper, $allowed) === 0) {
+                $operationAllowed = true;
+                break;
+            }
+        }
+        
+        // Also block dangerous keywords
+        $dangerousKeywords = [
+            'DROP TABLE',
+            'DROP DATABASE',
+            'TRUNCATE',
+            'ALTER TABLE',
+            'CREATE TABLE',
+            'CREATE DATABASE'
+        ];
+        
+        foreach ($dangerousKeywords as $dangerous) {
+            if (strpos($sqlUpper, $dangerous) !== false) {
+                $operationAllowed = false;
+                break;
+            }
+        }
+        
+        if (!$operationAllowed) {
+            http_response_code(400);
+            echo json_encode([
+                'error' => 'Operation not allowed. Only SELECT, UPDATE, DELETE, CREATE INDEX, DROP INDEX, ANALYZE, VACUUM, and REINDEX are permitted. Dangerous operations like DROP TABLE, TRUNCATE, etc. are blocked.',
+                'allowed_operations' => $allowedOperations
+            ]);
+            return;
+        }
+        
+        // Execute the maintenance operation
+        $startTime = microtime(true);
+        
+        try {
+            $stmt = $db->prepare($sql);
+            $result = $stmt->execute();
+            $endTime = microtime(true);
+            $executionTime = round(($endTime - $startTime) * 1000, 2);
+            
+            if ($result) {
+                $rowCount = $stmt->rowCount();
+                $data = null;
+                
+                // For SELECT queries, fetch the results
+                if (strpos($sqlUpper, 'SELECT') === 0) {
+                    $data = $stmt->fetchAll(PDO::FETCH_ASSOC);
+                    $rowCount = count($data);
+                }
+                
+                echo json_encode([
+                    'success' => true,
+                    'message' => 'Query executed successfully',
+                    'operation' => $operation,
+                    'execution_time_ms' => $executionTime,
+                    'rowCount' => $rowCount,
+                    'data' => $data
+                ]);
+            } else {
+                throw new Exception('Query execution failed');
+            }
+            
+        } catch (Exception $e) {
+            $endTime = microtime(true);
+            $executionTime = round(($endTime - $startTime) * 1000, 2);
+            
+            throw new Exception('SQL execution failed: ' . $e->getMessage() . ' (executed in ' . $executionTime . 'ms)');
+        }
+        
+    } catch (Exception $e) {
+        http_response_code(500);
+        echo json_encode([
+            'success' => false,
+            'error' => $e->getMessage()
+        ]);
     }
 }
 
