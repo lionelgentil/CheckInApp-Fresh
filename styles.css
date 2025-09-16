@@ -1135,7 +1135,7 @@ body {
 
 .grid-check-icon {
     position: absolute;
-    top: 35px;
+    top: 8px;
     right: 8px;
     background: #28a745;
     color: white;
@@ -1159,7 +1159,7 @@ body {
 
 .grid-lock-icon {
     position: absolute;
-    top: 60px;
+    top: 35px;
     right: 8px;
     background: #dc3545;
     color: white;
@@ -1171,41 +1171,10 @@ body {
     justify-content: center;
     font-size: 14px;
     font-weight: bold;
-}
-
-.grid-suspension-icon {
-    position: absolute;
-    top: 85px;
-    right: 8px;
-    background: #dc3545;
-    color: white;
-    border-radius: 50%;
-    width: 24px;
-    height: 24px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    font-size: 14px;
-    font-weight: bold;
-}
-
-.player-grid-item.locked .grid-check-icon {
-    opacity: 1;
-    transform: scale(1);
-    background: #28a745;
 }
 
 .player-grid-item.locked {
-    opacity: 1 !important;
-    filter: none !important;
     cursor: not-allowed;
-    background: white !important;
-}
-
-.player-grid-item.locked .player-grid-name,
-.player-grid-item.locked .player-grid-jersey {
-    opacity: 1 !important;
-    color: inherit !important;
 }
 
 /* Team Card Summary Styles - Referee Theme */

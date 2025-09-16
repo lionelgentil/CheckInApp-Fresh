@@ -4065,9 +4065,8 @@ class CheckInViewApp {
                             <div class="player-grid-name">${member.name}</div>
                             ${member.jerseyNumber ? `<div class="player-grid-jersey">#${member.jerseyNumber}</div>` : ''}
                         </div>
-                        <div class="grid-check-icon">${isCheckedIn ? '✓' : ''}</div>
+                        <div class="grid-check-icon">${isSuspended ? '🚫' : isCheckedIn ? '✓' : ''}</div>
                         ${isLocked ? '<div class="grid-lock-icon">🔒</div>' : ''}
-                        ${isSuspended ? '<div class="grid-suspension-icon">🚫</div>' : ''}
                     </div>
                 `;
             }).join('');
