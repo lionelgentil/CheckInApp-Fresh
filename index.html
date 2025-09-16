@@ -3552,15 +3552,21 @@
                 const configScript = document.createElement('script');
                 configScript.src = `config.js?v=${version}&cb=${Date.now()}`;
                 configScript.onload = function() {
-                    // Create and load the main app script with current version + cache busting
-                    const script = document.createElement('script');
-                    script.src = `app.js?v=${version}&cb=${Date.now()}`;
-                    script.onload = function() {
-                        // Set version numbers from JavaScript constant after script loads
-                        document.getElementById('app-version').textContent = APP_VERSION;
-                        document.getElementById('footer-version').textContent = APP_VERSION;
+                    // Load core.js first
+                    const coreScript = document.createElement('script');
+                    coreScript.src = `core.js?v=${version}&cb=${Date.now()}`;
+                    coreScript.onload = function() {
+                        // Create and load the main app script with current version + cache busting
+                        const script = document.createElement('script');
+                        script.src = `app.js?v=${version}&cb=${Date.now()}`;
+                        script.onload = function() {
+                            // Set version numbers from JavaScript constant after script loads
+                            document.getElementById('app-version').textContent = APP_VERSION;
+                            document.getElementById('footer-version').textContent = APP_VERSION;
+                        };
+                        document.body.appendChild(script);
                     };
-                    document.body.appendChild(script);
+                    document.body.appendChild(coreScript);
                 };
                 document.body.appendChild(configScript);
             } catch (error) {
@@ -3569,9 +3575,15 @@
                 const configScript = document.createElement('script');
                 configScript.src = `config.js?cb=${Date.now()}`;
                 configScript.onload = function() {
-                    const script = document.createElement('script');
-                    script.src = `app.js?cb=${Date.now()}`;
-                    document.body.appendChild(script);
+                    // Load core.js first
+                    const coreScript = document.createElement('script');
+                    coreScript.src = `core.js?cb=${Date.now()}`;
+                    coreScript.onload = function() {
+                        const script = document.createElement('script');
+                        script.src = `app.js?cb=${Date.now()}`;
+                        document.body.appendChild(script);
+                    };
+                    document.body.appendChild(coreScript);
                 };
                 document.body.appendChild(configScript);
             }

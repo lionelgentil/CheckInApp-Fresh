@@ -96,8 +96,9 @@ function getCurrentEpochTimestamp() {
     return Math.floor(Date.now() / 1000); // Convert milliseconds to seconds
 }
 
-class CheckInApp {
+class CheckInApp extends CheckInCore {
     constructor() {
+        super(); // Call parent constructor
         this.teams = []; // Full team data (loaded on demand)
         this.teamsBasic = []; // Lightweight team data (id, name, category, colorData, memberCount)
         this.hasCompleteTeamsData = false; // Track if we have full teams data vs partial
