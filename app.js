@@ -1199,18 +1199,44 @@ class CheckInApp {
                                     let currentYellowCards = 0;
                                     let currentRedCards = 0;
                                     
+                                    // Debug logging for card counting discrepancy investigation
+                                    const debugCards = [];
+                                    
                                     this.events.forEach(event => {
                                         // Only count cards from current season events
                                         if (this.isCurrentSeasonEvent(event.date_epoch)) {
                                             event.matches.forEach(match => {
                                                 if (match.cards) {
                                                     const memberCards = match.cards.filter(card => card.memberId === member.id);
-                                                    currentYellowCards += memberCards.filter(card => card.cardType === 'yellow').length;
-                                                    currentRedCards += memberCards.filter(card => card.cardType === 'red').length;
+                                                    const yellowCards = memberCards.filter(card => card.cardType === 'yellow');
+                                                    const redCards = memberCards.filter(card => card.cardType === 'red');
+                                                    
+                                                    // Log each card found for debugging
+                                                    yellowCards.forEach(card => {
+                                                        debugCards.push({
+                                                            eventName: event.name,
+                                                            eventDate: event.date_epoch,
+                                                            cardType: 'yellow',
+                                                            reason: card.reason,
+                                                            matchId: match.id
+                                                        });
+                                                    });
+                                                    
+                                                    currentYellowCards += yellowCards.length;
+                                                    currentRedCards += redCards.length;
                                                 }
                                             });
                                         }
                                     });
+                                    
+                                    // Debug log for specific players showing discrepancy
+                                    if (currentYellowCards > 0 || currentRedCards > 0) {
+                                        console.log(`🐛 CHECK-IN INTERFACE - ${member.name} cards:`, {
+                                            totalYellow: currentYellowCards,
+                                            totalRed: currentRedCards,
+                                            cardDetails: debugCards
+                                        });
+                                    }
                                     
                                     // Note: Lifetime cards will be fetched asynchronously and updated via DOM manipulation
                                     // This is a placeholder that will be updated once the disciplinary records are loaded
