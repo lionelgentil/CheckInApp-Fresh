@@ -2865,10 +2865,13 @@ class CheckInViewApp extends CheckInCore {
                 if (match && match.cards && match.cards.length > 0) {
                     match.cards.forEach(card => {
                         cards.push({
-                            type: card.cardType || 'yellow',
-                            playerName: card.memberName || 'Unknown Player',
+                            cardType: card.cardType || 'yellow',
+                            type: card.cardType || 'yellow', // Keep for backward compatibility
+                            memberName: card.memberName || 'Unknown Player', 
+                            playerName: card.memberName || 'Unknown Player', // Keep for backward compatibility
                             minute: card.minute || '0',
-                            infraction: card.reason || '',
+                            reason: card.reason || '',
+                            infraction: card.reason || '', // Keep for backward compatibility
                             notes: card.notes || ''
                         });
                     });
