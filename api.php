@@ -1981,13 +1981,13 @@ function getTeamCardSummary($db) {
                 COALESCE(SUM(CASE WHEN mc.card_type = \'yellow\' THEN 1 ELSE 0 END), 0) as match_yellow_total,
                 COALESCE(SUM(CASE WHEN mc.card_type = \'red\' THEN 1 ELSE 0 END), 0) as match_red_total,
                 
-                -- Current season match cards (based on match time)
+                -- Current season match cards (based on EVENT date_epoch, not match time)
                 COALESCE(SUM(CASE 
-                    WHEN mc.card_type = \'yellow\' AND m.match_time_epoch >= ? THEN 1 
+                    WHEN mc.card_type = \'yellow\' AND e.date_epoch >= ? THEN 1 
                     ELSE 0 
                 END), 0) as match_yellow_current,
                 COALESCE(SUM(CASE 
-                    WHEN mc.card_type = \'red\' AND m.match_time_epoch >= ? THEN 1 
+                    WHEN mc.card_type = \'red\' AND e.date_epoch >= ? THEN 1 
                     ELSE 0 
                 END), 0) as match_red_current,
                 
@@ -1998,6 +1998,7 @@ function getTeamCardSummary($db) {
             FROM team_members tm
             LEFT JOIN match_cards mc ON tm.id = mc.member_id
             LEFT JOIN matches m ON mc.match_id = m.id
+            LEFT JOIN events e ON m.event_id = e.id
             LEFT JOIN player_disciplinary_records pdr ON tm.id = pdr.member_id
             WHERE tm.team_id = ? AND tm.active = true
             GROUP BY tm.id, tm.name
