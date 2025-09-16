@@ -72,8 +72,8 @@ function calculateTeamCardStats(team, events, isCurrentSeasonEvent) {
     
     team.members.forEach(member => {
         events.forEach(event => {
-            // Only count cards from current season events
-            if (isCurrentSeasonEvent(event.date)) {
+            // Only count cards from current season events - fix: use date_epoch instead of date
+            if (isCurrentSeasonEvent(event.date_epoch)) {
                 event.matches.forEach(match => {
                     if (match.cards) {
                         const memberCards = match.cards.filter(card => card.memberId === member.id);
@@ -99,8 +99,8 @@ function calculateMemberCardStats(member, events, isCurrentSeasonEvent) {
     let currentRedCards = 0;
     
     events.forEach(event => {
-        // Only count cards from current season events
-        if (isCurrentSeasonEvent(event.date)) {
+        // Only count cards from current season events - fix: use date_epoch instead of date
+        if (isCurrentSeasonEvent(event.date_epoch)) {
             event.matches.forEach(match => {
                 if (match.cards) {
                     const memberCards = match.cards.filter(card => card.memberId === member.id);
