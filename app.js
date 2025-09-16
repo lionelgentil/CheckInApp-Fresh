@@ -5181,6 +5181,118 @@ Please check the browser console (F12) for more details.`);
         return statusMap[status] || '📅 Scheduled';
     }
     
+    renderGameRowDesktop(game) {
+        return `
+            <tr class="game-row ${game.status}">
+                <td class="date-time-cell">
+                    <div class="game-date">${game.eventDate}</div>
+                    ${game.time ? `<div class="game-time">${game.time}</div>` : ''}
+                </td>
+                <td class="event-cell">
+                    <div class="event-name">${game.eventName}</div>
+                </td>
+                <td class="match-cell">
+                    ${this.getTeamResultBubbles(game.homeTeam, game.awayTeam, game.homeScore, game.awayScore, game.hasScore)}
+                </td>
+                <td class="score-cell">
+                    ${game.status === 'completed' && game.hasScore ? `${game.homeScore} - ${game.awayScore}` : '—'}
+                </td>
+                <td class="field-cell">
+                    ${game.field ? `Field ${game.field}` : '—'}
+                </td>
+                <td class="status-cell">
+                    <span class="status-badge status-${game.status}">${this.getStatusDisplay(game.status)}</span>
+                </td>
+                <td class="referee-cell">
+                    ${game.referees.length > 0 ? 
+                        game.referees.map(ref => `<span class="referee-bubble">${ref}</span>`).join('<br>') 
+                        : '—'}
+                </td>
+                <td class="actions-cell">
+                    ${game.status !== 'completed' && game.status !== 'cancelled' ? 
+                        `<button class="btn btn-small" onclick="app.editMatchResultWithLoading('${game.eventId}', '${game.matchId}')" title="Edit Result">🏆</button>` 
+                        : ''}
+                </td>
+            </tr>
+        `;
+    }
+    
+    renderGameRowMobile(game) {
+        return `
+            <div class="game-record-item">
+                <div class="game-record-header">
+                    <div class="game-info-section">
+                        <div class="game-date-large">${game.eventDate}</div>
+                        ${game.time ? `<div class="game-time-large">${game.time}</div>` : ''}
+                    </div>
+                    <div class="game-status-section">
+                        <span class="status-badge status-${game.status}">${this.getStatusDisplay(game.status)}</span>
+                    </div>
+                </div>
+                
+                <div class="game-record-details">
+                    <div class="event-info">
+                        <div class="event-name-large">${game.eventName}</div>
+                        ${this.getTeamResultBubbles(game.homeTeam, game.awayTeam, game.homeScore, game.awayScore, game.hasScore)}
+                    </div>
+                    
+                    <div class="game-details-grid">
+                        ${game.field ? `<div class="detail-item"><span class="detail-label">Field:</span> ${game.field}</div>` : ''}
+                        <div class="detail-item"><span class="detail-label">Score:</span> ${game.status === 'completed' && game.hasScore ? `${game.homeScore} - ${game.awayScore}` : 'Not entered'}</div>
+                        ${game.referees.length > 0 ? `
+                            <div class="detail-item">
+                                <span class="detail-label">Referee(s):</span>
+                                <div class="mobile-referees">
+                                    ${game.referees.map(ref => `<span class="referee-bubble">${ref}</span>`).join(' ')}
+                                </div>
+                            </div>
+                        ` : ''}
+                        
+                        ${game.status !== 'completed' && game.status !== 'cancelled' ? `
+                            <div class="detail-item">
+                                <button class="btn btn-small" onclick="app.editMatchResultWithLoading('${game.eventId}', '${game.matchId}')">Edit Result 🏆</button>
+                            </div>
+                        ` : ''}
+                    </div>
+                </div>
+            </div>
+        `;
+    }
+    
+    getTeamResultBubbles(homeTeam, awayTeam, homeScore, awayScore, hasScore) {
+        if (!hasScore || homeScore === null || awayScore === null) {
+            return `
+                <div class="match-teams-bubbled">
+                    <span class="team-result-bubble no-result">${homeTeam}</span>
+                    <span class="vs-separator">vs</span>
+                    <span class="team-result-bubble no-result">${awayTeam}</span>
+                </div>
+            `;
+        }
+        
+        let homeClass = 'no-result';
+        let awayClass = 'no-result';
+        
+        if (homeScore > awayScore) {
+            homeClass = 'winner';
+            awayClass = 'loser';
+        } else if (awayScore > homeScore) {
+            homeClass = 'loser';
+            awayClass = 'winner';
+        } else {
+            homeClass = 'tie';
+            awayClass = 'tie';
+        }
+        
+        return `
+            <div class="match-teams-bubbled">
+                <span class="team-result-bubble ${homeClass}">${homeTeam}</span>
+                <span class="vs-separator">vs</span>
+                <span class="team-result-bubble ${awayClass}">${awayTeam}</span>
+            </div>
+        `;
+    }
+    
     // Referee Management
     showAddRefereeModal() {
         this.currentEditingReferee = null;
