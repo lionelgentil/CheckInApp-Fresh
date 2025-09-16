@@ -2374,24 +2374,24 @@ body {
 
 .manual-lock-toggle {
     display: inline-block;
-    margin: 4px 0;
+    margin: 0;
 }
 
 .lock-toggle-btn {
     background: #f8f9fa;
     border: 2px solid #dee2e6;
-    border-radius: 8px;
-    padding: 8px 16px;
-    font-size: 0.9em;
+    border-radius: 10px;
+    padding: 12px 20px;
+    font-size: 1.2em;
     font-weight: 600;
     cursor: pointer;
     transition: all 0.2s ease;
     display: inline-flex;
     align-items: center;
-    gap: 6px;
-    min-width: 100px;
+    gap: 8px;
+    min-width: 130px;
     justify-content: center;
-    box-shadow: 0 1px 3px rgba(0,0,0,0.1);
+    box-shadow: 0 2px 6px rgba(0,0,0,0.1);
 }
 
 .lock-toggle-btn:hover {
@@ -2436,12 +2436,13 @@ body {
 /* Responsive adjustments */
 @media (max-width: 768px) {
     .manual-lock-toggle {
-        margin: 6px 0;
+        margin: 0;
     }
     
     .lock-toggle-btn {
-        font-size: 0.85em;
-        padding: 6px 12px;
-        min-width: 90px;
+        font-size: 1em;
+        padding: 10px 16px;
+        min-width: 110px;
+        border-radius: 8px;
     }
 }

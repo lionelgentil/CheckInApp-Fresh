@@ -3488,7 +3488,12 @@ class CheckInViewApp {
             </div>
         `;
         
-        const modal = this.createModal(`${homeTeam.name} vs ${awayTeam.name}`, `
+        const modal = this.createModal(`
+            <div style="display: flex; justify-content: space-between; align-items: center; width: 100%;">
+                <span>${homeTeam.name} vs ${awayTeam.name}</span>
+                ${manualLockToggle}
+            </div>
+        `, `
             <!-- Mobile-Optimized Check-In Interface -->
             <div class="mobile-checkin-interface">
                 <!-- Optimized Header with All Match Details Inline -->
@@ -3505,7 +3510,6 @@ class CheckInViewApp {
                     </div>
                     
                     <div class="match-info-right">
-                        ${manualLockToggle}
                         ${match.field ? `<div class="match-field">🏟️ Field ${match.field}</div>` : ''}
                         ${mainReferee ? `<div class="match-referee">
                             <span class="referee-bubble">👨‍⚖️ ${mainReferee.name}</span>
