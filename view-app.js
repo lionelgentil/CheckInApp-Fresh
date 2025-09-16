@@ -3505,8 +3505,8 @@ class CheckInViewApp {
                     </div>
                     
                     <div class="match-info-right">
-                        ${match.field ? `<div class="match-field">🏟️ Field ${match.field}</div>` : ''}
                         ${manualLockToggle}
+                        ${match.field ? `<div class="match-field">🏟️ Field ${match.field}</div>` : ''}
                         ${mainReferee ? `<div class="match-referee">
                             <span class="referee-bubble">👨‍⚖️ ${mainReferee.name}</span>
                             ${assistantReferee ? `<span class="referee-bubble">👨‍⚖️ ${assistantReferee.name}</span>` : ''}
