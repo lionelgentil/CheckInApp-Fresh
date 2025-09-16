@@ -1820,6 +1820,15 @@
         display: flex !important;
         align-items: center !important;
         justify-content: center !important;
+        visibility: visible !important;
+        z-index: 999 !important;
+    }
+
+    .player-grid-item.checked-in .grid-check-icon::after {
+        content: "✓";
+        color: white !important;
+        font-size: 14px !important;
+        font-weight: bold !important;
     }
 
     .grid-lock-icon {
