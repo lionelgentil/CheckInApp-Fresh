@@ -3504,24 +3504,30 @@
                 const configScript = document.createElement('script');
                 configScript.src = `config.js?v=${version}&cb=${Date.now()}`;
                 configScript.onload = function() {
-                    // Create and load the view app script with current version + cache busting
-                    const script = document.createElement('script');
-                    script.src = `view-app.js?v=${version}&cb=${Date.now()}`;
-                    script.onload = function() {
-                        // Set version numbers from JavaScript constant after script loads
-                        // Use timeout to ensure APP_VERSION is available
-                        setTimeout(() => {
-                            try {
-                                document.getElementById('app-version').textContent = APP_VERSION;
-                                document.getElementById('footer-version').textContent = APP_VERSION;
-                            } catch (error) {
-                                console.warn('APP_VERSION not available:', error);
-                                document.getElementById('app-version').textContent = '6.2.0';
-                                document.getElementById('footer-version').textContent = '6.2.0';
-                            }
-                        }, 100);
+                    // Load core.js first
+                    const coreScript = document.createElement('script');
+                    coreScript.src = `core.js?v=${version}&cb=${Date.now()}`;
+                    coreScript.onload = function() {
+                        // Create and load the view app script with current version + cache busting
+                        const script = document.createElement('script');
+                        script.src = `view-app.js?v=${version}&cb=${Date.now()}`;
+                        script.onload = function() {
+                            // Set version numbers from JavaScript constant after script loads
+                            // Use timeout to ensure APP_VERSION is available
+                            setTimeout(() => {
+                                try {
+                                    document.getElementById('app-version').textContent = APP_VERSION;
+                                    document.getElementById('footer-version').textContent = APP_VERSION;
+                                } catch (error) {
+                                    console.warn('APP_VERSION not available:', error);
+                                    document.getElementById('app-version').textContent = '6.2.0';
+                                    document.getElementById('footer-version').textContent = '6.2.0';
+                                }
+                            }, 100);
+                        };
+                        document.body.appendChild(script);
                     };
-                    document.body.appendChild(script);
+                    document.body.appendChild(coreScript);
                 };
                 document.body.appendChild(configScript);
             } catch (error) {
@@ -3530,9 +3536,15 @@
                 const configScript = document.createElement('script');
                 configScript.src = `config.js?cb=${Date.now()}`;
                 configScript.onload = function() {
-                    const script = document.createElement('script');
-                    script.src = `view-app.js?cb=${Date.now()}`;
-                    document.body.appendChild(script);
+                    // Load core.js first
+                    const coreScript = document.createElement('script');
+                    coreScript.src = `core.js?cb=${Date.now()}`;
+                    coreScript.onload = function() {
+                        const script = document.createElement('script');
+                        script.src = `view-app.js?cb=${Date.now()}`;
+                        document.body.appendChild(script);
+                    };
+                    document.body.appendChild(coreScript);
                 };
                 document.body.appendChild(configScript);
             }
