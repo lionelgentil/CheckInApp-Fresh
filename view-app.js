@@ -2694,7 +2694,7 @@ class CheckInViewApp extends CheckInCore {
                                         : '—'}
                                 </td>
                                 <td class="actions-cell">
-                                    <button class="btn btn-small" onclick="app.toggleGameDetails('${gameId}')" title="Show Details">📋</button>
+                                    <button class="btn btn-small" onclick="app.toggleGameDetails('${gameId}')" title="Show Details">📝</button>
                                     ${game.status !== 'completed' && game.status !== 'cancelled' ? 
                                         `<button class="btn btn-small" onclick="editMatchResult('${game.eventId}', '${game.matchId}')" title="Edit Result">🏆</button>` 
                                         : ''}
@@ -2758,34 +2758,36 @@ class CheckInViewApp extends CheckInCore {
                             
                             <!-- Disciplinary Actions Mobile -->
                             ${this.getGameCards(game).length > 0 ? `
-                                <div class="mobile-detail-section mobile-disciplinary-section">
-                                    <h4 class="mobile-section-title">📋 Disciplinary Actions</h4>
-                                    <div class="mobile-cards-list">
-                                        ${this.getGameCards(game).map(card => `
-                                            <div class="mobile-card-item ${card.type}">
-                                                <span class="mobile-card-type">${card.type.toUpperCase()}</span>
-                                                <span class="mobile-card-player">${card.playerName}</span>
-                                                <span class="mobile-card-minute">${card.minute}'</span>
-                                                ${card.infraction ? `<div class="mobile-card-infraction">${card.infraction}</div>` : ''}
-                                                ${card.notes ? `<div class="mobile-card-notes">${card.notes}</div>` : ''}
-                                            </div>
-                                        `).join('')}
+                                <div class="disciplinary-section-enhanced">
+                                    <div class="section-title-enhanced">
+                                        📝 Disciplinary Actions
                                     </div>
+                                    ${this.getGameCards(game).map(card => `
+                                        <div class="card-item-enhanced ${card.cardType}">
+                                            <div class="card-main-info-enhanced">
+                                                <span class="card-type-badge card-type-${card.cardType}">${card.cardType.toUpperCase()}</span>
+                                                <span>${card.memberName}</span>
+                                                <span>${card.minute}'</span>
+                                                <span>${card.reason || 'No reason specified'}</span>
+                                            </div>
+                                            ${card.notes ? `<div class="card-notes-enhanced">${card.notes}</div>` : ''}
+                                        </div>
+                                    `).join('')}
                                 </div>
                             ` : ''}
                             
                             <!-- Game Notes Mobile -->
                             ${this.getGameNotes(game).length > 0 ? `
-                                <div class="mobile-detail-section mobile-notes-section">
-                                    <h4 class="mobile-section-title">📝 Game Notes</h4>
-                                    <div class="mobile-notes-list">
-                                        ${this.getGameNotes(game).map(note => `
-                                            <div class="mobile-note-item">
-                                                <span class="mobile-note-type">${note.type}:</span>
-                                                <span class="mobile-note-text">${note.text}</span>
-                                            </div>
-                                        `).join('')}
+                                <div class="notes-section-enhanced">
+                                    <div class="section-title-enhanced">
+                                        📝 Game Notes
                                     </div>
+                                    ${this.getGameNotes(game).map(note => `
+                                        <div class="note-item-enhanced">
+                                            <span>${note.type}:</span>
+                                            <span>${note.text}</span>
+                                        </div>
+                                    `).join('')}
                                 </div>
                             ` : ''}
                         </div>
@@ -2804,7 +2806,7 @@ class CheckInViewApp extends CheckInCore {
                 <!-- Disciplinary Actions -->
                 <div class="game-detail-section disciplinary-detail-section">
                     <div class="detail-section-wrapper">
-                        <h4 class="detail-section-title">📋 Disciplinary Actions</h4>
+                        <h4 class="detail-section-title">📝 Disciplinary Actions</h4>
                         ${gameCards.length > 0 ? `
                             <div class="cards-list">
                                 ${gameCards.map(card => `
