@@ -1957,8 +1957,20 @@ function getTeamCardSummary($db) {
     }
     
     try {
-        // Get current season start date (you may need to adjust this logic)
-        $currentSeasonStart = strtotime('2025-01-01'); // Adjust as needed
+        // Use dynamic season logic matching frontend JavaScript
+        $now = time();
+        $currentYear = date('Y', $now);
+        $currentMonth = (int)date('n', $now); // 1-12
+        
+        // Spring season: Jan 1st to Jun 30th
+        // Fall season: Jul 1st to Dec 31st
+        if ($currentMonth >= 1 && $currentMonth <= 6) {
+            // Current Spring season: Jan 1st to Jun 30th
+            $currentSeasonStart = strtotime($currentYear . '-01-01 00:00:00');
+        } else {
+            // Current Fall season: Jul 1st to Dec 31st  
+            $currentSeasonStart = strtotime($currentYear . '-07-01 00:00:00');
+        }
         
         $stmt = $db->prepare('
             SELECT 
