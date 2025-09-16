@@ -3463,11 +3463,30 @@ class CheckInViewApp {
             </div>
         ` : '';
         
-        // Check if check-in is locked
-        const isLocked = this.isCheckInLocked(event, match);
+        // Check if check-in is locked (automatic OR manual)
+        const isAutoLocked = this.isCheckInLocked(event, match);
+        const isManuallyLocked = this.getManualLockStatus(match.id);
+        const isLocked = isAutoLocked || isManuallyLocked;
+        
         const lockInfo = this.getLockTimeInfo(event, match);
-        const lockStatusDisplay = isLocked && lockInfo ? 
-            `🔒 Locked since ${lockInfo.lockDate} at ${lockInfo.lockTimeFormatted}` : '';
+        let lockStatusDisplay = '';
+        
+        if (isAutoLocked && lockInfo) {
+            lockStatusDisplay = `🔒 Auto-locked since ${lockInfo.lockDate} at ${lockInfo.lockTimeFormatted}`;
+        } else if (isManuallyLocked) {
+            lockStatusDisplay = `🔒 Manually locked by referee`;
+        }
+        
+        // Manual lock toggle button
+        const manualLockToggle = `
+            <div class="manual-lock-toggle">
+                <button class="lock-toggle-btn ${isManuallyLocked ? 'locked' : 'unlocked'}" 
+                        onclick="app.toggleManualLock('${match.id}')"
+                        title="${isManuallyLocked ? 'Click to unlock check-in' : 'Click to lock check-in'}">
+                    ${isManuallyLocked ? '🔒 Locked' : '🔓 Unlocked'}
+                </button>
+            </div>
+        `;
         
         const modal = this.createModal(`${homeTeam.name} vs ${awayTeam.name}`, `
             <!-- Mobile-Optimized Check-In Interface -->
@@ -3487,6 +3506,7 @@ class CheckInViewApp {
                     
                     <div class="match-info-right">
                         ${match.field ? `<div class="match-field">🏟️ Field ${match.field}</div>` : ''}
+                        ${manualLockToggle}
                         ${mainReferee ? `<div class="match-referee">
                             <span class="referee-bubble">👨‍⚖️ ${mainReferee.name}</span>
                             ${assistantReferee ? `<span class="referee-bubble">👨‍⚖️ ${assistantReferee.name}</span>` : ''}
@@ -3636,9 +3656,11 @@ class CheckInViewApp {
         this.currentMatch = match;
         this.currentGridTeam = 'home'; // Default to home team
         
-        // Check if check-in is locked
+        // Check if check-in is locked (automatic OR manual)
         const event = this.events.find(e => e.id === eventId);
-        this.currentCheckInLocked = this.isCheckInLocked(event, match);
+        const isAutoLocked = this.isCheckInLocked(event, match);
+        const isManuallyLocked = this.getManualLockStatus(match.id);
+        this.currentCheckInLocked = isAutoLocked || isManuallyLocked;
         
         console.log('Check-in lock status:', this.currentCheckInLocked);
         
@@ -4020,7 +4042,9 @@ class CheckInViewApp {
             .sort((a, b) => a.name.localeCompare(b.name))
             .map(member => {
                 const isCheckedIn = attendees.some(a => a.memberId === member.id);
-                const isLocked = this.currentCheckInLocked || false;
+                const isAutoLocked = this.isCheckInLocked(this.events.find(e => e.id === this.currentEventId), this.currentMatch);
+                const isManuallyLocked = this.getManualLockStatus(this.currentMatch.id);
+                const isLocked = isAutoLocked || isManuallyLocked;
                 const isSuspended = member.suspensionStatus.isSuspended;
                 
                 return `
@@ -6071,6 +6095,88 @@ class CheckInViewApp {
                 }
             });
         });
+    }
+    
+    // =====================================
+    // MANUAL LOCK MANAGEMENT
+    // =====================================
+    
+    /**
+     * Get manual lock status for a match
+     */
+    getManualLockStatus(matchId) {
+        const key = `manual_lock_${matchId}`;
+        return localStorage.getItem(key) === 'true';
+    }
+    
+    /**
+     * Set manual lock status for a match
+     */
+    setManualLockStatus(matchId, isLocked) {
+        const key = `manual_lock_${matchId}`;
+        if (isLocked) {
+            localStorage.setItem(key, 'true');
+        } else {
+            localStorage.removeItem(key);
+        }
+    }
+    
+    /**
+     * Toggle manual lock for a match
+     */
+    async toggleManualLock(matchId) {
+        const currentStatus = this.getManualLockStatus(matchId);
+        const newStatus = !currentStatus;
+        
+        // Update storage
+        this.setManualLockStatus(matchId, newStatus);
+        
+        // Update the current lock status
+        this.currentCheckInLocked = this.isCheckInLocked(this.events.find(e => e.id === this.currentEventId), this.currentMatch) || newStatus;
+        
+        // Update the UI
+        this.refreshLockUI(matchId, newStatus);
+        
+        // Re-render the grid to update clickability
+        if (this.currentGridTeam === 'home') {
+            this.renderGridTeamFullscreen('home', this.currentHomeTeam, this.currentMatch.homeTeamAttendees || []);
+        } else {
+            this.renderGridTeamFullscreen('away', this.currentAwayTeam, this.currentMatch.awayTeamAttendees || []);
+        }
+        
+        console.log(`🔒 Manual lock ${newStatus ? 'ENABLED' : 'DISABLED'} for match ${matchId}`);
+    }
+    
+    /**
+     * Refresh the lock UI elements
+     */
+    refreshLockUI(matchId, isManuallyLocked) {
+        // Update toggle button
+        const toggleBtn = document.querySelector('.lock-toggle-btn');
+        if (toggleBtn) {
+            toggleBtn.className = `lock-toggle-btn ${isManuallyLocked ? 'locked' : 'unlocked'}`;
+            toggleBtn.innerHTML = isManuallyLocked ? '🔒 Locked' : '🔓 Unlocked';
+            toggleBtn.title = isManuallyLocked ? 'Click to unlock check-in' : 'Click to lock check-in';
+        }
+        
+        // Update lock status display
+        const lockStatusEl = document.querySelector('.lock-status');
+        if (lockStatusEl) {
+            if (isManuallyLocked) {
+                lockStatusEl.innerHTML = '🔒 Manually locked by referee';
+                lockStatusEl.style.display = 'block';
+            } else {
+                // Check if auto-lock is still active
+                const event = this.events.find(e => e.id === this.currentEventId);
+                const isAutoLocked = this.isCheckInLocked(event, this.currentMatch);
+                if (isAutoLocked) {
+                    const lockInfo = this.getLockTimeInfo(event, this.currentMatch);
+                    lockStatusEl.innerHTML = `🔒 Auto-locked since ${lockInfo.lockDate} at ${lockInfo.lockTimeFormatted}`;
+                } else {
+                    lockStatusEl.style.display = 'none';
+                }
+            }
+        }
     }
 }
 

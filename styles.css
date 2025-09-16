@@ -2367,3 +2367,80 @@ body {
         font-size: 0.8em;
     }
 }
+
+/* =====================================
+   MANUAL LOCK TOGGLE STYLES
+   ===================================== */
+
+.manual-lock-toggle {
+    display: inline-block;
+    margin: 2px 0;
+}
+
+.lock-toggle-btn {
+    background: #f8f9fa;
+    border: 2px solid #dee2e6;
+    border-radius: 6px;
+    padding: 4px 8px;
+    font-size: 0.8em;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: inline-flex;
+    align-items: center;
+    gap: 4px;
+    min-width: 80px;
+    justify-content: center;
+}
+
+.lock-toggle-btn:hover {
+    transform: translateY(-1px);
+    box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+}
+
+.lock-toggle-btn.unlocked {
+    background: #d4f4dd;
+    border-color: #28a745;
+    color: #155724;
+}
+
+.lock-toggle-btn.unlocked:hover {
+    background: #c3e6cb;
+    border-color: #1e7e34;
+}
+
+.lock-toggle-btn.locked {
+    background: #f8d7da;
+    border-color: #dc3545;
+    color: #721c24;
+}
+
+.lock-toggle-btn.locked:hover {
+    background: #f1b0b7;
+    border-color: #bd2130;
+}
+
+/* Enhanced lock status display */
+.lock-status {
+    font-size: 0.8em;
+    padding: 2px 6px;
+    border-radius: 4px;
+    background: #fff3cd;
+    border: 1px solid #ffeaa7;
+    color: #856404;
+    margin: 2px 0;
+    display: inline-block;
+}
+
+/* Responsive adjustments */
+@media (max-width: 768px) {
+    .manual-lock-toggle {
+        margin: 4px 0;
+    }
+    
+    .lock-toggle-btn {
+        font-size: 0.75em;
+        padding: 3px 6px;
+        min-width: 70px;
+    }
+}
