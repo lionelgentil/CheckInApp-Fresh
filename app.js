@@ -5563,10 +5563,10 @@ Please check the browser console (F12) for more details.`);
                 if (match && match.cards && match.cards.length > 0) {
                     match.cards.forEach(card => {
                         cards.push({
-                            type: card.type || 'yellow',
-                            playerName: card.player_name || 'Unknown Player',
+                            type: card.cardType || 'yellow',
+                            playerName: card.memberName || 'Unknown Player',
                             minute: card.minute || '0',
-                            infraction: card.infraction || ''
+                            infraction: card.reason || ''
                         });
                     });
                 }
