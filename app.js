@@ -3053,9 +3053,12 @@ Please check the browser console (F12) for more details.`);
         const teamLookup = new Map();
         this.teams.forEach(t => teamLookup.set(t.id, t));
         
-        // Get all current season cards for this player across all events - optimized version
+        // Get ONLY current season cards for this player across all events - optimized version
         const matchCards = [];
         for (const event of this.events) {
+            // Only process events from current season - fix for card counting discrepancy
+            if (!this.isCurrentSeasonEvent(event.date_epoch)) continue;
+            
             for (const match of event.matches) {
                 if (!match.cards) continue;
                 
