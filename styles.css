@@ -1135,7 +1135,7 @@ body {
 
 .grid-check-icon {
     position: absolute;
-    top: 8px;
+    top: 35px;
     right: 8px;
     background: #28a745;
     color: white;
@@ -1155,6 +1155,24 @@ body {
 .player-grid-item.checked-in .grid-check-icon {
     opacity: 1;
     transform: scale(1);
+}
+
+.player-grid-item.locked .grid-check-icon {
+    opacity: 1;
+    transform: scale(1);
+    background: #dc3545;
+}
+
+.player-grid-item.locked {
+    opacity: 1;
+    filter: none;
+    cursor: not-allowed;
+}
+
+.player-grid-item.locked .player-grid-name,
+.player-grid-item.locked .player-grid-jersey {
+    opacity: 1;
+    color: inherit;
 }
 
 /* Team Card Summary Styles - Referee Theme */
