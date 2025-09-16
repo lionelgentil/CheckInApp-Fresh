@@ -1159,22 +1159,49 @@ body {
 
 .grid-lock-icon {
     position: absolute;
-    top: 35px;
+    top: 40px;
     right: 8px;
     background: #dc3545;
     color: white;
     border-radius: 50%;
-    width: 24px;
-    height: 24px;
+    width: 20px;
+    height: 20px;
     display: flex;
     align-items: center;
     justify-content: center;
-    font-size: 14px;
+    font-size: 12px;
     font-weight: bold;
 }
 
 .player-grid-item.locked {
     cursor: not-allowed;
+    opacity: 1 !important;
+    background: white !important;
+    filter: none !important;
+    -webkit-filter: none !important;
+}
+
+.player-grid-item.locked.checked-in {
+    background: linear-gradient(135deg, #28a745, #20c997) !important;
+    border-color: #28a745 !important;
+    color: white !important;
+}
+
+.player-grid-item.locked *,
+.player-grid-item.locked .player-grid-name,
+.player-grid-item.locked .player-grid-jersey,
+.player-grid-item.locked .player-grid-photo,
+.player-grid-item.locked .player-grid-content,
+.player-grid-item.locked .grid-check-icon {
+    opacity: 1 !important;
+    filter: none !important;
+    -webkit-filter: none !important;
+    color: inherit !important;
+}
+
+.player-grid-item.locked.checked-in .grid-check-icon {
+    background: #28a745 !important;
+    color: white !important;
 }
 
 /* Team Card Summary Styles - Referee Theme */
