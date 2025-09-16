@@ -98,44 +98,18 @@ function calculateMemberCardStats(member, events, isCurrentSeasonEvent) {
     let currentYellowCards = 0;
     let currentRedCards = 0;
     
-    // DEBUG: Add logging for this specific player (enable by adding player name)
-    const isDebugPlayer = member.name.toLowerCase().includes('debug') || 
-                         member.name.toLowerCase().includes('target') ||
-                         member.id === 'REPLACE_WITH_ACTUAL_PLAYER_ID';
-    
     events.forEach(event => {
         // Only count cards from current season events - fix: use date_epoch instead of date
         if (isCurrentSeasonEvent(event.date_epoch)) {
-            if (isDebugPlayer) {
-                console.log(`🔍 DEBUG: Processing event "${event.name}" (${event.date_epoch}) for player ${member.name}`);
-            }
-            
             event.matches.forEach(match => {
                 if (match.cards) {
                     const memberCards = match.cards.filter(card => card.memberId === member.id);
-                    const memberYellows = memberCards.filter(card => card.cardType === 'yellow');
-                    const memberReds = memberCards.filter(card => card.cardType === 'red');
-                    
-                    if (isDebugPlayer && memberCards.length > 0) {
-                        console.log(`🔍 DEBUG: Found ${memberCards.length} cards in match`, {
-                            event: event.name,
-                            match: `${match.homeTeamId} vs ${match.awayTeamId}`,
-                            cards: memberCards.map(c => ({ type: c.cardType, reason: c.reason, minute: c.minute }))
-                        });
-                    }
-                    
-                    currentYellowCards += memberYellows.length;
-                    currentRedCards += memberReds.length;
+                    currentYellowCards += memberCards.filter(card => card.cardType === 'yellow').length;
+                    currentRedCards += memberCards.filter(card => card.cardType === 'red').length;
                 }
             });
-        } else if (isDebugPlayer) {
-            console.log(`🔍 DEBUG: Skipping event "${event.name}" (${event.date_epoch}) - not current season for player ${member.name}`);
         }
     });
-    
-    if (isDebugPlayer) {
-        console.log(`🔍 DEBUG: Final count for ${member.name} - Yellow: ${currentYellowCards}, Red: ${currentRedCards}`);
-    }
     
     return {
         currentYellowCards,

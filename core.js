@@ -430,45 +430,24 @@ class CheckInCore {
         const now = new Date();
         const year = now.getFullYear();
         const month = now.getMonth() + 1; // JavaScript months are 0-indexed
-        const day = now.getDate();
         
-        // Spring season: Feb 15th to June 30th
-        if ((month === 2 && day >= 15) || (month >= 3 && month <= 6)) {
+        // Correct season logic:
+        // Spring season: Jan 1st to Jun 30th
+        // Fall season: Jul 1st to Dec 31st
+        if (month >= 1 && month <= 6) {
             return {
                 type: 'Spring',
                 year: year,
-                startDate: new Date(year, 1, 15), // Feb 15
-                endDate: new Date(year, 5, 30)    // June 30
+                startDate: new Date(year, 0, 1), // Jan 1st
+                endDate: new Date(year, 5, 30, 23, 59, 59) // June 30th end of day
             };
-        }
-        // Fall season: Aug 1st to Dec 31st
-        else if (month >= 8 && month <= 12) {
+        } else {
             return {
                 type: 'Fall',
                 year: year,
-                startDate: new Date(year, 7, 1),  // Aug 1
-                endDate: new Date(year, 11, 31)  // Dec 31
+                startDate: new Date(year, 6, 1), // July 1st
+                endDate: new Date(year, 11, 31, 23, 59, 59) // Dec 31st end of day
             };
-        }
-        // Between seasons - determine which season we're closer to
-        else {
-            if (month === 1 || (month === 2 && day < 15)) {
-                // January or early February - closer to upcoming Spring season
-                return {
-                    type: 'Spring',
-                    year: year,
-                    startDate: new Date(year, 1, 15), // Feb 15
-                    endDate: new Date(year, 5, 30)    // June 30
-                };
-            } else {
-                // July - closer to upcoming Fall season
-                return {
-                    type: 'Fall',
-                    year: year,
-                    startDate: new Date(year, 7, 1),  // Aug 1
-                    endDate: new Date(year, 11, 31)  // Dec 31
-                };
-            }
         }
     }
 

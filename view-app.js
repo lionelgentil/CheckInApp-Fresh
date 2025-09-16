@@ -534,22 +534,22 @@ class CheckInViewApp {
         const year = now.getFullYear();
         const month = now.getMonth() + 1; // JavaScript months are 0-indexed
         
-        // Updated to match main app logic:
+        // Correct season logic:
         // Spring season: Jan 1st to Jun 30th
         // Fall season: Jul 1st to Dec 31st
         if (month >= 1 && month <= 6) {
             return {
                 type: 'Spring',
                 year: year,
-                startDate: new Date(year, 0, 1),  // Jan 1
-                endDate: new Date(year, 5, 30)   // Jun 30
+                startDate: new Date(year, 0, 1), // Jan 1st
+                endDate: new Date(year, 5, 30, 23, 59, 59) // June 30th end of day
             };
         } else {
             return {
                 type: 'Fall',
                 year: year,
-                startDate: new Date(year, 6, 1),  // Jul 1  
-                endDate: new Date(year, 11, 31)  // Dec 31
+                startDate: new Date(year, 6, 1), // July 1st
+                endDate: new Date(year, 11, 31, 23, 59, 59) // Dec 31st end of day
             };
         }
     }
