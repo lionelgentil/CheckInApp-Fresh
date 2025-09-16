@@ -2771,6 +2771,7 @@ class CheckInViewApp extends CheckInCore {
                                                 <span class="mobile-card-player">${card.playerName}</span>
                                                 <span class="mobile-card-minute">${card.minute}'</span>
                                                 ${card.infraction ? `<div class="mobile-card-infraction">${card.infraction}</div>` : ''}
+                                                ${card.notes ? `<div class="mobile-card-notes">${card.notes}</div>` : ''}
                                             </div>
                                         `).join('')}
                                     </div>
@@ -2811,10 +2812,13 @@ class CheckInViewApp extends CheckInCore {
                         <div class="cards-list">
                             ${gameCards.map(card => `
                                 <div class="card-item-inline ${card.type}">
-                                    <span class="card-type-badge card-type-${card.type}">${card.type.toUpperCase()}</span>
-                                    <span class="card-player">${card.playerName}</span>
-                                    <span class="card-minute">${card.minute}'</span>
-                                    ${card.infraction ? `<span class="card-infraction">${card.infraction}</span>` : ''}
+                                    <div class="card-main-info">
+                                        <span class="card-type-badge card-type-${card.type}">${card.type.toUpperCase()}</span>
+                                        <span class="card-player">${card.playerName}</span>
+                                        <span class="card-minute">${card.minute}'</span>
+                                        ${card.infraction ? `<span class="card-infraction">${card.infraction}</span>` : ''}
+                                    </div>
+                                    ${card.notes ? `<div class="card-notes-text">${card.notes}</div>` : ''}
                                 </div>
                             `).join('')}
                         </div>
@@ -2862,7 +2866,8 @@ class CheckInViewApp extends CheckInCore {
                             type: card.cardType || 'yellow',
                             playerName: card.memberName || 'Unknown Player',
                             minute: card.minute || '0',
-                            infraction: card.reason || ''
+                            infraction: card.reason || '',
+                            notes: card.notes || ''
                         });
                     });
                 }

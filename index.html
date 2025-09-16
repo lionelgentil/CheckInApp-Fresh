@@ -2688,13 +2688,29 @@
             
             .card-item-inline {
                 display: flex;
-                align-items: center;
-                gap: 8px;
+                flex-direction: column;
+                gap: 4px;
                 padding: 6px 10px;
                 margin-bottom: 5px;
                 background: white;
                 border-radius: 6px;
                 border-left: 3px solid #e9ecef;
+            }
+            
+            .card-main-info {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+            
+            .card-notes-text {
+                font-size: 0.85em;
+                color: #666;
+                font-style: italic;
+                margin-left: 8px;
+                padding: 4px 8px;
+                background: rgba(0, 0, 0, 0.05);
+                border-radius: 4px;
             }
             
             .card-item-inline.yellow {
@@ -2757,6 +2773,16 @@
                 border-radius: 6px;
                 border-left: 3px solid #007bff;
                 font-size: 0.9em;
+            }
+            
+            .mobile-card-notes {
+                font-size: 0.85em;
+                color: #666;
+                font-style: italic;
+                margin-top: 4px;
+                padding: 4px 6px;
+                background: rgba(0, 0, 0, 0.05);
+                border-radius: 4px;
             }
             
             @media (max-width: 768px) {
