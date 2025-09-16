@@ -252,7 +252,7 @@ test.describe('View App Data Integrity Tests', () => {
     if (versionResponse.status() === 200) {
       const versionData = await versionResponse.json();
       expect(versionData).toHaveProperty('version');
-      expect(versionData.version).toBe('6.1.0');
+      expect(versionData.version).toBe('6.4.0');
     }
   });
 

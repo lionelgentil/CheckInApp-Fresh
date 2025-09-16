@@ -1,4 +1,4 @@
-# CheckIn App v6.3.0
+# CheckIn App v6.4.0
 
 A comprehensive soccer league management system designed for recreational adult leagues. Features team management, event scheduling, player check-ins, disciplinary tracking, referee personalization, and season management with advanced PostgreSQL backend.
 
@@ -96,7 +96,7 @@ POST      /api/match-results      - Match results for view interface
 POST      /api/players/cards      - Card assignment for referees
 GET       /api/health             - System health with database ping
 GET       /api/keep-alive         - Database warming endpoint
-GET       /api/version            - Version information (v6.3.0)
+GET       /api/version            - Version information (v6.4.0)
 ```
 
 ## 🚀 Getting Started
@@ -210,7 +210,20 @@ GET       /api/version            - Version information (v6.3.0)
 
 ## 📝 Version History
 
-### v6.3.0 (Current) - Referee Personalization System
+### v6.4.0 (Current) - Manual Lock Toggle System
+- 🔒 **Manual Lock Toggle for Referees**:
+  - 🎮 Manual lock/unlock toggle in View app for referees
+  - 🔐 Prevents accidental check-ins while reviewing player information
+  - 💾 Persistent lock state stored locally per match
+  - 🎯 Large, prominent toggle button in match header
+  - 👁️ Visual feedback for locked players without grayout effect
+- 🐛 **UI/UX Improvements**:
+  - 🎨 Repositioned lock icon on player badges to avoid overlap with check marks
+  - 📱 Enhanced readability - removed grayout effect on locked players
+  - ⚡ Improved player grid interaction with clear visual hierarchy
+  - 🔍 Better lock status indication and user feedback
+
+### v6.3.0 (Previous) - Referee Personalization System
 - 🎯 **Revolutionary Referee Experience**:
   - 👤 Individual referee selection on app launch
   - 🎮 Personalized game filtering - referees only see their assigned matches
@@ -290,5 +303,5 @@ This application is designed for recreational soccer league management with focu
 
 ---
 
-**CheckIn App v6.3.0** - Advanced Soccer League Management System
+**CheckIn App v6.4.0** - Advanced Soccer League Management System
 *Referee Personalization • Mobile Optimized • PostgreSQL Powered • Railway Cloud Ready*

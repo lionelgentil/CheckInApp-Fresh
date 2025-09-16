@@ -1,5 +1,5 @@
 /**
- * CheckIn App v6.3.0 - JavaScript Frontend
+ * CheckIn App v6.4.0 - JavaScript Frontend
  * Works with PHP/PostgreSQL backend
  * Enhanced with suspension system fixes and referee personalization in View app
  */
@@ -4943,9 +4943,11 @@ Please check the browser console (F12) for more details.`);
         console.log('🎯 renderGameTracker called');
         const container = document.getElementById('game-tracker-container');
         const statusFilter = document.getElementById('game-status-filter')?.value || 'incomplete';
+        const teamFilter = document.getElementById('game-team-filter')?.value || 'all';
         const showCurrentSeasonOnly = document.getElementById('show-current-season-games')?.checked ?? true;
         
         console.log('📊 Game status filter:', statusFilter);
+        console.log('👥 Team filter:', teamFilter);
         console.log('📅 Current season only:', showCurrentSeasonOnly);
         
         // Collect all matches from all events
@@ -4957,6 +4959,13 @@ Please check the browser console (F12) for more details.`);
         let filteredGames = gameRecords;
         if (showCurrentSeasonOnly) {
             filteredGames = gameRecords.filter(game => this.isCurrentSeasonEvent(game.eventEpoch));
+        }
+        
+        // Filter by team if specified
+        if (teamFilter !== 'all') {
+            filteredGames = filteredGames.filter(game => 
+                game.homeTeamId === teamFilter || game.awayTeamId === teamFilter
+            );
         }
         
         // Filter by status
@@ -5065,7 +5074,8 @@ Please check the browser console (F12) for more details.`);
                         <tr>
                             <th>Date/Time</th>
                             <th>Event</th>
-                            <th>Match</th>
+                            <th>Home Team</th>
+                            <th>Away Team</th>
                             <th>Score</th>
                             <th>Field</th>
                             <th>Status</th>
@@ -5074,84 +5084,14 @@ Please check the browser console (F12) for more details.`);
                         </tr>
                     </thead>
                     <tbody>
-                        ${filteredGames.map(game => `
-                            <tr class="game-row ${game.status}">
-                                <td class="date-time-cell">
-                                    <div class="game-date">${game.eventDate}</div>
-                                    ${game.time ? `<div class="game-time">${game.time}</div>` : ''}
-                                </td>
-                                <td class="event-cell">
-                                    <div class="event-name">${game.eventName}</div>
-                                </td>
-                                <td class="match-cell">
-                                    ${this.getTeamResultBubbles(game.homeTeam, game.awayTeam, game.homeScore, game.awayScore, game.hasScore)}
-                                </td>
-                                <td class="score-cell">
-                                    ${game.status === 'completed' && game.hasScore ? `${game.homeScore} - ${game.awayScore}` : '—'}
-                                </td>
-                                <td class="field-cell">
-                                    ${game.field ? `Field ${game.field}` : '—'}
-                                </td>
-                                <td class="status-cell">
-                                    <span class="status-badge status-${game.status}">${this.getStatusDisplay(game.status)}</span>
-                                </td>
-                                <td class="referee-cell">
-                                    ${game.referees.length > 0 ? 
-                                        game.referees.map(ref => `<span class="referee-bubble">${ref}</span>`).join('<br>') 
-                                        : '—'}
-                                </td>
-                                <td class="actions-cell">
-                                    ${game.status !== 'completed' && game.status !== 'cancelled' ? 
-                                        `<button class="btn btn-small" onclick="app.editMatchResult('${game.eventId}', '${game.matchId}')" title="Edit Result">🏆</button>` 
-                                        : ''}
-                                </td>
-                            </tr>
-                        `).join('')}
+                        ${filteredGames.map(game => this.renderGameRowDesktop(game)).join('')}
                     </tbody>
                 </table>
             </div>
             
             <!-- Mobile Card View -->
             <div class="game-tracker-mobile">
-                ${filteredGames.map(game => `
-                    <div class="game-record-item">
-                        <div class="game-record-header">
-                            <div class="game-info-section">
-                                <div class="game-date-large">${epochToPacificDate(game.eventDate_epoch || game.eventDate)}</div>
-                                ${game.time_epoch ? `<div class="game-time-large">${epochToPacificTime(game.time_epoch)}</div>` : ''}
-                            </div>
-                            <div class="game-status-section">
-                                <span class="status-badge status-${game.status}">${this.getStatusDisplay(game.status)}</span>
-                            </div>
-                        </div>
-                        
-                        <div class="game-record-details">
-                            <div class="event-info">
-                                <div class="event-name-large">${game.eventName}</div>
-                                ${this.getTeamResultBubbles(game.homeTeam, game.awayTeam, game.homeScore, game.awayScore, game.hasScore)}
-                            </div>
-                            
-                            <div class="game-details-grid">
-                                ${game.field ? `<div class="detail-item"><span class="detail-label">Field:</span> ${game.field}</div>` : ''}
-                                <div class="detail-item"><span class="detail-label">Score:</span> ${game.status === 'completed' && game.hasScore ? `${game.homeScore} - ${game.awayScore}` : 'Not entered'}</div>
-                                ${game.referees.length > 0 ? `
-                                    <div class="detail-item">
-                                        <span class="detail-label">Referee(s):</span>
-                                        <div class="mobile-referees">
-                                            ${game.referees.map(ref => `<span class="referee-bubble">${ref}</span>`).join(' ')}
-                                        </div>
-                                    </div>
-                                ` : ''}
-                                
-                                ${game.status !== 'completed' && game.status !== 'cancelled' ? `
-                                    <div class="detail-item">
-                                        <button class="btn btn-small" onclick="app.editMatchResult('${game.eventId}', '${game.matchId}')">Edit Result 🏆</button>
-                                    </div>
-                                ` : ''}
-                            </div>
-                        </div>
-                    </div>
-                `).join('')}
+                ${filteredGames.map(game => this.renderGameRowMobile(game)).join('')}
             </div>
         `;
     }
