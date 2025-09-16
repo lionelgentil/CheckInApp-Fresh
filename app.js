@@ -3055,6 +3055,8 @@ Please check the browser console (F12) for more details.`);
         
         // Get ONLY current season cards for this player across all events - optimized version
         const matchCards = [];
+        const debugCards = []; // Debug logging for card counting discrepancy
+        
         for (const event of this.events) {
             // Only process events from current season - fix for card counting discrepancy
             if (!this.isCurrentSeasonEvent(event.date_epoch)) continue;
@@ -3073,6 +3075,15 @@ Please check the browser console (F12) for more details.`);
                 
                 // Process all cards for this member in this match
                 memberCards.forEach(card => {
+                    // Debug logging
+                    debugCards.push({
+                        eventName: event.name,
+                        eventDate: event.date_epoch,
+                        cardType: card.cardType,
+                        reason: card.reason,
+                        matchId: match.id
+                    });
+                    
                     matchCards.push({
                         type: 'match',
                         eventName: event.name,
@@ -3090,6 +3101,17 @@ Please check the browser console (F12) for more details.`);
                     });
                 });
             }
+        }
+        
+        // Debug logging for card counting discrepancy investigation
+        if (debugCards.length > 0) {
+            const yellowCards = debugCards.filter(c => c.cardType === 'yellow');
+            const redCards = debugCards.filter(c => c.cardType === 'red');
+            console.log(`🐛 PLAYER PROFILE - ${member.name} cards:`, {
+                totalYellow: yellowCards.length,
+                totalRed: redCards.length,
+                cardDetails: debugCards
+            });
         }
         
         // Fetch disciplinary records in parallel with UI building

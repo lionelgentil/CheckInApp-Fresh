@@ -98,18 +98,44 @@ function calculateMemberCardStats(member, events, isCurrentSeasonEvent) {
     let currentYellowCards = 0;
     let currentRedCards = 0;
     
+    // Debug logging for card counting discrepancy investigation
+    const debugCards = [];
+    
     events.forEach(event => {
         // Only count cards from current season events - fix: use date_epoch instead of date
         if (isCurrentSeasonEvent(event.date_epoch)) {
             event.matches.forEach(match => {
                 if (match.cards) {
                     const memberCards = match.cards.filter(card => card.memberId === member.id);
-                    currentYellowCards += memberCards.filter(card => card.cardType === 'yellow').length;
-                    currentRedCards += memberCards.filter(card => card.cardType === 'red').length;
+                    const yellowCards = memberCards.filter(card => card.cardType === 'yellow');
+                    const redCards = memberCards.filter(card => card.cardType === 'red');
+                    
+                    // Log each card found for debugging
+                    yellowCards.forEach(card => {
+                        debugCards.push({
+                            eventName: event.name,
+                            eventDate: event.date_epoch,
+                            cardType: 'yellow',
+                            reason: card.reason,
+                            matchId: match.id
+                        });
+                    });
+                    
+                    currentYellowCards += yellowCards.length;
+                    currentRedCards += redCards.length;
                 }
             });
         }
     });
+    
+    // Debug log for specific players showing discrepancy
+    if (currentYellowCards > 0 || currentRedCards > 0) {
+        console.log(`🐛 TEAMS SECTION - ${member.name} cards:`, {
+            totalYellow: currentYellowCards,
+            totalRed: currentRedCards,
+            cardDetails: debugCards
+        });
+    }
     
     return {
         currentYellowCards,
