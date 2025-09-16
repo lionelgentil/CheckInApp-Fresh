@@ -528,37 +528,8 @@ class CheckInViewApp {
         window.location.reload();
     }
     
-    // Season Management
-    getCurrentSeason() {
-        const now = new Date();
-        const year = now.getFullYear();
-        const month = now.getMonth() + 1; // JavaScript months are 0-indexed
-        
-        // Correct season logic:
-        // Spring season: Jan 1st to Jun 30th
-        // Fall season: Jul 1st to Dec 31st
-        if (month >= 1 && month <= 6) {
-            return {
-                type: 'Spring',
-                year: year,
-                startDate: new Date(year, 0, 1), // Jan 1st
-                endDate: new Date(year, 5, 30, 23, 59, 59) // June 30th end of day
-            };
-        } else {
-            return {
-                type: 'Fall',
-                year: year,
-                startDate: new Date(year, 6, 1), // July 1st
-                endDate: new Date(year, 11, 31, 23, 59, 59) // Dec 31st end of day
-            };
-        }
-    }
-    
-    isCurrentSeasonEvent(eventEpoch) {
-        const currentSeason = this.getCurrentSeason();
-        const eventEpochTime = eventEpoch * 1000; // Convert to milliseconds
-        return eventEpochTime >= currentSeason.startDate.getTime() && eventEpochTime <= currentSeason.endDate.getTime();
-    }
+    // Season Management - Use centralized logic from CheckInCore (core.js)
+    // getCurrentSeason() and isCurrentSeasonEvent() are inherited from CheckInCore
     
     // Lightweight team loading (just basic info for events display)
     async loadTeamsBasic() {

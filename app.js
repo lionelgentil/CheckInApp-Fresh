@@ -779,37 +779,8 @@ class CheckInApp {
         }
     }
     
-    // Season Management
-    getCurrentSeason() {
-        const now = new Date();
-        const year = now.getFullYear();
-        const month = now.getMonth() + 1; // JavaScript months are 0-indexed
-        
-        // Correct season logic:
-        // Spring season: Jan 1st to Jun 30th
-        // Fall season: Jul 1st to Dec 31st
-        if (month >= 1 && month <= 6) {
-            return {
-                type: 'Spring',
-                year: year,
-                startDate: new Date(year, 0, 1), // Jan 1st
-                endDate: new Date(year, 5, 30, 23, 59, 59) // June 30th end of day
-            };
-        } else {
-            return {
-                type: 'Fall',
-                year: year,
-                startDate: new Date(year, 6, 1), // July 1st
-                endDate: new Date(year, 11, 31, 23, 59, 59) // Dec 31st end of day
-            };
-        }
-    }
-    
-    isCurrentSeasonEvent(eventEpoch) {
-        const currentSeason = this.getCurrentSeason();
-        const eventEpochTime = eventEpoch * 1000; // Convert to milliseconds
-        return eventEpochTime >= currentSeason.startDate.getTime() && eventEpochTime <= currentSeason.endDate.getTime();
-    }
+    // Season Management - Use centralized logic from CheckInCore (core.js)
+    // getCurrentSeason() and isCurrentSeasonEvent() are inherited from CheckInCore
     
     async uploadPhoto(file, memberId) {
         console.log('uploadPhoto called with:', { fileName: file.name, fileSize: file.size, memberId });
@@ -4866,7 +4837,7 @@ Please check the browser console (F12) for more details.`);
                         <input type="radio" name="new-season" value="spring" id="spring-season">
                         <div>
                             <strong>Spring ${new Date().getFullYear()}</strong>
-                            <div style="font-size: 0.9em; color: #666;">February 15 - June 30</div>
+                            <div style="font-size: 0.9em; color: #666;">January 1 - June 30</div>
                         </div>
                     </label>
                     
@@ -4874,7 +4845,7 @@ Please check the browser console (F12) for more details.`);
                         <input type="radio" name="new-season" value="fall" id="fall-season">
                         <div>
                             <strong>Fall ${new Date().getFullYear()}</strong>
-                            <div style="font-size: 0.9em; color: #666;">August 1 - December 31</div>
+                            <div style="font-size: 0.9em; color: #666;">July 1 - December 31</div>
                         </div>
                     </label>
                 </div>

@@ -23,6 +23,32 @@ function getDefaultPhoto($gender) {
 // Performance optimization: Cache for database queries
 $queryCache = array();
 
+// =====================================
+// CENTRALIZED SEASON LOGIC (SINGLE SOURCE OF TRUTH)
+// =====================================
+
+/**
+ * Get current season start epoch timestamp
+ * IMPORTANT: This must match the logic in core.js getCurrentSeason()
+ */
+function getCurrentSeasonStartEpoch() {
+    $now = time();
+    $currentYear = date('Y', $now);
+    $currentMonth = (int)date('n', $now); // 1-12
+    
+    // Spring season: Jan 1st to Jun 30th
+    // Fall season: Jul 1st to Dec 31st
+    if ($currentMonth >= 1 && $currentMonth <= 6) {
+        // Current Spring season: Jan 1st to Jun 30th
+        return strtotime($currentYear . '-01-01 00:00:00');
+    } else {
+        // Current Fall season: Jul 1st to Dec 31st  
+        return strtotime($currentYear . '-07-01 00:00:00');
+    }
+}
+
+// =====================================
+
 // Helper function to get disciplinary records count with caching
 function getDisciplinaryRecordsCount($db, $bustCache = false) {
     global $queryCache;
@@ -1957,20 +1983,8 @@ function getTeamCardSummary($db) {
     }
     
     try {
-        // Use dynamic season logic matching frontend JavaScript
-        $now = time();
-        $currentYear = date('Y', $now);
-        $currentMonth = (int)date('n', $now); // 1-12
-        
-        // Spring season: Jan 1st to Jun 30th
-        // Fall season: Jul 1st to Dec 31st
-        if ($currentMonth >= 1 && $currentMonth <= 6) {
-            // Current Spring season: Jan 1st to Jun 30th
-            $currentSeasonStart = strtotime($currentYear . '-01-01 00:00:00');
-        } else {
-            // Current Fall season: Jul 1st to Dec 31st  
-            $currentSeasonStart = strtotime($currentYear . '-07-01 00:00:00');
-        }
+        // Use centralized season logic matching frontend JavaScript
+        $currentSeasonStart = getCurrentSeasonStartEpoch();
         
         $stmt = $db->prepare('
             SELECT 
