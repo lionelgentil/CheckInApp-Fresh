@@ -1977,31 +1977,43 @@ function getTeamCardSummary($db) {
                 tm.id as member_id,
                 tm.name as member_name,
                 
-                -- Match cards (from match_cards table)
-                COALESCE(SUM(CASE WHEN mc.card_type = \'yellow\' THEN 1 ELSE 0 END), 0) as match_yellow_total,
-                COALESCE(SUM(CASE WHEN mc.card_type = \'red\' THEN 1 ELSE 0 END), 0) as match_red_total,
+                -- Match cards (from match_cards table only)
+                COALESCE(match_data.match_yellow_total, 0) as match_yellow_total,
+                COALESCE(match_data.match_red_total, 0) as match_red_total,
+                COALESCE(match_data.match_yellow_current, 0) as match_yellow_current,
+                COALESCE(match_data.match_red_current, 0) as match_red_current,
                 
-                -- Current season match cards (based on EVENT date_epoch, not match time)
-                COALESCE(SUM(CASE 
-                    WHEN mc.card_type = \'yellow\' AND e.date_epoch >= ? THEN 1 
-                    ELSE 0 
-                END), 0) as match_yellow_current,
-                COALESCE(SUM(CASE 
-                    WHEN mc.card_type = \'red\' AND e.date_epoch >= ? THEN 1 
-                    ELSE 0 
-                END), 0) as match_red_current,
-                
-                -- Lifetime disciplinary records
-                COALESCE(COUNT(CASE WHEN pdr.card_type = \'yellow\' THEN 1 END), 0) as lifetime_yellow,
-                COALESCE(COUNT(CASE WHEN pdr.card_type = \'red\' THEN 1 END), 0) as lifetime_red
+                -- Lifetime disciplinary records (from player_disciplinary_records table only)
+                COALESCE(disciplinary_data.lifetime_yellow, 0) as lifetime_yellow,
+                COALESCE(disciplinary_data.lifetime_red, 0) as lifetime_red
                 
             FROM team_members tm
-            LEFT JOIN match_cards mc ON tm.id = mc.member_id
-            LEFT JOIN matches m ON mc.match_id = m.id
-            LEFT JOIN events e ON m.event_id = e.id
-            LEFT JOIN player_disciplinary_records pdr ON tm.id = pdr.member_id
+            
+            -- Separate subquery for match cards to avoid cross-join issues
+            LEFT JOIN (
+                SELECT 
+                    mc.member_id,
+                    SUM(CASE WHEN mc.card_type = \'yellow\' THEN 1 ELSE 0 END) as match_yellow_total,
+                    SUM(CASE WHEN mc.card_type = \'red\' THEN 1 ELSE 0 END) as match_red_total,
+                    SUM(CASE WHEN mc.card_type = \'yellow\' AND e.date_epoch >= ? THEN 1 ELSE 0 END) as match_yellow_current,
+                    SUM(CASE WHEN mc.card_type = \'red\' AND e.date_epoch >= ? THEN 1 ELSE 0 END) as match_red_current
+                FROM match_cards mc
+                JOIN matches m ON mc.match_id = m.id
+                JOIN events e ON m.event_id = e.id
+                GROUP BY mc.member_id
+            ) match_data ON tm.id = match_data.member_id
+            
+            -- Separate subquery for disciplinary records
+            LEFT JOIN (
+                SELECT 
+                    pdr.member_id,
+                    COUNT(CASE WHEN pdr.card_type = \'yellow\' THEN 1 END) as lifetime_yellow,
+                    COUNT(CASE WHEN pdr.card_type = \'red\' THEN 1 END) as lifetime_red
+                FROM player_disciplinary_records pdr
+                GROUP BY pdr.member_id
+            ) disciplinary_data ON tm.id = disciplinary_data.member_id
+            
             WHERE tm.team_id = ? AND tm.active = true
-            GROUP BY tm.id, tm.name
             ORDER BY tm.name
         ');
         
