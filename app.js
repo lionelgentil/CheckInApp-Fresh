@@ -5124,32 +5124,6 @@ Please check the browser console (F12) for more details.`);
             <div class="game-tracker-mobile">
                 ${filteredGames.map(game => this.renderGameRowMobile(game)).join('')}
             </div>
-            
-            <!-- Disciplinary Actions Section -->
-            <div class="disciplinary-actions-section">
-                <div class="section-header">
-                    <h3 class="section-title">Disciplinary Actions</h3>
-                    <button class="btn btn-small" onclick="app.toggleDisciplinarySection()" id="disciplinary-toggle">
-                        <span id="disciplinary-toggle-text">Show Details</span>
-                    </button>
-                </div>
-                <div class="disciplinary-content" id="disciplinary-content" style="display: none;">
-                    ${this.renderDisciplinaryActions(filteredGames)}
-                </div>
-            </div>
-            
-            <!-- Game Notes Section -->
-            <div class="game-notes-section">
-                <div class="section-header">
-                    <h3 class="section-title">Game Notes</h3>
-                    <button class="btn btn-small" onclick="app.toggleGameNotesSection()" id="notes-toggle">
-                        <span id="notes-toggle-text">Show Notes</span>
-                    </button>
-                </div>
-                <div class="game-notes-content" id="game-notes-content" style="display: none;">
-                    ${this.renderGameNotes(filteredGames)}
-                </div>
-            </div>
         `;
     }
     
@@ -5403,6 +5377,7 @@ Please check the browser console (F12) for more details.`);
     }
     
     renderGameRowDesktop(game) {
+        const gameId = `${game.eventId}_${game.matchId}`;
         return `
             <tr class="game-row ${game.status}">
                 <td class="date-time-cell">
@@ -5433,9 +5408,15 @@ Please check the browser console (F12) for more details.`);
                         : '—'}
                 </td>
                 <td class="actions-cell">
+                    <button class="btn btn-small" onclick="app.toggleGameDetails('${gameId}')" title="Show Details">📋</button>
                     ${game.status !== 'completed' && game.status !== 'cancelled' ? 
                         `<button class="btn btn-small" onclick="app.editMatchResultWithLoading('${game.eventId}', '${game.matchId}')" title="Edit Result">🏆</button>` 
                         : ''}
+                </td>
+            </tr>
+            <tr class="game-details-row" id="details-${gameId}" style="display: none;">
+                <td colspan="9" class="game-details-cell">
+                    ${this.renderGameDetails(game)}
                 </td>
             </tr>
         `;
@@ -5484,9 +5465,147 @@ Please check the browser console (F12) for more details.`);
                             </div>
                         ` : ''}
                     </div>
+                    
+                    <!-- Disciplinary Actions Mobile -->
+                    ${this.getGameCards(game).length > 0 ? `
+                        <div class="mobile-disciplinary-section">
+                            <h4 class="mobile-section-title">Disciplinary Actions</h4>
+                            <div class="mobile-cards-list">
+                                ${this.getGameCards(game).map(card => `
+                                    <div class="mobile-card-item ${card.type}">
+                                        <span class="mobile-card-type">${card.type.toUpperCase()}</span>
+                                        <span class="mobile-card-player">${card.playerName}</span>
+                                        <span class="mobile-card-minute">${card.minute}'</span>
+                                        ${card.infraction ? `<div class="mobile-card-infraction">${card.infraction}</div>` : ''}
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    ` : ''}
+                    
+                    <!-- Game Notes Mobile -->
+                    ${this.getGameNotes(game).length > 0 ? `
+                        <div class="mobile-notes-section">
+                            <h4 class="mobile-section-title">Game Notes</h4>
+                            <div class="mobile-notes-list">
+                                ${this.getGameNotes(game).map(note => `
+                                    <div class="mobile-note-item">
+                                        <span class="mobile-note-type">${note.type}:</span>
+                                        <span class="mobile-note-text">${note.text}</span>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        </div>
+                    ` : ''}
                 </div>
             </div>
         `;
+    }
+    
+    renderGameDetails(game) {
+        const gameCards = this.getGameCards(game);
+        const gameNotes = this.getGameNotes(game);
+        
+        return `
+            <div class="game-details-content">
+                <!-- Disciplinary Actions -->
+                <div class="game-disciplinary-section">
+                    <h4 class="detail-section-title">Disciplinary Actions</h4>
+                    ${gameCards.length > 0 ? `
+                        <div class="cards-list">
+                            ${gameCards.map(card => `
+                                <div class="card-item-inline ${card.type}">
+                                    <span class="card-type-badge card-type-${card.type}">${card.type.toUpperCase()}</span>
+                                    <span class="card-player">${card.playerName}</span>
+                                    <span class="card-minute">${card.minute}'</span>
+                                    ${card.infraction ? `<span class="card-infraction">${card.infraction}</span>` : ''}
+                                </div>
+                            `).join('')}
+                        </div>
+                    ` : '<p class="no-data">No disciplinary actions recorded</p>'}
+                </div>
+                
+                <!-- Game Notes -->
+                <div class="game-notes-section">
+                    <h4 class="detail-section-title">Game Notes</h4>
+                    ${gameNotes.length > 0 ? `
+                        <div class="notes-list">
+                            ${gameNotes.map(note => `
+                                <div class="note-item-inline">
+                                    <span class="note-type">${note.type}:</span>
+                                    <span class="note-text">${note.text}</span>
+                                </div>
+                            `).join('')}
+                        </div>
+                    ` : '<p class="no-data">No game notes recorded</p>'}
+                </div>
+            </div>
+        `;
+    }
+    
+    toggleGameDetails(gameId) {
+        const detailsRow = document.getElementById(`details-${gameId}`);
+        if (detailsRow) {
+            const isVisible = detailsRow.style.display !== 'none';
+            detailsRow.style.display = isVisible ? 'none' : '';
+        }
+    }
+    
+    getGameCards(game) {
+        // Extract cards from the game's disciplinary data
+        const cards = [];
+        
+        // Check if this game has any matches with cards
+        if (this.events && this.events.length > 0) {
+            const event = this.events.find(e => e.id === game.eventId);
+            if (event && event.matches) {
+                const match = event.matches.find(m => m.id === game.matchId);
+                if (match && match.cards && match.cards.length > 0) {
+                    match.cards.forEach(card => {
+                        cards.push({
+                            type: card.type || 'yellow',
+                            playerName: card.player_name || 'Unknown Player',
+                            minute: card.minute || '0',
+                            infraction: card.infraction || ''
+                        });
+                    });
+                }
+            }
+        }
+        
+        return cards;
+    }
+    
+    getGameNotes(game) {
+        // Extract notes from the game's data
+        const notes = [];
+        
+        // Check if this game has any matches with notes
+        if (this.events && this.events.length > 0) {
+            const event = this.events.find(e => e.id === game.eventId);
+            if (event && event.matches) {
+                const match = event.matches.find(m => m.id === game.matchId);
+                if (match) {
+                    // Add referee notes
+                    if (match.referee_notes && match.referee_notes.trim()) {
+                        notes.push({
+                            type: 'Referee',
+                            text: match.referee_notes
+                        });
+                    }
+                    
+                    // Add general notes
+                    if (match.notes && match.notes.trim()) {
+                        notes.push({
+                            type: 'Game',
+                            text: match.notes
+                        });
+                    }
+                }
+            }
+        }
+        
+        return notes;
     }
     
     getTeamResultBubbles(homeTeam, awayTeam, homeScore, awayScore, hasScore) {

@@ -1454,6 +1454,110 @@
                 font-weight: bold;
                 margin-left: 4px;
             }
+            
+            /* Game details inline styles */
+            .game-details-row {
+                background: #f8f9fa;
+            }
+            
+            .game-details-cell {
+                padding: 15px 20px;
+            }
+            
+            .game-details-content {
+                display: grid;
+                grid-template-columns: 1fr 1fr;
+                gap: 20px;
+            }
+            
+            .detail-section-title {
+                font-size: 1.1em;
+                font-weight: 600;
+                color: #333;
+                margin-bottom: 10px;
+                border-bottom: 2px solid #e9ecef;
+                padding-bottom: 5px;
+            }
+            
+            .card-item-inline {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                padding: 6px 10px;
+                margin-bottom: 5px;
+                background: white;
+                border-radius: 6px;
+                border-left: 3px solid #e9ecef;
+            }
+            
+            .card-item-inline.yellow {
+                border-left-color: #ffc107;
+                background: #fff9c4;
+            }
+            
+            .card-item-inline.red {
+                border-left-color: #dc3545;
+                background: #f8d7da;
+            }
+            
+            .note-item-inline {
+                display: flex;
+                gap: 8px;
+                padding: 8px 12px;
+                margin-bottom: 5px;
+                background: white;
+                border-radius: 6px;
+                border-left: 3px solid #007bff;
+            }
+            
+            .mobile-section-title {
+                font-size: 1em;
+                font-weight: 600;
+                color: #333;
+                margin: 15px 0 10px 0;
+                padding-bottom: 5px;
+                border-bottom: 1px solid #e9ecef;
+            }
+            
+            .mobile-card-item {
+                display: flex;
+                align-items: center;
+                gap: 6px;
+                padding: 8px 10px;
+                margin-bottom: 8px;
+                background: white;
+                border-radius: 6px;
+                border-left: 3px solid #e9ecef;
+                font-size: 0.9em;
+            }
+            
+            .mobile-card-item.yellow {
+                border-left-color: #ffc107;
+                background: #fff9c4;
+            }
+            
+            .mobile-card-item.red {
+                border-left-color: #dc3545;
+                background: #f8d7da;
+            }
+            
+            .mobile-note-item {
+                display: flex;
+                gap: 6px;
+                padding: 8px 10px;
+                margin-bottom: 8px;
+                background: white;
+                border-radius: 6px;
+                border-left: 3px solid #007bff;
+                font-size: 0.9em;
+            }
+            
+            @media (max-width: 768px) {
+                .game-details-content {
+                    grid-template-columns: 1fr;
+                    gap: 15px;
+                }
+            }
         }
         
         .referee-icon {
