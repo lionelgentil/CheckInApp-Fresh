@@ -5104,7 +5104,6 @@ Please check the browser console (F12) for more details.`);
                     <thead>
                         <tr>
                             <th>Date/Time</th>
-                            <th>Event</th>
                             <th>Home Team</th>
                             <th>Away Team</th>
                             <th>Score</th>
@@ -5376,6 +5375,29 @@ Please check the browser console (F12) for more details.`);
         return statusMap[status] || '📅 Scheduled';
     }
     
+    getTeamResultBubble(teamName, teamSide, game) {
+        if (!game.hasScore || game.status !== 'completed') {
+            return `<span class="team-result-bubble no-result">${teamName}</span>`;
+        }
+        
+        const homeScore = parseInt(game.homeScore);
+        const awayScore = parseInt(game.awayScore);
+        
+        let bubbleClass = 'no-result';
+        if (homeScore > awayScore) {
+            // Home team wins
+            bubbleClass = teamSide === 'home' ? 'winner' : 'loser';
+        } else if (awayScore > homeScore) {
+            // Away team wins
+            bubbleClass = teamSide === 'away' ? 'winner' : 'loser';
+        } else {
+            // Tie
+            bubbleClass = 'tie';
+        }
+        
+        return `<span class="team-result-bubble ${bubbleClass}">${teamName}</span>`;
+    }
+    
     renderGameRowDesktop(game) {
         const gameId = `${game.eventId}_${game.matchId}`;
         return `
@@ -5384,14 +5406,11 @@ Please check the browser console (F12) for more details.`);
                     <div class="game-date">${game.eventDate}</div>
                     ${game.time ? `<div class="game-time">${game.time}</div>` : ''}
                 </td>
-                <td class="event-cell">
-                    <div class="event-name">${game.eventName}</div>
+                <td class="team-cell">
+                    ${this.getTeamResultBubble(game.homeTeam, 'home', game)}
                 </td>
                 <td class="team-cell">
-                    ${game.homeTeam}
-                </td>
-                <td class="team-cell">
-                    ${game.awayTeam}
+                    ${this.getTeamResultBubble(game.awayTeam, 'away', game)}
                 </td>
                 <td class="score-cell">
                     ${game.status === 'completed' && game.hasScore ? `${game.homeScore} - ${game.awayScore}` : '—'}
@@ -5415,7 +5434,7 @@ Please check the browser console (F12) for more details.`);
                 </td>
             </tr>
             <tr class="game-details-row" id="details-${gameId}" style="display: none;">
-                <td colspan="9" class="game-details-cell">
+                <td colspan="8" class="game-details-cell">
                     ${this.renderGameDetails(game)}
                 </td>
             </tr>
@@ -5436,15 +5455,15 @@ Please check the browser console (F12) for more details.`);
                 </div>
                 
                 <div class="game-record-details">
-                    <div class="event-info">
-                        <div class="event-name-large">${game.eventName}</div>
-                        <div class="match-teams-large">
-                            <strong>Home:</strong> ${game.homeTeam} 
-                            ${game.hasScore ? `<span class="team-score">(${game.homeScore})</span>` : ''}
-                            <br>
-                            <strong>Away:</strong> ${game.awayTeam} 
-                            ${game.hasScore ? `<span class="team-score">(${game.awayScore})</span>` : ''}
+                    <div class="teams-matchup">
+                        <div class="match-teams-bubbled">
+                            ${this.getTeamResultBubble(game.homeTeam, 'home', game)}
+                            <span class="vs-separator">vs</span>
+                            ${this.getTeamResultBubble(game.awayTeam, 'away', game)}
                         </div>
+                        ${game.hasScore && game.status === 'completed' ? `
+                            <div class="score-display">${game.homeScore} - ${game.awayScore}</div>
+                        ` : ''}
                     </div>
                     
                     <div class="game-details-grid">
@@ -5468,8 +5487,8 @@ Please check the browser console (F12) for more details.`);
                     
                     <!-- Disciplinary Actions Mobile -->
                     ${this.getGameCards(game).length > 0 ? `
-                        <div class="mobile-disciplinary-section">
-                            <h4 class="mobile-section-title">Disciplinary Actions</h4>
+                        <div class="mobile-detail-section mobile-disciplinary-section">
+                            <h4 class="mobile-section-title">📋 Disciplinary Actions</h4>
                             <div class="mobile-cards-list">
                                 ${this.getGameCards(game).map(card => `
                                     <div class="mobile-card-item ${card.type}">
@@ -5486,8 +5505,8 @@ Please check the browser console (F12) for more details.`);
                     
                     <!-- Game Notes Mobile -->
                     ${this.getGameNotes(game).length > 0 ? `
-                        <div class="mobile-notes-section">
-                            <h4 class="mobile-section-title">Game Notes</h4>
+                        <div class="mobile-detail-section mobile-notes-section">
+                            <h4 class="mobile-section-title">📝 Game Notes</h4>
                             <div class="mobile-notes-list">
                                 ${this.getGameNotes(game).map(note => `
                                     <div class="mobile-note-item">
@@ -5510,38 +5529,42 @@ Please check the browser console (F12) for more details.`);
         return `
             <div class="game-details-content">
                 <!-- Disciplinary Actions -->
-                <div class="game-disciplinary-section">
-                    <h4 class="detail-section-title">Disciplinary Actions</h4>
-                    ${gameCards.length > 0 ? `
-                        <div class="cards-list">
-                            ${gameCards.map(card => `
-                                <div class="card-item-inline ${card.type}">
-                                    <div class="card-main-info">
-                                        <span class="card-type-badge card-type-${card.type}">${card.type.toUpperCase()}</span>
-                                        <span class="card-player">${card.playerName}</span>
-                                        <span class="card-minute">${card.minute}'</span>
-                                        ${card.infraction ? `<span class="card-infraction">${card.infraction}</span>` : ''}
+                <div class="game-detail-section disciplinary-detail-section">
+                    <div class="detail-section-wrapper">
+                        <h4 class="detail-section-title">📋 Disciplinary Actions</h4>
+                        ${gameCards.length > 0 ? `
+                            <div class="cards-list">
+                                ${gameCards.map(card => `
+                                    <div class="card-item-inline ${card.type}">
+                                        <div class="card-main-info">
+                                            <span class="card-type-badge card-type-${card.type}">${card.type.toUpperCase()}</span>
+                                            <span class="card-player">${card.playerName}</span>
+                                            <span class="card-minute">${card.minute}'</span>
+                                            ${card.infraction ? `<span class="card-infraction">${card.infraction}</span>` : ''}
+                                        </div>
+                                        ${card.notes ? `<div class="card-notes-text">${card.notes}</div>` : ''}
                                     </div>
-                                    ${card.notes ? `<div class="card-notes-text">${card.notes}</div>` : ''}
-                                </div>
-                            `).join('')}
-                        </div>
-                    ` : '<p class="no-data">No disciplinary actions recorded</p>'}
+                                `).join('')}
+                            </div>
+                        ` : '<p class="no-data">No disciplinary actions recorded</p>'}
+                    </div>
                 </div>
                 
                 <!-- Game Notes -->
-                <div class="game-notes-section">
-                    <h4 class="detail-section-title">Game Notes</h4>
-                    ${gameNotes.length > 0 ? `
-                        <div class="notes-list">
-                            ${gameNotes.map(note => `
-                                <div class="note-item-inline">
-                                    <span class="note-type">${note.type}:</span>
-                                    <span class="note-text">${note.text}</span>
-                                </div>
-                            `).join('')}
-                        </div>
-                    ` : '<p class="no-data">No game notes recorded</p>'}
+                <div class="game-detail-section notes-detail-section">
+                    <div class="detail-section-wrapper">
+                        <h4 class="detail-section-title">📝 Game Notes</h4>
+                        ${gameNotes.length > 0 ? `
+                            <div class="notes-list">
+                                ${gameNotes.map(note => `
+                                    <div class="note-item-inline">
+                                        <span class="note-type-label">${note.type}:</span>
+                                        <span class="note-text">${note.text}</span>
+                                    </div>
+                                `).join('')}
+                            </div>
+                        ` : '<p class="no-data">No game notes recorded</p>'}
+                    </div>
                 </div>
             </div>
         `;
