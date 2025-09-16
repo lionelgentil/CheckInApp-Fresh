@@ -2489,13 +2489,46 @@ class CheckInViewApp extends CheckInCore {
         `;
     }
 
+    populateTeamFilter() {
+        const teamFilterSelect = document.getElementById('game-team-filter');
+        if (!teamFilterSelect) return;
+        
+        // Check if already populated (more than just "All Teams" option)
+        if (teamFilterSelect.options.length > 1) return;
+        
+        // Get current value to preserve selection
+        const currentValue = teamFilterSelect.value;
+        
+        // Get all unique teams from teams array
+        const teams = [...this.teams].sort((a, b) => a.name.localeCompare(b.name));
+        
+        // Clear existing options except "All Teams"
+        teamFilterSelect.innerHTML = '<option value="all">All Teams</option>';
+        
+        // Add team options
+        teams.forEach(team => {
+            const option = document.createElement('option');
+            option.value = team.id;
+            option.textContent = team.name;
+            teamFilterSelect.appendChild(option);
+        });
+        
+        // Restore previous selection
+        teamFilterSelect.value = currentValue;
+    }
+
     renderGameTracker() {
         console.log('🎯 renderGameTracker called');
         const container = document.getElementById('game-tracker-container');
         const statusFilter = document.getElementById('game-status-filter')?.value || 'incomplete';
+        const teamFilter = document.getElementById('game-team-filter')?.value || 'all';
         const showCurrentSeasonOnly = document.getElementById('show-current-season-games')?.checked ?? true;
         
+        // Populate team filter dropdown if not already populated
+        this.populateTeamFilter();
+        
         console.log('📊 Game status filter:', statusFilter);
+        console.log('👥 Team filter:', teamFilter);
         console.log('📅 Current season only:', showCurrentSeasonOnly);
         
         // Collect all matches from all events
@@ -2507,6 +2540,13 @@ class CheckInViewApp extends CheckInCore {
         let filteredGames = gameRecords;
         if (showCurrentSeasonOnly) {
             filteredGames = gameRecords.filter(game => this.isCurrentSeasonEvent(game.eventDate_epoch));
+        }
+        
+        // Filter by team if specified
+        if (teamFilter !== 'all') {
+            filteredGames = filteredGames.filter(game => 
+                game.homeTeamId === teamFilter || game.awayTeamId === teamFilter
+            );
         }
         
         // Filter by status
@@ -2616,7 +2656,8 @@ class CheckInViewApp extends CheckInCore {
                         <tr>
                             <th>Date/Time</th>
                             <th>Event</th>
-                            <th>Match</th>
+                            <th>Home Team</th>
+                            <th>Away Team</th>
                             <th>Score</th>
                             <th>Field</th>
                             <th>Status</th>
@@ -2634,8 +2675,11 @@ class CheckInViewApp extends CheckInCore {
                                 <td class="event-cell">
                                     <div class="event-name">${game.eventName}</div>
                                 </td>
-                                <td class="match-cell">
-                                    ${this.getTeamResultBubbles(game.homeTeam, game.awayTeam, game.homeScore, game.awayScore, game.hasScore)}
+                                <td class="team-cell">
+                                    ${game.homeTeam}
+                                </td>
+                                <td class="team-cell">
+                                    ${game.awayTeam}
                                 </td>
                                 <td class="score-cell">
                                     ${game.status === 'completed' && game.hasScore ? `${game.homeScore} - ${game.awayScore}` : '—'}
@@ -2648,7 +2692,7 @@ class CheckInViewApp extends CheckInCore {
                                 </td>
                                 <td class="referee-cell">
                                     ${game.referees.length > 0 ? 
-                                        game.referees.map(ref => `<span class="referee-bubble">${ref}</span>`).join('<br>') 
+                                        game.referees.map(ref => `<span class="referee-bubble">${ref.replace('👨‍⚖️ ', '')}</span>`).join('<br>') 
                                         : '—'}
                                 </td>
                                 <td class="actions-cell">
@@ -2679,7 +2723,13 @@ class CheckInViewApp extends CheckInCore {
                         <div class="game-record-details">
                             <div class="event-info">
                                 <div class="event-name-large">${game.eventName}</div>
-                                ${this.getTeamResultBubbles(game.homeTeam, game.awayTeam, game.homeScore, game.awayScore, game.hasScore)}
+                                <div class="match-teams-large">
+                                    <strong>Home:</strong> ${game.homeTeam} 
+                                    ${game.hasScore ? `<span class="team-score">(${game.homeScore})</span>` : ''}
+                                    <br>
+                                    <strong>Away:</strong> ${game.awayTeam} 
+                                    ${game.hasScore ? `<span class="team-score">(${game.awayScore})</span>` : ''}
+                                </div>
                             </div>
                             
                             <div class="game-details-grid">
@@ -2689,7 +2739,7 @@ class CheckInViewApp extends CheckInCore {
                                     <div class="detail-item">
                                         <span class="detail-label">Referee(s):</span>
                                         <div class="mobile-referees">
-                                            ${game.referees.map(ref => `<span class="referee-bubble">${ref}</span>`).join(' ')}
+                                            ${game.referees.map(ref => `<span class="referee-bubble">${ref.replace('👨‍⚖️ ', '')}</span>`).join(' ')}
                                         </div>
                                     </div>
                                 ` : ''}
@@ -2704,7 +2754,195 @@ class CheckInViewApp extends CheckInCore {
                     </div>
                 `).join('')}
             </div>
+            
+            <!-- Disciplinary Actions Section -->
+            <div class="disciplinary-actions-section">
+                <div class="section-header">
+                    <h3 class="section-title">Disciplinary Actions</h3>
+                    <button class="btn btn-small" onclick="app.toggleDisciplinarySection()" id="disciplinary-toggle">
+                        <span id="disciplinary-toggle-text">Show Details</span>
+                    </button>
+                </div>
+                <div class="disciplinary-content" id="disciplinary-content" style="display: none;">
+                    ${this.renderDisciplinaryActions(filteredGames)}
+                </div>
+            </div>
+            
+            <!-- Game Notes Section -->
+            <div class="game-notes-section">
+                <div class="section-header">
+                    <h3 class="section-title">Game Notes</h3>
+                    <button class="btn btn-small" onclick="app.toggleGameNotesSection()" id="notes-toggle">
+                        <span id="notes-toggle-text">Show Notes</span>
+                    </button>
+                </div>
+                <div class="game-notes-content" id="game-notes-content" style="display: none;">
+                    ${this.renderGameNotes(filteredGames)}
+                </div>
+            </div>
         `;
+    }
+    
+    renderDisciplinaryActions(games) {
+        if (!games || games.length === 0) {
+            return '<div class="empty-state"><p>No games to display disciplinary actions for.</p></div>';
+        }
+        
+        // Collect all cards from all matches in the filtered games
+        const allCards = [];
+        
+        games.forEach(game => {
+            // Find the actual event and match data to get cards
+            const event = this.events.find(e => e.id === game.eventId);
+            if (event && event.matches) {
+                const match = event.matches.find(m => m.id === game.matchId);
+                if (match && match.cards && match.cards.length > 0) {
+                    match.cards.forEach(card => {
+                        // Find team and member info
+                        const team = this.teams.find(t => t.id === card.teamId);
+                        const member = team?.members?.find(m => m.id === card.memberId);
+                        
+                        allCards.push({
+                            ...card,
+                            eventName: game.eventName,
+                            eventDate: epochToPacificDate(game.eventDate_epoch),
+                            homeTeam: game.homeTeam,
+                            awayTeam: game.awayTeam,
+                            field: game.field,
+                            teamName: team?.name || 'Unknown Team',
+                            memberName: member?.name || 'Unknown Player',
+                            gameInfo: `${game.homeTeam} vs ${game.awayTeam}`
+                        });
+                    });
+                }
+            }
+        });
+        
+        if (allCards.length === 0) {
+            return '<div class="empty-state"><p>No disciplinary actions recorded for displayed games.</p></div>';
+        }
+        
+        // Sort cards by event date (most recent first)
+        allCards.sort((a, b) => new Date(b.eventDate) - new Date(a.eventDate));
+        
+        return `
+            <div class="disciplinary-summary">
+                <div class="cards-stats">
+                    <div class="stat-item">
+                        <div class="stat-number">${allCards.filter(c => c.cardType === 'yellow').length}</div>
+                        <div class="stat-label">Yellow Cards</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number">${allCards.filter(c => c.cardType === 'red').length}</div>
+                        <div class="stat-label">Red Cards</div>
+                    </div>
+                    <div class="stat-item">
+                        <div class="stat-number">${allCards.length}</div>
+                        <div class="stat-label">Total Cards</div>
+                    </div>
+                </div>
+            </div>
+            
+            <div class="cards-list">
+                ${allCards.map(card => `
+                    <div class="card-item ${card.cardType}">
+                        <div class="card-header">
+                            <div class="card-type-badge card-type-${card.cardType}">
+                                ${card.cardType.toUpperCase()} CARD
+                            </div>
+                            <div class="card-date">${card.eventDate}</div>
+                        </div>
+                        <div class="card-details">
+                            <div class="player-info">
+                                <strong>${card.memberName}</strong> (${card.teamName})
+                            </div>
+                            <div class="match-info">
+                                <div class="match-teams">${card.gameInfo}</div>
+                                ${card.field ? `<div class="match-field">Field ${card.field}</div>` : ''}
+                                <div class="match-event">${card.eventName}</div>
+                            </div>
+                            ${card.minute ? `<div class="card-minute">Minute: ${card.minute}</div>` : ''}
+                            ${card.reason ? `<div class="card-reason">Reason: ${card.reason}</div>` : ''}
+                            ${card.notes ? `<div class="card-notes">Notes: ${card.notes}</div>` : ''}
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+        `;
+    }
+    
+    renderGameNotes(games) {
+        if (!games || games.length === 0) {
+            return '<div class="empty-state"><p>No games to display notes for.</p></div>';
+        }
+        
+        // Collect all notes from matches
+        const gamesWithNotes = games.filter(game => {
+            const event = this.events.find(e => e.id === game.eventId);
+            if (event && event.matches) {
+                const match = event.matches.find(m => m.id === game.matchId);
+                return match && (match.notes || match.refereeNotes || match.matchNotes);
+            }
+            return false;
+        });
+        
+        if (gamesWithNotes.length === 0) {
+            return '<div class="empty-state"><p>No game notes recorded for displayed games.</p></div>';
+        }
+        
+        return `
+            <div class="game-notes-list">
+                ${gamesWithNotes.map(game => {
+                    const event = this.events.find(e => e.id === game.eventId);
+                    const match = event?.matches?.find(m => m.id === game.matchId);
+                    
+                    return `
+                        <div class="game-note-item">
+                            <div class="note-header">
+                                <div class="note-game-info">
+                                    <div class="note-teams">${game.homeTeam} vs ${game.awayTeam}</div>
+                                    <div class="note-details">${epochToPacificDate(game.eventDate_epoch)} • ${game.eventName} • ${game.field ? `Field ${game.field}` : 'No field'}</div>
+                                </div>
+                                <div class="note-status">
+                                    <span class="status-badge status-${game.status}">${this.getStatusDisplay(game.status)}</span>
+                                </div>
+                            </div>
+                            <div class="note-content">
+                                ${match?.notes ? `<div class="note-section"><strong>Game Notes:</strong> ${match.notes}</div>` : ''}
+                                ${match?.refereeNotes ? `<div class="note-section"><strong>Referee Notes:</strong> ${match.refereeNotes}</div>` : ''}
+                                ${match?.matchNotes ? `<div class="note-section"><strong>Match Notes:</strong> ${match.matchNotes}</div>` : ''}
+                            </div>
+                        </div>
+                    `;
+                }).join('')}
+            </div>
+        `;
+    }
+    
+    toggleDisciplinarySection() {
+        const content = document.getElementById('disciplinary-content');
+        const toggleText = document.getElementById('disciplinary-toggle-text');
+        
+        if (content.style.display === 'none') {
+            content.style.display = 'block';
+            toggleText.textContent = 'Hide Details';
+        } else {
+            content.style.display = 'none';
+            toggleText.textContent = 'Show Details';
+        }
+    }
+    
+    toggleGameNotesSection() {
+        const content = document.getElementById('game-notes-content');
+        const toggleText = document.getElementById('notes-toggle-text');
+        
+        if (content.style.display === 'none') {
+            content.style.display = 'block';
+            toggleText.textContent = 'Hide Notes';
+        } else {
+            content.style.display = 'none';
+            toggleText.textContent = 'Show Notes';
+        }
     }
     
     collectAllGameRecords() {
@@ -2747,6 +2985,8 @@ class CheckInViewApp extends CheckInCore {
                 const gameRecord = {
                     eventId: event.id,
                     matchId: match.id,
+                    homeTeamId: match.homeTeamId,
+                    awayTeamId: match.awayTeamId,
                     eventDate_epoch: event.date_epoch, // Keep epoch for template compatibility
                     time_epoch: match.time_epoch, // Use correct property name for template
                     eventName: event.name,

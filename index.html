@@ -2594,6 +2594,73 @@
                 align-items: stretch;
                 gap: 10px;
             }
+            
+            /* Mobile styles for disciplinary and notes sections */
+            .disciplinary-section,
+            .game-notes-section {
+                margin-top: 15px;
+                padding: 15px;
+            }
+            
+            .section-toggle-header {
+                padding: 12px 15px;
+                font-size: 1em;
+            }
+            
+            .section-summary {
+                grid-template-columns: repeat(2, 1fr);
+                gap: 10px;
+                margin: 15px 0;
+            }
+            
+            .summary-item {
+                padding: 10px;
+            }
+            
+            .summary-number {
+                font-size: 1.2em;
+            }
+            
+            .card-item-detailed {
+                padding: 12px;
+                margin-bottom: 10px;
+            }
+            
+            .card-player-name {
+                font-size: 1em;
+            }
+            
+            .game-note-item {
+                padding: 12px;
+                margin-bottom: 10px;
+            }
+            
+            /* Ensure filter dropdowns are mobile-friendly */
+            .filter-select {
+                min-width: 100px;
+                font-size: 14px;
+            }
+            
+            .header-controls .filter-toggle {
+                flex: 1;
+                min-width: 0;
+            }
+            
+            .toggle-label {
+                font-size: 13px;
+            }
+            
+            /* Mobile team display styling */
+            .match-teams-large {
+                line-height: 1.4;
+                margin: 8px 0;
+            }
+            
+            .team-score {
+                color: #28a745;
+                font-weight: bold;
+                margin-left: 4px;
+            }
         }
         
         /* Admin-specific styles for check-in interface */
@@ -3240,6 +3307,13 @@
                         <label class="toggle-label">
                             <input type="checkbox" id="show-current-season-games" onchange="app.renderGameTracker()" checked>
                             <span>Current Season Only</span>
+                        </label>
+                    </div>
+                    <div class="filter-toggle">
+                        <label class="toggle-label">
+                            <select class="filter-select" id="game-team-filter" onchange="app.renderGameTracker()">
+                                <option value="all">All Teams</option>
+                            </select>
                         </label>
                     </div>
                     <div class="filter-toggle">
