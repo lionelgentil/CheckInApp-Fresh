@@ -456,7 +456,16 @@ class CheckInCore {
      */
     isCurrentSeasonEvent(eventDate) {
         const currentSeason = this.getCurrentSeason();
-        const event = new Date(eventDate);
+        
+        let event;
+        if (typeof eventDate === 'number') {
+            // Handle epoch timestamp (assume seconds, convert to milliseconds)
+            event = new Date(eventDate * 1000);
+        } else {
+            // Handle date string or Date object
+            event = new Date(eventDate);
+        }
+        
         return event >= currentSeason.startDate && event <= currentSeason.endDate;
     }
 
