@@ -1037,11 +1037,23 @@ class CheckInViewApp extends CheckInCore {
 
     // iOS-style score adjustment for mobile
     adjustScore(inputId, delta) {
-        console.log(`🎯 adjustScore called:`, { inputId, delta });
+        console.log(`🎯 adjustScore called:`, { inputId, delta, isForfeitMatch: this.isForfeitMatch });
+        
+        // Block score adjustments if forfeit is active
+        if (this.isForfeitMatch) {
+            console.log('🚫 Score adjustment blocked - forfeit is active');
+            return;
+        }
         
         const input = document.getElementById(inputId);
         if (!input) {
             console.log(`❌ adjustScore: Input element not found:`, inputId);
+            return;
+        }
+        
+        // Also check if input is disabled
+        if (input.disabled || input.classList.contains('forfeit-disabled')) {
+            console.log('🚫 Score adjustment blocked - input is disabled');
             return;
         }
         
@@ -5033,8 +5045,7 @@ class CheckInViewApp extends CheckInCore {
                     <div class="mobile-match-header-content">
                         <h3 class="mobile-match-title">Match Result</h3>
                         <button class="mobile-forfeit-btn" onclick="app.showForfeitDialog('${eventId}', '${matchId}')" id="forfeit-btn">
-                            <span class="forfeit-icon">🏳️</span>
-                            <span class="forfeit-text">Forfeit?</span>
+                            Forfeit?
                         </button>
                     </div>
                     <button class="mobile-close-btn" onclick="app.closeMobileMatchResult()">×</button>
@@ -6750,15 +6761,12 @@ class CheckInViewApp extends CheckInCore {
         const forfeitBtn = document.getElementById('forfeit-btn');
         if (forfeitBtn) {
             forfeitBtn.classList.add('forfeit-active');
-            forfeitBtn.innerHTML = `
-                <span class="forfeit-icon">🏳️</span>
-                <span class="forfeit-text">Forfeit Active</span>
-            `;
+            forfeitBtn.textContent = 'Forfeit Active';
         }
         
         // Set scores (winner gets 1, forfeit team gets 0)
-        const homeScoreInput = document.getElementById('mobile-home-score');
-        const awayScoreInput = document.getElementById('mobile-away-score');
+        const homeScoreInput = document.getElementById('home-score');
+        const awayScoreInput = document.getElementById('away-score');
         
         console.log('🏆 Setting forfeit scores:', {
             selectedForfeitTeam: this.selectedForfeitTeam,
@@ -6841,16 +6849,13 @@ class CheckInViewApp extends CheckInCore {
         const forfeitBtn = document.getElementById('forfeit-btn');
         if (forfeitBtn) {
             forfeitBtn.classList.remove('forfeit-active');
-            forfeitBtn.innerHTML = `
-                <span class="forfeit-icon">🏳️</span>
-                <span class="forfeit-text">Forfeit?</span>
-            `;
+            forfeitBtn.textContent = 'Forfeit?';
             console.log('✅ Forfeit button reset to normal state');
         }
         
         // Re-enable score inputs
-        const homeScoreInput = document.getElementById('mobile-home-score');
-        const awayScoreInput = document.getElementById('mobile-away-score');
+        const homeScoreInput = document.getElementById('home-score');
+        const awayScoreInput = document.getElementById('away-score');
         
         if (homeScoreInput && awayScoreInput) {
             homeScoreInput.classList.remove('forfeit-disabled');
