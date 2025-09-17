@@ -2768,9 +2768,9 @@ class CheckInViewApp extends CheckInCore {
                                         <div class="card-item-enhanced ${card.cardType}">
                                             <div class="card-main-info-enhanced">
                                                 <span class="card-type-badge card-type-${card.cardType}">${card.cardType.toUpperCase()}</span>
-                                                <span>${card.teamName}</span>
+                                                <span>${card.teamName} <small style="margin-left: auto; font-weight: 600; color: #666;">${card.minute}'</small></span>
                                                 <span>${card.memberName}</span>
-                                                <span>${card.minute}'</span>
+                                                <span style="display: none;">${card.minute}'</span>
                                                 <span>${card.reason || 'No reason specified'}</span>
                                             </div>
                                             ${card.notes ? `<div class="card-notes-enhanced">${card.notes}</div>` : ''}
@@ -2783,7 +2783,7 @@ class CheckInViewApp extends CheckInCore {
                                         📝 Disciplinary Actions
                                     </div>
                                     <div class="no-content-message">
-                                        <em>No disciplinary actions recorded for this match</em>
+                                        <em>No cards</em>
                                     </div>
                                 </div>
                             `}
@@ -2806,7 +2806,7 @@ class CheckInViewApp extends CheckInCore {
                                         📝 Game Notes
                                     </div>
                                     <div class="no-content-message">
-                                        <em>No notes recorded for this match</em>
+                                        <em>No notes</em>
                                     </div>
                                 </div>
                             `}
@@ -2889,11 +2889,56 @@ class CheckInViewApp extends CheckInCore {
                     match.cards.forEach(card => {
                         // Find the team name for this player
                         let teamName = 'Unknown Team';
-                        if (card.playerId && this.teams) {
+                        
+                        // Try multiple approaches to find the team
+                        const playerId = card.playerId || card.memberId;
+                        const playerName = card.memberName || card.playerName;
+                        
+                        console.log('🔍 Team lookup debug:', {
+                            playerId,
+                            playerName, 
+                            availableTeams: this.teams?.length || 0,
+                            teamsHaveMembers: this.teams?.some(t => t.members && t.members.length > 0)
+                        });
+                        
+                        if (playerId && this.teams) {
+                            // First try: lookup by player ID
                             for (const team of this.teams) {
-                                if (team.members && team.members.some(member => member.id === card.playerId)) {
+                                if (team.members && team.members.some(member => member.id === playerId)) {
                                     teamName = team.name;
+                                    console.log('✅ Found team by player ID:', teamName);
                                     break;
+                                }
+                            }
+                        }
+                        
+                        // If still unknown, try lookup by player name
+                        if (teamName === 'Unknown Team' && playerName && this.teams) {
+                            for (const team of this.teams) {
+                                if (team.members && team.members.some(member => member.name === playerName)) {
+                                    teamName = team.name;
+                                    console.log('✅ Found team by player name:', teamName);
+                                    break;
+                                }
+                            }
+                        }
+                        
+                        // If still unknown, try to get team from match context
+                        if (teamName === 'Unknown Team') {
+                            const match = event.matches.find(m => m.id === game.matchId);
+                            if (match) {
+                                const homeTeam = this.teams.find(t => t.id === match.homeTeamId);
+                                const awayTeam = this.teams.find(t => t.id === match.awayTeamId);
+                                
+                                // For now, we'll need to make an educated guess or use team context
+                                // This is a fallback - ideally cards should have proper team association
+                                if (card.teamType === 'home' && homeTeam) {
+                                    teamName = homeTeam.name;
+                                } else if (card.teamType === 'away' && awayTeam) {
+                                    teamName = awayTeam.name;
+                                } else if (homeTeam && awayTeam) {
+                                    // Last resort: check if player name contains team info or use first team
+                                    teamName = homeTeam.name; // Default to home team as fallback
                                 }
                             }
                         }
