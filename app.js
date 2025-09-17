@@ -5495,6 +5495,7 @@ Please check the browser console (F12) for more details.`);
                                 <div class="card-item-enhanced ${card.cardType}">
                                     <div class="card-main-info-enhanced">
                                         <span class="card-type-badge card-type-${card.cardType}">${card.cardType.toUpperCase()}</span>
+                                        <span>${card.teamName}</span>
                                         <span>${card.memberName}</span>
                                         <span>${card.minute}'</span>
                                         <span>${card.reason || 'No reason specified'}</span>
@@ -5503,7 +5504,16 @@ Please check the browser console (F12) for more details.`);
                                 </div>
                             `).join('')}
                         </div>
-                    ` : ''}
+                    ` : `
+                        <div class="disciplinary-section-enhanced">
+                            <div class="section-title-enhanced">
+                                📝 Disciplinary Actions
+                            </div>
+                            <div class="no-content-message">
+                                <em>No disciplinary actions recorded for this match</em>
+                            </div>
+                        </div>
+                    `}
                     
                     <!-- Game Notes Mobile -->
                     ${this.getGameNotes(game).length > 0 ? `
@@ -5513,12 +5523,20 @@ Please check the browser console (F12) for more details.`);
                             </div>
                             ${this.getGameNotes(game).map(note => `
                                 <div class="note-item-enhanced">
-                                    <span>${note.type}:</span>
-                                    <span>${note.text}</span>
+                                    ${note.type === 'Game' ? `<span>${note.text}</span>` : `<span>${note.type}: ${note.text}</span>`}
                                 </div>
                             `).join('')}
                         </div>
-                    ` : ''}
+                    ` : `
+                        <div class="notes-section-enhanced">
+                            <div class="section-title-enhanced">
+                                📝 Game Notes
+                            </div>
+                            <div class="no-content-message">
+                                <em>No notes recorded for this match</em>
+                            </div>
+                        </div>
+                    `}
                 </div>
             </div>
         `;
@@ -5540,15 +5558,16 @@ Please check the browser console (F12) for more details.`);
                                     <div class="card-item-inline ${card.type}">
                                         <div class="card-main-info">
                                             <span class="card-type-badge card-type-${card.type}">${card.type.toUpperCase()}</span>
-                                            <span class="card-player">${card.playerName}</span>
+                                            <span class="card-team">${card.teamName}</span>
+                                            <span class="card-player">${card.memberName}</span>
                                             <span class="card-minute">${card.minute}'</span>
-                                            ${card.infraction ? `<span class="card-infraction">${card.infraction}</span>` : ''}
+                                            ${card.reason ? `<span class="card-infraction">${card.reason}</span>` : ''}
                                         </div>
                                         ${card.notes ? `<div class="card-notes-text">${card.notes}</div>` : ''}
                                     </div>
                                 `).join('')}
                             </div>
-                        ` : '<p class="no-data">No disciplinary actions recorded</p>'}
+                        ` : '<p class="no-data"><em>No disciplinary actions recorded for this match</em></p>'}
                     </div>
                 </div>
                 
@@ -5560,12 +5579,14 @@ Please check the browser console (F12) for more details.`);
                             <div class="notes-list">
                                 ${gameNotes.map(note => `
                                     <div class="note-item-inline">
-                                        <span class="note-type-label">${note.type}:</span>
-                                        <span class="note-text">${note.text}</span>
+                                        ${note.type === 'Game' ? 
+                                            `<span class="note-text">${note.text}</span>` : 
+                                            `<span class="note-type-label">${note.type}:</span><span class="note-text">${note.text}</span>`
+                                        }
                                     </div>
                                 `).join('')}
                             </div>
-                        ` : '<p class="no-data">No game notes recorded</p>'}
+                        ` : '<p class="no-data"><em>No notes recorded for this match</em></p>'}
                     </div>
                 </div>
             </div>
@@ -5591,11 +5612,23 @@ Please check the browser console (F12) for more details.`);
                 const match = event.matches.find(m => m.id === game.matchId);
                 if (match && match.cards && match.cards.length > 0) {
                     match.cards.forEach(card => {
+                        // Find the team name for this player
+                        let teamName = 'Unknown Team';
+                        if (card.playerId && this.teams) {
+                            for (const team of this.teams) {
+                                if (team.members && team.members.some(member => member.id === card.playerId)) {
+                                    teamName = team.name;
+                                    break;
+                                }
+                            }
+                        }
+                        
                         cards.push({
                             cardType: card.cardType || 'yellow',
                             type: card.cardType || 'yellow', // Keep for backward compatibility
                             memberName: card.memberName || 'Unknown Player', 
                             playerName: card.memberName || 'Unknown Player', // Keep for backward compatibility
+                            teamName: teamName,
                             minute: card.minute || '0',
                             reason: card.reason || '',
                             infraction: card.reason || '', // Keep for backward compatibility
