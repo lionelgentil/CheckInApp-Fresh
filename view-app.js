@@ -5634,7 +5634,7 @@ class CheckInViewApp extends CheckInCore {
                 <!-- Action Buttons -->
                 <div class="action-buttons-mobile">
                     <button class="btn-mobile btn-cancel" onclick="app.closeModal()">Cancel</button>
-                    <button class="btn-mobile btn-reset-forfeit" id="reset-forfeit-btn" onclick="app.resetForfeit()" style="display: none; background: #ff9800;">Reset Forfeit</button>
+                    <button class="btn-mobile btn-reset-forfeit" id="reset-forfeit-btn" onclick="app.resetForfeit()" style="display: none; background: #ff9800; color: white;">Reset Forfeit</button>
                     <button class="btn-mobile btn-save" onclick="app.saveMatchResult('${eventId}', '${matchId}')">Save Result</button>
                 </div>
             </div>
@@ -6678,16 +6678,15 @@ class CheckInViewApp extends CheckInCore {
         overlay.innerHTML = `
             <div class="forfeit-dialog">
                 <div class="forfeit-dialog-header">
-                    <h3 class="forfeit-dialog-title">🏳️ Match Forfeit</h3>
-                    <p class="forfeit-dialog-subtitle">Which team is forfeiting this match? The other team will win 1-0.</p>
+                    <h3 class="forfeit-dialog-title">Which team is forfeiting?</h3>
                 </div>
                 
                 <div class="forfeit-team-options">
                     <button class="forfeit-team-btn" data-team="home" onclick="app.selectForfeitTeam('home')">
-                        ${homeTeam?.name || 'Home Team'} forfeits
+                        ${homeTeam?.name || 'Home Team'}
                     </button>
                     <button class="forfeit-team-btn" data-team="away" onclick="app.selectForfeitTeam('away')">
-                        ${awayTeam?.name || 'Away Team'} forfeits
+                        ${awayTeam?.name || 'Away Team'}
                     </button>
                 </div>
                 
@@ -6771,13 +6770,20 @@ class CheckInViewApp extends CheckInCore {
         homeScoreInput.disabled = true;
         awayScoreInput.disabled = true;
         
+        // Disable score stepper buttons
+        const stepperButtons = document.querySelectorAll('.score-stepper-btn');
+        stepperButtons.forEach(btn => {
+            btn.disabled = true;
+            btn.classList.add('forfeit-disabled');
+        });
+        
         // Show forfeit notice
         this.showForfeitNotice();
         
         // Show reset forfeit button
         const resetBtn = document.getElementById('reset-forfeit-btn');
         if (resetBtn) {
-            resetBtn.style.display = 'block';
+            resetBtn.style.display = 'flex';
         }
     }
     
@@ -6833,6 +6839,13 @@ class CheckInViewApp extends CheckInCore {
             homeScoreInput.value = '0';
             awayScoreInput.value = '0';
         }
+        
+        // Re-enable score stepper buttons
+        const stepperButtons = document.querySelectorAll('.score-stepper-btn');
+        stepperButtons.forEach(btn => {
+            btn.disabled = false;
+            btn.classList.remove('forfeit-disabled');
+        });
         
         // Remove forfeit notice
         const notice = document.querySelector('.forfeit-notice');
