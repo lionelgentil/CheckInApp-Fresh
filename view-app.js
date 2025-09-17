@@ -733,12 +733,15 @@ class CheckInViewApp extends CheckInCore {
                 
                 this.renderCardTracker();
             } else if (sectionName === 'game-tracker') {
-                // Game tracker needs events and referees for display
+                // Game tracker needs events, referees, and teams for display
                 if (this.events.length === 0) {
                     await this.loadEvents();
                 }
                 if (this.referees.length === 0) {
                     await this.loadReferees();
+                }
+                if (this.teams.length === 0) {
+                    await this.loadTeams();
                 }
                 this.renderGameTracker();
             } else if (sectionName === 'season') {
@@ -2739,7 +2742,6 @@ class CheckInViewApp extends CheckInCore {
                             
                             <div class="game-details-grid">
                                 ${game.field ? `<div class="detail-item"><span class="detail-label">Field:</span> ${game.field}</div>` : ''}
-                                <div class="detail-item"><span class="detail-label">Score:</span> ${game.status === 'completed' && game.hasScore ? `${game.homeScore} - ${game.awayScore}` : 'Not entered'}</div>
                                 ${game.referees.length > 0 ? `
                                     <div class="detail-item">
                                         <span class="detail-label">Referee(s):</span>
