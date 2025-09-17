@@ -5674,6 +5674,12 @@ class CheckInViewApp extends CheckInCore {
                     // Remove the onclick attribute and add proper event listener
                     button.removeAttribute('onclick');
                     button.addEventListener('click', (e) => {
+                        // Check if button is disabled or forfeit is active
+                        if (button.disabled || button.classList.contains('forfeit-disabled') || this.isForfeitMatch) {
+                            console.log('🚫 Score adjustment blocked - forfeit active or button disabled');
+                            return;
+                        }
+                        
                         console.log(`🎯 Debug: Button clicked:`, {
                             scoreId,
                             increment,
@@ -6754,14 +6760,22 @@ class CheckInViewApp extends CheckInCore {
         const homeScoreInput = document.getElementById('mobile-home-score');
         const awayScoreInput = document.getElementById('mobile-away-score');
         
+        console.log('🏆 Setting forfeit scores:', {
+            selectedForfeitTeam: this.selectedForfeitTeam,
+            homeScoreInput: homeScoreInput,
+            awayScoreInput: awayScoreInput
+        });
+        
         if (this.selectedForfeitTeam === 'home') {
             // Home team forfeits, away team wins 1-0
             homeScoreInput.value = '0';
             awayScoreInput.value = '1';
+            console.log('✅ Home team forfeits: Home 0 - Away 1');
         } else {
             // Away team forfeits, home team wins 1-0
             homeScoreInput.value = '1';
             awayScoreInput.value = '0';
+            console.log('✅ Away team forfeits: Home 1 - Away 0');
         }
         
         // Disable score inputs
@@ -6782,8 +6796,12 @@ class CheckInViewApp extends CheckInCore {
         
         // Show reset forfeit button
         const resetBtn = document.getElementById('reset-forfeit-btn');
+        console.log('🔍 Reset forfeit button found:', resetBtn);
         if (resetBtn) {
             resetBtn.style.display = 'flex';
+            console.log('✅ Reset forfeit button should now be visible');
+        } else {
+            console.error('❌ Reset forfeit button not found in DOM');
         }
     }
     
@@ -6813,6 +6831,8 @@ class CheckInViewApp extends CheckInCore {
     }
     
     resetForfeit() {
+        console.log('🔄 Reset forfeit called');
+        
         // Reset forfeit state
         this.isForfeitMatch = false;
         this.forfeitingTeam = null;
@@ -6825,6 +6845,7 @@ class CheckInViewApp extends CheckInCore {
                 <span class="forfeit-icon">🏳️</span>
                 <span class="forfeit-text">Forfeit?</span>
             `;
+            console.log('✅ Forfeit button reset to normal state');
         }
         
         // Re-enable score inputs
@@ -6855,8 +6876,10 @@ class CheckInViewApp extends CheckInCore {
         
         // Hide reset forfeit button
         const resetBtn = document.getElementById('reset-forfeit-btn');
+        console.log('🔍 Hiding reset forfeit button:', resetBtn);
         if (resetBtn) {
             resetBtn.style.display = 'none';
+            console.log('✅ Reset forfeit button hidden');
         }
     }
 }
