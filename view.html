@@ -887,7 +887,258 @@
             }
         }
         
-        /* Mobile-Friendly Card Tracker Styles */
+        /* Mobile Match Result Modal Styles */
+        .mobile-match-result-modal {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.8);
+            z-index: 10000;
+            display: none;
+            overflow-y: auto;
+        }
+        
+        .mobile-match-result-modal.active {
+            display: block;
+        }
+        
+        .mobile-match-result-content {
+            background: white;
+            min-height: 100%;
+            display: flex;
+            flex-direction: column;
+        }
+        
+        .mobile-match-header {
+            background: #2196F3;
+            color: white;
+            padding: 15px 20px;
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            position: sticky;
+            top: 0;
+            z-index: 10001;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.2);
+        }
+        
+        .mobile-match-header-content {
+            display: flex;
+            align-items: center;
+            gap: 15px;
+            flex: 1;
+        }
+        
+        .mobile-match-title {
+            font-size: 1.2em;
+            font-weight: 600;
+            margin: 0;
+            color: white;
+        }
+        
+        .mobile-forfeit-btn {
+            background: rgba(255, 255, 255, 0.15);
+            border: 2px solid rgba(255, 255, 255, 0.3);
+            border-radius: 8px;
+            padding: 8px 12px;
+            color: white;
+            font-size: 0.9em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            display: flex;
+            align-items: center;
+            gap: 6px;
+            min-height: 40px;
+        }
+        
+        .mobile-forfeit-btn:hover {
+            background: rgba(255, 255, 255, 0.25);
+            border-color: rgba(255, 255, 255, 0.5);
+            transform: translateY(-1px);
+        }
+        
+        .mobile-forfeit-btn.forfeit-active {
+            background: #ff5722;
+            border-color: #d84315;
+            box-shadow: 0 2px 8px rgba(255, 87, 34, 0.3);
+        }
+        
+        .forfeit-icon {
+            font-size: 1.1em;
+        }
+        
+        .forfeit-text {
+            font-size: 0.85em;
+            letter-spacing: 0.3px;
+        }
+        
+        .mobile-close-btn {
+            background: rgba(255, 255, 255, 0.2);
+            border: none;
+            border-radius: 50%;
+            width: 40px;
+            height: 40px;
+            color: white;
+            font-size: 24px;
+            font-weight: bold;
+            cursor: pointer;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            transition: all 0.2s ease;
+        }
+        
+        .mobile-close-btn:hover {
+            background: rgba(255, 255, 255, 0.3);
+            transform: scale(1.1);
+        }
+        
+        /* Forfeit Dialog Styles */
+        .forfeit-dialog-overlay {
+            position: fixed;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: rgba(0, 0, 0, 0.7);
+            z-index: 10002;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        
+        .forfeit-dialog {
+            background: white;
+            border-radius: 15px;
+            padding: 25px;
+            max-width: 400px;
+            width: 100%;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.3);
+            text-align: center;
+        }
+        
+        .forfeit-dialog-header {
+            margin-bottom: 20px;
+        }
+        
+        .forfeit-dialog-title {
+            font-size: 1.3em;
+            font-weight: 600;
+            color: #333;
+            margin: 0 0 8px 0;
+        }
+        
+        .forfeit-dialog-subtitle {
+            color: #666;
+            font-size: 0.95em;
+            line-height: 1.4;
+        }
+        
+        .forfeit-team-options {
+            display: flex;
+            flex-direction: column;
+            gap: 12px;
+            margin: 25px 0;
+        }
+        
+        .forfeit-team-btn {
+            padding: 15px 20px;
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            background: white;
+            color: #333;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-align: center;
+        }
+        
+        .forfeit-team-btn:hover {
+            border-color: #ff5722;
+            background: #fff3e0;
+            transform: translateY(-1px);
+        }
+        
+        .forfeit-team-btn.selected {
+            border-color: #ff5722;
+            background: #ff5722;
+            color: white;
+        }
+        
+        .forfeit-dialog-actions {
+            display: flex;
+            gap: 12px;
+            margin-top: 25px;
+        }
+        
+        .forfeit-dialog-btn {
+            flex: 1;
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 1em;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+        }
+        
+        .forfeit-cancel-btn {
+            background: #6c757d;
+            color: white;
+        }
+        
+        .forfeit-cancel-btn:hover {
+            background: #5a6268;
+        }
+        
+        .forfeit-confirm-btn {
+            background: #ff5722;
+            color: white;
+        }
+        
+        .forfeit-confirm-btn:hover {
+            background: #e64a19;
+        }
+        
+        .forfeit-confirm-btn:disabled {
+            background: #e9ecef;
+            color: #6c757d;
+            cursor: not-allowed;
+        }
+        
+        /* Score inputs disabled state for forfeit */
+        .score-input.forfeit-disabled {
+            background: #f8f9fa !important;
+            color: #6c757d !important;
+            cursor: not-allowed !important;
+            opacity: 0.6;
+        }
+        
+        .forfeit-notice {
+            background: #fff3e0;
+            border: 2px solid #ff9800;
+            border-radius: 10px;
+            padding: 15px;
+            margin: 15px 0;
+            text-align: center;
+        }
+        
+        .forfeit-notice-title {
+            font-weight: 600;
+            color: #e65100;
+            margin-bottom: 5px;
+        }
+        
+        .forfeit-notice-text {
+            color: #ef6c00;
+            font-size: 0.9em;
+            line-height: 1.4;
+        }
         .card-tracker-mobile {
             display: flex;
             flex-direction: column;

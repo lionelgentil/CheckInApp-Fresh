@@ -5030,7 +5030,13 @@ class CheckInViewApp extends CheckInCore {
         modal.innerHTML = `
             <div class="mobile-match-result-content">
                 <div class="mobile-match-header">
-                    <h3 class="mobile-match-title">Match Result</h3>
+                    <div class="mobile-match-header-content">
+                        <h3 class="mobile-match-title">Match Result</h3>
+                        <button class="mobile-forfeit-btn" onclick="app.showForfeitDialog('${eventId}', '${matchId}')" id="forfeit-btn">
+                            <span class="forfeit-icon">🏳️</span>
+                            <span class="forfeit-text">Forfeit?</span>
+                        </button>
+                    </div>
                     <button class="mobile-close-btn" onclick="app.closeMobileMatchResult()">×</button>
                 </div>
                 
@@ -5628,6 +5634,7 @@ class CheckInViewApp extends CheckInCore {
                 <!-- Action Buttons -->
                 <div class="action-buttons-mobile">
                     <button class="btn-mobile btn-cancel" onclick="app.closeModal()">Cancel</button>
+                    <button class="btn-mobile btn-reset-forfeit" id="reset-forfeit-btn" onclick="app.resetForfeit()" style="display: none; background: #ff9800;">Reset Forfeit</button>
                     <button class="btn-mobile btn-save" onclick="app.saveMatchResult('${eventId}', '${matchId}')">Save Result</button>
                 </div>
             </div>
@@ -6656,6 +6663,187 @@ class CheckInViewApp extends CheckInCore {
                     lockStatusEl.style.display = 'none';
                 }
             }
+        }
+    }
+
+    // Forfeit functionality for mobile match result
+    showForfeitDialog(eventId, matchId) {
+        const event = this.events.find(e => e.id === eventId);
+        const match = event.matches.find(m => m.id === matchId);
+        const homeTeam = this.teams.find(t => t.id === match.homeTeamId);
+        const awayTeam = this.teams.find(t => t.id === match.awayTeamId);
+
+        const overlay = document.createElement('div');
+        overlay.className = 'forfeit-dialog-overlay';
+        overlay.innerHTML = `
+            <div class="forfeit-dialog">
+                <div class="forfeit-dialog-header">
+                    <h3 class="forfeit-dialog-title">🏳️ Match Forfeit</h3>
+                    <p class="forfeit-dialog-subtitle">Which team is forfeiting this match? The other team will win 1-0.</p>
+                </div>
+                
+                <div class="forfeit-team-options">
+                    <button class="forfeit-team-btn" data-team="home" onclick="app.selectForfeitTeam('home')">
+                        ${homeTeam?.name || 'Home Team'} forfeits
+                    </button>
+                    <button class="forfeit-team-btn" data-team="away" onclick="app.selectForfeitTeam('away')">
+                        ${awayTeam?.name || 'Away Team'} forfeits
+                    </button>
+                </div>
+                
+                <div class="forfeit-dialog-actions">
+                    <button class="forfeit-dialog-btn forfeit-cancel-btn" onclick="app.closeForfeitDialog()">
+                        Cancel
+                    </button>
+                    <button class="forfeit-dialog-btn forfeit-confirm-btn" id="forfeit-confirm-btn" disabled onclick="app.confirmForfeit('${eventId}', '${matchId}')">
+                        Confirm Forfeit
+                    </button>
+                </div>
+            </div>
+        `;
+
+        // Store forfeit state
+        this.forfeitDialog = overlay;
+        this.selectedForfeitTeam = null;
+        
+        document.body.appendChild(overlay);
+    }
+
+    selectForfeitTeam(team) {
+        // Update selection state
+        this.selectedForfeitTeam = team;
+        
+        // Update UI
+        document.querySelectorAll('.forfeit-team-btn').forEach(btn => {
+            btn.classList.remove('selected');
+        });
+        document.querySelector(`[data-team="${team}"]`).classList.add('selected');
+        
+        // Enable confirm button
+        document.getElementById('forfeit-confirm-btn').disabled = false;
+    }
+    
+    closeForfeitDialog() {
+        if (this.forfeitDialog) {
+            document.body.removeChild(this.forfeitDialog);
+            this.forfeitDialog = null;
+            this.selectedForfeitTeam = null;
+        }
+    }
+    
+    confirmForfeit(eventId, matchId) {
+        if (!this.selectedForfeitTeam) return;
+        
+        // Close dialog first
+        this.closeForfeitDialog();
+        
+        // Set forfeit state and scores
+        this.isForfeitMatch = true;
+        this.forfeitingTeam = this.selectedForfeitTeam;
+        
+        // Update forfeit button appearance
+        const forfeitBtn = document.getElementById('forfeit-btn');
+        if (forfeitBtn) {
+            forfeitBtn.classList.add('forfeit-active');
+            forfeitBtn.innerHTML = `
+                <span class="forfeit-icon">🏳️</span>
+                <span class="forfeit-text">Forfeit Active</span>
+            `;
+        }
+        
+        // Set scores (winner gets 1, forfeit team gets 0)
+        const homeScoreInput = document.getElementById('mobile-home-score');
+        const awayScoreInput = document.getElementById('mobile-away-score');
+        
+        if (this.selectedForfeitTeam === 'home') {
+            // Home team forfeits, away team wins 1-0
+            homeScoreInput.value = '0';
+            awayScoreInput.value = '1';
+        } else {
+            // Away team forfeits, home team wins 1-0
+            homeScoreInput.value = '1';
+            awayScoreInput.value = '0';
+        }
+        
+        // Disable score inputs
+        homeScoreInput.classList.add('forfeit-disabled');
+        awayScoreInput.classList.add('forfeit-disabled');
+        homeScoreInput.disabled = true;
+        awayScoreInput.disabled = true;
+        
+        // Show forfeit notice
+        this.showForfeitNotice();
+        
+        // Show reset forfeit button
+        const resetBtn = document.getElementById('reset-forfeit-btn');
+        if (resetBtn) {
+            resetBtn.style.display = 'block';
+        }
+    }
+    
+    showForfeitNotice() {
+        const event = this.events.find(e => e.id === this.currentMatch.eventId);
+        const match = this.currentMatch;
+        const homeTeam = this.teams.find(t => t.id === match.homeTeamId);
+        const awayTeam = this.teams.find(t => t.id === match.awayTeamId);
+        
+        const forfeitingTeamName = this.selectedForfeitTeam === 'home' ? homeTeam?.name : awayTeam?.name;
+        const winningTeamName = this.selectedForfeitTeam === 'home' ? awayTeam?.name : homeTeam?.name;
+        
+        // Find score section and add notice
+        const scoreSection = document.querySelector('.form-section');
+        if (scoreSection && !document.querySelector('.forfeit-notice')) {
+            const notice = document.createElement('div');
+            notice.className = 'forfeit-notice';
+            notice.innerHTML = `
+                <div class="forfeit-notice-title">⚠️ Forfeit Match</div>
+                <div class="forfeit-notice-text">
+                    ${forfeitingTeamName} has forfeited.<br>
+                    ${winningTeamName} wins 1-0 by forfeit.
+                </div>
+            `;
+            scoreSection.insertBefore(notice, scoreSection.firstChild.nextSibling);
+        }
+    }
+    
+    resetForfeit() {
+        // Reset forfeit state
+        this.isForfeitMatch = false;
+        this.forfeitingTeam = null;
+        
+        // Reset forfeit button appearance
+        const forfeitBtn = document.getElementById('forfeit-btn');
+        if (forfeitBtn) {
+            forfeitBtn.classList.remove('forfeit-active');
+            forfeitBtn.innerHTML = `
+                <span class="forfeit-icon">🏳️</span>
+                <span class="forfeit-text">Forfeit?</span>
+            `;
+        }
+        
+        // Re-enable score inputs
+        const homeScoreInput = document.getElementById('mobile-home-score');
+        const awayScoreInput = document.getElementById('mobile-away-score');
+        
+        if (homeScoreInput && awayScoreInput) {
+            homeScoreInput.classList.remove('forfeit-disabled');
+            awayScoreInput.classList.remove('forfeit-disabled');
+            homeScoreInput.disabled = false;
+            awayScoreInput.disabled = false;
+            homeScoreInput.value = '0';
+            awayScoreInput.value = '0';
+        }
+        
+        // Remove forfeit notice
+        const notice = document.querySelector('.forfeit-notice');
+        if (notice) {
+            notice.remove();
+        }
+        
+        // Hide reset forfeit button
+        const resetBtn = document.getElementById('reset-forfeit-btn');
+        if (resetBtn) {
+            resetBtn.style.display = 'none';
         }
     }
 }
