@@ -5044,7 +5044,7 @@ class CheckInViewApp extends CheckInCore {
                 <div class="mobile-match-header">
                     <div class="mobile-match-header-content">
                         <h3 class="mobile-match-title">Match Result</h3>
-                        <button class="mobile-forfeit-btn" onclick="app.showForfeitDialog('${eventId}', '${matchId}')" id="forfeit-btn">
+                        <button class="mobile-forfeit-btn" onclick="showForfeitDialog('${eventId}', '${matchId}')" id="forfeit-btn">
                             Forfeit?
                         </button>
                     </div>
@@ -5645,7 +5645,7 @@ class CheckInViewApp extends CheckInCore {
                 <!-- Action Buttons -->
                 <div class="action-buttons-mobile">
                     <button class="btn-mobile btn-cancel" onclick="app.closeModal()">Cancel</button>
-                    <button class="btn-mobile btn-reset-forfeit" id="reset-forfeit-btn" onclick="app.resetForfeit()" style="display: none; background: #ff9800; color: white;">Reset Forfeit</button>
+                    <button class="btn-mobile btn-reset-forfeit" id="reset-forfeit-btn" onclick="resetForfeit()" style="display: none; background: #ff9800; color: white;">Reset Forfeit</button>
                     <button class="btn-mobile btn-save" onclick="app.saveMatchResult('${eventId}', '${matchId}')">Save Result</button>
                 </div>
             </div>
@@ -6685,10 +6685,14 @@ class CheckInViewApp extends CheckInCore {
 
     // Forfeit functionality for mobile match result
     showForfeitDialog(eventId, matchId) {
+        console.log('🚨 showForfeitDialog called with:', { eventId, matchId });
+        
         const event = this.events.find(e => e.id === eventId);
         const match = event.matches.find(m => m.id === matchId);
         const homeTeam = this.teams.find(t => t.id === match.homeTeamId);
         const awayTeam = this.teams.find(t => t.id === match.awayTeamId);
+
+        console.log('🚨 Team data:', { homeTeam: homeTeam?.name, awayTeam: awayTeam?.name });
 
         const overlay = document.createElement('div');
         overlay.className = 'forfeit-dialog-overlay';
@@ -6699,19 +6703,19 @@ class CheckInViewApp extends CheckInCore {
                 </div>
                 
                 <div class="forfeit-team-options">
-                    <button class="forfeit-team-btn" data-team="home" onclick="app.selectForfeitTeam('home')">
+                    <button class="forfeit-team-btn" data-team="home" onclick="selectForfeitTeam('home')">
                         ${homeTeam?.name || 'Home Team'}
                     </button>
-                    <button class="forfeit-team-btn" data-team="away" onclick="app.selectForfeitTeam('away')">
+                    <button class="forfeit-team-btn" data-team="away" onclick="selectForfeitTeam('away')">
                         ${awayTeam?.name || 'Away Team'}
                     </button>
                 </div>
                 
                 <div class="forfeit-dialog-actions">
-                    <button class="forfeit-dialog-btn forfeit-cancel-btn" onclick="app.closeForfeitDialog()">
+                    <button class="forfeit-dialog-btn forfeit-cancel-btn" onclick="closeForfeitDialog()">
                         Cancel
                     </button>
-                    <button class="forfeit-dialog-btn forfeit-confirm-btn" id="forfeit-confirm-btn" disabled onclick="app.confirmForfeit('${eventId}', '${matchId}')">
+                    <button class="forfeit-dialog-btn forfeit-confirm-btn" id="forfeit-confirm-btn" disabled onclick="confirmForfeit('${eventId}', '${matchId}')">
                         Confirm Forfeit
                     </button>
                 </div>
@@ -6726,17 +6730,28 @@ class CheckInViewApp extends CheckInCore {
     }
 
     selectForfeitTeam(team) {
+        console.log('🚨 selectForfeitTeam called with:', team);
+        
         // Update selection state
         this.selectedForfeitTeam = team;
+        console.log('🚨 selectedForfeitTeam set to:', this.selectedForfeitTeam);
         
         // Update UI
         document.querySelectorAll('.forfeit-team-btn').forEach(btn => {
             btn.classList.remove('selected');
         });
-        document.querySelector(`[data-team="${team}"]`).classList.add('selected');
+        const selectedBtn = document.querySelector(`[data-team="${team}"]`);
+        if (selectedBtn) {
+            selectedBtn.classList.add('selected');
+            console.log('🚨 Button marked as selected:', selectedBtn);
+        }
         
         // Enable confirm button
-        document.getElementById('forfeit-confirm-btn').disabled = false;
+        const confirmBtn = document.getElementById('forfeit-confirm-btn');
+        if (confirmBtn) {
+            confirmBtn.disabled = false;
+            console.log('🚨 Confirm button enabled');
+        }
     }
     
     closeForfeitDialog() {
@@ -6748,7 +6763,12 @@ class CheckInViewApp extends CheckInCore {
     }
     
     confirmForfeit(eventId, matchId) {
-        if (!this.selectedForfeitTeam) return;
+        console.log('🚨 confirmForfeit called with:', { eventId, matchId, selectedForfeitTeam: this.selectedForfeitTeam });
+        
+        if (!this.selectedForfeitTeam) {
+            console.error('❌ No forfeit team selected');
+            return;
+        }
         
         // Close dialog first
         this.closeForfeitDialog();
@@ -6764,15 +6784,25 @@ class CheckInViewApp extends CheckInCore {
             forfeitBtn.textContent = 'Forfeit Active';
         }
         
+        console.log('🚨 About to search for score inputs...');
+        
         // Set scores (winner gets 1, forfeit team gets 0)
         const homeScoreInput = document.getElementById('home-score');
         const awayScoreInput = document.getElementById('away-score');
         
-        console.log('🏆 Setting forfeit scores:', {
-            selectedForfeitTeam: this.selectedForfeitTeam,
+        console.log('🏆 Score inputs found:', {
             homeScoreInput: homeScoreInput,
-            awayScoreInput: awayScoreInput
+            awayScoreInput: awayScoreInput,
+            homeScoreValue: homeScoreInput?.value,
+            awayScoreValue: awayScoreInput?.value
         });
+        
+        if (!homeScoreInput || !awayScoreInput) {
+            console.error('❌ Score inputs not found! Cannot set forfeit scores.');
+            return;
+        }
+        
+        console.log('🏆 Setting forfeit scores for team:', this.selectedForfeitTeam);
         
         if (this.selectedForfeitTeam === 'home') {
             // Home team forfeits, away team wins 1-0
@@ -6896,6 +6926,27 @@ async function showSection(sectionName) {
 
 async function editMatchResult(eventId, matchId) {
     await app.editMatchResult(eventId, matchId);
+}
+
+// Global forfeit functions for onclick handlers
+function showForfeitDialog(eventId, matchId) {
+    app.showForfeitDialog(eventId, matchId);
+}
+
+function selectForfeitTeam(team) {
+    app.selectForfeitTeam(team);
+}
+
+function confirmForfeit(eventId, matchId) {
+    app.confirmForfeit(eventId, matchId);
+}
+
+function closeForfeitDialog() {
+    app.closeForfeitDialog();
+}
+
+function resetForfeit() {
+    app.resetForfeit();
 }
 
 // Initialize app
