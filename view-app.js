@@ -5193,6 +5193,11 @@ class CheckInViewApp extends CheckInCore {
     }
     
     adjustMobileScore(team, delta) {
+        // Prevent score changes if match is forfeited
+        if (this.isForfeitMatch) {
+            return;
+        }
+        
         const scoreElement = document.getElementById(`mobile-${team}-score`);
         let currentScore = parseInt(scoreElement.textContent) || 0;
         const newScore = Math.max(0, Math.min(99, currentScore + delta));
@@ -6685,14 +6690,10 @@ class CheckInViewApp extends CheckInCore {
 
     // Forfeit functionality for mobile match result
     showForfeitDialog(eventId, matchId) {
-        console.log('🚨 showForfeitDialog called with:', { eventId, matchId });
-        
         const event = this.events.find(e => e.id === eventId);
         const match = event.matches.find(m => m.id === matchId);
         const homeTeam = this.teams.find(t => t.id === match.homeTeamId);
         const awayTeam = this.teams.find(t => t.id === match.awayTeamId);
-
-        console.log('🚨 Team data:', { homeTeam: homeTeam?.name, awayTeam: awayTeam?.name });
 
         const overlay = document.createElement('div');
         overlay.className = 'forfeit-dialog-overlay';
@@ -6730,11 +6731,8 @@ class CheckInViewApp extends CheckInCore {
     }
 
     selectForfeitTeam(team) {
-        console.log('🚨 selectForfeitTeam called with:', team);
-        
         // Update selection state
         this.selectedForfeitTeam = team;
-        console.log('🚨 selectedForfeitTeam set to:', this.selectedForfeitTeam);
         
         // Update UI
         document.querySelectorAll('.forfeit-team-btn').forEach(btn => {
@@ -6743,14 +6741,12 @@ class CheckInViewApp extends CheckInCore {
         const selectedBtn = document.querySelector(`[data-team="${team}"]`);
         if (selectedBtn) {
             selectedBtn.classList.add('selected');
-            console.log('🚨 Button marked as selected:', selectedBtn);
         }
         
         // Enable confirm button
         const confirmBtn = document.getElementById('forfeit-confirm-btn');
         if (confirmBtn) {
             confirmBtn.disabled = false;
-            console.log('🚨 Confirm button enabled');
         }
     }
     
@@ -6763,10 +6759,7 @@ class CheckInViewApp extends CheckInCore {
     }
     
     confirmForfeit(eventId, matchId) {
-        console.log('🚨 confirmForfeit called with:', { eventId, matchId, selectedForfeitTeam: this.selectedForfeitTeam });
-        
         if (!this.selectedForfeitTeam) {
-            console.error('❌ No forfeit team selected');
             return;
         }
         
@@ -6784,49 +6777,29 @@ class CheckInViewApp extends CheckInCore {
             forfeitBtn.textContent = 'Forfeit Active';
         }
         
-        console.log('🚨 About to search for score inputs...');
+        // Set scores for mobile interface (winner gets 1, forfeit team gets 0)
+        const homeScoreDisplay = document.getElementById('mobile-home-score');
+        const awayScoreDisplay = document.getElementById('mobile-away-score');
         
-        // Set scores (winner gets 1, forfeit team gets 0)
-        const homeScoreInput = document.getElementById('home-score');
-        const awayScoreInput = document.getElementById('away-score');
-        
-        console.log('🏆 Score inputs found:', {
-            homeScoreInput: homeScoreInput,
-            awayScoreInput: awayScoreInput,
-            homeScoreValue: homeScoreInput?.value,
-            awayScoreValue: awayScoreInput?.value
-        });
-        
-        if (!homeScoreInput || !awayScoreInput) {
-            console.error('❌ Score inputs not found! Cannot set forfeit scores.');
-            return;
+        if (homeScoreDisplay && awayScoreDisplay) {
+            if (this.selectedForfeitTeam === 'home') {
+                // Home team forfeits, away team wins 1-0
+                homeScoreDisplay.textContent = '0';
+                awayScoreDisplay.textContent = '1';
+            } else {
+                // Away team forfeits, home team wins 1-0
+                homeScoreDisplay.textContent = '1';
+                awayScoreDisplay.textContent = '0';
+            }
         }
         
-        console.log('🏆 Setting forfeit scores for team:', this.selectedForfeitTeam);
-        
-        if (this.selectedForfeitTeam === 'home') {
-            // Home team forfeits, away team wins 1-0
-            homeScoreInput.value = '0';
-            awayScoreInput.value = '1';
-            console.log('✅ Home team forfeits: Home 0 - Away 1');
-        } else {
-            // Away team forfeits, home team wins 1-0
-            homeScoreInput.value = '1';
-            awayScoreInput.value = '0';
-            console.log('✅ Away team forfeits: Home 1 - Away 0');
-        }
-        
-        // Disable score inputs
-        homeScoreInput.classList.add('forfeit-disabled');
-        awayScoreInput.classList.add('forfeit-disabled');
-        homeScoreInput.disabled = true;
-        awayScoreInput.disabled = true;
-        
-        // Disable score stepper buttons
-        const stepperButtons = document.querySelectorAll('.score-stepper-btn');
-        stepperButtons.forEach(btn => {
+        // Disable mobile score buttons
+        const mobileScoreButtons = document.querySelectorAll('.mobile-score-btn');
+        mobileScoreButtons.forEach(btn => {
             btn.disabled = true;
             btn.classList.add('forfeit-disabled');
+            btn.style.opacity = '0.5';
+            btn.style.cursor = 'not-allowed';
         });
         
         // Show forfeit notice
@@ -6834,12 +6807,8 @@ class CheckInViewApp extends CheckInCore {
         
         // Show reset forfeit button
         const resetBtn = document.getElementById('reset-forfeit-btn');
-        console.log('🔍 Reset forfeit button found:', resetBtn);
         if (resetBtn) {
             resetBtn.style.display = 'flex';
-            console.log('✅ Reset forfeit button should now be visible');
-        } else {
-            console.error('❌ Reset forfeit button not found in DOM');
         }
     }
     
@@ -6852,8 +6821,8 @@ class CheckInViewApp extends CheckInCore {
         const forfeitingTeamName = this.selectedForfeitTeam === 'home' ? homeTeam?.name : awayTeam?.name;
         const winningTeamName = this.selectedForfeitTeam === 'home' ? awayTeam?.name : homeTeam?.name;
         
-        // Find score section and add notice
-        const scoreSection = document.querySelector('.form-section');
+        // Find mobile score section and add notice
+        const scoreSection = document.querySelector('.mobile-score-section');
         if (scoreSection && !document.querySelector('.forfeit-notice')) {
             const notice = document.createElement('div');
             notice.className = 'forfeit-notice';
@@ -6869,8 +6838,6 @@ class CheckInViewApp extends CheckInCore {
     }
     
     resetForfeit() {
-        console.log('🔄 Reset forfeit called');
-        
         // Reset forfeit state
         this.isForfeitMatch = false;
         this.forfeitingTeam = null;
@@ -6880,27 +6847,24 @@ class CheckInViewApp extends CheckInCore {
         if (forfeitBtn) {
             forfeitBtn.classList.remove('forfeit-active');
             forfeitBtn.textContent = 'Forfeit?';
-            console.log('✅ Forfeit button reset to normal state');
         }
         
-        // Re-enable score inputs
-        const homeScoreInput = document.getElementById('home-score');
-        const awayScoreInput = document.getElementById('away-score');
+        // Reset mobile scores to 0-0
+        const homeScoreDisplay = document.getElementById('mobile-home-score');
+        const awayScoreDisplay = document.getElementById('mobile-away-score');
         
-        if (homeScoreInput && awayScoreInput) {
-            homeScoreInput.classList.remove('forfeit-disabled');
-            awayScoreInput.classList.remove('forfeit-disabled');
-            homeScoreInput.disabled = false;
-            awayScoreInput.disabled = false;
-            homeScoreInput.value = '0';
-            awayScoreInput.value = '0';
+        if (homeScoreDisplay && awayScoreDisplay) {
+            homeScoreDisplay.textContent = '0';
+            awayScoreDisplay.textContent = '0';
         }
         
-        // Re-enable score stepper buttons
-        const stepperButtons = document.querySelectorAll('.score-stepper-btn');
-        stepperButtons.forEach(btn => {
+        // Re-enable mobile score buttons
+        const mobileScoreButtons = document.querySelectorAll('.mobile-score-btn');
+        mobileScoreButtons.forEach(btn => {
             btn.disabled = false;
             btn.classList.remove('forfeit-disabled');
+            btn.style.opacity = '';
+            btn.style.cursor = '';
         });
         
         // Remove forfeit notice
@@ -6911,10 +6875,8 @@ class CheckInViewApp extends CheckInCore {
         
         // Hide reset forfeit button
         const resetBtn = document.getElementById('reset-forfeit-btn');
-        console.log('🔍 Hiding reset forfeit button:', resetBtn);
         if (resetBtn) {
             resetBtn.style.display = 'none';
-            console.log('✅ Reset forfeit button hidden');
         }
     }
 }
