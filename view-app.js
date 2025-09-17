@@ -5123,6 +5123,9 @@ class CheckInViewApp extends CheckInCore {
                     <button class="mobile-action-btn cancel" onclick="app.closeMobileMatchResult()">
                         Cancel
                     </button>
+                    <button class="mobile-action-btn reset-forfeit" id="reset-forfeit-btn" onclick="resetForfeit()" style="display: none; background: #ff9800; color: white;">
+                        Reset Forfeit
+                    </button>
                     <button class="mobile-action-btn save" id="mobile-save-btn">
                         Save Result
                     </button>
@@ -6808,7 +6811,7 @@ class CheckInViewApp extends CheckInCore {
         // Show reset forfeit button
         const resetBtn = document.getElementById('reset-forfeit-btn');
         if (resetBtn) {
-            resetBtn.style.display = 'flex';
+            resetBtn.style.display = 'block';
         }
     }
     
