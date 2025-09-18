@@ -5042,13 +5042,16 @@ class CheckInViewApp extends CheckInCore {
         modal.innerHTML = `
             <div class="mobile-match-result-content">
                 <div class="mobile-match-header">
-                    <div class="mobile-match-header-content">
-                        <h3 class="mobile-match-title">Match Result</h3>
+                    <h3 class="mobile-match-title">Match Result</h3>
+                    <div class="mobile-match-header-actions">
                         <button class="mobile-forfeit-btn" onclick="showForfeitDialog('${eventId}', '${matchId}')" id="forfeit-btn">
                             Forfeit?
                         </button>
+                        <button class="mobile-reset-forfeit-btn" onclick="resetForfeit()" id="reset-forfeit-btn" style="display: none;">
+                            Reset
+                        </button>
+                        <button class="mobile-close-btn" onclick="app.closeMobileMatchResult()">×</button>
                     </div>
-                    <button class="mobile-close-btn" onclick="app.closeMobileMatchResult()">×</button>
                 </div>
                 
                 <div class="mobile-match-body">
@@ -5122,9 +5125,6 @@ class CheckInViewApp extends CheckInCore {
                 <div class="mobile-action-buttons">
                     <button class="mobile-action-btn cancel" onclick="app.closeMobileMatchResult()">
                         Cancel
-                    </button>
-                    <button class="mobile-action-btn reset-forfeit" id="reset-forfeit-btn" onclick="resetForfeit()" style="display: none; background: #ff9800; color: white;">
-                        Reset Forfeit
                     </button>
                     <button class="mobile-action-btn save" id="mobile-save-btn">
                         Save Result
