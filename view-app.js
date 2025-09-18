@@ -6728,9 +6728,31 @@ class CheckInViewApp extends CheckInCore {
 
         // Store forfeit state
         this.forfeitDialog = overlay;
-        this.selectedForfeitTeam = null;
+        
+        // If forfeit is already active, restore the previous selection
+        if (this.isForfeitMatch && this.forfeitingTeam) {
+            this.selectedForfeitTeam = this.forfeitingTeam;
+        } else {
+            this.selectedForfeitTeam = null;
+        }
         
         document.body.appendChild(overlay);
+        
+        // Apply selection state after DOM is added
+        if (this.selectedForfeitTeam) {
+            setTimeout(() => {
+                const selectedBtn = document.querySelector(`[data-team="${this.selectedForfeitTeam}"]`);
+                if (selectedBtn) {
+                    selectedBtn.classList.add('selected');
+                }
+                
+                // Enable confirm button if there's a selection
+                const confirmBtn = document.getElementById('forfeit-confirm-btn');
+                if (confirmBtn) {
+                    confirmBtn.disabled = false;
+                }
+            }, 10);
+        }
     }
 
     selectForfeitTeam(team) {
