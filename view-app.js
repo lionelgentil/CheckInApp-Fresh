@@ -6779,7 +6779,11 @@ class CheckInViewApp extends CheckInCore {
         if (this.forfeitDialog) {
             document.body.removeChild(this.forfeitDialog);
             this.forfeitDialog = null;
-            this.selectedForfeitTeam = null;
+            // Only clear selectedForfeitTeam if we're not in the middle of confirming
+            // (confirmForfeit will preserve it by storing in forfeitingTeam)
+            if (!this.isForfeitMatch) {
+                this.selectedForfeitTeam = null;
+            }
         }
     }
     
@@ -6791,9 +6795,9 @@ class CheckInViewApp extends CheckInCore {
         // Close dialog first
         this.closeForfeitDialog();
         
-        // Set forfeit state and scores
+        // Set forfeit state and scores - IMPORTANT: use selectedForfeitTeam, not forfeitingTeam
         this.isForfeitMatch = true;
-        this.forfeitingTeam = this.selectedForfeitTeam;
+        this.forfeitingTeam = this.selectedForfeitTeam;  // Store the selection
         
         // Update forfeit button appearance
         const forfeitBtn = document.getElementById('forfeit-btn');
@@ -6843,8 +6847,9 @@ class CheckInViewApp extends CheckInCore {
         const homeTeam = this.teams.find(t => t.id === match.homeTeamId);
         const awayTeam = this.teams.find(t => t.id === match.awayTeamId);
         
-        const forfeitingTeamName = this.selectedForfeitTeam === 'home' ? homeTeam?.name : awayTeam?.name;
-        const winningTeamName = this.selectedForfeitTeam === 'home' ? awayTeam?.name : homeTeam?.name;
+        // Use forfeitingTeam (stored state) instead of selectedForfeitTeam (dialog state)
+        const forfeitingTeamName = this.forfeitingTeam === 'home' ? homeTeam?.name : awayTeam?.name;
+        const winningTeamName = this.forfeitingTeam === 'home' ? awayTeam?.name : homeTeam?.name;
         
         // Find mobile score section and add notice
         const scoreSection = document.querySelector('.mobile-score-section');
