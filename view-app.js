@@ -6759,9 +6759,6 @@ class CheckInViewApp extends CheckInCore {
         // Update selection state
         this.selectedForfeitTeam = team;
         
-        // TEMP DEBUG: Add alert to track selection
-        alert(`DEBUG: Selected team = ${team}`);
-        
         // Update UI
         document.querySelectorAll('.forfeit-team-btn').forEach(btn => {
             btn.classList.remove('selected');
@@ -6792,22 +6789,18 @@ class CheckInViewApp extends CheckInCore {
     
     confirmForfeit(eventId, matchId) {
         if (!this.selectedForfeitTeam) {
-            alert('DEBUG: No selectedForfeitTeam!');
             return;
         }
         
-        // TEMP DEBUG: Show what team was selected
-        alert(`DEBUG: Confirming forfeit for ${this.selectedForfeitTeam} team`);
+        // Store the selected team BEFORE closing dialog (which clears selectedForfeitTeam)
+        const selectedTeam = this.selectedForfeitTeam;
         
         // Close dialog first
         this.closeForfeitDialog();
         
-        // Set forfeit state and scores - IMPORTANT: use selectedForfeitTeam, not forfeitingTeam
+        // Set forfeit state and scores using our stored value
         this.isForfeitMatch = true;
-        this.forfeitingTeam = this.selectedForfeitTeam;  // Store the selection
-        
-        // TEMP DEBUG: Confirm storage
-        alert(`DEBUG: Stored forfeitingTeam = ${this.forfeitingTeam}`);
+        this.forfeitingTeam = selectedTeam;  // Use stored value, not this.selectedForfeitTeam
         
         // Update forfeit button appearance
         const forfeitBtn = document.getElementById('forfeit-btn');
@@ -6821,16 +6814,14 @@ class CheckInViewApp extends CheckInCore {
         const awayScoreDisplay = document.getElementById('mobile-away-score');
         
         if (homeScoreDisplay && awayScoreDisplay) {
-            if (this.selectedForfeitTeam === 'home') {
+            if (selectedTeam === 'home') {
                 // Home team forfeits, away team wins 1-0
                 homeScoreDisplay.textContent = '0';
                 awayScoreDisplay.textContent = '1';
-                alert('DEBUG: Set score 0-1 (home forfeits)');
             } else {
                 // Away team forfeits, home team wins 1-0
                 homeScoreDisplay.textContent = '1';
                 awayScoreDisplay.textContent = '0';
-                alert('DEBUG: Set score 1-0 (away forfeits)');
             }
         }
         
