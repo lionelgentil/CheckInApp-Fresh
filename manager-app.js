@@ -46,7 +46,7 @@ class CheckInManagerApp {
     async loadTeams() {
         try {
             console.log('Loading teams...');
-            const response = await fetch('/api/teams');
+            const response = await fetch('/api/teams-no-photos');
             console.log('Teams response status:', response.status);
             if (!response.ok) throw new Error('Failed to load teams');
             this.teams = await response.json();
@@ -257,15 +257,16 @@ class CheckInManagerApp {
                 <div class="manager-info">
                     <div class="manager-name" onclick="app.showManagerProfile(${manager.id})" style="cursor: pointer; color: #2196F3;">${manager.first_name} ${manager.last_name}</div>
                     <div class="manager-contact">
-                        ${manager.phone_number ? `📞 ${manager.phone_number}` : ''}
-                        ${manager.email_address ? `📧 ${manager.email_address}` : ''}
+                        ${manager.phone_number ? `<div class="contact-line">📞 ${manager.phone_number}</div>` : ''}
+                        ${manager.email_address ? `<div class="contact-line">📧 ${manager.email_address}</div>` : ''}
+                        ${!manager.phone_number && !manager.email_address ? '<div class="contact-line">No contact info</div>' : ''}
                     </div>
                 </div>
                 <div class="manager-actions">
                     <button class="btn btn-small" onclick="app.editManager(${manager.id})" title="Edit Manager">
                         ✏️
                     </button>
-                    <button class="btn btn-small btn-danger" onclick="app.deleteManager(${manager.id}, '${teamId}')" title="Remove Manager">
+                    <button class="btn btn-small" onclick="app.deleteManager(${manager.id}, '${teamId}')" title="Remove Manager">
                         🗑️
                     </button>
                 </div>
@@ -702,8 +703,8 @@ class CheckInManagerApp {
     // Get player photo URL with fallback to default
     getPlayerPhotoUrl(member) {
         // Check for custom photo
-        if (member.photo_filename) {
-            return `/photos/${member.photo_filename}`;
+        if (member.photo) {
+            // Handle various photo formats like main app\n            if (member.photo.startsWith('data:image/')) {\n                return member.photo; // Return base64 image directly\n            }\n            if (member.photo.startsWith('/photos/')) {\n                return member.photo; // Direct static file serving\n            }\n            if ((member.photo.includes('.jpg') || member.photo.includes('.jpeg') || \n                member.photo.includes('.png') || member.photo.includes('.webp')) &&\n                !member.photo.startsWith('/photos/')) {\n                return `/photos/${member.photo}`;\n            }\n            // If photo field exists but not recognized, continue to other checks\n        }\n        if (member.photo_filename) {\n            return `/photos/${member.photo_filename}`;
         }
         if (member.photo_base64) {
             return member.photo_base64;
