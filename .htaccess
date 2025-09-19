@@ -32,21 +32,21 @@ Header always set X-XSS-Protection "1; mode=block"
 # Prevent directory browsing
 Options -Indexes
 
-# Protect manager.html with HTTP Basic Authentication
-<Files "manager.html">
-    AuthType Basic
-    AuthName "Team Manager Access - PASS CheckIn App"
-    AuthUserFile .htpasswd
-    Require valid-user
-</Files>
+# Protect manager.html with HTTP Basic Authentication - TEMPORARILY DISABLED
+# <Files "manager.html">
+#     AuthType Basic
+#     AuthName "Team Manager Access - PASS CheckIn App"
+#     AuthUserFile /app/.htpasswd
+#     Require valid-user
+# </Files>
 
-# Optional: Protect the manager-app.js file as well
-<Files "manager-app.js">
-    AuthType Basic
-    AuthName "Team Manager Access - PASS CheckIn App"
-    AuthUserFile .htpasswd
-    Require valid-user
-</Files>
+# Optional: Protect the manager-app.js file as well - TEMPORARILY DISABLED
+# <Files "manager-app.js">
+#     AuthType Basic
+#     AuthName "Team Manager Access - PASS CheckIn App"
+#     AuthUserFile /app/.htpasswd
+#     Require valid-user
+# </Files>
 
 # Block access to sensitive files
 <Files ".htpasswd">
