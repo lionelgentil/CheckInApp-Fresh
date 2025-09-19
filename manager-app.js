@@ -551,11 +551,17 @@ class CheckInManagerApp {
                 this.teamManagers[index] = updatedManager;
             }
             
+            // Get the team ID for reopening the manager dialog
+            const teamId = updatedManager.team_id;
+            
             // Close modal
             form.closest('.modal').remove();
             
             // Refresh teams display
             this.renderTeams();
+            
+            // Reopen the manager dialog to show updated information
+            this.showManagerDialog(teamId);
             
             this.showSuccess('Manager updated successfully!');
             
