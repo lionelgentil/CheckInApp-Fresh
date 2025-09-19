@@ -85,13 +85,15 @@ class CheckInManagerApp {
         document.querySelectorAll('.nav-btn').forEach(btn => {
             btn.classList.remove('active');
         });
-        document.querySelector(`[onclick=\"showSection('${sectionName}')\"]`).classList.add('active');
+        const navBtn = document.querySelector(`[onclick="showSection('${sectionName}')"]`);
+        if (navBtn) navBtn.classList.add('active');
         
         // Update content sections
         document.querySelectorAll('.content-section').forEach(section => {
             section.classList.remove('active');
         });
-        document.getElementById(`${sectionName}-section`).classList.add('active');
+        const section = document.getElementById(`${sectionName}-section`);
+        if (section) section.classList.add('active');
         
         // Render section content
         switch (sectionName) {
@@ -151,4 +153,461 @@ class CheckInManagerApp {
         });
         
         container.innerHTML = html;
-    }\n    \n    renderTeamCard(team, managers, captain) {\n        const memberCount = team.members ? team.members.length : 0;\n        const managerDisplay = this.renderManagerDisplay(managers);\n        \n        return `\n            <div class=\"team-card\" data-team-id=\"${team.id}\">\n                <div class=\"team-header\">\n                    <div class=\"team-info\">\n                        <h4 class=\"team-name\">${team.name}</h4>\n                        <div class=\"team-category\">${team.category || 'N/A'}</div>\n                        ${captain ? `<div class=\"team-captain\">👑 Captain: ${captain.name}</div>` : ''}\n                        ${managerDisplay}\n                    </div>\n                    <div class=\"team-actions\">\n                        <button class=\"btn btn-small\" onclick=\"app.showTeamDetails(${team.id})\" title=\"View Team Details\">\n                            👥\n                        </button>\n                        <button class=\"btn btn-small\" onclick=\"app.showManagerDialog(${team.id})\" title=\"Manage Team Managers\">\n                            💼\n                        </button>\n                    </div>\n                </div>\n                \n                <div class=\"team-stats\">\n                    <span class=\"member-count\">${memberCount} players</span>\n                    <span class=\"manager-count\">${managers.length} managers</span>\n                </div>\n            </div>\n        `;\n    }\n    \n    renderManagerDisplay(managers) {\n        if (managers.length === 0) {\n            return '<div class=\"team-managers\">💼 Managers: <em>None assigned</em></div>';\n        }\n        \n        if (managers.length === 1) {\n            return `<div class=\"team-managers\">💼 Manager: ${managers[0].first_name} ${managers[0].last_name}</div>`;\n        }\n        \n        if (managers.length === 2) {\n            return `<div class=\"team-managers\">💼 Managers: ${managers[0].first_name} ${managers[0].last_name}, ${managers[1].first_name} ${managers[1].last_name}</div>`;\n        }\n        \n        return `<div class=\"team-managers\">💼 Managers: ${managers[0].first_name} ${managers[0].last_name}, ${managers[1].first_name} ${managers[1].last_name} (+${managers.length - 2} more)</div>`;\n    }\n    \n    // Manager dialog functionality\n    showManagerDialog(teamId) {\n        const team = this.teams.find(t => t.id === teamId);\n        if (!team) return;\n        \n        const teamManagers = this.teamManagers.filter(m => m.team_id === teamId);\n        \n        const modal = document.createElement('div');\n        modal.className = 'modal';\n        modal.innerHTML = `\n            <div class=\"modal-content\">\n                <div class=\"modal-header\">\n                    <h3 class=\"modal-title\">💼 ${team.name} - Team Managers</h3>\n                    <button class=\"close-btn\" onclick=\"this.closest('.modal').remove()\">&times;</button>\n                </div>\n                \n                <div class=\"modal-body\">\n                    <div class=\"managers-list\" id=\"managers-list-${teamId}\">\n                        ${this.renderManagersList(teamManagers, teamId)}\n                    </div>\n                    \n                    <div class=\"add-manager-section\">\n                        <button class=\"btn\" onclick=\"app.showAddManagerForm(${teamId})\">\n                            ➕ Add Manager\n                        </button>\n                    </div>\n                </div>\n            </div>\n        `;\n        \n        document.body.appendChild(modal);\n    }\n    \n    renderManagersList(managers, teamId) {\n        if (managers.length === 0) {\n            return '<div class=\"empty-state\"><p>No managers assigned to this team.</p></div>';\n        }\n        \n        return managers.map(manager => `\n            <div class=\"manager-item\" data-manager-id=\"${manager.id}\">\n                <div class=\"manager-info\">\n                    <div class=\"manager-name\">${manager.first_name} ${manager.last_name}</div>\n                    <div class=\"manager-contact\">\n                        ${manager.phone_number ? `📞 ${manager.phone_number}` : ''}\n                        ${manager.email_address ? `📧 ${manager.email_address}` : ''}\n                    </div>\n                </div>\n                <div class=\"manager-actions\">\n                    <button class=\"btn btn-small\" onclick=\"app.editManager(${manager.id})\" title=\"Edit Manager\">\n                        ✏️\n                    </button>\n                    <button class=\"btn btn-small btn-danger\" onclick=\"app.deleteManager(${manager.id}, ${teamId})\" title=\"Remove Manager\">\n                        🗑️\n                    </button>\n                </div>\n            </div>\n        `).join('');\n    }\n    \n    // Add manager form\n    showAddManagerForm(teamId) {\n        const team = this.teams.find(t => t.id === teamId);\n        if (!team) return;\n        \n        const modal = document.createElement('div');\n        modal.className = 'modal';\n        modal.innerHTML = `\n            <div class=\"modal-content\">\n                <div class=\"modal-header\">\n                    <h3 class=\"modal-title\">Add Manager - ${team.name}</h3>\n                    <button class=\"close-btn\" onclick=\"this.closest('.modal').remove()\">&times;</button>\n                </div>\n                \n                <div class=\"modal-body\">\n                    <form id=\"add-manager-form\" onsubmit=\"app.saveNewManager(event, ${teamId})\">\n                        <div class=\"form-group\">\n                            <label>First Name *</label>\n                            <input type=\"text\" name=\"first_name\" required>\n                        </div>\n                        \n                        <div class=\"form-group\">\n                            <label>Last Name *</label>\n                            <input type=\"text\" name=\"last_name\" required>\n                        </div>\n                        \n                        <div class=\"form-group\">\n                            <label>Phone Number</label>\n                            <input type=\"tel\" name=\"phone_number\">\n                        </div>\n                        \n                        <div class=\"form-group\">\n                            <label>Email Address</label>\n                            <input type=\"email\" name=\"email_address\">\n                        </div>\n                        \n                        <div class=\"form-actions\">\n                            <button type=\"button\" class=\"btn btn-secondary\" onclick=\"this.closest('.modal').remove()\">Cancel</button>\n                            <button type=\"submit\" class=\"btn\">Add Manager</button>\n                        </div>\n                    </form>\n                </div>\n            </div>\n        `;\n        \n        document.body.appendChild(modal);\n    }\n    \n    async saveNewManager(event, teamId) {\n        event.preventDefault();\n        \n        const form = event.target;\n        const formData = new FormData(form);\n        \n        const managerData = {\n            team_id: teamId,\n            first_name: formData.get('first_name'),\n            last_name: formData.get('last_name'),\n            phone_number: formData.get('phone_number') || null,\n            email_address: formData.get('email_address') || null\n        };\n        \n        try {\n            const response = await fetch('/api/team-managers', {\n                method: 'POST',\n                headers: {\n                    'Content-Type': 'application/json'\n                },\n                body: JSON.stringify(managerData)\n            });\n            \n            if (!response.ok) {\n                const error = await response.json();\n                throw new Error(error.error || 'Failed to create manager');\n            }\n            \n            const newManager = await response.json();\n            \n            // Update local data\n            this.teamManagers.push(newManager);\n            \n            // Close modal\n            form.closest('.modal').remove();\n            \n            // Refresh teams display\n            this.renderTeams();\n            \n            this.showSuccess('Manager added successfully!');\n            \n        } catch (error) {\n            console.error('Error creating manager:', error);\n            this.showError('Failed to add manager: ' + error.message);\n        }\n    }\n    \n    // Edit manager\n    editManager(managerId) {\n        const manager = this.teamManagers.find(m => m.id === managerId);\n        if (!manager) return;\n        \n        const modal = document.createElement('div');\n        modal.className = 'modal';\n        modal.innerHTML = `\n            <div class=\"modal-content\">\n                <div class=\"modal-header\">\n                    <h3 class=\"modal-title\">Edit Manager - ${manager.team_name}</h3>\n                    <button class=\"close-btn\" onclick=\"this.closest('.modal').remove()\">&times;</button>\n                </div>\n                \n                <div class=\"modal-body\">\n                    <form id=\"edit-manager-form\" onsubmit=\"app.saveEditManager(event, ${managerId})\">\n                        <div class=\"form-group\">\n                            <label>First Name *</label>\n                            <input type=\"text\" name=\"first_name\" value=\"${manager.first_name}\" required>\n                        </div>\n                        \n                        <div class=\"form-group\">\n                            <label>Last Name *</label>\n                            <input type=\"text\" name=\"last_name\" value=\"${manager.last_name}\" required>\n                        </div>\n                        \n                        <div class=\"form-group\">\n                            <label>Phone Number</label>\n                            <input type=\"tel\" name=\"phone_number\" value=\"${manager.phone_number || ''}\">\n                        </div>\n                        \n                        <div class=\"form-group\">\n                            <label>Email Address</label>\n                            <input type=\"email\" name=\"email_address\" value=\"${manager.email_address || ''}\">\n                        </div>\n                        \n                        <div class=\"form-actions\">\n                            <button type=\"button\" class=\"btn btn-secondary\" onclick=\"this.closest('.modal').remove()\">Cancel</button>\n                            <button type=\"submit\" class=\"btn\">Save Changes</button>\n                        </div>\n                    </form>\n                </div>\n            </div>\n        `;\n        \n        document.body.appendChild(modal);\n    }\n    \n    async saveEditManager(event, managerId) {\n        event.preventDefault();\n        \n        const form = event.target;\n        const formData = new FormData(form);\n        \n        const managerData = {\n            first_name: formData.get('first_name'),\n            last_name: formData.get('last_name'),\n            phone_number: formData.get('phone_number') || null,\n            email_address: formData.get('email_address') || null\n        };\n        \n        try {\n            const response = await fetch(`/api/team-managers/${managerId}`, {\n                method: 'PUT',\n                headers: {\n                    'Content-Type': 'application/json'\n                },\n                body: JSON.stringify(managerData)\n            });\n            \n            if (!response.ok) {\n                const error = await response.json();\n                throw new Error(error.error || 'Failed to update manager');\n            }\n            \n            const updatedManager = await response.json();\n            \n            // Update local data\n            const index = this.teamManagers.findIndex(m => m.id === managerId);\n            if (index !== -1) {\n                this.teamManagers[index] = updatedManager;\n            }\n            \n            // Close modal\n            form.closest('.modal').remove();\n            \n            // Refresh teams display\n            this.renderTeams();\n            \n            this.showSuccess('Manager updated successfully!');\n            \n        } catch (error) {\n            console.error('Error updating manager:', error);\n            this.showError('Failed to update manager: ' + error.message);\n        }\n    }\n    \n    // Delete manager\n    async deleteManager(managerId, teamId) {\n        const manager = this.teamManagers.find(m => m.id === managerId);\n        if (!manager) return;\n        \n        if (!confirm(`Are you sure you want to remove ${manager.first_name} ${manager.last_name} as a manager?`)) {\n            return;\n        }\n        \n        try {\n            const response = await fetch(`/api/team-managers/${managerId}`, {\n                method: 'DELETE'\n            });\n            \n            if (!response.ok) {\n                const error = await response.json();\n                throw new Error(error.error || 'Failed to delete manager');\n            }\n            \n            // Update local data\n            this.teamManagers = this.teamManagers.filter(m => m.id !== managerId);\n            \n            // Refresh teams display\n            this.renderTeams();\n            \n            this.showSuccess('Manager removed successfully!');\n            \n        } catch (error) {\n            console.error('Error deleting manager:', error);\n            this.showError('Failed to remove manager: ' + error.message);\n        }\n    }\n    \n    // Team details view\n    showTeamDetails(teamId) {\n        const team = this.teams.find(t => t.id === teamId);\n        if (!team) return;\n        \n        const modal = document.createElement('div');\n        modal.className = 'modal';\n        modal.innerHTML = `\n            <div class=\"modal-content\" style=\"max-width: 800px;\">\n                <div class=\"modal-header\">\n                    <h3 class=\"modal-title\">${team.name} - Team Details</h3>\n                    <button class=\"close-btn\" onclick=\"this.closest('.modal').remove()\">&times;</button>\n                </div>\n                \n                <div class=\"modal-body\">\n                    <div class=\"team-details\">\n                        <div class=\"detail-section\">\n                            <h4>Team Information</h4>\n                            <p><strong>Category:</strong> ${team.category || 'N/A'}</p>\n                            <p><strong>Total Players:</strong> ${team.members ? team.members.length : 0}</p>\n                        </div>\n                        \n                        <div class=\"detail-section\">\n                            <h4>Player Roster</h4>\n                            <div class=\"players-list\">\n                                ${this.renderPlayersList(team.members || [])}\n                            </div>\n                        </div>\n                    </div>\n                </div>\n            </div>\n        `;\n        \n        document.body.appendChild(modal);\n    }\n    \n    renderPlayersList(members) {\n        if (members.length === 0) {\n            return '<p>No players registered for this team.</p>';\n        }\n        \n        return `\n            <div class=\"players-grid\">\n                ${members.map(member => `\n                    <div class=\"player-card\">\n                        <div class=\"player-info\">\n                            <div class=\"player-name\">${member.name}${member.captain ? ' 👑' : ''}</div>\n                            <div class=\"player-details\">\n                                ${member.jersey_number ? `#${member.jersey_number}` : 'No #'} • \n                                ${member.gender || 'N/A'}\n                            </div>\n                        </div>\n                    </div>\n                `).join('')}\n            </div>\n        `;\n    }\n    \n    // Standings section\n    renderStandings() {\n        const container = document.getElementById('standings-container');\n        const showCurrentSeasonOnly = document.getElementById('show-current-season-only-standings')?.checked ?? true;\n        \n        try {\n            const standingsData = calculateLeagueStandings(this.events, this.teams, showCurrentSeasonOnly ? this.currentSeason : null);\n            \n            if (Object.keys(standingsData).length === 0) {\n                container.innerHTML = '<div class=\"empty-state\"><h3>No standings data available</h3><p>No completed matches found.</p></div>';\n                return;\n            }\n            \n            let html = '';\n            \n            Object.keys(standingsData).forEach(division => {\n                const teams = standingsData[division];\n                if (teams.length === 0) return;\n                \n                html += `\n                    <div class=\"standings-division\">\n                        <h3 class=\"division-title\">${division}</h3>\n                        <div class=\"standings-table-container\">\n                            <table class=\"standings-table\">\n                                <thead>\n                                    <tr>\n                                        <th class=\"standings-position\">#</th>\n                                        <th class=\"team-name-header\">Team</th>\n                                        <th>GP</th>\n                                        <th>W</th>\n                                        <th>L</th>\n                                        <th>T</th>\n                                        <th>GF</th>\n                                        <th>GA</th>\n                                        <th>GD</th>\n                                        <th class=\"standings-points\">PTS</th>\n                                    </tr>\n                                </thead>\n                                <tbody>\n                `;\n                \n                teams.forEach((team, index) => {\n                    html += `\n                        <tr>\n                            <td class=\"standings-position\">${index + 1}</td>\n                            <td class=\"team-name-cell\">${team.name}</td>\n                            <td class=\"standings-stats\">${team.gamesPlayed}</td>\n                            <td class=\"standings-stats\">${team.wins}</td>\n                            <td class=\"standings-stats\">${team.losses}</td>\n                            <td class=\"standings-stats\">${team.ties}</td>\n                            <td class=\"standings-stats\">${team.goalsFor}</td>\n                            <td class=\"standings-stats\">${team.goalsAgainst}</td>\n                            <td class=\"standings-stats\">${team.goalDifference >= 0 ? '+' : ''}${team.goalDifference}</td>\n                            <td class=\"standings-points\">${team.points}</td>\n                        </tr>\n                    `;\n                });\n                \n                html += `\n                                </tbody>\n                            </table>\n                        </div>\n                    </div>\n                `;\n            });\n            \n            container.innerHTML = html;\n            \n        } catch (error) {\n            console.error('Error rendering standings:', error);\n            container.innerHTML = '<div class=\"empty-state\"><h3>Error loading standings</h3><p>Failed to calculate league standings.</p></div>';\n        }\n    }\n    \n    // Game Tracker section - COMPLETED GAMES ONLY\n    renderGameTracker() {\n        const container = document.getElementById('game-tracker-container');\n        const teamFilter = document.getElementById('game-team-filter')?.value || 'all';\n        const showCurrentSeasonOnly = document.getElementById('show-current-season-games')?.checked ?? true;\n        \n        try {\n            // Get all games and filter to completed only\n            const allGames = extractGamesFromEvents(this.events, this.teams);\n            const completedGames = allGames.filter(game => {\n                // Only show completed games\n                if (game.status !== 'completed') return false;\n                \n                // Apply season filter\n                if (showCurrentSeasonOnly && !isGameInSeason(game, this.currentSeason)) {\n                    return false;\n                }\n                \n                // Apply team filter\n                if (teamFilter !== 'all') {\n                    const selectedTeamId = parseInt(teamFilter);\n                    return game.homeTeamId === selectedTeamId || game.awayTeamId === selectedTeamId;\n                }\n                \n                return true;\n            });\n            \n            // Update team filter dropdown\n            this.updateGameTeamFilter();\n            \n            if (completedGames.length === 0) {\n                container.innerHTML = '<div class=\"empty-state\"><h3>No completed games found</h3><p>No games match the current filters.</p></div>';\n                return;\n            }\n            \n            // Sort by date (most recent first)\n            completedGames.sort((a, b) => b.eventDate_epoch - a.eventDate_epoch);\n            \n            let html = `\n                <div class=\"game-tracker-summary\">\n                    <div class=\"summary-stat\">\n                        <div class=\"stat-number\">${completedGames.length}</div>\n                        <div class=\"stat-label\">Completed Games</div>\n                    </div>\n                    <div class=\"summary-stat\">\n                        <div class=\"stat-number\">${this.getUniqueTeamsCount(completedGames)}</div>\n                        <div class=\"stat-label\">Teams Involved</div>\n                    </div>\n                    <div class=\"summary-stat\">\n                        <div class=\"stat-number\">${this.getTotalCardsCount(completedGames)}</div>\n                        <div class=\"stat-label\">Total Cards</div>\n                    </div>\n                </div>\n            `;\n            \n            // Desktop table view\n            html += `\n                <div class=\"game-tracker-table-container\">\n                    <table class=\"game-tracker-table\">\n                        <thead>\n                            <tr>\n                                <th>Date/Time</th>\n                                <th>Event</th>\n                                <th>Match</th>\n                                <th>Score</th>\n                                <th>Field</th>\n                                <th>Referee</th>\n                                <th>Cards</th>\n                                <th>Status</th>\n                            </tr>\n                        </thead>\n                        <tbody>\n            `;\n            \n            completedGames.forEach(game => {\n                html += this.renderGameTableRow(game);\n            });\n            \n            html += `\n                        </tbody>\n                    </table>\n                </div>\n            `;\n            \n            // Mobile card view\n            html += `\n                <div class=\"game-tracker-mobile\">\n                    ${completedGames.map(game => this.renderGameMobileCard(game)).join('')}\n                </div>\n            `;\n            \n            container.innerHTML = html;\n            \n        } catch (error) {\n            console.error('Error rendering game tracker:', error);\n            container.innerHTML = '<div class=\"empty-state\"><h3>Error loading games</h3><p>Failed to load game data.</p></div>';\n        }\n    }\n    \n    renderGameTableRow(game) {\n        const cards = this.getGameCards(game);\n        const cardSummary = cards.length > 0 ? `${cards.filter(c => c.cardType === 'yellow').length}🟨 ${cards.filter(c => c.cardType === 'red').length}🟥` : 'None';\n        \n        return `\n            <tr>\n                <td class=\"date-time-cell\">\n                    <div class=\"game-date\">${epochToPacificDate(game.eventDate_epoch)}</div>\n                    <div class=\"game-time\">${game.time_epoch ? epochToPacificTime(game.time_epoch) : 'TBD'}</div>\n                </td>\n                <td>${game.eventName}</td>\n                <td>\n                    <div class=\"match-teams-bubbled\">\n                        <span class=\"team-result-bubble ${this.getTeamResultClass(game, 'home')}\">${game.homeTeam}</span>\n                        <span class=\"vs-separator\">vs</span>\n                        <span class=\"team-result-bubble ${this.getTeamResultClass(game, 'away')}\">${game.awayTeam}</span>\n                    </div>\n                </td>\n                <td>\n                    <div class=\"score-display\">${game.homeScore !== null && game.awayScore !== null ? `${game.homeScore}-${game.awayScore}` : 'N/A'}</div>\n                </td>\n                <td>${game.field || 'TBD'}</td>\n                <td>${game.referees ? game.referees.join(', ') : 'TBD'}</td>\n                <td>${cardSummary}</td>\n                <td>\n                    <span class=\"status-badge status-${game.status}\">${game.status.replace('_', ' ')}</span>\n                </td>\n            </tr>\n        `;\n    }\n    \n    renderGameMobileCard(game) {\n        const cards = this.getGameCards(game);\n        const cardSummary = cards.length > 0 ? `${cards.filter(c => c.cardType === 'yellow').length} Yellow, ${cards.filter(c => c.cardType === 'red').length} Red` : 'No cards';\n        \n        return `\n            <div class=\"game-record-item\">\n                <div class=\"game-record-header\">\n                    <div class=\"game-date-time\">\n                        <div class=\"game-date-large\">${epochToPacificDate(game.eventDate_epoch)}</div>\n                        <div class=\"game-time-large\">${game.time_epoch ? epochToPacificTime(game.time_epoch) : 'TBD'}</div>\n                    </div>\n                    <span class=\"status-badge status-${game.status}\">${game.status.replace('_', ' ')}</span>\n                </div>\n                \n                <div class=\"event-name-large\">${game.eventName}</div>\n                \n                <div class=\"teams-matchup\">\n                    <div class=\"match-teams-bubbled\">\n                        <span class=\"team-result-bubble ${this.getTeamResultClass(game, 'home')}\">${game.homeTeam}</span>\n                        <span class=\"vs-separator\">vs</span>\n                        <span class=\"team-result-bubble ${this.getTeamResultClass(game, 'away')}\">${game.awayTeam}</span>\n                    </div>\n                    ${game.homeScore !== null && game.awayScore !== null ? \n                        `<div class=\"score-display\">${game.homeScore} - ${game.awayScore}</div>` : \n                        '<div class=\"score-display\">Score not recorded</div>'\n                    }\n                </div>\n                \n                <div class=\"game-details-grid\">\n                    <div class=\"detail-item\">\n                        <span class=\"detail-label\">Field:</span>\n                        <span>${game.field || 'TBD'}</span>\n                    </div>\n                    <div class=\"detail-item\">\n                        <span class=\"detail-label\">Referee:</span>\n                        <span>${game.referees ? game.referees.join(', ') : 'TBD'}</span>\n                    </div>\n                    <div class=\"detail-item\">\n                        <span class=\"detail-label\">Cards:</span>\n                        <span>${cardSummary}</span>\n                    </div>\n                </div>\n            </div>\n        `;\n    }\n    \n    // Helper methods for game tracker\n    getTeamResultClass(game, side) {\n        if (game.homeScore === null || game.awayScore === null) return 'no-result';\n        \n        const homeScore = parseInt(game.homeScore);\n        const awayScore = parseInt(game.awayScore);\n        \n        if (homeScore === awayScore) return 'tie';\n        \n        if (side === 'home') {\n            return homeScore > awayScore ? 'winner' : 'loser';\n        } else {\n            return awayScore > homeScore ? 'winner' : 'loser';\n        }\n    }\n    \n    getUniqueTeamsCount(games) {\n        const teamIds = new Set();\n        games.forEach(game => {\n            teamIds.add(game.homeTeamId);\n            teamIds.add(game.awayTeamId);\n        });\n        return teamIds.size;\n    }\n    \n    getTotalCardsCount(games) {\n        let totalCards = 0;\n        games.forEach(game => {\n            const cards = this.getGameCards(game);\n            totalCards += cards.length;\n        });\n        return totalCards;\n    }\n    \n    getGameCards(game) {\n        const cards = [];\n        if (this.events && this.events.length > 0) {\n            const event = this.events.find(e => e.id === game.eventId);\n            if (event && event.matches) {\n                const match = event.matches.find(m => m.id === game.matchId);\n                if (match && match.cards) {\n                    return match.cards;\n                }\n            }\n        }\n        return cards;\n    }\n    \n    updateGameTeamFilter() {\n        const select = document.getElementById('game-team-filter');\n        if (!select) return;\n        \n        // Clear existing options except 'All Teams'\n        select.innerHTML = '<option value=\"all\">All Teams</option>';\n        \n        // Add team options\n        this.teams.forEach(team => {\n            const option = document.createElement('option');\n            option.value = team.id;\n            option.textContent = team.name;\n            select.appendChild(option);\n        });\n    }\n    \n    // Utility methods\n    showError(message) {\n        this.showNotification(message, 'error');\n    }\n    \n    showSuccess(message) {\n        this.showNotification(message, 'success');\n    }\n    \n    showNotification(message, type = 'info') {\n        const notification = document.createElement('div');\n        notification.className = `notification notification-${type}`;\n        notification.textContent = message;\n        \n        // Add CSS if not already present\n        if (!document.querySelector('#notification-styles')) {\n            const style = document.createElement('style');\n            style.id = 'notification-styles';\n            style.textContent = `\n                .notification {\n                    position: fixed;\n                    top: 20px;\n                    right: 20px;\n                    padding: 15px 20px;\n                    border-radius: 8px;\n                    color: white;\n                    font-weight: 600;\n                    z-index: 10000;\n                    max-width: 400px;\n                    box-shadow: 0 4px 12px rgba(0,0,0,0.15);\n                }\n                .notification-success { background: #28a745; }\n                .notification-error { background: #dc3545; }\n                .notification-info { background: #2196F3; }\n            `;\n            document.head.appendChild(style);\n        }\n        \n        document.body.appendChild(notification);\n        \n        setTimeout(() => {\n            notification.remove();\n        }, 5000);\n    }\n}\n\n// Global functions for onclick handlers\nfunction showSection(sectionName) {\n    app.showSection(sectionName);\n}\n\n// Initialize app\nconst app = new CheckInManagerApp();
+    }
+    
+    renderTeamCard(team, managers, captain) {
+        const memberCount = team.members ? team.members.length : 0;
+        const managerDisplay = this.renderManagerDisplay(managers);
+        
+        return `
+            <div class="team-card" data-team-id="${team.id}">
+                <div class="team-header">
+                    <div class="team-info">
+                        <h4 class="team-name">${team.name}</h4>
+                        <div class="team-category">${team.category || 'N/A'}</div>
+                        ${captain ? `<div class="team-captain">👑 Captain: ${captain.name}</div>` : ''}
+                        ${managerDisplay}
+                    </div>
+                    <div class="team-actions">
+                        <button class="btn btn-small" onclick="app.showTeamDetails('${team.id}')" title="View Team Details">
+                            👥
+                        </button>
+                        <button class="btn btn-small" onclick="app.showManagerDialog('${team.id}')" title="Manage Team Managers">
+                            💼
+                        </button>
+                    </div>
+                </div>
+                
+                <div class="team-stats">
+                    <span class="member-count">${memberCount} players</span>
+                    <span class="manager-count">${managers.length} managers</span>
+                </div>
+            </div>
+        `;
+    }
+    
+    renderManagerDisplay(managers) {
+        if (managers.length === 0) {
+            return '<div class="team-managers">💼 Managers: <em>None assigned</em></div>';
+        }
+        
+        if (managers.length === 1) {
+            return `<div class="team-managers">💼 Manager: ${managers[0].first_name} ${managers[0].last_name}</div>`;
+        }
+        
+        if (managers.length === 2) {
+            return `<div class="team-managers">💼 Managers: ${managers[0].first_name} ${managers[0].last_name}, ${managers[1].first_name} ${managers[1].last_name}</div>`;
+        }
+        
+        return `<div class="team-managers">💼 Managers: ${managers[0].first_name} ${managers[0].last_name}, ${managers[1].first_name} ${managers[1].last_name} (+${managers.length - 2} more)</div>`;
+    }
+    
+    // Manager dialog functionality
+    showManagerDialog(teamId) {
+        const team = this.teams.find(t => t.id === teamId);
+        if (!team) return;
+        
+        const teamManagers = this.teamManagers.filter(m => m.team_id === teamId);
+        
+        const modal = document.createElement('div');
+        modal.className = 'modal';
+        modal.innerHTML = `
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 class="modal-title">💼 ${team.name} - Team Managers</h3>
+                    <button class="close-btn" onclick="this.closest('.modal').remove()">&times;</button>
+                </div>
+                
+                <div class="modal-body">
+                    <div class="managers-list" id="managers-list-${teamId}">
+                        ${this.renderManagersList(teamManagers, teamId)}
+                    </div>
+                    
+                    <div class="add-manager-section">
+                        <button class="btn" onclick="app.showAddManagerForm('${teamId}')">
+                            ➕ Add Manager
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(modal);
+    }
+    
+    renderManagersList(managers, teamId) {
+        if (managers.length === 0) {
+            return '<div class="empty-state"><p>No managers assigned to this team.</p></div>';
+        }
+        
+        return managers.map(manager => `
+            <div class="manager-item" data-manager-id="${manager.id}">
+                <div class="manager-info">
+                    <div class="manager-name">${manager.first_name} ${manager.last_name}</div>
+                    <div class="manager-contact">
+                        ${manager.phone_number ? `📞 ${manager.phone_number}` : ''}
+                        ${manager.email_address ? `📧 ${manager.email_address}` : ''}
+                    </div>
+                </div>
+                <div class="manager-actions">
+                    <button class="btn btn-small" onclick="app.editManager(${manager.id})" title="Edit Manager">
+                        ✏️
+                    </button>
+                    <button class="btn btn-small btn-danger" onclick="app.deleteManager(${manager.id}, '${teamId}')" title="Remove Manager">
+                        🗑️
+                    </button>
+                </div>
+            </div>
+        `).join('');
+    }
+    
+    // Add manager form
+    showAddManagerForm(teamId) {
+        const team = this.teams.find(t => t.id === teamId);
+        if (!team) return;
+        
+        const modal = document.createElement('div');
+        modal.className = 'modal';
+        modal.innerHTML = `
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 class="modal-title">Add Manager - ${team.name}</h3>
+                    <button class="close-btn" onclick="this.closest('.modal').remove()">&times;</button>
+                </div>
+                
+                <div class="modal-body">
+                    <form id="add-manager-form" onsubmit="app.saveNewManager(event, '${teamId}')">
+                        <div class="form-group">
+                            <label>First Name *</label>
+                            <input type="text" name="first_name" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Last Name *</label>
+                            <input type="text" name="last_name" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Phone Number</label>
+                            <input type="tel" name="phone_number">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Email Address</label>
+                            <input type="email" name="email_address">
+                        </div>
+                        
+                        <div class="form-actions">
+                            <button type="button" class="btn btn-secondary" onclick="this.closest('.modal').remove()">Cancel</button>
+                            <button type="submit" class="btn">Add Manager</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(modal);
+    }
+    
+    async saveNewManager(event, teamId) {
+        event.preventDefault();
+        
+        const form = event.target;
+        const formData = new FormData(form);
+        
+        const managerData = {
+            team_id: teamId,
+            first_name: formData.get('first_name'),
+            last_name: formData.get('last_name'),
+            phone_number: formData.get('phone_number') || null,
+            email_address: formData.get('email_address') || null
+        };
+        
+        try {
+            const response = await fetch('/api/team-managers', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(managerData)
+            });
+            
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.error || 'Failed to create manager');
+            }
+            
+            const newManager = await response.json();
+            
+            // Update local data
+            this.teamManagers.push(newManager);
+            
+            // Close modal
+            form.closest('.modal').remove();
+            
+            // Refresh teams display
+            this.renderTeams();
+            
+            this.showSuccess('Manager added successfully!');
+            
+        } catch (error) {
+            console.error('Error creating manager:', error);
+            this.showError('Failed to add manager: ' + error.message);
+        }
+    }
+    
+    // Edit manager
+    editManager(managerId) {
+        const manager = this.teamManagers.find(m => m.id === managerId);
+        if (!manager) return;
+        
+        const modal = document.createElement('div');
+        modal.className = 'modal';
+        modal.innerHTML = `
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 class="modal-title">Edit Manager - ${manager.team_name || 'Team'}</h3>
+                    <button class="close-btn" onclick="this.closest('.modal').remove()">&times;</button>
+                </div>
+                
+                <div class="modal-body">
+                    <form id="edit-manager-form" onsubmit="app.saveEditManager(event, ${managerId})">
+                        <div class="form-group">
+                            <label>First Name *</label>
+                            <input type="text" name="first_name" value="${manager.first_name}" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Last Name *</label>
+                            <input type="text" name="last_name" value="${manager.last_name}" required>
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Phone Number</label>
+                            <input type="tel" name="phone_number" value="${manager.phone_number || ''}">
+                        </div>
+                        
+                        <div class="form-group">
+                            <label>Email Address</label>
+                            <input type="email" name="email_address" value="${manager.email_address || ''}">
+                        </div>
+                        
+                        <div class="form-actions">
+                            <button type="button" class="btn btn-secondary" onclick="this.closest('.modal').remove()">Cancel</button>
+                            <button type="submit" class="btn">Save Changes</button>
+                        </div>
+                    </form>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(modal);
+    }
+    
+    async saveEditManager(event, managerId) {
+        event.preventDefault();
+        
+        const form = event.target;
+        const formData = new FormData(form);
+        
+        const managerData = {
+            first_name: formData.get('first_name'),
+            last_name: formData.get('last_name'),
+            phone_number: formData.get('phone_number') || null,
+            email_address: formData.get('email_address') || null
+        };
+        
+        try {
+            const response = await fetch(`/api/team-managers/${managerId}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify(managerData)
+            });
+            
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.error || 'Failed to update manager');
+            }
+            
+            const updatedManager = await response.json();
+            
+            // Update local data
+            const index = this.teamManagers.findIndex(m => m.id === managerId);
+            if (index !== -1) {
+                this.teamManagers[index] = updatedManager;
+            }
+            
+            // Close modal
+            form.closest('.modal').remove();
+            
+            // Refresh teams display
+            this.renderTeams();
+            
+            this.showSuccess('Manager updated successfully!');
+            
+        } catch (error) {
+            console.error('Error updating manager:', error);
+            this.showError('Failed to update manager: ' + error.message);
+        }
+    }
+    
+    // Delete manager
+    async deleteManager(managerId, teamId) {
+        const manager = this.teamManagers.find(m => m.id === managerId);
+        if (!manager) return;
+        
+        if (!confirm(`Are you sure you want to remove ${manager.first_name} ${manager.last_name} as a manager?`)) {
+            return;
+        }
+        
+        try {
+            const response = await fetch(`/api/team-managers/${managerId}`, {
+                method: 'DELETE'
+            });
+            
+            if (!response.ok) {
+                const error = await response.json();
+                throw new Error(error.error || 'Failed to delete manager');
+            }
+            
+            // Update local data
+            this.teamManagers = this.teamManagers.filter(m => m.id !== managerId);
+            
+            // Refresh teams display
+            this.renderTeams();
+            
+            this.showSuccess('Manager removed successfully!');
+            
+        } catch (error) {
+            console.error('Error deleting manager:', error);
+            this.showError('Failed to remove manager: ' + error.message);
+        }
+    }
+    
+    // Team details view
+    showTeamDetails(teamId) {
+        const team = this.teams.find(t => t.id === teamId);
+        if (!team) return;
+        
+        const modal = document.createElement('div');
+        modal.className = 'modal';
+        modal.innerHTML = `
+            <div class="modal-content" style="max-width: 800px;">
+                <div class="modal-header">
+                    <h3 class="modal-title">${team.name} - Team Details</h3>
+                    <button class="close-btn" onclick="this.closest('.modal').remove()">&times;</button>
+                </div>
+                
+                <div class="modal-body">
+                    <div class="team-details">
+                        <div class="detail-section">
+                            <h4>Team Information</h4>
+                            <p><strong>Category:</strong> ${team.category || 'N/A'}</p>
+                            <p><strong>Total Players:</strong> ${team.members ? team.members.length : 0}</p>
+                        </div>
+                        
+                        <div class="detail-section">
+                            <h4>Player Roster</h4>
+                            <div class="players-list">
+                                ${this.renderPlayersList(team.members || [])}
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(modal);
+    }
+    
+    renderPlayersList(members) {
+        if (members.length === 0) {
+            return '<p>No players registered for this team.</p>';
+        }
+        
+        return `
+            <div class="players-grid">
+                ${members.map(member => `
+                    <div class="player-card">
+                        <div class="player-info">
+                            <div class="player-name">${member.name}${member.captain ? ' 👑' : ''}</div>
+                            <div class="player-details">
+                                ${member.jersey_number ? `#${member.jersey_number}` : 'No #'} • 
+                                ${member.gender || 'N/A'}
+                            </div>
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+        `;
+    }
+    
+    // Standings section
+    renderStandings() {
+        const container = document.getElementById('standings-container');
+        container.innerHTML = '<div class="empty-state"><h3>Standings Coming Soon</h3><p>This feature is under development.</p></div>';
+    }
+    
+    // Game Tracker section
+    renderGameTracker() {
+        const container = document.getElementById('game-tracker-container');
+        container.innerHTML = '<div class="empty-state"><h3>Game Tracker Coming Soon</h3><p>This feature is under development.</p></div>';
+    }
+    
+    // Utility methods
+    showError(message) {
+        this.showNotification(message, 'error');
+    }
+    
+    showSuccess(message) {
+        this.showNotification(message, 'success');
+    }
+    
+    showNotification(message, type = 'info') {
+        const notification = document.createElement('div');
+        notification.className = `notification notification-${type}`;
+        notification.textContent = message;
+        
+        // Add CSS if not already present
+        if (!document.querySelector('#notification-styles')) {
+            const style = document.createElement('style');
+            style.id = 'notification-styles';
+            style.textContent = `
+                .notification {
+                    position: fixed;
+                    top: 20px;
+                    right: 20px;
+                    padding: 15px 20px;
+                    border-radius: 8px;
+                    color: white;
+                    font-weight: 600;
+                    z-index: 10000;
+                    max-width: 400px;
+                    box-shadow: 0 4px 12px rgba(0,0,0,0.15);
+                }
+                .notification-success { background: #28a745; }
+                .notification-error { background: #dc3545; }
+                .notification-info { background: #2196F3; }
+            `;
+            document.head.appendChild(style);
+        }
+        
+        document.body.appendChild(notification);
+        
+        setTimeout(() => {
+            notification.remove();
+        }, 5000);
+    }
+}
+
+// Global functions for onclick handlers
+function showSection(sectionName) {
+    if (window.app) {
+        window.app.showSection(sectionName);
+    }
+}
+
+// Initialize app
+window.app = new CheckInManagerApp();
