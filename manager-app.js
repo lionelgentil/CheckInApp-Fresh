@@ -289,10 +289,10 @@ class CheckInManagerApp {
         // Phone number validation (if provided)
         const phoneNumber = formData.get('phone_number')?.trim();
         if (phoneNumber) {
-            // Allow various phone formats: (123) 456-7890, 123-456-7890, 123.456.7890, 123 456 7890, +1234567890
-            const phoneRegex = /^[\+]?[1-9][\d\s\-\.\(\)]{7,15}$/;
-            if (!phoneRegex.test(phoneNumber.replace(/\s/g, ''))) {
-                errors.push('Phone number must be 8-16 digits and may include spaces, dashes, dots, or parentheses');
+            // Enforce XXX-XXX-XXXX format
+            const phoneRegex = /^\d{3}-\d{3}-\d{4}$/;
+            if (!phoneRegex.test(phoneNumber)) {
+                errors.push('Phone number must be in format: 555-555-5555');
             }
         }
         
@@ -308,7 +308,7 @@ class CheckInManagerApp {
         return errors;
     }
     
-    // Show validation errors to user
+    // Show validation errors to user in the correct modal
     showValidationErrors(errors) {
         const errorHtml = `
             <div class="form-errors" style="background: #f8d7da; color: #721c24; padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #f5c6cb;">
@@ -325,9 +325,28 @@ class CheckInManagerApp {
             existingErrors.remove();
         }
         
-        // Add errors to the top of the modal body
-        const modalBody = document.querySelector('.modal-body');
-        modalBody.insertAdjacentHTML('afterbegin', errorHtml);
+        // Find the currently active modal and add errors to its modal body
+        const activeModals = document.querySelectorAll('.modal');
+        const currentModal = Array.from(activeModals).pop(); // Get the top-most modal
+        if (currentModal) {
+            const modalBody = currentModal.querySelector('.modal-body');
+            modalBody.insertAdjacentHTML('afterbegin', errorHtml);
+        }
+    }
+    
+    // Format phone number as user types
+    formatPhoneNumber(input) {
+        // Remove all non-numeric characters
+        let value = input.value.replace(/\D/g, '');
+        
+        // Format as XXX-XXX-XXXX
+        if (value.length >= 6) {
+            value = `${value.slice(0, 3)}-${value.slice(3, 6)}-${value.slice(6, 10)}`;
+        } else if (value.length >= 3) {
+            value = `${value.slice(0, 3)}-${value.slice(3)}`;
+        }
+        
+        input.value = value;
     }
     
     // Add manager form
@@ -358,7 +377,7 @@ class CheckInManagerApp {
                         
                         <div class="form-group">
                             <label>Phone Number</label>
-                            <input type="tel" name="phone_number">
+                            <input type="tel" name="phone_number" placeholder="555-555-5555" maxlength="12" oninput="app.formatPhoneNumber(this)">
                         </div>
                         
                         <div class="form-group">
@@ -463,7 +482,7 @@ class CheckInManagerApp {
                         
                         <div class="form-group">
                             <label>Phone Number</label>
-                            <input type="tel" name="phone_number" value="${manager.phone_number || ''}">
+                            <input type="tel" name="phone_number" value="${manager.phone_number || ''}" placeholder="555-555-5555" maxlength="12" oninput="app.formatPhoneNumber(this)">
                         </div>
                         
                         <div class="form-group">
