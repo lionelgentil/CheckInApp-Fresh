@@ -258,17 +258,18 @@ class CheckInManagerApp {
         return managers.map(manager => `
             <div class="manager-item" data-manager-id="${manager.id}">
                 <div class="manager-info">
-                    <div class="manager-name">${manager.first_name} ${manager.last_name}</div>
+                    <div class="manager-name" onclick="app.showManagerProfile(${manager.id})" style="cursor: pointer; color: #2196F3;">${manager.first_name} ${manager.last_name}</div>
                     <div class="manager-contact">
-                        ${manager.phone_number ? `📞 ${manager.phone_number}` : ''}
-                        ${manager.email_address ? `📧 ${manager.email_address}` : ''}
+                        ${manager.phone_number ? `<div class="contact-line">📞 ${manager.phone_number}</div>` : ''}
+                        ${manager.email_address ? `<div class="contact-line">📧 ${manager.email_address}</div>` : ''}
+                        ${!manager.phone_number && !manager.email_address ? '<div class="contact-line">No contact info</div>' : ''}
                     </div>
                 </div>
                 <div class="manager-actions">
                     <button class="btn btn-small" onclick="app.editManager(${manager.id})" title="Edit Manager">
                         ✏️
                     </button>
-                    <button class="btn btn-small btn-danger" onclick="app.deleteManager(${manager.id}, '${teamId}')" title="Remove Manager">
+                    <button class="btn btn-small" onclick="app.deleteManager(${manager.id}, '${teamId}')" title="Remove Manager">
                         🗑️
                     </button>
                 </div>
@@ -327,11 +328,94 @@ class CheckInManagerApp {
         document.body.appendChild(modal);
     }
     
-    // Form validation for manager data\n    validateManagerForm(formData) {\n        const errors = [];\n        \n        // Required fields\n        if (!formData.get('first_name')?.trim()) {\n            errors.push('First name is required');\n        }\n        \n        if (!formData.get('last_name')?.trim()) {\n            errors.push('Last name is required');\n        }\n        \n        // Phone number validation (if provided)\n        const phoneNumber = formData.get('phone_number')?.trim();\n        if (phoneNumber) {\n            // Allow various phone formats: (123) 456-7890, 123-456-7890, 123.456.7890, 123 456 7890, +1234567890\n            const phoneRegex = /^[\\+]?[1-9][\\d\\s\\-\\.\\(\\)]{7,15}$/;\n            if (!phoneRegex.test(phoneNumber.replace(/\\s/g, ''))) {\n                errors.push('Phone number must be 8-16 digits and may include spaces, dashes, dots, or parentheses');\n            }\n        }\n        \n        // Email validation (if provided)\n        const email = formData.get('email_address')?.trim();\n        if (email) {\n            const emailRegex = /^[^\\s@]+@[^\\s@]+\\.[^\\s@]+$/;\n            if (!emailRegex.test(email)) {\n                errors.push('Please enter a valid email address');\n            }\n        }\n        \n        return errors;\n    }\n    \n    // Show validation errors to user\n    showValidationErrors(errors) {\n        const errorHtml = `\n            <div class=\"form-errors\">\n                <div class=\"error-title\">Please fix the following errors:</div>\n                <ul>\n                    ${errors.map(error => `<li>${error}</li>`).join('')}\n                </ul>\n            </div>\n        `;\n        \n        // Remove any existing error display\n        const existingErrors = document.querySelector('.form-errors');\n        if (existingErrors) {\n            existingErrors.remove();\n        }\n        \n        // Add errors to the top of the modal body\n        const modalBody = document.querySelector('.modal-body');\n        modalBody.insertAdjacentHTML('afterbegin', errorHtml);\n    }
+    // Form validation for manager data
+    validateManagerForm(formData) {
+        const errors = [];
+        
+        // Required fields
+        if (!formData.get('first_name')?.trim()) {
+            errors.push('First name is required');
+        }
+        
+        if (!formData.get('last_name')?.trim()) {
+            errors.push('Last name is required');
+        }
+        
+        // Phone number validation (if provided)
+        const phoneNumber = formData.get('phone_number')?.trim();
+        if (phoneNumber) {
+            // Enforce XXX-XXX-XXXX format
+            const phoneRegex = /^\d{3}-\d{3}-\d{4}$/;
+            if (!phoneRegex.test(phoneNumber)) {
+                errors.push('Phone number must be in format: 555-555-5555');
+            }
+        }
+        
+        // Email validation (if provided)
+        const email = formData.get('email_address')?.trim();
+        if (email) {
+            const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+            if (!emailRegex.test(email)) {
+                errors.push('Please enter a valid email address');
+            }
+        }
+        
+        return errors;
+    }
+    
+    // Show validation errors to user in the correct modal
+    showValidationErrors(errors) {
+        const errorHtml = `
+            <div class="form-errors" style="background: #f8d7da; color: #721c24; padding: 15px; border-radius: 8px; margin-bottom: 20px; border: 1px solid #f5c6cb;">
+                <div class="error-title" style="font-weight: 600; margin-bottom: 10px;">Please fix the following errors:</div>
+                <ul style="margin: 0; padding-left: 20px;">
+                    ${errors.map(error => `<li>${error}</li>`).join('')}
+                </ul>
+            </div>
+        `;
+        
+        // Remove any existing error display
+        const existingErrors = document.querySelector('.form-errors');
+        if (existingErrors) {
+            existingErrors.remove();
+        }
+        
+        // Find the currently active modal and add errors to its modal body
+        const activeModals = document.querySelectorAll('.modal');
+        const currentModal = Array.from(activeModals).pop(); // Get the top-most modal
+        if (currentModal) {
+            const modalBody = currentModal.querySelector('.modal-body');
+            modalBody.insertAdjacentHTML('afterbegin', errorHtml);
+        }
+    }
+    
+    // Format phone number as user types
+    formatPhoneNumber(input) {
+        // Remove all non-numeric characters
+        let value = input.value.replace(/\D/g, '');
+        
+        // Format as XXX-XXX-XXXX
+        if (value.length >= 6) {
+            value = `${value.slice(0, 3)}-${value.slice(3, 6)}-${value.slice(6, 10)}`;
+        } else if (value.length >= 3) {
+            value = `${value.slice(0, 3)}-${value.slice(3)}`;
+        }
+        
+        input.value = value;
+    }
+    
+    async saveNewManager(event, teamId) {
         event.preventDefault();
         
         const form = event.target;
         const formData = new FormData(form);
+        
+        // Validate form data
+        const validationErrors = this.validateManagerForm(formData);
+        if (validationErrors.length > 0) {
+            this.showValidationErrors(validationErrors);
+            return;
+        }
         
         const managerData = {
             team_id: teamId,
@@ -365,6 +449,9 @@ class CheckInManagerApp {
             
             // Refresh teams display
             this.renderTeams();
+            
+            // Show the updated manager dialog
+            this.showManagerDialog(teamId);
             
             this.showSuccess('Manager added successfully!');
             
@@ -402,7 +489,7 @@ class CheckInManagerApp {
                         
                         <div class="form-group">
                             <label>Phone Number</label>
-                            <input type="tel" name="phone_number" value="${manager.phone_number || ''}">
+                            <input type="tel" name="phone_number" value="${manager.phone_number || ''}" placeholder="555-555-5555" maxlength="12" oninput="app.formatPhoneNumber(this)">
                         </div>
                         
                         <div class="form-group">
@@ -427,6 +514,13 @@ class CheckInManagerApp {
         
         const form = event.target;
         const formData = new FormData(form);
+        
+        // Validate form data
+        const validationErrors = this.validateManagerForm(formData);
+        if (validationErrors.length > 0) {
+            this.showValidationErrors(validationErrors);
+            return;
+        }
         
         const managerData = {
             first_name: formData.get('first_name'),
@@ -493,6 +587,13 @@ class CheckInManagerApp {
             // Update local data
             this.teamManagers = this.teamManagers.filter(m => m.id !== managerId);
             
+            // Refresh the manager dialog
+            const managersListElement = document.getElementById(`managers-list-${teamId}`);
+            if (managersListElement) {
+                const teamManagers = this.teamManagers.filter(m => m.team_id === teamId);
+                managersListElement.innerHTML = this.renderManagersList(teamManagers, teamId);
+            }
+            
             // Refresh teams display
             this.renderTeams();
             
@@ -502,6 +603,46 @@ class CheckInManagerApp {
             console.error('Error deleting manager:', error);
             this.showError('Failed to remove manager: ' + error.message);
         }
+    }
+    
+    // Manager profile view-only mode
+    showManagerProfile(managerId) {
+        const manager = this.teamManagers.find(m => m.id === managerId);
+        if (!manager) return;
+        
+        const modal = document.createElement('div');
+        modal.className = 'modal';
+        modal.innerHTML = `
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 class="modal-title">👤 Manager Profile</h3>
+                    <button class="close-btn" onclick="this.closest('.modal').remove()">&times;</button>
+                </div>
+                
+                <div class="modal-body">
+                    <div class="profile-info">
+                        <div class="profile-section">
+                            <h4>Personal Information</h4>
+                            <p><strong>Name:</strong> ${manager.first_name} ${manager.last_name}</p>
+                            <p><strong>Team:</strong> ${manager.team_name || 'Unknown'}</p>
+                        </div>
+                        
+                        <div class="profile-section">
+                            <h4>Contact Information</h4>
+                            <p><strong>Phone:</strong> ${manager.phone_number || 'Not provided'}</p>
+                            <p><strong>Email:</strong> ${manager.email_address || 'Not provided'}</p>
+                        </div>
+                    </div>
+                    
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary" onclick="this.closest('.modal').remove()">Close</button>
+                        <button type="button" class="btn" onclick="this.closest('.modal').remove(); app.editManager(${managerId})">Edit Manager</button>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(modal);
     }
     
     // Team details view
