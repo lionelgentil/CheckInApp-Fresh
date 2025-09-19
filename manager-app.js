@@ -1056,8 +1056,318 @@ class CheckInManagerApp {
     
     // Game Tracker section
     renderGameTracker() {
+        console.log('🎯 renderGameTracker called');
         const container = document.getElementById('game-tracker-container');
-        container.innerHTML = '<div class="empty-state"><h3>Game Tracker Coming Soon</h3><p>This feature is under development.</p></div>';
+        const teamFilter = document.getElementById('game-team-filter')?.value || 'all';
+        const showCurrentSeasonOnly = document.getElementById('show-current-season-games')?.checked ?? true;
+        
+        // Populate team filter dropdown if not already populated
+        this.populateTeamFilter();
+        
+        console.log('👥 Team filter:', teamFilter);
+        console.log('📅 Current season only:', showCurrentSeasonOnly);
+        
+        // Collect all matches from all events (only completed games for managers)
+        const gameRecords = this.collectAllGameRecords();
+        
+        console.log('📊 Collected game records:', gameRecords.length);
+        
+        // Filter by season if specified
+        let filteredGames = gameRecords;
+        if (showCurrentSeasonOnly) {
+            filteredGames = gameRecords.filter(game => this.isCurrentSeasonEvent(game.eventDate_epoch));
+        }
+        
+        // Filter by team if specified
+        if (teamFilter !== 'all') {
+            filteredGames = filteredGames.filter(game => 
+                game.homeTeamId === teamFilter || game.awayTeamId === teamFilter
+            );
+        }
+        
+        // Only show completed games for managers
+        filteredGames = filteredGames.filter(game => game.status === 'completed');
+        
+        console.log('📊 Filtered completed games:', filteredGames.length);
+        
+        if (filteredGames.length === 0) {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <h3>No completed games found</h3>
+                    <p>Completed game records will appear here when available</p>
+                </div>
+            `;
+            return;
+        }
+        
+        // Sort by combined date + time (most recent datetime first)
+        filteredGames.sort((a, b) => {
+            // Create combined datetime for proper chronological sorting
+            const getGameDateTime = (game) => {
+                const baseDate = new Date(game.eventDate_epoch * 1000);
+                
+                if (game.time_epoch) {
+                    const timeDate = new Date(game.time_epoch * 1000);
+                    return new Date(
+                        baseDate.getFullYear(),
+                        baseDate.getMonth(), 
+                        baseDate.getDate(),
+                        timeDate.getHours(),
+                        timeDate.getMinutes(),
+                        timeDate.getSeconds()
+                    );
+                } else if (game.time && typeof game.time === 'string') {
+                    const timeStr = game.time.trim();
+                    const [hours, minutes] = timeStr.includes(':') 
+                        ? timeStr.split(':').map(n => parseInt(n)) 
+                        : [0, 0];
+                    
+                    return new Date(
+                        baseDate.getFullYear(),
+                        baseDate.getMonth(),
+                        baseDate.getDate(),
+                        hours || 0,
+                        minutes || 0,
+                        0
+                    );
+                } else {
+                    return baseDate;
+                }
+            };
+            
+            const dateTimeA = getGameDateTime(a);
+            const dateTimeB = getGameDateTime(b);
+            
+            if (dateTimeA.getTime() !== dateTimeB.getTime()) {
+                return dateTimeB - dateTimeA;
+            }
+            
+            const getFieldNumber = (game) => {
+                if (!game.field) return 999999;
+                const fieldStr = game.field.toString().toLowerCase();
+                const match = fieldStr.match(/(\d+)/);
+                return match ? parseInt(match[1]) : 999999;
+            };
+            
+            const fieldA = getFieldNumber(a);
+            const fieldB = getFieldNumber(b);
+            
+            return fieldA - fieldB;
+        });
+        
+        container.innerHTML = `
+            <div class="game-tracker-table-container">
+                <table class="game-tracker-table">
+                    <thead>
+                        <tr>
+                            <th>Date/Time</th>
+                            <th>Home Team</th>
+                            <th>Away Team</th>
+                            <th>Score</th>
+                            <th>Field</th>
+                            <th>Status</th>
+                            <th>Referee(s)</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${filteredGames.map(game => `
+                            <tr class="game-row ${game.status}">
+                                <td class="date-time-cell">
+                                    <div class="game-date">${this.epochToPacificDate(game.eventDate_epoch)}</div>
+                                    ${game.time_epoch ? `<div class="game-time">${this.epochToPacificTime(game.time_epoch)}</div>` : ''}
+                                </td>
+                                <td class="team-cell">
+                                    ${this.getTeamResultBubble(game.homeTeam, 'home', game)}
+                                </td>
+                                <td class="team-cell">
+                                    ${this.getTeamResultBubble(game.awayTeam, 'away', game)}
+                                </td>
+                                <td class="score-cell">
+                                    ${game.status === 'completed' && game.hasScore ? `${game.homeScore} - ${game.awayScore}` : '—'}
+                                </td>
+                                <td class="field-cell">
+                                    ${game.field ? `Field ${game.field}` : '—'}
+                                </td>
+                                <td class="status-cell">
+                                    <span class="status-badge status-${game.status}">${this.getStatusDisplay(game.status)}</span>
+                                </td>
+                                <td class="referee-cell">
+                                    ${game.referees.length > 0 ? 
+                                        game.referees.map(ref => `<span class="referee-bubble">${ref.replace('👨‍⚖️ ', '')}</span>`).join('<br>') 
+                                        : '—'}
+                                </td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+            </div>
+            
+            <!-- Mobile Card View -->
+            <div class="game-tracker-mobile">
+                ${filteredGames.map(game => `
+                    <div class="game-record-item">
+                        <div class="game-record-header">
+                            <div class="game-info-section">
+                                <div class="game-date-large">${this.epochToPacificDate(game.eventDate_epoch)}</div>
+                                ${game.time_epoch ? `<div class="game-time-large">${this.epochToPacificTime(game.time_epoch)}</div>` : ''}
+                            </div>
+                            <div class="game-status-section">
+                                <span class="status-badge status-${game.status}">${this.getStatusDisplay(game.status)}</span>
+                            </div>
+                        </div>
+                        
+                        <div class="game-record-details">
+                            <div class="teams-matchup">
+                                <div class="match-teams-bubbled">
+                                    ${this.getTeamResultBubble(game.homeTeam, 'home', game)}
+                                    <span class="vs-separator">vs</span>
+                                    ${this.getTeamResultBubble(game.awayTeam, 'away', game)}
+                                </div>
+                                ${game.hasScore && game.status === 'completed' ? `
+                                    <div class="score-display">${game.homeScore} - ${game.awayScore}</div>
+                                ` : ''}
+                            </div>
+                            
+                            <div class="game-details-grid">
+                                ${game.field ? `<div class="detail-item"><span class="detail-label">Field:</span> ${game.field}</div>` : ''}
+                                ${game.referees.length > 0 ? `
+                                    <div class="detail-item">
+                                        <span class="detail-label">Referee(s):</span>
+                                        <div class="mobile-referees">
+                                            ${game.referees.map(ref => `<span class="referee-bubble">${ref.replace('👨‍⚖️ ', '')}</span>`).join(' ')}
+                                        </div>
+                                    </div>
+                                ` : ''}
+                            </div>
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+        `;
+    }
+    
+    collectAllGameRecords() {
+        console.log('🔍 collectAllGameRecords called');
+        console.log('📊 Available events:', this.events.length);
+        console.log('👥 Available teams:', this.teams.length);
+        console.log('👨‍⚖️ Available referees:', this.referees.length);
+        
+        const gameRecords = [];
+        
+        // Create lookup maps for efficiency
+        const teamLookup = new Map();
+        const refereeLookup = new Map();
+        
+        this.teams.forEach(team => teamLookup.set(team.id, team));
+        this.referees.forEach(referee => refereeLookup.set(referee.id, referee));
+        
+        // Process all events and matches
+        this.events.forEach((event, eventIndex) => {
+            console.log(`📅 Processing event ${eventIndex + 1}/${this.events.length}: ${event.name}`);
+            
+            if (!event.matches || event.matches.length === 0) {
+                console.log(`⚠️ Event ${event.name} has no matches`);
+                return;
+            }
+            
+            event.matches.forEach((match, matchIndex) => {
+                console.log(`🏆 Processing match ${matchIndex + 1}/${event.matches.length}: ${match.homeTeamId} vs ${match.awayTeamId}`);
+                
+                const homeTeam = teamLookup.get(match.homeTeamId);
+                const awayTeam = teamLookup.get(match.awayTeamId);
+                const mainReferee = refereeLookup.get(match.mainRefereeId);
+                const assistantReferee = refereeLookup.get(match.assistantRefereeId);
+                
+                // Build referees array
+                const referees = [];
+                if (mainReferee) referees.push(`👨‍⚖️ ${mainReferee.name}`);
+                if (assistantReferee) referees.push(`👨‍⚖️ ${assistantReferee.name}`);
+                
+                const gameRecord = {
+                    eventId: event.id,
+                    matchId: match.id,
+                    homeTeamId: match.homeTeamId,
+                    awayTeamId: match.awayTeamId,
+                    eventDate_epoch: event.date_epoch,
+                    time_epoch: match.time_epoch,
+                    eventName: event.name,
+                    homeTeam: homeTeam?.name || 'Unknown Team',
+                    awayTeam: awayTeam?.name || 'Unknown Team',
+                    field: match.field,
+                    status: match.matchStatus || 'scheduled',
+                    hasScore: match.homeScore !== null && match.awayScore !== null,
+                    homeScore: match.homeScore,
+                    awayScore: match.awayScore,
+                    referees: referees
+                };
+                
+                gameRecords.push(gameRecord);
+            });
+        });
+        
+        console.log(`🎯 Final result: ${gameRecords.length} game records collected`);
+        return gameRecords;
+    }
+    
+    populateTeamFilter() {
+        const teamFilter = document.getElementById('game-team-filter');
+        if (!teamFilter || teamFilter.children.length > 1) return; // Already populated
+        
+        // Add team options
+        this.teams.forEach(team => {
+            const option = document.createElement('option');
+            option.value = team.id;
+            option.textContent = team.name;
+            teamFilter.appendChild(option);
+        });
+    }
+    
+    getStatusDisplay(status) {
+        const statusMap = {
+            'scheduled': '📅 Scheduled',
+            'in_progress': '⏱️ In Progress',
+            'completed': '✅ Completed',
+            'cancelled': '❌ Cancelled'
+        };
+        return statusMap[status] || '📅 Scheduled';
+    }
+    
+    getTeamResultBubble(teamName, teamSide, game) {
+        if (!game.hasScore || game.status !== 'completed') {
+            return `<span class="team-result-bubble no-result">${teamName}</span>`;
+        }
+        
+        const homeScore = parseInt(game.homeScore);
+        const awayScore = parseInt(game.awayScore);
+        
+        let bubbleClass = 'no-result';
+        if (homeScore > awayScore) {
+            bubbleClass = teamSide === 'home' ? 'winner' : 'loser';
+        } else if (awayScore > homeScore) {
+            bubbleClass = teamSide === 'away' ? 'winner' : 'loser';
+        } else {
+            bubbleClass = 'draw';
+        }
+        
+        return `<span class="team-result-bubble ${bubbleClass}">${teamName}</span>`;
+    }
+    
+    // Date/time formatting functions
+    epochToPacificDate(epoch) {
+        return new Date(epoch * 1000).toLocaleDateString('en-US', { 
+            timeZone: 'America/Los_Angeles',
+            weekday: 'short',
+            month: 'short',
+            day: 'numeric'
+        });
+    }
+    
+    epochToPacificTime(epoch) {
+        return new Date(epoch * 1000).toLocaleTimeString('en-US', { 
+            timeZone: 'America/Los_Angeles',
+            hour: 'numeric',
+            minute: '2-digit'
+        });
     }
     
     // Utility methods
