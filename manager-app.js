@@ -1,7 +1,10 @@
 // CheckIn App - Manager Portal JavaScript
 // Version 6.4.0 - Manager-specific functionality
 
-const APP_VERSION = '6.4.0';
+// Don't redeclare APP_VERSION if it already exists
+if (typeof APP_VERSION === 'undefined') {
+    const APP_VERSION = '6.4.0';
+}
 
 class CheckInManagerApp {
     constructor() {
@@ -9,7 +12,9 @@ class CheckInManagerApp {
         this.teamManagers = [];
         this.events = [];
         this.referees = [];
-        this.currentSeason = getCurrentSeason();
+        
+        // Use current season if function exists, otherwise use current year
+        this.currentSeason = typeof getCurrentSeason === 'function' ? getCurrentSeason() : new Date().getFullYear() + '-Fall';
         
         // Initialize app
         this.init();
@@ -17,6 +22,8 @@ class CheckInManagerApp {
     
     async init() {
         try {
+            console.log('Initializing manager app...');
+            
             // Load initial data
             await Promise.all([
                 this.loadTeams(),
@@ -24,6 +31,8 @@ class CheckInManagerApp {
                 this.loadEvents(),
                 this.loadReferees()
             ]);
+            
+            console.log('Data loaded successfully');
             
             // Render initial section
             this.showSection('teams');
@@ -36,9 +45,12 @@ class CheckInManagerApp {
     // Data loading methods
     async loadTeams() {
         try {
+            console.log('Loading teams...');
             const response = await fetch('/api/teams');
+            console.log('Teams response status:', response.status);
             if (!response.ok) throw new Error('Failed to load teams');
             this.teams = await response.json();
+            console.log('Loaded teams:', this.teams.length);
         } catch (error) {
             console.error('Error loading teams:', error);
             throw error;
@@ -602,12 +614,18 @@ class CheckInManagerApp {
     }
 }
 
-// Global functions for onclick handlers
-function showSection(sectionName) {
-    if (window.app) {
+// Global functions for onclick handlers - define early
+window.showSection = function(sectionName) {
+    if (window.app && window.app.showSection) {
         window.app.showSection(sectionName);
+    } else {
+        console.log('App not ready yet, section:', sectionName);
     }
-}
+};
 
 // Initialize app
-window.app = new CheckInManagerApp();
+let app;
+document.addEventListener('DOMContentLoaded', function() {
+    app = new CheckInManagerApp();
+    window.app = app;
+});
