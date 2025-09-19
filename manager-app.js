@@ -650,6 +650,11 @@ class CheckInManagerApp {
         const team = this.teams.find(t => t.id === teamId);
         if (!team) return;
         
+        // Calculate gender breakdown
+        const members = team.members || [];
+        const maleCount = members.filter(m => m.gender === 'male').length;
+        const femaleCount = members.filter(m => m.gender === 'female').length;
+        
         const modal = document.createElement('div');
         modal.className = 'modal';
         modal.innerHTML = `
@@ -664,13 +669,15 @@ class CheckInManagerApp {
                         <div class="detail-section">
                             <h4>Team Information</h4>
                             <p><strong>Category:</strong> ${team.category || 'N/A'}</p>
-                            <p><strong>Total Players:</strong> ${team.members ? team.members.length : 0}</p>
+                            <p><strong>Total Players:</strong> ${members.length}</p>
+                            <p><strong>Males:</strong> ${maleCount}</p>
+                            <p><strong>Females:</strong> ${femaleCount}</p>
                         </div>
                         
                         <div class="detail-section">
                             <h4>Player Roster</h4>
                             <div class="players-list">
-                                ${this.renderPlayersList(team.members || [])}
+                                ${this.renderPlayersList(members)}
                             </div>
                         </div>
                     </div>
@@ -689,7 +696,7 @@ class CheckInManagerApp {
         return `
             <div class="players-grid">
                 ${members.map(member => `
-                    <div class="player-card">
+                    <div class="player-card ${member.gender || 'male'}">
                         <div class="player-photo">
                             <img src="${this.getPlayerPhotoUrl(member)}" alt="${member.name}" class="player-avatar" loading="lazy">
                         </div>
