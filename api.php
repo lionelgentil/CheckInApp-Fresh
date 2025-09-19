@@ -3917,6 +3917,7 @@ function executeDbMaintenance($db) {
             'UPDATE',
             'DELETE',
             'CREATE INDEX',
+            'CREATE TABLE',  // Temporary: Allow table creation for team_managers
             'DROP INDEX', 
             'ANALYZE',
             'VACUUM',
