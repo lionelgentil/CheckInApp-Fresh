@@ -1059,28 +1059,21 @@ class CheckInManagerApp {
         console.log('🎯 renderGameTracker called');
         const container = document.getElementById('game-tracker-container');
         const teamFilter = document.getElementById('game-team-filter')?.value || 'all';
-        const showCurrentSeasonOnly = document.getElementById('show-current-season-games')?.checked ?? true;
         
         // Populate team filter dropdown if not already populated
         this.populateTeamFilter();
         
         console.log('👥 Team filter:', teamFilter);
-        console.log('📅 Current season only:', showCurrentSeasonOnly);
         
         // Collect all matches from all events (only completed games for managers)
         const gameRecords = this.collectAllGameRecords();
         
         console.log('📊 Collected game records:', gameRecords.length);
         
-        // Filter by season if specified
-        let filteredGames = gameRecords;
-        if (showCurrentSeasonOnly) {
-            filteredGames = gameRecords.filter(game => this.isCurrentSeasonEvent(game.eventDate_epoch));
-        }
-        
         // Filter by team if specified
+        let filteredGames = gameRecords;
         if (teamFilter !== 'all') {
-            filteredGames = filteredGames.filter(game => 
+            filteredGames = gameRecords.filter(game => 
                 game.homeTeamId === teamFilter || game.awayTeamId === teamFilter
             );
         }
