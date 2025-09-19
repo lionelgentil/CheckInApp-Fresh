@@ -61,12 +61,7 @@ class CheckInManagerApp {
         try {
             const response = await fetch('/api/team-managers');
             if (!response.ok) throw new Error('Failed to load team managers');
-            
-            // Debug: log the raw response
-            const responseText = await response.text();
-            console.log('Team managers response:', responseText);
-            
-            this.teamManagers = JSON.parse(responseText);
+            this.teamManagers = await response.json();
         } catch (error) {
             console.error('Error loading team managers:', error);
             // Don't throw - managers might not exist yet

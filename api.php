@@ -577,7 +577,7 @@ try {
             
         case 'team-managers':
             // Team managers endpoint - no auth required for manager.html
-            handleTeamManagers($db, $method, $requestURI);
+            handleTeamManagers($db, $method, $path);
             break;
             
         default:
@@ -4008,13 +4008,13 @@ function executeDbMaintenance($db) {
 }
 
 // Team managers endpoint handler
-function handleTeamManagers($db, $method, $requestURI) {
-    // Parse the URI to get the manager ID if provided
-    $segments = explode('/', trim($requestURI, '/'));
+function handleTeamManagers($db, $method, $path) {
+    // Parse the path to get the manager ID if provided
+    $segments = explode('/', trim($path, '/'));
     $managerId = null;
     $teamId = null;
     
-    // Check for /api/team-managers/{id} or /api/team-managers/team/{teamId}
+    // Check for team-managers/{id} or team-managers/team/{teamId}
     if (count($segments) >= 2) {
         if ($segments[1] === 'team' && isset($segments[2])) {
             $teamId = intval($segments[2]);
