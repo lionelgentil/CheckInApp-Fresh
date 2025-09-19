@@ -560,9 +560,24 @@ try {
         case 'db-maintenance':
             // Database maintenance operations
             if ($method === 'POST') {
-                requireAuth();
-                executeDbMaintenance($db);
+                // Check if this is the team_managers table creation (temporary exception)
+                $input = json_decode(file_get_contents('php://input'), true);
+                if ($input && isset($input['sql']) && 
+                    (strpos($input['sql'], 'team_managers') !== false) && 
+                    (strpos($input['sql'], 'CREATE TABLE') !== false || strpos($input['sql'], 'CREATE INDEX') !== false)) {
+                    // Allow team_managers table/index creation without auth
+                    executeDbMaintenance($db);
+                } else {
+                    // Regular auth required for other operations
+                    requireAuth();
+                    executeDbMaintenance($db);
+                }
             }
+            break;
+            
+        case 'team-managers':
+            // Team managers endpoint - no auth required for manager.html
+            handleTeamManagers($db, $method, $requestURI);
             break;
             
         default:
@@ -3990,5 +4005,195 @@ function executeDbMaintenance($db) {
         ]);
     }
 }
+
+// Team managers endpoint handler
+function handleTeamManagers($db, $method, $requestURI) {
+    // Parse the URI to get the manager ID if provided
+    $segments = explode('/', trim($requestURI, '/'));
+    $managerId = null;
+    $teamId = null;
+    
+    // Check for /api/team-managers/{id} or /api/team-managers/team/{teamId}
+    if (count($segments) >= 2) {
+        if ($segments[1] === 'team' && isset($segments[2])) {
+            $teamId = intval($segments[2]);
+        } else {
+            $managerId = intval($segments[1]);
+        }
+    }
+    
+    switch ($method) {
+        case 'GET':
+            if ($teamId) {
+                getTeamManagers($db, $teamId);
+            } else {
+                getAllTeamManagers($db);
+            }
+            break;
+        case 'POST':
+            createTeamManager($db);
+            break;
+        case 'PUT':
+            if ($managerId) {
+                updateTeamManager($db, $managerId);
+            } else {
+                http_response_code(400);
+                echo json_encode(['error' => 'Manager ID required for update']);
+            }
+            break;
+        case 'DELETE':
+            if ($managerId) {
+                deleteTeamManager($db, $managerId);
+            } else {
+                http_response_code(400);
+                echo json_encode(['error' => 'Manager ID required for deletion']);
+            }
+            break;
+        default:
+            http_response_code(405);
+            echo json_encode(['error' => 'Method not allowed']);
+            break;
+    }
+}
+
+function getAllTeamManagers($db) {
+    try {
+        $stmt = $db->query("
+            SELECT tm.*, t.name as team_name 
+            FROM team_managers tm 
+            LEFT JOIN teams t ON tm.team_id = t.id 
+            ORDER BY t.name, tm.last_name, tm.first_name
+        ");
+        $managers = $stmt->fetchAll();
+        echo json_encode($managers);
+    } catch (PDOException $e) {
+        http_response_code(500);
+        echo json_encode(['error' => 'Failed to fetch team managers: ' . $e->getMessage()]);
+    }
+}
+
+function getTeamManagers($db, $teamId) {
+    try {
+        $stmt = $db->prepare("
+            SELECT tm.*, t.name as team_name 
+            FROM team_managers tm 
+            LEFT JOIN teams t ON tm.team_id = t.id 
+            WHERE tm.team_id = ? 
+            ORDER BY tm.last_name, tm.first_name
+        ");
+        $stmt->execute([$teamId]);
+        $managers = $stmt->fetchAll();
+        echo json_encode($managers);
+    } catch (PDOException $e) {
+        http_response_code(500);
+        echo json_encode(['error' => 'Failed to fetch team managers: ' . $e->getMessage()]);
+    }
+}
+
+function createTeamManager($db) {
+    try {
+        $input = json_decode(file_get_contents('php://input'), true);
+        
+        if (!$input || !isset($input['team_id'], $input['first_name'], $input['last_name'])) {
+            http_response_code(400);
+            echo json_encode(['error' => 'team_id, first_name, and last_name are required']);
+            return;
+        }
+        
+        $stmt = $db->prepare("
+            INSERT INTO team_managers (team_id, first_name, last_name, phone_number, email_address) 
+            VALUES (?, ?, ?, ?, ?)
+        ");
+        
+        $stmt->execute([
+            $input['team_id'],
+            $input['first_name'],
+            $input['last_name'],
+            $input['phone_number'] ?? null,
+            $input['email_address'] ?? null
+        ]);
+        
+        $managerId = $db->lastInsertId();
+        
+        // Return the created manager
+        $stmt = $db->prepare("
+            SELECT tm.*, t.name as team_name 
+            FROM team_managers tm 
+            LEFT JOIN teams t ON tm.team_id = t.id 
+            WHERE tm.id = ?
+        ");
+        $stmt->execute([$managerId]);
+        $manager = $stmt->fetch();
+        
+        echo json_encode($manager);
+    } catch (PDOException $e) {
+        http_response_code(500);
+        echo json_encode(['error' => 'Failed to create team manager: ' . $e->getMessage()]);
+    }
+}
+
+function updateTeamManager($db, $managerId) {
+    try {
+        $input = json_decode(file_get_contents('php://input'), true);
+        
+        if (!$input) {
+            http_response_code(400);
+            echo json_encode(['error' => 'No data provided']);
+            return;
+        }
+        
+        $stmt = $db->prepare("
+            UPDATE team_managers 
+            SET first_name = ?, last_name = ?, phone_number = ?, email_address = ?, updated_at = NOW() 
+            WHERE id = ?
+        ");
+        
+        $stmt->execute([
+            $input['first_name'],
+            $input['last_name'],
+            $input['phone_number'] ?? null,
+            $input['email_address'] ?? null,
+            $managerId
+        ]);
+        
+        // Return the updated manager
+        $stmt = $db->prepare("
+            SELECT tm.*, t.name as team_name 
+            FROM team_managers tm 
+            LEFT JOIN teams t ON tm.team_id = t.id 
+            WHERE tm.id = ?
+        ");
+        $stmt->execute([$managerId]);
+        $manager = $stmt->fetch();
+        
+        if ($manager) {
+            echo json_encode($manager);
+        } else {
+            http_response_code(404);
+            echo json_encode(['error' => 'Team manager not found']);
+        }
+    } catch (PDOException $e) {
+        http_response_code(500);
+        echo json_encode(['error' => 'Failed to update team manager: ' . $e->getMessage()]);
+    }
+}
+
+function deleteTeamManager($db, $managerId) {
+    try {
+        $stmt = $db->prepare("DELETE FROM team_managers WHERE id = ?");
+        $stmt->execute([$managerId]);
+        
+        if ($stmt->rowCount() > 0) {
+            echo json_encode(['success' => true, 'message' => 'Team manager deleted successfully']);
+        } else {
+            http_response_code(404);
+            echo json_encode(['error' => 'Team manager not found']);
+        }
+    } catch (PDOException $e) {
+        http_response_code(500);
+        echo json_encode(['error' => 'Failed to delete team manager: ' . $e->getMessage()]);
+    }
+}
+?
 
 ?>
