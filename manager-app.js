@@ -803,7 +803,255 @@ class CheckInManagerApp {
     // Standings section
     renderStandings() {
         const container = document.getElementById('standings-container');
-        container.innerHTML = '<div class="empty-state"><h3>Standings Coming Soon</h3><p>This feature is under development.</p></div>';
+        const showCurrentSeasonOnly = document.getElementById('show-current-season-only-standings')?.checked ?? true;
+        
+        // Calculate standings for each division
+        const standings = this.calculateStandings(showCurrentSeasonOnly);
+        
+        if (standings.over30.length === 0 && standings.over40.length === 0) {
+            container.innerHTML = `
+                <div class="empty-state">
+                    <h3>No match results yet</h3>
+                    <p>Standings will appear when matches have been played and results entered</p>
+                </div>
+            `;
+            return;
+        }
+        
+        let htmlContent = '';
+        
+        // Over 30 Division
+        if (standings.over30.length > 0) {
+            htmlContent += `
+                <div class="standings-division">
+                    <div class="division-title">Over 30 Division</div>
+                    <table class="standings-table">
+                        <thead>
+                            <tr>
+                                <th class="standings-position">Pos</th>
+                                <th class="team-name-header">Team</th>
+                                <th>GP</th>
+                                <th>W</th>
+                                <th>D</th>
+                                <th>L</th>
+                                <th>GF</th>
+                                <th>GA</th>
+                                <th>GD</th>
+                                <th class="standings-points">Pts</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${standings.over30.map((team, index) => `
+                                <tr>
+                                    <td class="standings-position">${index + 1}</td>
+                                    <td class="team-name-cell">${team.name}</td>
+                                    <td class="standings-stats">${team.gamesPlayed}</td>
+                                    <td class="standings-stats">${team.wins}</td>
+                                    <td class="standings-stats">${team.draws}</td>
+                                    <td class="standings-stats">${team.losses}</td>
+                                    <td class="standings-stats">${team.goalsFor}</td>
+                                    <td class="standings-stats">${team.goalsAgainst}</td>
+                                    <td class="standings-stats">${team.goalDifference >= 0 ? '+' : ''}${team.goalDifference}</td>
+                                    <td class="standings-points">${team.points}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
+        
+        // Over 40 Division
+        if (standings.over40.length > 0) {
+            htmlContent += `
+                <div class="standings-division">
+                    <div class="division-title">Over 40 Division</div>
+                    <table class="standings-table">
+                        <thead>
+                            <tr>
+                                <th class="standings-position">Pos</th>
+                                <th class="team-name-header">Team</th>
+                                <th>GP</th>
+                                <th>W</th>
+                                <th>D</th>
+                                <th>L</th>
+                                <th>GF</th>
+                                <th>GA</th>
+                                <th>GD</th>
+                                <th class="standings-points">Pts</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            ${standings.over40.map((team, index) => `
+                                <tr>
+                                    <td class="standings-position">${index + 1}</td>
+                                    <td class="team-name-cell">${team.name}</td>
+                                    <td class="standings-stats">${team.gamesPlayed}</td>
+                                    <td class="standings-stats">${team.wins}</td>
+                                    <td class="standings-stats">${team.draws}</td>
+                                    <td class="standings-stats">${team.losses}</td>
+                                    <td class="standings-stats">${team.goalsFor}</td>
+                                    <td class="standings-stats">${team.goalsAgainst}</td>
+                                    <td class="standings-stats">${team.goalDifference >= 0 ? '+' : ''}${team.goalDifference}</td>
+                                    <td class="standings-points">${team.points}</td>
+                                </tr>
+                            `).join('')}
+                        </tbody>
+                    </table>
+                </div>
+            `;
+        }
+        
+        container.innerHTML = htmlContent;
+    }
+    
+    calculateStandings(currentSeasonOnly = true) {
+        // Initialize team stats by division
+        const teamStats = {};
+        
+        // Initialize all teams with zero stats
+        this.teams.forEach(team => {
+            if (team.category === 'Over 30' || team.category === 'Over 40') {
+                teamStats[team.id] = {
+                    id: team.id,
+                    name: team.name,
+                    category: team.category,
+                    gamesPlayed: 0,
+                    wins: 0,
+                    draws: 0,
+                    losses: 0,
+                    goalsFor: 0,
+                    goalsAgainst: 0,
+                    goalDifference: 0,
+                    points: 0
+                };
+            }
+        });
+        
+        // Process completed matches
+        this.events.forEach(event => {
+            // Filter by season if requested
+            if (currentSeasonOnly && !this.isCurrentSeasonEvent(event.date_epoch)) {
+                return;
+            }
+            
+            event.matches.forEach(match => {
+                // Only process completed matches with scores
+                if (match.matchStatus === 'completed' && 
+                    match.homeScore !== null && 
+                    match.awayScore !== null) {
+                    
+                    const homeTeam = teamStats[match.homeTeamId];
+                    const awayTeam = teamStats[match.awayTeamId];
+                    
+                    if (homeTeam && awayTeam) {
+                        const homeScore = parseInt(match.homeScore);
+                        const awayScore = parseInt(match.awayScore);
+                        
+                        // Update games played
+                        homeTeam.gamesPlayed++;
+                        awayTeam.gamesPlayed++;
+                        
+                        // Update goals
+                        homeTeam.goalsFor += homeScore;
+                        homeTeam.goalsAgainst += awayScore;
+                        awayTeam.goalsFor += awayScore;
+                        awayTeam.goalsAgainst += homeScore;
+                        
+                        // Update win/draw/loss and points (3 points for win, 1 for draw)
+                        if (homeScore > awayScore) {
+                            // Home team wins
+                            homeTeam.wins++;
+                            homeTeam.points += 3;
+                            awayTeam.losses++;
+                        } else if (awayScore > homeScore) {
+                            // Away team wins
+                            awayTeam.wins++;
+                            awayTeam.points += 3;
+                            homeTeam.losses++;
+                        } else {
+                            // Draw
+                            homeTeam.draws++;
+                            awayTeam.draws++;
+                            homeTeam.points += 1;
+                            awayTeam.points += 1;
+                        }
+                        
+                        // Update goal difference
+                        homeTeam.goalDifference = homeTeam.goalsFor - homeTeam.goalsAgainst;
+                        awayTeam.goalDifference = awayTeam.goalsFor - awayTeam.goalsAgainst;
+                    }
+                }
+            });
+        });
+        
+        // Separate and sort by division
+        const over30Teams = Object.values(teamStats)
+            .filter(team => team.category === 'Over 30')
+            .sort((a, b) => {
+                // Sort by: 1) Points, 2) Goal difference, 3) Goals for, 4) Team name
+                if (b.points !== a.points) return b.points - a.points;
+                if (b.goalDifference !== a.goalDifference) return b.goalDifference - a.goalDifference;
+                if (b.goalsFor !== a.goalsFor) return b.goalsFor - a.goalsFor;
+                return a.name.localeCompare(b.name);
+            });
+            
+        const over40Teams = Object.values(teamStats)
+            .filter(team => team.category === 'Over 40')
+            .sort((a, b) => {
+                // Sort by: 1) Points, 2) Goal difference, 3) Goals for, 4) Team name
+                if (b.points !== a.points) return b.points - a.points;
+                if (b.goalDifference !== a.goalDifference) return b.goalDifference - a.goalDifference;
+                if (b.goalsFor !== a.goalsFor) return b.goalsFor - a.goalsFor;
+                return a.name.localeCompare(b.name);
+            });
+        
+        return {
+            over30: over30Teams,
+            over40: over40Teams
+        };
+    }
+    
+    // Helper function to check if event is in current season (inherited from core.js pattern)
+    isCurrentSeasonEvent(eventDate) {
+        const currentSeason = this.getCurrentSeason();
+        
+        let event;
+        if (typeof eventDate === 'number') {
+            // Handle epoch timestamp (assume seconds, convert to milliseconds)
+            event = new Date(eventDate * 1000);
+        } else {
+            // Handle date string or Date object
+            event = new Date(eventDate);
+        }
+        
+        const eventYear = event.getFullYear();
+        const eventMonth = event.getMonth() + 1; // getMonth() returns 0-11
+        
+        if (currentSeason.includes('Spring')) {
+            // Spring season: January to June
+            const springYear = parseInt(currentSeason.split('-')[0]);
+            return eventYear === springYear && eventMonth >= 1 && eventMonth <= 6;
+        } else {
+            // Fall season: July to December
+            const fallYear = parseInt(currentSeason.split('-')[0]);
+            return eventYear === fallYear && eventMonth >= 7 && eventMonth <= 12;
+        }
+    }
+    
+    // Helper function to get current season (inherited from core.js pattern)
+    getCurrentSeason() {
+        const now = new Date();
+        const currentYear = now.getFullYear();
+        const currentMonth = now.getMonth() + 1; // getMonth() returns 0-11
+        
+        // Spring season: Jan 1st to Jun 30th
+        // Fall season: Jul 1st to Dec 31st
+        if (currentMonth >= 1 && currentMonth <= 6) {
+            return currentYear + '-Spring';
+        } else {
+            return currentYear + '-Fall';
+        }
     }
     
     // Game Tracker section

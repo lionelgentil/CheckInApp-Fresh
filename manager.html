@@ -654,6 +654,100 @@
             align-items: center;
             gap: 20px;
         }
+        
+        /* Standings table styles */
+        .standings-division {
+            margin-bottom: 30px;
+        }
+        
+        .division-title {
+            font-size: 1.4em;
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 15px;
+            padding-bottom: 8px;
+            border-bottom: 3px solid #2196F3;
+        }
+        
+        .standings-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+        }
+        
+        .standings-table th {
+            background: #f8f9fa;
+            color: #333;
+            font-weight: 600;
+            padding: 12px 8px;
+            text-align: center;
+            border-bottom: 2px solid #e9ecef;
+            font-size: 0.9em;
+        }
+        
+        .standings-table td {
+            padding: 10px 8px;
+            text-align: center;
+            border-bottom: 1px solid #f0f0f0;
+            font-size: 0.9em;
+        }
+        
+        .standings-table tbody tr:hover {
+            background: #f8f9fa;
+        }
+        
+        .team-name-header {
+            text-align: left !important;
+            min-width: 150px;
+        }
+        
+        .team-name-cell {
+            text-align: left !important;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .standings-position {
+            background: #e9ecef !important;
+            font-weight: 600;
+            color: #495057;
+            width: 40px;
+        }
+        
+        .standings-points {
+            background: #e3f2fd !important;
+            font-weight: 600;
+            color: #1976d2;
+            width: 50px;
+        }
+        
+        .standings-stats {
+            width: 35px;
+        }
+        
+        /* Mobile standings styles */
+        @media (max-width: 768px) {
+            .standings-table {
+                font-size: 0.8em;
+            }
+            
+            .standings-table th,
+            .standings-table td {
+                padding: 8px 4px;
+            }
+            
+            .team-name-header,
+            .team-name-cell {
+                min-width: 100px;
+            }
+            
+            .division-title {
+                font-size: 1.2em;
+            }
+        }
     </style>
 </head>
 <body>
