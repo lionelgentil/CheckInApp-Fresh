@@ -36,7 +36,7 @@ Options -Indexes
 <Files "manager.html">
     AuthType Basic
     AuthName "Team Manager Access - PASS CheckIn App"
-    AuthUserFile /app/.htpasswd
+    AuthUserFile .htpasswd
     Require valid-user
 </Files>
 
@@ -44,7 +44,7 @@ Options -Indexes
 <Files "manager-app.js">
     AuthType Basic
     AuthName "Team Manager Access - PASS CheckIn App"
-    AuthUserFile /app/.htpasswd
+    AuthUserFile .htpasswd
     Require valid-user
 </Files>
 
