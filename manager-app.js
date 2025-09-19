@@ -623,9 +623,16 @@ window.showSection = function(sectionName) {
     }
 };
 
-// Initialize app
-let app;
-document.addEventListener('DOMContentLoaded', function() {
-    app = new CheckInManagerApp();
+// Initialize app - handle both cases: DOM ready or already loaded
+function initManagerApp() {
+    console.log('Initializing manager app...');
+    const app = new CheckInManagerApp();
     window.app = app;
-});
+}
+
+if (document.readyState === 'loading') {
+    document.addEventListener('DOMContentLoaded', initManagerApp);
+} else {
+    // DOM is already loaded
+    initManagerApp();
+}
