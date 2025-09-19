@@ -4194,6 +4194,4 @@ function deleteTeamManager($db, $managerId) {
         echo json_encode(['error' => 'Failed to delete team manager: ' . $e->getMessage()]);
     }
 }
-?
-
 ?>
