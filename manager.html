@@ -159,6 +159,10 @@
         
         /* Mobile responsive styles */
         @media (max-width: 768px) {
+            body {
+                padding: 10px;
+            }
+            
             .app-header {
                 margin-bottom: 10px;
             }
@@ -194,6 +198,80 @@
                 padding: 10px 12px;
                 font-size: 13px;
                 border-radius: 8px;
+            }
+            
+            /* Mobile-optimized email links */
+            .email-all-managers {
+                padding: 20px !important;
+                margin-bottom: 20px !important;
+            }
+            
+            .email-all-managers a {
+                font-size: 18px !important;
+                padding: 10px;
+                display: block;
+                min-height: 44px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+            }
+            
+            /* Category email links - larger touch targets */
+            .category-header {
+                flex-direction: column !important;
+                align-items: flex-start !important;
+                gap: 10px;
+            }
+            
+            .category-header a {
+                font-size: 16px !important;
+                padding: 8px 12px;
+                background: rgba(33, 150, 243, 0.1);
+                border-radius: 6px;
+                min-height: 44px;
+                display: flex;
+                align-items: center;
+                width: 100%;
+                justify-content: center;
+            }
+            
+            /* Team cards - more compact */
+            .teams-grid {
+                grid-template-columns: 1fr;
+                gap: 15px;
+            }
+            
+            .team-card {
+                padding: 15px;
+            }
+            
+            .team-name {
+                font-size: 1.2em;
+            }
+            
+            .team-managers {
+                font-size: 0.9em;
+                margin-bottom: 3px;
+            }
+            
+            .team-actions {
+                gap: 6px;
+            }
+            
+            .btn-small {
+                min-width: 40px;
+                min-height: 40px;
+                font-size: 18px;
+            }
+            
+            /* Content sections */
+            .content-section {
+                padding: 20px;
+                border-radius: 12px;
+            }
+            
+            .section-title {
+                font-size: 1.5em;
             }
         }
         
