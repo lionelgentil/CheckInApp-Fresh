@@ -200,18 +200,12 @@ class CheckInManagerApp {
     
     renderManagerDisplay(managers) {
         if (managers.length === 0) {
-            return '<div class="team-managers">💼 Managers: <em>None assigned</em></div>';
+            return '<div class="team-managers"><em>💼 No managers assigned</em></div>';
         }
         
-        if (managers.length === 1) {
-            return `<div class="team-managers">💼 Manager: ${managers[0].first_name} ${managers[0].last_name}</div>`;
-        }
-        
-        if (managers.length === 2) {
-            return `<div class="team-managers">💼 Managers: ${managers[0].first_name} ${managers[0].last_name}, ${managers[1].first_name} ${managers[1].last_name}</div>`;
-        }
-        
-        return `<div class="team-managers">💼 Managers: ${managers[0].first_name} ${managers[0].last_name}, ${managers[1].first_name} ${managers[1].last_name} (+${managers.length - 2} more)</div>`;
+        return managers.map(manager => 
+            `<div class="team-managers">💼 ${manager.first_name} ${manager.last_name}</div>`
+        ).join('');
     }
     
     // Manager dialog functionality - clear existing modals first
