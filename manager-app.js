@@ -121,6 +121,34 @@ class CheckInManagerApp {
         }
     }
     
+    // Helper function to generate mailto links for managers
+    generateManagerEmailLink(category = null) {
+        let emails = [];
+        
+        if (category) {
+            // Get emails for managers of teams in specific category
+            const teamsInCategory = this.teams.filter(team => (team.category || 'Other') === category);
+            const teamIds = teamsInCategory.map(team => team.id);
+            emails = this.teamManagers
+                .filter(manager => teamIds.includes(manager.team_id) && manager.email_address)
+                .map(manager => manager.email_address);
+        } else {
+            // Get all manager emails
+            emails = this.teamManagers
+                .filter(manager => manager.email_address)
+                .map(manager => manager.email_address);
+        }
+        
+        // Remove duplicates
+        emails = [...new Set(emails)];
+        
+        if (emails.length === 0) {
+            return null;
+        }
+        
+        return `mailto:${emails.join(',')}`;
+    }
+    
     // Teams section rendering
     renderTeams() {
         const container = document.getElementById('teams-container');
@@ -142,12 +170,33 @@ class CheckInManagerApp {
         
         let html = '';
         
+        // Add "Email All Managers" link at the top
+        const allManagersEmailLink = this.generateManagerEmailLink();
+        if (allManagersEmailLink) {
+            html += `
+                <div class="email-all-managers" style="text-align: center; margin-bottom: 25px; padding: 15px; background: #f8f9fa; border-radius: 8px; border-left: 4px solid #2196F3;">
+                    <a href="${allManagersEmailLink}" style="color: #2196F3; text-decoration: none; font-weight: 600; font-size: 16px;">
+                        📧 Email All Managers
+                    </a>
+                </div>
+            `;
+        }
+        
         // Render each category
         Object.keys(teamsByCategory).sort().forEach(category => {
             const teams = teamsByCategory[category];
+            const categoryEmailLink = this.generateManagerEmailLink(category);
+            
             html += `
                 <div class="category-section">
-                    <h3 class="category-title">${category}</h3>
+                    <div class="category-header" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 15px;">
+                        <h3 class="category-title" style="margin: 0;">${category}</h3>
+                        ${categoryEmailLink ? `
+                            <a href="${categoryEmailLink}" style="color: #2196F3; text-decoration: none; font-weight: 600; font-size: 14px;">
+                                📧 Email ${category} Managers
+                            </a>
+                        ` : ''}
+                    </div>
                     <div class="teams-grid">
             `;
             
@@ -254,8 +303,8 @@ class CheckInManagerApp {
                 <div class="manager-info">
                     <div class="manager-name" onclick="app.showManagerProfile(${manager.id})" style="cursor: pointer; color: #2196F3;">${manager.first_name} ${manager.last_name}</div>
                     <div class="manager-contact">
-                        ${manager.phone_number ? `<div class="contact-line">📞 ${manager.phone_number}</div>` : ''}
-                        ${manager.email_address ? `<div class="contact-line">📧 ${manager.email_address}</div>` : ''}
+                        ${manager.phone_number ? `<div class="contact-line">📞 <a href="tel:${manager.phone_number}" style="color: #2196F3; text-decoration: none;">${manager.phone_number}</a></div>` : ''}
+                        ${manager.email_address ? `<div class="contact-line">📧 <a href="mailto:${manager.email_address}" style="color: #2196F3; text-decoration: none;">${manager.email_address}</a></div>` : ''}
                         ${!manager.phone_number && !manager.email_address ? '<div class="contact-line">No contact info</div>' : ''}
                     </div>
                 </div>
