@@ -213,20 +213,19 @@ $method = $_SERVER['REQUEST_METHOD'];
 
 // Route requests
 try {
-    switch ($path) {
-        case 'auth/check':
-            // Check authentication status
-            if ($method === 'GET') {
+    // Extract the main endpoint from the path
+    $pathSegments = explode('/', $path);  
+    $endpoint = $pathSegments[0];
+    
+    switch ($endpoint) {
+        case 'auth':
+            // Handle auth sub-routes
+            if ($path === 'auth/check' && $method === 'GET') {
                 echo json_encode(array(
                     'authenticated' => isAuthenticated(),
                     'session_remaining' => isAuthenticated() ? SESSION_TIMEOUT - (time() - $_SESSION['auth_timestamp']) : 0
                 ));
-            }
-            break;
-            
-        case 'auth/login':
-            // Admin login
-            if ($method === 'POST') {
+            } elseif ($path === 'auth/login' && $method === 'POST') {
                 $input = json_decode(file_get_contents('php://input'), true);
                 $password = isset($input['password']) ? $input['password'] : '';
                 
@@ -242,14 +241,12 @@ try {
                         'message' => 'Invalid password'
                     ));
                 }
-            }
-            break;
-            
-        case 'auth/logout':
-            // Admin logout
-            if ($method === 'POST') {
+            } elseif ($path === 'auth/logout' && $method === 'POST') {
                 session_destroy();
                 echo json_encode(array('success' => true, 'message' => 'Logged out successfully'));
+            } else {
+                http_response_code(404);
+                echo json_encode(['error' => 'Auth endpoint not found']);
             }
             break;
             
