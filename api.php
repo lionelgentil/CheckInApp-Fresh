@@ -3940,7 +3940,7 @@ function executeDbMaintenance($db) {
             'DROP DATABASE',
             'TRUNCATE',
             'ALTER TABLE',
-            'CREATE TABLE',
+            // 'CREATE TABLE',  // Temporarily removed to allow team_managers table creation
             'CREATE DATABASE'
         ];
         
