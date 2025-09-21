@@ -1884,11 +1884,11 @@ function getDisciplinaryRecords($db) {
             'cardType' => $record['card_type'],
             'reason' => $record['reason'],
             'notes' => $record['notes'],
-            'incidentDate_epoch' => $record['incident_date_epoch'], // Use epoch timestamp
+            'incident_date_epoch' => $record['incident_date_epoch'], // Use epoch timestamp
             'suspensionMatches' => $record['suspension_matches'] ? (int)$record['suspension_matches'] : null,
             'suspensionServed' => $record['suspension_served'] ? true : false,
-            'suspensionServedDate_epoch' => $record['suspension_served_date_epoch'], // Use epoch timestamp
-            'createdAt_epoch' => $record['created_at_epoch'] // Use epoch timestamp
+            'suspension_served_date_epoch' => $record['suspension_served_date_epoch'], // Use epoch timestamp
+            'created_at_epoch' => $record['created_at_epoch'] // Use epoch timestamp
         ];
     }
     
