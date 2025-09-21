@@ -3149,17 +3149,28 @@ Please check the browser console (F12) for more details.`);
                     allRecordKeys: Object.keys(record)
                 });
                 
-                // Convert eventDate to proper format for renderCardItem
+                // Use the SAME logic as showDetailedMemberModal (which works correctly)
+                // Convert epoch timestamps to proper format for display
                 let processedEventDate = null;
                 if (eventDate) {
                     if (typeof eventDate === 'number') {
-                        // It's an epoch timestamp - keep as number for epochToPacificDate
-                        processedEventDate = eventDate;
+                        // It's an epoch timestamp - convert to formatted date string
+                        processedEventDate = new Date(eventDate * 1000).toLocaleDateString('en-US', {
+                            timeZone: 'America/Los_Angeles',
+                            year: 'numeric',
+                            month: '2-digit',
+                            day: '2-digit'
+                        });
                     } else if (typeof eventDate === 'string' && eventDate.includes('-')) {
-                        // It's likely an ISO date string, convert to epoch
+                        // It's likely an ISO date string, convert to display format
                         const date = new Date(eventDate);
                         if (!isNaN(date.getTime())) {
-                            processedEventDate = Math.floor(date.getTime() / 1000); // Convert to epoch seconds
+                            processedEventDate = date.toLocaleDateString('en-US', {
+                                timeZone: 'America/Los_Angeles',
+                                year: 'numeric',
+                                month: '2-digit',
+                                day: '2-digit'
+                            });
                         }
                     }
                 }
@@ -3172,7 +3183,7 @@ Please check the browser console (F12) for more details.`);
                 
                 return {
                     type: 'prior',
-                    eventDate: processedEventDate, // Now properly formatted for renderCardItem
+                    eventDate: processedEventDate, // Now using same format as Edit Player
                     matchInfo: 'External incident',
                     cardType: record.cardType,
                     reason: record.reason,
@@ -3227,25 +3238,8 @@ Please check the browser console (F12) for more details.`);
                 // Match cards already have formatted date like "09/14/2025"
                 displayDate = card.eventDate;
             } else {
-                // Disciplinary records might have epoch timestamps or date strings
-                if (typeof card.eventDate === 'number') {
-                    // It's an epoch timestamp
-                    displayDate = epochToPacificDate(card.eventDate);
-                } else if (typeof card.eventDate === 'string' && card.eventDate.includes('-')) {
-                    // It's likely an ISO date string, convert it
-                    const date = new Date(card.eventDate);
-                    if (!isNaN(date.getTime())) {
-                        displayDate = date.toLocaleDateString('en-US', { 
-                            timeZone: 'America/Los_Angeles', 
-                            year: 'numeric', 
-                            month: '2-digit', 
-                            day: '2-digit' 
-                        });
-                    }
-                } else {
-                    // Use as-is if it's already a formatted string
-                    displayDate = card.eventDate;
-                }
+                // Prior cards now come pre-formatted from fetchDisciplinaryRecords
+                displayDate = card.eventDate;
             }
         }
         
