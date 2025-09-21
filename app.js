@@ -3130,6 +3130,8 @@ Please check the browser console (F12) for more details.`);
         try {
             const records = await this.fetch(`/api/disciplinary-records?member_id=${memberId}`);
             
+            console.log('🔍 fetchDisciplinaryRecords debug - raw records from API:', records);
+            
             return records.map(record => {
                 // Try multiple date fields in order of preference
                 let eventDate = record.incidentDate_epoch || 
@@ -3137,9 +3139,40 @@ Please check the browser console (F12) for more details.`);
                               record.created_at_epoch || 
                               record.createdAt;
                 
+                console.log('🔍 fetchDisciplinaryRecords debug - processing record:', {
+                    recordId: record.id,
+                    incidentDate_epoch: record.incidentDate_epoch,
+                    incidentDate: record.incidentDate,
+                    created_at_epoch: record.created_at_epoch,
+                    createdAt: record.createdAt,
+                    selectedEventDate: eventDate,
+                    allRecordKeys: Object.keys(record)
+                });
+                
+                // Convert eventDate to proper format for renderCardItem
+                let processedEventDate = null;
+                if (eventDate) {
+                    if (typeof eventDate === 'number') {
+                        // It's an epoch timestamp - keep as number for epochToPacificDate
+                        processedEventDate = eventDate;
+                    } else if (typeof eventDate === 'string' && eventDate.includes('-')) {
+                        // It's likely an ISO date string, convert to epoch
+                        const date = new Date(eventDate);
+                        if (!isNaN(date.getTime())) {
+                            processedEventDate = Math.floor(date.getTime() / 1000); // Convert to epoch seconds
+                        }
+                    }
+                }
+                
+                console.log('🔍 fetchDisciplinaryRecords debug - processed date:', {
+                    original: eventDate,
+                    processed: processedEventDate,
+                    type: typeof processedEventDate
+                });
+                
                 return {
                     type: 'prior',
-                    eventDate: eventDate,
+                    eventDate: processedEventDate, // Now properly formatted for renderCardItem
                     matchInfo: 'External incident',
                     cardType: record.cardType,
                     reason: record.reason,
@@ -3173,6 +3206,15 @@ Please check the browser console (F12) for more details.`);
     
     // Optimized method for rendering card items
     renderCardItem(card) {
+        // Debug logging to see what date values we're getting
+        console.log('🔍 renderCardItem debug:', {
+            cardType: card.cardType,
+            type: card.type,
+            eventDate: card.eventDate,
+            eventDate_epoch: card.eventDate_epoch,
+            allCardKeys: Object.keys(card)
+        });
+        
         const cardIcon = card.cardType === 'yellow' ? '🟨' : '🟥';
         const cardColor = card.cardType === 'yellow' ? '#ffc107' : '#dc3545';
         const typeIcon = card.type === 'match' ? '🏟️' : '📜';
