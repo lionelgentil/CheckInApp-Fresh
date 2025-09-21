@@ -2849,7 +2849,7 @@ Please check the browser console (F12) for more details.`);
                 
                 disciplinaryRecords.push({
                     cardType: cardType,
-                    incidentDate: incidentDateEpoch, // Now sending as epoch timestamp
+                    incident_date_epoch: incidentDateEpoch, // Use snake_case field name to match database
                     reason: reason || null,
                     notes: notes || null
                 });
