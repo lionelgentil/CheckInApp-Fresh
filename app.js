@@ -5623,27 +5623,57 @@ Please check the browser console (F12) for more details.`);
                             playerId,
                             playerName, 
                             availableTeams: this.teams?.length || 0,
-                            teamsHaveMembers: this.teams?.some(t => t.members && t.members.length > 0)
+                            teamsHaveMembers: this.teams?.some(t => t.members && t.members.length > 0),
+                            cardData: {
+                                playerId: card.playerId,
+                                memberId: card.memberId,
+                                memberName: card.memberName,
+                                playerName: card.playerName,
+                                allCardKeys: Object.keys(card)
+                            }
                         });
+                        
+                        // Enhanced team/member debugging
+                        if (this.teams && this.teams.length > 0) {
+                            console.log('🔍 First team structure sample:', {
+                                teamName: this.teams[0].name,
+                                memberCount: this.teams[0].members?.length || 0,
+                                firstMember: this.teams[0].members?.[0] ? {
+                                    id: this.teams[0].members[0].id,
+                                    name: this.teams[0].members[0].name
+                                } : null
+                            });
+                        }
                         
                         if (playerId && this.teams) {
                             // First try: lookup by player ID
+                            console.log(`🔍 Looking for playerId "${playerId}" in ${this.teams.length} teams`);
                             for (const team of this.teams) {
-                                if (team.members && team.members.some(member => member.id === playerId)) {
-                                    teamName = team.name;
-                                    console.log('✅ Found team by player ID:', teamName);
-                                    break;
+                                if (team.members && team.members.length > 0) {
+                                    console.log(`🔍 Checking team "${team.name}" with ${team.members.length} members`);
+                                    console.log(`🔍 Member IDs in ${team.name}:`, team.members.map(m => `"${m.id}"`));
+                                    
+                                    if (team.members.some(member => member.id === playerId)) {
+                                        teamName = team.name;
+                                        console.log('✅ Found team by player ID:', teamName);
+                                        break;
+                                    }
                                 }
                             }
                         }
                         
                         // If still unknown, try lookup by player name
                         if (teamName === 'Unknown Team' && playerName && this.teams) {
+                            console.log(`🔍 Looking for playerName "${playerName}" in teams`);
                             for (const team of this.teams) {
-                                if (team.members && team.members.some(member => member.name === playerName)) {
-                                    teamName = team.name;
-                                    console.log('✅ Found team by player name:', teamName);
-                                    break;
+                                if (team.members && team.members.length > 0) {
+                                    console.log(`🔍 Member names in ${team.name}:`, team.members.map(m => `"${m.name}"`));
+                                    
+                                    if (team.members.some(member => member.name === playerName)) {
+                                        teamName = team.name;
+                                        console.log('✅ Found team by player name:', teamName);
+                                        break;
+                                    }
                                 }
                             }
                         }
