@@ -6278,12 +6278,12 @@ Please check the browser console (F12) for more details.`);
                     <div class="score-input-container">
                         <div class="team-score-input">
                             <div class="team-name-label">${homeTeam.name}</div>
-                            <input type="number" class="score-input" id="home-score" value="${match.homeScore !== null ? match.homeScore : ''}" min="0" placeholder="0">
+                            <input type="number" class="score-input" id="home-score" value="${match.homeScore !== null ? match.homeScore : 0}" min="0" placeholder="0">
                         </div>
                         <div class="vs-divider">VS</div>
                         <div class="team-score-input">
                             <div class="team-name-label">${awayTeam.name}</div>
-                            <input type="number" class="score-input" id="away-score" value="${match.awayScore !== null ? match.awayScore : ''}" min="0" placeholder="0">
+                            <input type="number" class="score-input" id="away-score" value="${match.awayScore !== null ? match.awayScore : 0}" min="0" placeholder="0">
                         </div>
                     </div>
                 </div>

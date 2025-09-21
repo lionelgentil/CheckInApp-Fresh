@@ -1,204 +1,233 @@
 # CheckIn App - Claude Context & Development History
 
-## Current Version: 6.3.0
+## Current Version: 6.4.0
 
 ### Project Overview
 CheckIn App for BUSC PASS - A comprehensive team and event management system with photo support, match check-ins, disciplinary tracking, referee personalization, and performance optimizations. Built with PHP backend (PostgreSQL) and vanilla JavaScript frontend.
 
-## Recent Development Session Summary - v6.3.0 Referee Personalization
+## Recent Development Session Summary - v6.4.0 Manager Portal Implementation
 
 ### Primary Objectives Completed
-1. **Referee Personalization System**: Revolutionary referee-specific interface
-2. **Mobile UI Optimization**: Enhanced referee selection with 3-column layout
-3. **Advanced Filtering Logic**: Event and match-level filtering for personalized views
-4. **Enhanced Security**: Navigation lock until referee selection
-5. **UI/UX Improvements**: Consistent styling and mobile responsiveness
+1. **Complete Manager Portal System**: Full-featured team management interface for managers
+2. **Team Manager CRUD Operations**: Add, edit, delete team managers with contact information
+3. **Enhanced Photo Display**: Player photos in team details with gender-based styling
+4. **Email Integration**: Clickable email/phone links and bulk manager email functionality
+5. **Standings Implementation**: Complete league standings identical to view.html
+6. **Game Tracker Implementation**: Completed games display identical to view.html
+7. **Mobile Optimization**: Enhanced responsive design for mobile devices
 
 ### Major Technical Achievements
 
-#### 🎯 Referee Personalization System
-- **Individual Referee Selection**: On first app load, referees select their name from a grid
-- **Personalized Game Filtering**: 
-  - Event-level filtering: Only shows events where referee has assigned matches
-  - Match-level filtering: Within events, only shows matches referee is officiating
-- **Guest Mode**: Special "Guest" option allows supervisors to view all games
-- **localStorage Persistence**: Referee selection survives page reloads and sessions
-- **Change Referee Workflow**: Smooth process to switch referee selection
+#### 🏗️ Manager Portal Architecture
+- **Separate Interface**: manager.html with dedicated manager-app.js
+- **Role-Based Access**: Team managers can view/manage teams, standings (read-only), completed games
+- **No Authentication Required**: Simplified access model (temporarily disabled HTTP Basic Auth)
+- **API Integration**: Full CRUD operations via existing API endpoints
 
-#### 🏗️ Mobile Interface Optimization
-- **3-Column Grid Layout**: Optimized for modern phones including iPhone 16 Pro
-- **Responsive Breakpoints**: 
-  - Desktop: 4×5 grid layout
-  - Mobile (361-768px): 3 columns with auto rows
-  - Small phones (≤360px): 2 columns fallback
-- **Guest Referee Handling**: Spans full width of current layout (3 cols on mobile, 2 on small phones)
-- **Touch-Optimized**: Enhanced touch targets and visual feedback
+#### 💼 Team Manager Management System
+- **Database Schema**: team_managers table with foreign key relationships
+- **CRUD Operations**: Create, read, update, delete team managers
+- **Contact Management**: Phone numbers (with formatting) and email addresses
+- **Form Validation**: Client-side validation with user-friendly error messages
+- **Modal Management**: Prevents modal stacking, auto-refreshes after edits
 
-#### 🛡️ Enhanced Security & UX
-- **Navigation Lock**: Complete disable of navigation until referee selection
-- **Visual Feedback**: Disabled sections dimmed with `opacity: 0.3` and `pointer-events: none`
-- **Consistent Styling**: Guest referee now matches regular referee appearance (removed blue theme)
-- **Enhanced Debug Logging**: Detailed console output for filtering troubleshooting
+#### 📧 Enhanced Communication Features
+- **Clickable Contacts**: Email and phone links with `mailto:` and `tel:` protocols
+- **Bulk Email System**: 
+  - "Email All Managers" - top-level link for all managers
+  - Category-specific links: "Email Over 30 Managers", "Email Over 40 Managers"
+  - Automatic email deduplication
+- **Manager Display**: Individual manager lines with briefcase emoji prefix
 
-### Key Files Modified
+#### 🏆 Complete Standings System
+- **Identical to view.html**: Same calculation logic and display
+- **Division Separation**: Over 30 and Over 40 divisions
+- **Smart Sorting**: Points → Goal Difference → Goals For → Team Name
+- **Season Filtering**: Current season toggle functionality
+- **Professional Styling**: Color-coded position and points columns
 
-#### Core Architecture Files
-- `view-app.js`: Complete referee personalization system implementation
-- `view.html`: Enhanced CSS for mobile grid layout and navigation locking
-- `config.js`: Version updated to 6.3.0
-- `api.php`: Version updated to 6.3.0
+#### 🎮 Complete Game Tracker System  
+- **Manager-Specific**: Shows only completed games (no scheduled/in-progress)
+- **Team Filtering**: Dropdown to filter by specific team
+- **No Season Restriction**: Shows all completed games across all seasons
+- **Rich Display**: Team result bubbles (win/loss/draw), scores, referees, fields
+- **Mobile Responsive**: Desktop table view + mobile card view
 
-#### Main Application Files
-- `app.js`, `index.html`, `styles.css`: Version updates to 6.3.0
+#### 📱 Mobile UI Enhancements
+- **Enhanced Email Links**: Larger touch targets (44px minimum)
+- **Category Email Buttons**: Full-width, prominent buttons on mobile
+- **Improved Team Cards**: Single column layout, better spacing
+- **Player Photo Integration**: Circular thumbnails with gender-based border colors
+- **Touch-Friendly**: Larger action buttons, improved tap targets
+
+### Key Files Modified/Created
+
+#### New Files Created
+- **manager.html**: Complete manager portal interface with responsive design
+- **manager-app.js**: Full JavaScript application for manager functionality
+- **team_managers_table.sql**: Database schema for team managers
+
+#### Core Files Modified
+- **api.php**: 
+  - Fixed routing logic for endpoints with IDs (team-managers/6)
+  - Added complete team-managers CRUD API endpoints
+  - Enhanced path parsing for RESTful routes
+- **.htaccess**: Added HTTP Basic Auth protection (temporarily disabled)
 
 ### Critical Implementation Details
 
-#### Referee Selection Workflow
-```javascript
-// 1. App startup checks localStorage for existing referee
-const storedRefereeId = localStorage.getItem('selectedRefereeId');
-const forceSelection = urlParams.get('selectReferee') === 'true';
+#### API Routing Fix
+```php
+// Fixed routing to handle endpoints with IDs
+$pathSegments = explode('/', $path);  
+$endpoint = $pathSegments[0];
 
-// 2. Show referee selection if no stored referee or forced
-if (!storedRefereeId || forceSelection) {
-    await this.showRefereeSelection(); // Adds 'referee-selection-active' CSS class
-}
-
-// 3. Referee selection process
-async selectReferee(refereeId, refereeName) {
-    localStorage.setItem('selectedRefereeId', refereeId);
-    localStorage.setItem('selectedRefereeName', refereeName);
-    document.body.classList.remove('referee-selection-active'); // Re-enables navigation
-    await this.initializeApp();
-}
+switch ($endpoint) {
+    case 'team-managers':
+        handleTeamManagers($db, $method, $path);
+        break;
 ```
 
-#### Advanced Filtering Logic
+#### Team Manager CRUD Operations
 ```javascript
-// Event-level filtering
-eventsToShow = eventsToShow.filter(event => {
-    const hasMatchForReferee = event.matches && event.matches.some(match => {
-        const mainRefereeId = String(match.mainRefereeId || '');
-        const assistantRefereeId = String(match.assistantRefereeId || '');
-        const selectedRefereeId = String(this.selectedRefereeId || '');
-        return mainRefereeId === selectedRefereeId || assistantRefereeId === selectedRefereeId;
+// Create manager
+async saveNewManager(event, teamId) {
+    const response = await fetch('/api/team-managers', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(managerData)
     });
-    return hasMatchForReferee;
-});
-
-// Match-level filtering within events
-event.matches.filter(match => {
-    if (this.selectedRefereeId && this.selectedRefereeId !== 'guest') {
-        const mainRefereeId = String(match.mainRefereeId || '');
-        const assistantRefereeId = String(match.assistantRefereeId || '');
-        const selectedRefereeId = String(this.selectedRefereeId || '');
-        return (mainRefereeId === selectedRefereeId || assistantRefereeId === selectedRefereeId);
-    }
-    return true; // Show all for Guest
-});
-```
-
-#### Navigation Lock CSS Implementation
-```css
-/* Disable navigation when referee selection is active */
-.referee-selection-active .main-nav {
-    pointer-events: none;
-    opacity: 0.3;
 }
 
-.referee-selection-active .content-section:not(#referee-selection-section) {
-    pointer-events: none;
-    opacity: 0.3;
-}
-
-/* Ensure referee selection section remains fully functional */
-.referee-selection-active #referee-selection-section {
-    pointer-events: auto;
-    opacity: 1;
+// Update manager  
+async saveEditManager(event, managerId) {
+    const response = await fetch(`/api/team-managers/${managerId}`, {
+        method: 'PUT',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(managerData)
+    });
 }
 ```
 
-### API Enhancements
-- No new API endpoints required - leverages existing referee and event APIs
-- Enhanced client-side filtering logic for personalized views
-- Optimized data loading with existing `/api/teams-basic` and `/api/events` endpoints
-
-### Development Patterns Established
-
-#### Referee Selection Pattern
+#### Bulk Email System
 ```javascript
-// 1. Check for existing selection
-const hasStoredReferee = localStorage.getItem('selectedRefereeId');
-
-// 2. Show selection interface if needed
-if (!hasStoredReferee) {
-    document.body.classList.add('referee-selection-active');
-    await this.showRefereeSelection();
-}
-
-// 3. Process selection
-async selectReferee(id, name) {
-    localStorage.setItem('selectedRefereeId', id);
-    document.body.classList.remove('referee-selection-active');
-    await this.initializeApp();
+generateManagerEmailLink(category = null) {
+    let emails = [];
+    if (category) {
+        // Get emails for specific category teams
+        const teamsInCategory = this.teams.filter(team => team.category === category);
+        const teamIds = teamsInCategory.map(team => team.id);
+        emails = this.teamManagers
+            .filter(manager => teamIds.includes(manager.team_id) && manager.email_address)
+            .map(manager => manager.email_address);
+    } else {
+        // Get all manager emails
+        emails = this.teamManagers
+            .filter(manager => manager.email_address)
+            .map(manager => manager.email_address);
+    }
+    return `mailto:${[...new Set(emails)].join(',')}`;
 }
 ```
 
-#### Mobile-First Grid Pattern
+#### Player Photo Enhancement
 ```css
-/* Default: 4 columns for desktop */
-.referee-list {
-    display: grid;
-    grid-template-columns: repeat(4, 1fr);
-    grid-template-rows: repeat(5, 1fr);
-}
+.player-card.male { border-left-color: #2196F3; }
+.player-card.female { border-left-color: #e91e63; }
+```
 
-/* Mobile: 3 columns for modern phones */
+#### Mobile-First Email Links
+```css
 @media (max-width: 768px) {
-    .referee-list {
-        grid-template-columns: repeat(3, 1fr);
-        grid-template-rows: repeat(auto, 1fr);
+    .email-all-managers a {
+        font-size: 18px !important;
+        min-height: 44px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
     }
-}
-
-/* Small phones: 2 columns fallback */
-@media (max-width: 360px) {
-    .referee-list {
-        grid-template-columns: repeat(2, 1fr);
+    
+    .category-header a {
+        min-height: 44px;
+        width: 100%;
+        background: rgba(33, 150, 243, 0.1);
     }
 }
 ```
 
-### Performance Metrics Achieved
-- **Referee Selection**: Instant local storage-based persistence
-- **Filtering Performance**: Client-side filtering with detailed debug logging
-- **Mobile Experience**: Optimized 3-column layout for efficient selection
-- **Navigation Lock**: Immediate visual feedback prevents premature access
+### Database Schema
+```sql
+CREATE TABLE team_managers (
+    id SERIAL PRIMARY KEY,
+    team_id TEXT NOT NULL,
+    first_name TEXT NOT NULL,
+    last_name TEXT NOT NULL,
+    phone_number TEXT,
+    email_address TEXT,
+    created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY (team_id) REFERENCES teams(id) ON DELETE CASCADE
+);
 
-### Deployment Notes
-- **Environment**: Railway (PostgreSQL + PHP)
-- **Client-Side Features**: No server changes required for referee personalization
-- **localStorage**: Persistent referee selection across browser sessions
-- **Mobile Optimization**: Enhanced for iPhone 16 Pro and similar devices
+CREATE INDEX idx_team_managers_team_id ON team_managers(team_id);
+```
 
-### Troubleshooting & Debug Features
-1. **Enhanced Debug Logging**: Comprehensive console output for filtering logic
-2. **URL Parameter Override**: `?selectReferee=true` forces referee selection
-3. **Debug Method**: `app.resetRefereeSelection()` clears localStorage and reloads
-4. **Visual Debug**: Console shows detailed match filtering with team names
+### Form Validation System
+```javascript
+validateManagerForm(formData) {
+    const errors = [];
+    
+    // Required fields
+    if (!formData.get('first_name')?.trim()) errors.push('First name is required');
+    if (!formData.get('last_name')?.trim()) errors.push('Last name is required');
+    
+    // Phone validation (XXX-XXX-XXXX format)
+    const phoneNumber = formData.get('phone_number')?.trim();
+    if (phoneNumber) {
+        const phoneRegex = /^\d{3}-\d{3}-\d{4}$/;
+        if (!phoneRegex.test(phoneNumber)) {
+            errors.push('Phone number must be in format: 555-555-5555');
+        }
+    }
+    
+    // Email validation
+    const email = formData.get('email_address')?.trim();
+    if (email) {
+        const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
+        if (!emailRegex.test(email)) {
+            errors.push('Please enter a valid email address');
+        }
+    }
+    
+    return errors;
+}
+```
 
-### Testing Checklist for v6.3.0
-- [x] Referee selection appears on first app load
-- [x] Navigation is disabled until referee selection
-- [x] 3-column layout displays on iPhone 16 Pro
-- [x] Guest referee styled consistently with others
-- [x] Event filtering shows only referee's events
-- [x] Match filtering shows only referee's matches within events
-- [x] localStorage persists referee selection
-- [x] Change referee workflow functions correctly
-- [x] Debug logging provides detailed filtering information
+### Performance Optimizations
+- **Modal Stack Prevention**: Automatic cleanup of existing modals before opening new ones
+- **Photo Loading**: Lazy loading with proper fallbacks to default gender-based photos
+- **Efficient Lookups**: Map-based team and referee lookups for O(1) access
+- **Responsive Design**: Desktop table + mobile card views for optimal experience
 
-### API Endpoints (Current)
+### Security Considerations
+- **Input Validation**: Comprehensive client-side and server-side validation
+- **SQL Injection Prevention**: Prepared statements for all database operations
+- **XSS Protection**: Proper HTML escaping in template literals
+- **Authentication Ready**: HTTP Basic Auth structure in place (temporarily disabled)
+
+### Testing Checklist Completed
+- [x] Manager portal loads correctly on desktop and mobile
+- [x] Team manager CRUD operations work (create, read, update, delete)
+- [x] Phone number formatting and validation
+- [x] Email address validation
+- [x] Bulk email links generate correctly for all categories
+- [x] Player photos display with gender-based border colors
+- [x] Standings calculate correctly and match view.html output
+- [x] Game tracker shows only completed games with proper filtering
+- [x] Mobile responsive design works across all sections
+- [x] Modal stacking prevention works
+- [x] Form validation shows user-friendly error messages
+
+### API Endpoints (Updated)
 ```
 GET/POST  /api/teams              - Full team management
 GET/POST  /api/teams-no-photos    - Fast loading without photos  
@@ -206,6 +235,8 @@ GET/POST  /api/teams-basic        - Lightweight team data
 GET/POST  /api/teams-specific     - Load specific teams by IDs
 GET/POST  /api/events             - Event/match management
 GET/POST  /api/referees           - Referee management
+GET/POST  /api/team-managers      - Team manager CRUD operations
+GET/PUT/DELETE /api/team-managers/{id} - Individual manager operations
 GET/POST  /api/disciplinary-records - Advanced disciplinary tracking
 POST      /api/photos             - Photo uploads with fallbacks
 POST      /api/attendance         - Attendance updates (no auth)
@@ -213,59 +244,52 @@ POST      /api/match-results      - Match results for view interface
 POST      /api/players/cards      - Card assignment for referees
 GET       /api/health             - System health check
 GET       /api/keep-alive         - Database warming
-GET       /api/version            - Returns v6.3.0
+GET       /api/version            - Returns v6.4.0
 ```
 
 ### Future Enhancement Opportunities
-1. **Push Notifications**: Notify referees of upcoming assigned matches
-2. **Referee Dashboard**: Personal statistics and match history
-3. **QR Code Integration**: Quick referee selection via QR code scan
-4. **Offline Capability**: Service worker for offline referee selection
-5. **Multi-Language Support**: Internationalization for referee interface
+1. **Authentication System**: Re-enable HTTP Basic Auth with proper user management
+2. **Team Assignment**: Auto-assign managers to their specific teams only
+3. **Email Templates**: Pre-built email templates for common manager communications
+4. **Manager Dashboard**: Personal dashboard showing assigned teams and recent activity
+5. **Notification System**: Email notifications for important team updates
+6. **Export Functionality**: PDF/Excel export of team rosters and standings
+7. **Calendar Integration**: Team calendar view with upcoming matches
 
 ### Development Commands & Shortcuts
 ```bash
 # Version check
 curl https://checkinapp-fresh-production.up.railway.app/api/version
 
-# Force referee selection (URL parameter)
-https://your-app.com/view.html?selectReferee=true
-
-# Debug referee selection (browser console)
-app.resetRefereeSelection()
-
-# Check localStorage
-localStorage.getItem('selectedRefereeId')
-localStorage.getItem('selectedRefereeName')
-
-# Railway database connection
-railway connect postgres
+# Test team managers API
+curl https://checkinapp-fresh-production.up.railway.app/api/team-managers
 
 # Health check  
 curl https://checkinapp-fresh-production.up.railway.app/api/health
 
-# Database warming
-curl https://checkinapp-fresh-production.up.railway.app/api/keep-alive
+# Railway database connection
+railway connect postgres
 ```
 
 ### Code Quality Improvements Made
-- **Separation of Concerns**: Referee logic isolated in dedicated methods
+- **Separation of Concerns**: Manager portal completely separate from main/view apps
 - **Error Handling**: Comprehensive try-catch blocks with user-friendly messages
 - **Performance Monitoring**: Detailed console logging for troubleshooting
-- **Mobile Optimization**: Responsive design with progressive enhancement
-- **User Experience**: Smooth workflows with visual feedback
-- **Data Persistence**: Reliable localStorage management with fallbacks
+- **Mobile Optimization**: Touch-friendly design with proper accessibility
+- **User Experience**: Smooth workflows with visual feedback and validation
+- **Data Persistence**: Reliable API integration with proper error handling
 
-### Previous Architecture (v6.0.0 Base)
+### Previous Architecture (v6.3.0 Base)
 - **Enhanced Mobile Experience**: Collapsible header, 75px player photos
 - **Performance Architecture**: Epoch timestamps, PostgreSQL optimization
 - **Authentication & Security**: Session-based auth with 1-hour timeout
 - **Advanced Disciplinary System**: Current season vs lifetime tracking
 - **Railway Cloud Deployment**: Persistent photo storage with keep-alive system
+- **Referee Personalization**: Revolutionary referee-specific interface with mobile optimization
 
 ---
 
-*This context should be referenced for future development sessions to maintain consistency and build upon the referee personalization system introduced in v6.3.0.*
+*This context documents the complete manager portal implementation in v6.4.0, providing a full-featured team management interface for league managers with comprehensive CRUD operations, enhanced communication tools, and mobile-optimized design.*
 
 # important-instruction-reminders
 Do what has been asked; nothing more, nothing less.

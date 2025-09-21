@@ -5550,7 +5550,7 @@ class CheckInViewApp extends CheckInCore {
                         <div class="team-score-input">
                             <div class="team-name-label">${homeTeam.name}</div>
                             <div class="score-input-wrapper">
-                                <input type="number" class="score-input" id="home-score" value="${match.homeScore !== null ? match.homeScore : ''}" min="0" max="99" placeholder="0" readonly>
+                                <input type="number" class="score-input" id="home-score" value="${match.homeScore !== null ? match.homeScore : 0}" min="0" max="99" placeholder="0" readonly>
                                 <div class="score-stepper">
                                     <button type="button" class="score-stepper-btn" onclick="app.adjustScore('home-score', 1)">+</button>
                                     <button type="button" class="score-stepper-btn" onclick="app.adjustScore('home-score', -1)">−</button>
@@ -5561,7 +5561,7 @@ class CheckInViewApp extends CheckInCore {
                         <div class="team-score-input">
                             <div class="team-name-label">${awayTeam.name}</div>
                             <div class="score-input-wrapper">
-                                <input type="number" class="score-input" id="away-score" value="${match.awayScore !== null ? match.awayScore : ''}" min="0" max="99" placeholder="0" readonly>
+                                <input type="number" class="score-input" id="away-score" value="${match.awayScore !== null ? match.awayScore : 0}" min="0" max="99" placeholder="0" readonly>
                                 <div class="score-stepper">
                                     <button type="button" class="score-stepper-btn" onclick="app.adjustScore('away-score', 1)">+</button>
                                     <button type="button" class="score-stepper-btn" onclick="app.adjustScore('away-score', -1)">−</button>
