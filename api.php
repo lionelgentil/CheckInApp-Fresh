@@ -1964,7 +1964,7 @@ function saveDisciplinaryRecords($db) {
                 $record['cardType'] ?? '',
                 $record['reason'] ?? null,
                 $record['notes'] ?? null,
-                $record['incidentDate_epoch'] ?? null, // Use epoch timestamp
+                $record['incident_date_epoch'] ?? null, // Use epoch timestamp
                 $suspensionMatches,
                 $suspensionServed ? 1 : 0, // Explicit 1/0 for PostgreSQL
                 $suspensionServedDate // Already epoch timestamp
