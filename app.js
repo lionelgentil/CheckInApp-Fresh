@@ -5291,7 +5291,7 @@ Please check the browser console (F12) for more details.`);
     collectAllGameRecords() {
         console.log('🔍 collectAllGameRecords called');
         console.log('📊 Available events:', this.events.length);
-        console.log('👥 Available teams basic:', this.teamsBasic.length);
+        console.log('👥 Available teams (full data):', this.teams.length);
         console.log('👨‍⚖️ Available referees:', this.referees.length);
         
         const gameRecords = [];
@@ -5300,7 +5300,8 @@ Please check the browser console (F12) for more details.`);
         const teamLookup = new Map();
         const refereeLookup = new Map();
         
-        this.teamsBasic.forEach(team => teamLookup.set(team.id, team));
+        // Use full teams data (not teamsBasic) to ensure member lookup works for card display
+        this.teams.forEach(team => teamLookup.set(team.id, team));
         this.referees.forEach(referee => refereeLookup.set(referee.id, referee));
         
         // Process all events and matches
