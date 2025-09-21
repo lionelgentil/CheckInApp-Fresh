@@ -4123,6 +4123,15 @@ function createTeamManager($db) {
         $stmt->execute([$managerId]);
         $manager = $stmt->fetch();
         
+        // Send email notification
+        sendManagerNotification('created', [
+            'first_name' => $input['first_name'],
+            'last_name' => $input['last_name'],
+            'team_id' => $input['team_id'],
+            'phone_number' => $input['phone_number'] ?? null,
+            'email_address' => $input['email_address'] ?? null
+        ], $manager['team_name'] ?? null);
+        
         echo json_encode($manager);
     } catch (PDOException $e) {
         http_response_code(500);
@@ -4165,6 +4174,15 @@ function updateTeamManager($db, $managerId) {
         $manager = $stmt->fetch();
         
         if ($manager) {
+            // Send email notification
+            sendManagerNotification('updated', [
+                'first_name' => $input['first_name'],
+                'last_name' => $input['last_name'],
+                'team_id' => $manager['team_id'],
+                'phone_number' => $input['phone_number'] ?? null,
+                'email_address' => $input['email_address'] ?? null
+            ], $manager['team_name'] ?? null);
+            
             echo json_encode($manager);
         } else {
             http_response_code(404);
@@ -4178,10 +4196,36 @@ function updateTeamManager($db, $managerId) {
 
 function deleteTeamManager($db, $managerId) {
     try {
+        // Get manager data before deleting for email notification
+        $stmt = $db->prepare("
+            SELECT tm.*, t.name as team_name 
+            FROM team_managers tm 
+            LEFT JOIN teams t ON tm.team_id = t.id 
+            WHERE tm.id = ?
+        ");
+        $stmt->execute([$managerId]);
+        $manager = $stmt->fetch();
+        
+        if (!$manager) {
+            http_response_code(404);
+            echo json_encode(['error' => 'Team manager not found']);
+            return;
+        }
+        
+        // Delete the manager
         $stmt = $db->prepare("DELETE FROM team_managers WHERE id = ?");
         $stmt->execute([$managerId]);
         
         if ($stmt->rowCount() > 0) {
+            // Send email notification
+            sendManagerNotification('deleted', [
+                'first_name' => $manager['first_name'],
+                'last_name' => $manager['last_name'],
+                'team_id' => $manager['team_id'],
+                'phone_number' => $manager['phone_number'],
+                'email_address' => $manager['email_address']
+            ], $manager['team_name'] ?? null);
+            
             echo json_encode(['success' => true, 'message' => 'Team manager deleted successfully']);
         } else {
             http_response_code(404);
@@ -4191,5 +4235,79 @@ function deleteTeamManager($db, $managerId) {
         http_response_code(500);
         echo json_encode(['error' => 'Failed to delete team manager: ' . $e->getMessage()]);
     }
+}
+
+// Email notification function using Resend
+function sendManagerNotification($action, $managerData, $teamName = null) {
+    $apiKey = 're_DgSt5TMx_7DRHWdP9TKqyzhA2h34fTpxU';
+    $toEmail = 'lionel@gentil.name';
+    
+    // Build email subject and content based on action
+    switch ($action) {
+        case 'created':
+            $subject = "New Team Manager Added - {$managerData['first_name']} {$managerData['last_name']}";
+            $content = "
+                <h3>New Team Manager Added</h3>
+                <p><strong>Manager:</strong> {$managerData['first_name']} {$managerData['last_name']}</p>
+                <p><strong>Team:</strong> " . ($teamName ?: 'Team ID: ' . $managerData['team_id']) . "</p>
+                <p><strong>Phone:</strong> " . ($managerData['phone_number'] ?: 'Not provided') . "</p>
+                <p><strong>Email:</strong> " . ($managerData['email_address'] ?: 'Not provided') . "</p>
+                <p><strong>Time:</strong> " . date('Y-m-d H:i:s T') . "</p>
+            ";
+            break;
+            
+        case 'updated':
+            $subject = "Team Manager Updated - {$managerData['first_name']} {$managerData['last_name']}";
+            $content = "
+                <h3>Team Manager Updated</h3>
+                <p><strong>Manager:</strong> {$managerData['first_name']} {$managerData['last_name']}</p>
+                <p><strong>Team:</strong> " . ($teamName ?: 'Team ID: ' . $managerData['team_id']) . "</p>
+                <p><strong>Phone:</strong> " . ($managerData['phone_number'] ?: 'Not provided') . "</p>
+                <p><strong>Email:</strong> " . ($managerData['email_address'] ?: 'Not provided') . "</p>
+                <p><strong>Time:</strong> " . date('Y-m-d H:i:s T') . "</p>
+            ";
+            break;
+            
+        case 'deleted':
+            $subject = "Team Manager Removed - {$managerData['first_name']} {$managerData['last_name']}";
+            $content = "
+                <h3>Team Manager Removed</h3>
+                <p><strong>Removed Manager:</strong> {$managerData['first_name']} {$managerData['last_name']}</p>
+                <p><strong>Team:</strong> " . ($teamName ?: 'Team ID: ' . $managerData['team_id']) . "</p>
+                <p><strong>Time:</strong> " . date('Y-m-d H:i:s T') . "</p>
+            ";
+            break;
+            
+        default:
+            return false;
+    }
+    
+    // Prepare email data for Resend API
+    $emailData = [
+        'from' => 'CheckIn App <noreply@lionelgentil.com>',
+        'to' => [$toEmail],
+        'subject' => $subject,
+        'html' => $content
+    ];
+    
+    // Send via Resend API
+    $ch = curl_init('https://api.resend.com/emails');
+    curl_setopt($ch, CURLOPT_HTTPHEADER, [
+        'Authorization: Bearer ' . $apiKey,
+        'Content-Type: application/json'
+    ]);
+    curl_setopt($ch, CURLOPT_POST, true);
+    curl_setopt($ch, CURLOPT_POSTFIELDS, json_encode($emailData));
+    curl_setopt($ch, CURLOPT_RETURNTRANSFER, true);
+    curl_setopt($ch, CURLOPT_TIMEOUT, 10);
+    
+    $response = curl_exec($ch);
+    $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
+    curl_close($ch);
+    
+    // Log the result for debugging
+    error_log("Manager notification email - Action: $action, HTTP Code: $httpCode, Response: $response");
+    
+    return $httpCode === 200;
 }
 ?>
