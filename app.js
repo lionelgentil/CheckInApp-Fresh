@@ -2805,18 +2805,33 @@ Please check the browser console (F12) for more details.`);
             console.log('saveDetailedMember: UI refreshed');
         }
         
+        console.log('🔍 About to collect disciplinary records...');
+        
         // Collect disciplinary records
         const recordItems = document.querySelectorAll('.disciplinary-record-item');
+        console.log('🔍 Found disciplinary record items:', recordItems.length);
+        
         const disciplinaryRecords = [];
-        recordItems.forEach((item) => {
+        recordItems.forEach((item, index) => {
+            console.log(`🔍 Processing disciplinary record ${index + 1}/${recordItems.length}`);
+            
             const cardType = item.querySelector('[data-field="cardType"]').value;
             const incidentDate = item.querySelector('[data-field="incidentDate"]').value;
             const reason = item.querySelector('[data-field="reason"]').value;
             const notes = item.querySelector('[data-field="notes"]').value;
             
+            console.log(`🔍 Record ${index + 1} values:`, {
+                cardType,
+                incidentDate,
+                reason,
+                notes
+            });
+            
             // No longer collecting suspension data - this will be managed by advisory board
             
             if (cardType) {
+                console.log(`🔍 Record ${index + 1} has cardType, processing...`);
+                
                 // Convert incident date from YYYY-MM-DD string to epoch timestamp
                 let incidentDateEpoch = null;
                 if (incidentDate) {
@@ -2838,6 +2853,10 @@ Please check the browser console (F12) for more details.`);
                     reason: reason || null,
                     notes: notes || null
                 });
+                
+                console.log(`🔍 Added record ${index + 1} to disciplinaryRecords array`);
+            } else {
+                console.log(`🔍 Record ${index + 1} has no cardType, skipping`);
             }
         });
         
@@ -2878,6 +2897,11 @@ Please check the browser console (F12) for more details.`);
             
             // Save disciplinary records (this should be fast)
             console.log('💾 Saving disciplinary records...');
+            console.log('📤 Request payload:', {
+                member_id: memberId,
+                records: disciplinaryRecords
+            });
+            
             const disciplinaryResponse = await fetch('/api/disciplinary-records', {
                 method: 'POST',
                 headers: {
@@ -2889,9 +2913,12 @@ Please check the browser console (F12) for more details.`);
                 })
             });
             
+            console.log('📥 API Response status:', disciplinaryResponse.status);
+            console.log('📥 API Response ok:', disciplinaryResponse.ok);
+            
             if (!disciplinaryResponse.ok) {
                 const errorText = await disciplinaryResponse.text();
-                console.error('Failed to save disciplinary records:', disciplinaryResponse.status, errorText);
+                console.error('❌ Failed to save disciplinary records:', disciplinaryResponse.status, errorText);
                 
                 try {
                     const errorJson = JSON.parse(errorText);
@@ -2899,10 +2926,11 @@ Please check the browser console (F12) for more details.`);
                 } catch {
                     throw new Error(`Disciplinary records save failed: HTTP ${disciplinaryResponse.status} - ${errorText}`);
                 }
+            } else {
+                const responseData = await disciplinaryResponse.json();
+                console.log('✅ Disciplinary records saved successfully!');
+                console.log('📥 API Response data:', responseData);
             }
-            
-            const disciplinaryResult = await disciplinaryResponse.json();
-            console.log('✅ Disciplinary records saved successfully:', disciplinaryResult);
             
             // 🚀 PHOTO FIX: Don't refresh from server immediately after photo upload
             // The local data already has the correct photo URL, server refresh can cause timing issues
