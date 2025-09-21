@@ -2817,9 +2817,24 @@ Please check the browser console (F12) for more details.`);
             // No longer collecting suspension data - this will be managed by advisory board
             
             if (cardType) {
+                // Convert incident date from YYYY-MM-DD string to epoch timestamp
+                let incidentDateEpoch = null;
+                if (incidentDate) {
+                    try {
+                        // Parse the YYYY-MM-DD date and convert to epoch seconds
+                        const date = new Date(incidentDate + 'T00:00:00.000Z'); // Add UTC time to avoid timezone issues
+                        if (!isNaN(date.getTime())) {
+                            incidentDateEpoch = Math.floor(date.getTime() / 1000); // Convert to epoch seconds
+                            console.log(`Converting date "${incidentDate}" to epoch: ${incidentDateEpoch}`);
+                        }
+                    } catch (error) {
+                        console.error('Error converting incident date to epoch:', incidentDate, error);
+                    }
+                }
+                
                 disciplinaryRecords.push({
                     cardType: cardType,
-                    incidentDate: incidentDate || null,
+                    incidentDate: incidentDateEpoch, // Now sending as epoch timestamp
                     reason: reason || null,
                     notes: notes || null
                 });
@@ -3129,36 +3144,65 @@ Please check the browser console (F12) for more details.`);
                 // Use only the actual incident date, not when it was entered into the system
                 let eventDate = record.incident_date_epoch || record.incident_date;
                 
+                // If no incident date is available, fall back to entry date as last resort
+                let isFallbackDate = false;
+                if (!eventDate && (record.created_at_epoch || record.created_at)) {
+                    eventDate = record.created_at_epoch || record.created_at;
+                    isFallbackDate = true;
+                }
+                
                 console.log('🔍 fetchDisciplinaryRecords debug - processing record:', {
                     recordId: record.id,
                     incident_date_epoch: record.incident_date_epoch,
                     incident_date: record.incident_date,
+                    created_at_epoch: record.created_at_epoch,
+                    created_at: record.created_at,
                     selectedEventDate: eventDate,
+                    isFallbackDate: isFallbackDate,
+                    allFieldsNull: !eventDate && !record.created_at_epoch && !record.created_at,
                     allRecordKeys: Object.keys(record)
                 });
                 
                 // Use the SAME logic as showDetailedMemberModal (which works correctly)
                 // Convert epoch timestamps to proper format for display
                 let processedEventDate = null;
-                if (eventDate) {
+                
+                // Handle case where all date fields are null
+                if (!eventDate && !record.created_at_epoch && !record.created_at) {
+                    processedEventDate = 'Date not recorded';
+                } else if (eventDate) {
                     if (typeof eventDate === 'number') {
                         // It's an epoch timestamp - convert to formatted date string
-                        processedEventDate = new Date(eventDate * 1000).toLocaleDateString('en-US', {
+                        let dateString = new Date(eventDate * 1000).toLocaleDateString('en-US', {
                             timeZone: 'America/Los_Angeles',
                             year: 'numeric',
                             month: '2-digit',
                             day: '2-digit'
                         });
+                        
+                        // Add indicator if this is a fallback date
+                        if (isFallbackDate) {
+                            processedEventDate = dateString + ' (entry date)';
+                        } else {
+                            processedEventDate = dateString;
+                        }
                     } else if (typeof eventDate === 'string' && eventDate.includes('-')) {
                         // It's likely an ISO date string, convert to display format
                         const date = new Date(eventDate);
                         if (!isNaN(date.getTime())) {
-                            processedEventDate = date.toLocaleDateString('en-US', {
+                            let dateString = date.toLocaleDateString('en-US', {
                                 timeZone: 'America/Los_Angeles',
                                 year: 'numeric',
                                 month: '2-digit',
                                 day: '2-digit'
                             });
+                            
+                            // Add indicator if this is a fallback date
+                            if (isFallbackDate) {
+                                processedEventDate = dateString + ' (entry date)';
+                            } else {
+                                processedEventDate = dateString;
+                            }
                         }
                     }
                 }
