@@ -939,13 +939,11 @@ class CheckInApp extends CheckInCore {
                 }
                 this.renderStandings();
             } else if (sectionName === 'cards') {
-                // Ensure we have all data loaded for card tracking
-                if (this.teams.length === 0 && this.teamsBasic.length === 0) {
-                    await this.loadTeams();
-                } else if (this.teams.length === 0 && this.teamsBasic.length > 0) {
-                    // We have basic data but need full data for cards
-                    await this.loadTeams();
-                }
+                // Card tracker needs ALL teams loaded to display team names correctly
+                // Always load full teams data to ensure we have complete team information
+                console.log('🚀 Card Tracker: Ensuring ALL teams are loaded');
+                await this.loadTeams();
+                
                 if (this.events.length === 0) {
                     await this.loadEvents();
                 }
@@ -958,13 +956,11 @@ class CheckInApp extends CheckInCore {
                 
                 this.renderCardTracker();
             } else if (sectionName === 'game-tracker') {
-                // Game tracker needs teams, events and referees for display
-                if (this.teams.length === 0 && this.teamsBasic.length === 0) {
-                    await this.loadTeams();
-                } else if (this.teams.length === 0 && this.teamsBasic.length > 0) {
-                    // We have basic data but need full data for game tracker
-                    await this.loadTeams();
-                }
+                // Game tracker needs ALL teams loaded to display team names correctly
+                // Always load full teams data to ensure we have complete team information
+                console.log('🚀 Game Tracker: Ensuring ALL teams are loaded');
+                await this.loadTeams();
+                
                 if (this.events.length === 0) {
                     await this.loadEvents();
                 }
@@ -2600,11 +2596,8 @@ Please check the browser console (F12) for more details.`);
             
             // Process the records to ensure proper date formatting
             disciplinaryRecords = rawRecords.map(record => {
-                // Use same logic as fetchDisciplinaryRecords to get the date
-                let eventDate = record.incidentDate_epoch || 
-                              record.incidentDate || 
-                              record.created_at_epoch || 
-                              record.createdAt;
+                // Use only the actual incident date, not when it was entered into the system
+                let eventDate = record.incident_date_epoch || record.incident_date;
                 
                 // Convert epoch timestamps to YYYY-MM-DD format for date input
                 let formattedDate = '';
@@ -3133,18 +3126,13 @@ Please check the browser console (F12) for more details.`);
             console.log('🔍 fetchDisciplinaryRecords debug - raw records from API:', records);
             
             return records.map(record => {
-                // Try multiple date fields in order of preference
-                let eventDate = record.incidentDate_epoch || 
-                              record.incidentDate || 
-                              record.created_at_epoch || 
-                              record.createdAt;
+                // Use only the actual incident date, not when it was entered into the system
+                let eventDate = record.incident_date_epoch || record.incident_date;
                 
                 console.log('🔍 fetchDisciplinaryRecords debug - processing record:', {
                     recordId: record.id,
-                    incidentDate_epoch: record.incidentDate_epoch,
-                    incidentDate: record.incidentDate,
-                    created_at_epoch: record.created_at_epoch,
-                    createdAt: record.createdAt,
+                    incident_date_epoch: record.incident_date_epoch,
+                    incident_date: record.incident_date,
                     selectedEventDate: eventDate,
                     allRecordKeys: Object.keys(record)
                 });
