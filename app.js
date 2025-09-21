@@ -2862,6 +2862,11 @@ Please check the browser console (F12) for more details.`);
         
         console.log('Disciplinary records to save:', disciplinaryRecords);
         
+        // Show detailed structure of each record
+        disciplinaryRecords.forEach((record, index) => {
+            console.log(`📋 Record ${index + 1} structure:`, record);
+        });
+        
         try {
             // Check if basic member info actually changed
             const basicInfoChanged = (
@@ -2902,34 +2907,39 @@ Please check the browser console (F12) for more details.`);
                 records: disciplinaryRecords
             });
             
-            const disciplinaryResponse = await fetch('/api/disciplinary-records', {
-                method: 'POST',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify({
-                    member_id: memberId,
-                    records: disciplinaryRecords
-                })
-            });
-            
-            console.log('📥 API Response status:', disciplinaryResponse.status);
-            console.log('📥 API Response ok:', disciplinaryResponse.ok);
-            
-            if (!disciplinaryResponse.ok) {
-                const errorText = await disciplinaryResponse.text();
-                console.error('❌ Failed to save disciplinary records:', disciplinaryResponse.status, errorText);
+            try {
+                const disciplinaryResponse = await fetch('/api/disciplinary-records', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        member_id: memberId,
+                        records: disciplinaryRecords
+                    })
+                });
                 
-                try {
-                    const errorJson = JSON.parse(errorText);
-                    throw new Error(`Disciplinary records save failed: ${errorJson.error || 'Unknown error'}`);
-                } catch {
-                    throw new Error(`Disciplinary records save failed: HTTP ${disciplinaryResponse.status} - ${errorText}`);
+                console.log('📥 API Response status:', disciplinaryResponse.status);
+                console.log('📥 API Response ok:', disciplinaryResponse.ok);
+                
+                if (!disciplinaryResponse.ok) {
+                    const errorText = await disciplinaryResponse.text();
+                    console.error('❌ Failed to save disciplinary records:', disciplinaryResponse.status, errorText);
+                    
+                    try {
+                        const errorJson = JSON.parse(errorText);
+                        throw new Error(`Disciplinary records save failed: ${errorJson.error || 'Unknown error'}`);
+                    } catch {
+                        throw new Error(`Disciplinary records save failed: HTTP ${disciplinaryResponse.status} - ${errorText}`);
+                    }
+                } else {
+                    const responseData = await disciplinaryResponse.json();
+                    console.log('✅ Disciplinary records saved successfully!');
+                    console.log('📥 API Response data:', responseData);
                 }
-            } else {
-                const responseData = await disciplinaryResponse.json();
-                console.log('✅ Disciplinary records saved successfully!');
-                console.log('📥 API Response data:', responseData);
+            } catch (fetchError) {
+                console.error('❌ Fetch error occurred:', fetchError);
+                throw fetchError;
             }
             
             // 🚀 PHOTO FIX: Don't refresh from server immediately after photo upload
