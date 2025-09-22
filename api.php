@@ -4242,10 +4242,17 @@ function sendManagerNotification($action, $managerData, $teamName = null) {
     $apiKey = 're_DgSt5TMx_7DRHWdP9TKqyzhA2h34fTpxU';
     $toEmail = 'lionel@gentil.name';
     
+    // Get user tracking information
+    $userIP = $_SERVER['HTTP_X_FORWARDED_FOR'] ?? $_SERVER['HTTP_X_REAL_IP'] ?? $_SERVER['REMOTE_ADDR'] ?? 'Unknown IP';
+    $userAgent = $_SERVER['HTTP_USER_AGENT'] ?? 'Unknown User Agent';
+    
+    // Clean up team name for subject
+    $teamForSubject = $teamName ?: ('Team ID: ' . $managerData['team_id']);
+    
     // Build email subject and content based on action
     switch ($action) {
         case 'created':
-            $subject = "New Team Manager Added - {$managerData['first_name']} {$managerData['last_name']}";
+            $subject = "Addition of manager on {$teamForSubject}";
             $content = "
                 <h3>New Team Manager Added</h3>
                 <p><strong>Manager:</strong> {$managerData['first_name']} {$managerData['last_name']}</p>
@@ -4253,11 +4260,13 @@ function sendManagerNotification($action, $managerData, $teamName = null) {
                 <p><strong>Phone:</strong> " . ($managerData['phone_number'] ?: 'Not provided') . "</p>
                 <p><strong>Email:</strong> " . ($managerData['email_address'] ?: 'Not provided') . "</p>
                 <p><strong>Time:</strong> " . date('Y-m-d H:i:s T') . "</p>
+                <p><strong>User IP:</strong> {$userIP}</p>
+                <p><strong>User Agent:</strong> {$userAgent}</p>
             ";
             break;
             
         case 'updated':
-            $subject = "Team Manager Updated - {$managerData['first_name']} {$managerData['last_name']}";
+            $subject = "Edition of manager on {$teamForSubject}";
             $content = "
                 <h3>Team Manager Updated</h3>
                 <p><strong>Manager:</strong> {$managerData['first_name']} {$managerData['last_name']}</p>
@@ -4265,16 +4274,20 @@ function sendManagerNotification($action, $managerData, $teamName = null) {
                 <p><strong>Phone:</strong> " . ($managerData['phone_number'] ?: 'Not provided') . "</p>
                 <p><strong>Email:</strong> " . ($managerData['email_address'] ?: 'Not provided') . "</p>
                 <p><strong>Time:</strong> " . date('Y-m-d H:i:s T') . "</p>
+                <p><strong>User IP:</strong> {$userIP}</p>
+                <p><strong>User Agent:</strong> {$userAgent}</p>
             ";
             break;
             
         case 'deleted':
-            $subject = "Team Manager Removed - {$managerData['first_name']} {$managerData['last_name']}";
+            $subject = "Deletion of manager on {$teamForSubject}";
             $content = "
                 <h3>Team Manager Removed</h3>
                 <p><strong>Removed Manager:</strong> {$managerData['first_name']} {$managerData['last_name']}</p>
                 <p><strong>Team:</strong> " . ($teamName ?: 'Team ID: ' . $managerData['team_id']) . "</p>
                 <p><strong>Time:</strong> " . date('Y-m-d H:i:s T') . "</p>
+                <p><strong>User IP:</strong> {$userIP}</p>
+                <p><strong>User Agent:</strong> {$userAgent}</p>
             ";
             break;
             
@@ -4305,8 +4318,8 @@ function sendManagerNotification($action, $managerData, $teamName = null) {
     $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
     curl_close($ch);
     
-    // Log the result for debugging
-    error_log("Manager notification email - Action: $action, HTTP Code: $httpCode, Response: $response");
+    // Log the result for debugging with user tracking
+    error_log("Manager notification email - Action: $action, Team: {$teamForSubject}, Manager: {$managerData['first_name']} {$managerData['last_name']}, IP: {$userIP}, User-Agent: {$userAgent}, HTTP Code: $httpCode, Response: $response");
     
     return $httpCode === 200;
 }
