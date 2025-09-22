@@ -4284,7 +4284,7 @@ function sendManagerNotification($action, $managerData, $teamName = null) {
     
     // Prepare email data for Resend API
     $emailData = [
-        'from' => 'CheckIn App <noreply@lionelgentil.com>',
+        'from' => 'CheckIn App <lionel@gentil.name>',
         'to' => [$toEmail],
         'subject' => $subject,
         'html' => $content
