@@ -1,11 +1,92 @@
 # CheckIn App - Claude Context & Development History
 
-## Current Version: 6.4.0
+## Current Version: 6.5.0
 
 ### Project Overview
 CheckIn App for BUSC PASS - A comprehensive team and event management system with photo support, match check-ins, disciplinary tracking, referee personalization, and performance optimizations. Built with PHP backend (PostgreSQL) and vanilla JavaScript frontend.
 
-## Recent Development Session Summary - v6.4.0 Manager Portal Implementation
+## Recent Development Session Summary - v6.5.0 Email Notifications & Bug Fixes
+
+### Primary Objectives Completed
+1. **Disciplinary Records Bug Fix**: Fixed backend field mapping issue preventing incident dates from saving
+2. **Email Notification System**: Complete Resend integration for manager CRUD operations
+3. **Enhanced User Tracking**: Comprehensive user fingerprinting and audit trail
+4. **Professional Email Format**: Structured notifications with detailed user information
+
+### Major Technical Achievements
+
+#### 🐛 Critical Bug Fixes
+- **Backend Field Mapping**: Fixed `incidentDate_epoch` vs `incident_date_epoch` mismatch in API
+- **Display Field Mapping**: Fixed API response field names to match frontend expectations
+- **Date Rendering**: Resolved "Date not recorded" display issue in player profiles
+
+#### 📧 Email Notification System
+- **Resend Integration**: Professional email service with API key authentication
+- **CRUD Notifications**: Add, edit, delete manager operations trigger instant emails
+- **Subject Format**: `"Addition/Edition/Deletion of manager on {TeamName}"`
+- **HTML Email Templates**: Structured content with clear manager and tracking information
+
+#### 🕵️ Enhanced User Tracking
+- **IP Address Detection**: Multi-header proxy support for Railway deployment
+- **Browser Fingerprinting**: User-Agent, language preferences, referrer tracking
+- **Session Monitoring**: Session ID tracking for multi-action correlation
+- **Request Auditing**: Complete HTTP method and endpoint logging
+- **Geographic Insights**: Language preferences reveal user location/preferences
+
+### Key Technical Implementation
+
+#### Email Notification Function
+```php
+function sendManagerNotification($action, $managerData, $teamName = null) {
+    // Comprehensive user tracking
+    $userIP = $_SERVER['HTTP_X_FORWARDED_FOR'] ?? $_SERVER['HTTP_X_REAL_IP'] ?? $_SERVER['REMOTE_ADDR'];
+    $userAgent = $_SERVER['HTTP_USER_AGENT'] ?? 'Unknown User Agent';
+    $acceptLanguage = $_SERVER['HTTP_ACCEPT_LANGUAGE'] ?? 'Unknown';
+    $referrer = $_SERVER['HTTP_REFERER'] ?? 'Direct access';
+    $requestUri = $_SERVER['REQUEST_URI'] ?? 'Unknown';
+    $requestMethod = $_SERVER['REQUEST_METHOD'] ?? 'Unknown';
+    $sessionId = session_id() ?: 'No session';
+    
+    // Send via Resend API with structured HTML content
+}
+```
+
+#### User Tracking Data Collected
+- **IP Address**: Railway-proxy compatible detection
+- **User Agent**: Browser/device identification
+- **Accept-Language**: User's language/locale preferences
+- **HTTP Referrer**: Navigation source tracking
+- **Request Details**: HTTP method and exact API endpoint
+- **Session ID**: Cross-request user correlation
+
+### Security & Audit Features
+- **Complete Audit Trail**: Every manager change logged with full user context
+- **Non-Blocking Emails**: Email failures don't affect CRUD operations
+- **Structured Logging**: Server logs include comprehensive tracking data
+- **Privacy Compliant**: No authentication required, only browser-provided data
+
+### Email Content Structure
+```
+Subject: Addition of manager on Lumberjacks
+
+New Team Manager Added
+Manager: John Smith
+Team: Lumberjacks
+Phone: 555-123-4567
+Email: john@example.com
+Time: 2024-01-15 14:30:25 PST
+
+─────────────────────────────────────
+User Tracking Information
+IP Address: 192.168.1.100
+User Agent: Mozilla/5.0 (Macintosh; Intel Mac OS X...)
+Language: en-US,en;q=0.9,fr;q=0.8
+Referrer: https://yourdomain.com/manager.html
+Request: POST /api/team-managers
+Session ID: abc123def456789
+```
+
+### Previous Development (v6.4.0) - Manager Portal Implementation
 
 ### Primary Objectives Completed
 1. **Complete Manager Portal System**: Full-featured team management interface for managers
@@ -244,7 +325,7 @@ POST      /api/match-results      - Match results for view interface
 POST      /api/players/cards      - Card assignment for referees
 GET       /api/health             - System health check
 GET       /api/keep-alive         - Database warming
-GET       /api/version            - Returns v6.4.0
+GET       /api/version            - Returns v6.5.0
 ```
 
 ### Future Enhancement Opportunities

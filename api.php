@@ -8,7 +8,7 @@
 session_start();
 
 // Version constant - update this single location to change version everywhere
-const APP_VERSION = '6.4.0';
+const APP_VERSION = '6.5.0';
 
 // Authentication configuration
 const ADMIN_PASSWORD = 'checkin2024'; // Change this to your desired password
@@ -4245,6 +4245,11 @@ function sendManagerNotification($action, $managerData, $teamName = null) {
     // Get user tracking information
     $userIP = $_SERVER['HTTP_X_FORWARDED_FOR'] ?? $_SERVER['HTTP_X_REAL_IP'] ?? $_SERVER['REMOTE_ADDR'] ?? 'Unknown IP';
     $userAgent = $_SERVER['HTTP_USER_AGENT'] ?? 'Unknown User Agent';
+    $acceptLanguage = $_SERVER['HTTP_ACCEPT_LANGUAGE'] ?? 'Unknown';
+    $referrer = $_SERVER['HTTP_REFERER'] ?? 'Direct access';
+    $requestUri = $_SERVER['REQUEST_URI'] ?? 'Unknown';
+    $requestMethod = $_SERVER['REQUEST_METHOD'] ?? 'Unknown';
+    $sessionId = session_id() ?: 'No session';
     
     // Clean up team name for subject
     $teamForSubject = $teamName ?: ('Team ID: ' . $managerData['team_id']);
@@ -4260,8 +4265,14 @@ function sendManagerNotification($action, $managerData, $teamName = null) {
                 <p><strong>Phone:</strong> " . ($managerData['phone_number'] ?: 'Not provided') . "</p>
                 <p><strong>Email:</strong> " . ($managerData['email_address'] ?: 'Not provided') . "</p>
                 <p><strong>Time:</strong> " . date('Y-m-d H:i:s T') . "</p>
-                <p><strong>User IP:</strong> {$userIP}</p>
+                <hr>
+                <h4>User Tracking Information</h4>
+                <p><strong>IP Address:</strong> {$userIP}</p>
                 <p><strong>User Agent:</strong> {$userAgent}</p>
+                <p><strong>Language:</strong> {$acceptLanguage}</p>
+                <p><strong>Referrer:</strong> {$referrer}</p>
+                <p><strong>Request:</strong> {$requestMethod} {$requestUri}</p>
+                <p><strong>Session ID:</strong> {$sessionId}</p>
             ";
             break;
             
@@ -4274,8 +4285,14 @@ function sendManagerNotification($action, $managerData, $teamName = null) {
                 <p><strong>Phone:</strong> " . ($managerData['phone_number'] ?: 'Not provided') . "</p>
                 <p><strong>Email:</strong> " . ($managerData['email_address'] ?: 'Not provided') . "</p>
                 <p><strong>Time:</strong> " . date('Y-m-d H:i:s T') . "</p>
-                <p><strong>User IP:</strong> {$userIP}</p>
+                <hr>
+                <h4>User Tracking Information</h4>
+                <p><strong>IP Address:</strong> {$userIP}</p>
                 <p><strong>User Agent:</strong> {$userAgent}</p>
+                <p><strong>Language:</strong> {$acceptLanguage}</p>
+                <p><strong>Referrer:</strong> {$referrer}</p>
+                <p><strong>Request:</strong> {$requestMethod} {$requestUri}</p>
+                <p><strong>Session ID:</strong> {$sessionId}</p>
             ";
             break;
             
@@ -4286,8 +4303,14 @@ function sendManagerNotification($action, $managerData, $teamName = null) {
                 <p><strong>Removed Manager:</strong> {$managerData['first_name']} {$managerData['last_name']}</p>
                 <p><strong>Team:</strong> " . ($teamName ?: 'Team ID: ' . $managerData['team_id']) . "</p>
                 <p><strong>Time:</strong> " . date('Y-m-d H:i:s T') . "</p>
-                <p><strong>User IP:</strong> {$userIP}</p>
+                <hr>
+                <h4>User Tracking Information</h4>
+                <p><strong>IP Address:</strong> {$userIP}</p>
                 <p><strong>User Agent:</strong> {$userAgent}</p>
+                <p><strong>Language:</strong> {$acceptLanguage}</p>
+                <p><strong>Referrer:</strong> {$referrer}</p>
+                <p><strong>Request:</strong> {$requestMethod} {$requestUri}</p>
+                <p><strong>Session ID:</strong> {$sessionId}</p>
             ";
             break;
             
@@ -4318,8 +4341,8 @@ function sendManagerNotification($action, $managerData, $teamName = null) {
     $httpCode = curl_getinfo($ch, CURLINFO_HTTP_CODE);
     curl_close($ch);
     
-    // Log the result for debugging with user tracking
-    error_log("Manager notification email - Action: $action, Team: {$teamForSubject}, Manager: {$managerData['first_name']} {$managerData['last_name']}, IP: {$userIP}, User-Agent: {$userAgent}, HTTP Code: $httpCode, Response: $response");
+    // Log the result for debugging with comprehensive user tracking
+    error_log("Manager notification email - Action: $action, Team: {$teamForSubject}, Manager: {$managerData['first_name']} {$managerData['last_name']}, IP: {$userIP}, Session: {$sessionId}, Language: {$acceptLanguage}, Referrer: {$referrer}, Request: {$requestMethod} {$requestUri}, HTTP Code: $httpCode");
     
     return $httpCode === 200;
 }

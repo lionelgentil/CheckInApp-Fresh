@@ -1,5 +1,5 @@
 /**
- * CheckIn App v6.4.0 - JavaScript Frontend
+ * CheckIn App v6.5.0 - JavaScript Frontend
  * Works with PHP/PostgreSQL backend
  * Enhanced with suspension system fixes and referee personalization in View app
  */

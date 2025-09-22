@@ -1,5 +1,5 @@
 /**
- * CheckIn App v6.4.0 - View Only Mode
+ * CheckIn App v6.5.0 - View Only Mode
  * Read-only version for public viewing
  * Enhanced with referee personalization and event filtering
  */
