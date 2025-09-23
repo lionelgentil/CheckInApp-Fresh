@@ -4130,7 +4130,7 @@ function createTeamManager($db) {
             'team_id' => $input['team_id'],
             'phone_number' => $input['phone_number'] ?? null,
             'email_address' => $input['email_address'] ?? null
-        ], $manager['team_name'] ?? null);
+        ], $manager['team_name'] ?? null, $db);
         
         echo json_encode($manager);
     } catch (PDOException $e) {
@@ -4181,7 +4181,7 @@ function updateTeamManager($db, $managerId) {
                 'team_id' => $manager['team_id'],
                 'phone_number' => $input['phone_number'] ?? null,
                 'email_address' => $input['email_address'] ?? null
-            ], $manager['team_name'] ?? null);
+            ], $manager['team_name'] ?? null, $db);
             
             echo json_encode($manager);
         } else {
@@ -4224,7 +4224,7 @@ function deleteTeamManager($db, $managerId) {
                 'team_id' => $manager['team_id'],
                 'phone_number' => $manager['phone_number'],
                 'email_address' => $manager['email_address']
-            ], $manager['team_name'] ?? null);
+            ], $manager['team_name'] ?? null, $db);
             
             echo json_encode(['success' => true, 'message' => 'Team manager deleted successfully']);
         } else {
@@ -4237,10 +4237,75 @@ function deleteTeamManager($db, $managerId) {
     }
 }
 
+// Helper function to get all email addresses for managers of a specific team
+function getTeamManagerEmails($db, $teamId) {
+    try {
+        $stmt = $db->prepare("
+            SELECT email_address 
+            FROM team_managers 
+            WHERE team_id = ? AND email_address IS NOT NULL AND email_address != ''
+        ");
+        $stmt->execute([$teamId]);
+        
+        $emails = [];
+        while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
+            $emails[] = $row['email_address'];
+        }
+        
+        return $emails;
+    } catch (Exception $e) {
+        error_log("Error getting team manager emails: " . $e->getMessage());
+        return [];
+    }
+}
+
 // Email notification function using Resend
-function sendManagerNotification($action, $managerData, $teamName = null) {
+function sendManagerNotification($action, $managerData, $teamName = null, $db = null) {
     $apiKey = 're_DgSt5TMx_7DRHWdP9TKqyzhA2h34fTpxU';
-    $toEmail = 'lionel@gentil.name';
+    
+    // Always-CC list (single variable for easy maintenance)
+    $alwaysCcEmails = [
+        'andrew200@comcast.net',
+        'angwoodward@comcast.net', 
+        'jennagabrio@gmail.com',
+        'lionel@gentil.name'
+    ];
+    
+    // Build dynamic recipient list based on action
+    $recipients = $alwaysCcEmails; // Start with always-CC list
+    
+    // Get current team managers (if database connection provided)
+    $teamManagerEmails = [];
+    if ($db && $managerData['team_id']) {
+        $teamManagerEmails = getTeamManagerEmails($db, $managerData['team_id']);
+        $recipients = array_merge($recipients, $teamManagerEmails);
+    }
+    
+    // Add specific recipients based on action
+    switch ($action) {
+        case 'created':
+            // Add new manager's email if provided
+            if (!empty($managerData['email_address'])) {
+                $recipients[] = $managerData['email_address'];
+            }
+            break;
+            
+        case 'updated':
+            // All team managers already included above
+            break;
+            
+        case 'deleted':
+            // Add removed manager's email if provided
+            if (!empty($managerData['email_address'])) {
+                $recipients[] = $managerData['email_address'];
+            }
+            break;
+    }
+    
+    // Remove duplicates and empty emails
+    $recipients = array_unique(array_filter($recipients, function($email) {
+        return !empty($email) && filter_var($email, FILTER_VALIDATE_EMAIL);
+    }));
     
     // Get user tracking information
     $userIP = $_SERVER['HTTP_X_FORWARDED_FOR'] ?? $_SERVER['HTTP_X_REAL_IP'] ?? $_SERVER['REMOTE_ADDR'] ?? 'Unknown IP';
@@ -4321,7 +4386,7 @@ function sendManagerNotification($action, $managerData, $teamName = null) {
     // Prepare email data for Resend API
     $emailData = [
         'from' => 'CheckIn App <lionel@gentil.name>',
-        'to' => [$toEmail],
+        'to' => array_values($recipients), // Use dynamic recipient list
         'subject' => $subject,
         'html' => $content
     ];
@@ -4342,7 +4407,9 @@ function sendManagerNotification($action, $managerData, $teamName = null) {
     curl_close($ch);
     
     // Log the result for debugging with comprehensive user tracking
-    error_log("Manager notification email - Action: $action, Team: {$teamForSubject}, Manager: {$managerData['first_name']} {$managerData['last_name']}, IP: {$userIP}, Session: {$sessionId}, Language: {$acceptLanguage}, Referrer: {$referrer}, Request: {$requestMethod} {$requestUri}, HTTP Code: $httpCode");
+    $recipientCount = count($recipients);
+    $recipientList = implode(', ', array_slice($recipients, 0, 3)) . ($recipientCount > 3 ? "... (+".($recipientCount-3)." more)" : "");
+    error_log("Manager notification email - Action: $action, Team: {$teamForSubject}, Manager: {$managerData['first_name']} {$managerData['last_name']}, Recipients: $recipientCount ($recipientList), IP: {$userIP}, Session: {$sessionId}, HTTP Code: $httpCode");
     
     return $httpCode === 200;
 }
