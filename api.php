@@ -4149,6 +4149,22 @@ function updateTeamManager($db, $managerId) {
             return;
         }
         
+        // Get old manager data before updating for change comparison
+        $oldDataStmt = $db->prepare("
+            SELECT tm.*, t.name as team_name 
+            FROM team_managers tm 
+            LEFT JOIN teams t ON tm.team_id = t.id 
+            WHERE tm.id = ?
+        ");
+        $oldDataStmt->execute([$managerId]);
+        $oldManagerData = $oldDataStmt->fetch();
+        
+        if (!$oldManagerData) {
+            http_response_code(404);
+            echo json_encode(['error' => 'Team manager not found']);
+            return;
+        }
+        
         $stmt = $db->prepare("
             UPDATE team_managers 
             SET first_name = ?, last_name = ?, phone_number = ?, email_address = ?, updated_at = NOW() 
@@ -4174,14 +4190,14 @@ function updateTeamManager($db, $managerId) {
         $manager = $stmt->fetch();
         
         if ($manager) {
-            // Send email notification
+            // Send email notification with old data for comparison
             sendManagerNotification('updated', [
                 'first_name' => $input['first_name'],
                 'last_name' => $input['last_name'],
                 'team_id' => $manager['team_id'],
                 'phone_number' => $input['phone_number'] ?? null,
                 'email_address' => $input['email_address'] ?? null
-            ], $manager['team_name'] ?? null, $db);
+            ], $manager['team_name'] ?? null, $db, $oldManagerData);
             
             echo json_encode($manager);
         } else {
@@ -4260,7 +4276,7 @@ function getTeamManagerEmails($db, $teamId) {
 }
 
 // Email notification function using Resend
-function sendManagerNotification($action, $managerData, $teamName = null, $db = null) {
+function sendManagerNotification($action, $managerData, $teamName = null, $db = null, $oldManagerData = null) {
     $apiKey = 're_DgSt5TMx_7DRHWdP9TKqyzhA2h34fTpxU';
     
     // Always-CC list (single variable for easy maintenance)
@@ -4343,8 +4359,42 @@ function sendManagerNotification($action, $managerData, $teamName = null, $db = 
             
         case 'updated':
             $subject = "Edition of manager on {$teamForSubject}";
-            $content = "
-                <h3>Team Manager Updated</h3>
+            
+            // Build content with change highlighting if old data is provided
+            $content = "<h3>Team Manager Updated</h3>";
+            
+            if ($oldManagerData) {
+                // Compare and highlight changes
+                $content .= "<h4>Changes Made:</h4>";
+                
+                // Check first name
+                if (($oldManagerData['first_name'] ?? '') !== ($managerData['first_name'] ?? '')) {
+                    $content .= "<p><strong>First Name:</strong> {$oldManagerData['first_name']} → <strong style='color: red;'>{$managerData['first_name']}</strong></p>";
+                }
+                
+                // Check last name
+                if (($oldManagerData['last_name'] ?? '') !== ($managerData['last_name'] ?? '')) {
+                    $content .= "<p><strong>Last Name:</strong> {$oldManagerData['last_name']} → <strong style='color: red;'>{$managerData['last_name']}</strong></p>";
+                }
+                
+                // Check phone number
+                $oldPhone = $oldManagerData['phone_number'] ?: 'Not provided';
+                $newPhone = $managerData['phone_number'] ?: 'Not provided';
+                if ($oldPhone !== $newPhone) {
+                    $content .= "<p><strong>Phone:</strong> {$oldPhone} → <strong style='color: red;'>{$newPhone}</strong></p>";
+                }
+                
+                // Check email address
+                $oldEmail = $oldManagerData['email_address'] ?: 'Not provided';
+                $newEmail = $managerData['email_address'] ?: 'Not provided';
+                if ($oldEmail !== $newEmail) {
+                    $content .= "<p><strong>Email:</strong> {$oldEmail} → <strong style='color: red;'>{$newEmail}</strong></p>";
+                }
+                
+                $content .= "<hr><h4>Current Information:</h4>";
+            }
+            
+            $content .= "
                 <p><strong>Manager:</strong> {$managerData['first_name']} {$managerData['last_name']}</p>
                 <p><strong>Team:</strong> " . ($teamName ?: 'Team ID: ' . $managerData['team_id']) . "</p>
                 <p><strong>Phone:</strong> " . ($managerData['phone_number'] ?: 'Not provided') . "</p>
