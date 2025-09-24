@@ -10,9 +10,18 @@ session_start();
 // Version constant - update this single location to change version everywhere
 const APP_VERSION = '6.5.0';
 
-// Authentication configuration
-const ADMIN_PASSWORD = 'checkin2024'; // Change this to your desired password
-const SESSION_TIMEOUT = 3600; // 1 hour in seconds
+// Authentication configuration - using environment variables for security
+$adminPassword = $_ENV['ADMIN_PASSWORD'] ?? getenv('ADMIN_PASSWORD');
+$sessionTimeout = (int)($_ENV['SESSION_TIMEOUT'] ?? getenv('SESSION_TIMEOUT') ?: 3600);
+
+if (empty($adminPassword)) {
+    error_log("CRITICAL: ADMIN_PASSWORD environment variable not set - authentication will fail");
+    // Don't define constant if password is missing - this will cause auth to fail securely
+} else {
+    define('ADMIN_PASSWORD', $adminPassword);
+}
+
+define('SESSION_TIMEOUT', $sessionTimeout);
 
 // Default photos - use direct URLs for better performance (bypass PHP)
 function getDefaultPhoto($gender) {
@@ -87,6 +96,12 @@ function isAuthenticated() {
 }
 
 function authenticate($password) {
+    // Check if ADMIN_PASSWORD constant was properly set from environment variable
+    if (!defined('ADMIN_PASSWORD')) {
+        error_log("CRITICAL: ADMIN_PASSWORD environment variable not set - authentication failed");
+        return false;
+    }
+    
     if ($password === ADMIN_PASSWORD) {
         $_SESSION['admin_authenticated'] = true;
         $_SESSION['auth_timestamp'] = time();
@@ -4277,15 +4292,36 @@ function getTeamManagerEmails($db, $teamId) {
 
 // Email notification function using Resend
 function sendManagerNotification($action, $managerData, $teamName = null, $db = null, $oldManagerData = null) {
-    $apiKey = 're_DgSt5TMx_7DRHWdP9TKqyzhA2h34fTpxU';
+    // Get configuration from environment variables for security
+    $apiKey = $_ENV['RESEND_API_KEY'] ?? getenv('RESEND_API_KEY');
+    $fromEmail = $_ENV['FROM_EMAIL'] ?? getenv('FROM_EMAIL');
     
-    // Always-CC list (single variable for easy maintenance)
-    $alwaysCcEmails = [
-        'andrew200@comcast.net',
-        'angwoodward@comcast.net', 
-        'jennagabrio@gmail.com',
-        'lionel@gentil.name'
-    ];
+    // Parse always-CC emails from environment variable
+    $alwaysCcEmailsString = $_ENV['ALWAYS_CC_EMAILS'] ?? getenv('ALWAYS_CC_EMAILS');
+    
+    // Validate required environment variables
+    if (empty($apiKey)) {
+        error_log("CRITICAL: RESEND_API_KEY environment variable not set - email notification failed");
+        return false;
+    }
+    
+    if (empty($fromEmail)) {
+        error_log("CRITICAL: FROM_EMAIL environment variable not set - email notification failed");
+        return false;
+    }
+    
+    if (empty($alwaysCcEmailsString)) {
+        error_log("CRITICAL: ALWAYS_CC_EMAILS environment variable not set - email notification failed");
+        return false;
+    }
+    
+    // Parse email list
+    $alwaysCcEmails = array_filter(array_map('trim', explode(',', $alwaysCcEmailsString)));
+    
+    if (empty($alwaysCcEmails)) {
+        error_log("CRITICAL: ALWAYS_CC_EMAILS environment variable is empty or invalid - email notification failed");
+        return false;
+    }
     
     // Build dynamic recipient list based on action
     $recipients = $alwaysCcEmails; // Start with always-CC list
@@ -4435,7 +4471,7 @@ function sendManagerNotification($action, $managerData, $teamName = null, $db = 
     
     // Prepare email data for Resend API
     $emailData = [
-        'from' => 'CheckIn App <lionel@gentil.name>',
+        'from' => "CheckIn App <{$fromEmail}>",
         'to' => array_values($recipients), // Use dynamic recipient list
         'subject' => $subject,
         'html' => $content

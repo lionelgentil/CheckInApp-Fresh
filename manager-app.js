@@ -1,9 +1,9 @@
 // CheckIn App - Manager Portal JavaScript
-// Version 6.4.0 - Manager-specific functionality
+// Version 6.5.0 - Manager-specific functionality
 
 // Don't redeclare APP_VERSION if it already exists
 if (typeof APP_VERSION === 'undefined') {
-    const APP_VERSION = '6.4.0';
+    const APP_VERSION = '6.5.0';
 }
 
 class CheckInManagerApp {
@@ -114,6 +114,9 @@ class CheckInManagerApp {
                 break;
             case 'standings':
                 this.renderStandings();
+                break;
+            case 'cards':
+                this.renderCardTracker();
                 break;
             case 'game-tracker':
                 this.renderGameTracker();
@@ -1343,6 +1346,217 @@ class CheckInManagerApp {
         }
         
         return `<span class="team-result-bubble ${bubbleClass}">${teamName}</span>`;
+    }
+    
+    // Card Tracker section
+    async renderCardTracker() {
+        console.log('🃏 renderCardTracker called');
+        const container = document.getElementById('cards-tracker-container');
+        const cardTypeFilter = document.getElementById('card-type-filter')?.value || 'all';
+        
+        try {
+            // Collect all card data from matches
+            const cardData = this.collectAllCardData();
+            
+            // Filter by card type if specified
+            let filteredCards = cardData;
+            if (cardTypeFilter !== 'all') {
+                filteredCards = cardData.filter(card => card.cardType === cardTypeFilter);
+            }
+            
+            console.log('🃏 Filtered card records:', filteredCards.length);
+            
+            if (filteredCards.length === 0) {
+                container.innerHTML = `
+                    <div class="empty-state">
+                        <h3>No card records found</h3>
+                        <p>Card records will appear here when cards are issued during matches</p>
+                    </div>
+                `;
+                return;
+            }
+            
+            // Group cards by player and calculate totals
+            const playerCardStats = this.calculatePlayerCardStats(filteredCards);
+            
+            // Sort by total cards (most cards first)
+            const sortedPlayers = Object.values(playerCardStats).sort((a, b) => {
+                const totalA = a.totalYellow + a.totalRed;
+                const totalB = b.totalYellow + b.totalRed;
+                if (totalB !== totalA) return totalB - totalA;
+                // If tied, sort by red cards first, then yellow cards
+                if (b.totalRed !== a.totalRed) return b.totalRed - a.totalRed;
+                if (b.totalYellow !== a.totalYellow) return b.totalYellow - a.totalYellow;
+                return a.playerName.localeCompare(b.playerName);
+            });
+            
+            // Render desktop table and mobile view
+            container.innerHTML = `
+                <!-- Desktop Table View -->
+                <table class="card-tracker-table">
+                    <thead>
+                        <tr>
+                            <th class="player-name-header">Player</th>
+                            <th class="team-name-header">Team</th>
+                            <th>🟨 Yellow</th>
+                            <th>🟥 Red</th>
+                            <th class="card-total">Total</th>
+                        </tr>
+                    </thead>
+                    <tbody>
+                        ${sortedPlayers.map(player => `
+                            <tr class="card-row">
+                                <td class="player-name-cell">${player.playerName}</td>
+                                <td class="team-name-card-cell">${player.teamName}</td>
+                                <td class="card-count yellow-cards">${player.totalYellow}</td>
+                                <td class="card-count red-cards">${player.totalRed}</td>
+                                <td class="card-total">${player.totalYellow + player.totalRed}</td>
+                            </tr>
+                        `).join('')}
+                    </tbody>
+                </table>
+                
+                <!-- Mobile Card View -->
+                <div class="card-tracker-mobile">
+                    ${sortedPlayers.map(player => `
+                        <div class="card-record-item">
+                            <div class="card-record-header">
+                                <div class="card-player-info">
+                                    <div class="card-player-name">${player.playerName}</div>
+                                    <div class="card-team-name">${player.teamName}</div>
+                                </div>
+                                <div class="card-counts-mobile">
+                                    <span class="card-count-mobile yellow">${player.totalYellow} 🟨</span>
+                                    <span class="card-count-mobile red">${player.totalRed} 🟥</span>
+                                </div>
+                            </div>
+                        </div>
+                    `).join('')}
+                </div>
+            `;
+            
+        } catch (error) {
+            console.error('Error rendering card tracker:', error);
+            container.innerHTML = `
+                <div class="empty-state">
+                    <h3>Error loading card data</h3>
+                    <p>Please try again later</p>
+                </div>
+            `;
+        }
+    }
+    
+    collectAllCardData() {
+        console.log('🔍 collectAllCardData called');
+        const cardRecords = [];
+        
+        // Create lookup maps for efficiency
+        const teamLookup = new Map();
+        this.teams.forEach(team => teamLookup.set(team.id, team));
+        
+        // Get current season start epoch for filtering
+        const currentSeasonStart = this.getCurrentSeasonStartEpoch();
+        
+        // Process all events and matches to collect card data
+        this.events.forEach(event => {
+            // Filter by current season only
+            if (event.date_epoch < currentSeasonStart) {
+                return;
+            }
+            
+            if (!event.matches || event.matches.length === 0) {
+                return;
+            }
+            
+            event.matches.forEach(match => {
+                if (!match.cards || match.cards.length === 0) {
+                    return;
+                }
+                
+                match.cards.forEach(card => {
+                    const homeTeam = teamLookup.get(match.homeTeamId);
+                    const awayTeam = teamLookup.get(match.awayTeamId);
+                    
+                    // Determine which team this card belongs to
+                    const isHomeTeam = card.teamType === 'home';
+                    const team = isHomeTeam ? homeTeam : awayTeam;
+                    
+                    if (team) {
+                        // Find the member in the team
+                        const member = team.members?.find(m => m.id === card.memberId);
+                        
+                        if (member) {
+                            cardRecords.push({
+                                eventId: event.id,
+                                matchId: match.id,
+                                eventDate: event.date_epoch,
+                                memberId: card.memberId,
+                                memberName: card.memberName || member.name,
+                                teamId: team.id,
+                                teamName: team.name,
+                                teamType: card.teamType,
+                                cardType: card.cardType,
+                                reason: card.reason,
+                                notes: card.notes,
+                                minute: card.minute
+                            });
+                        }
+                    }
+                });
+            });
+        });
+        
+        console.log(`🃏 Collected ${cardRecords.length} card records from current season`);
+        return cardRecords;
+    }
+    
+    calculatePlayerCardStats(cardRecords) {
+        const playerStats = {};
+        
+        cardRecords.forEach(card => {
+            const playerId = card.memberId;
+            
+            if (!playerStats[playerId]) {
+                playerStats[playerId] = {
+                    playerId: playerId,
+                    playerName: card.memberName,
+                    teamId: card.teamId,
+                    teamName: card.teamName,
+                    totalYellow: 0,
+                    totalRed: 0,
+                    cards: []
+                };
+            }
+            
+            // Count card types
+            if (card.cardType === 'yellow') {
+                playerStats[playerId].totalYellow++;
+            } else if (card.cardType === 'red') {
+                playerStats[playerId].totalRed++;
+            }
+            
+            // Add card details
+            playerStats[playerId].cards.push(card);
+        });
+        
+        return playerStats;
+    }
+    
+    // Helper function to get current season start epoch timestamp
+    getCurrentSeasonStartEpoch() {
+        const now = new Date();
+        const currentYear = now.getFullYear();
+        const currentMonth = now.getMonth() + 1; // getMonth() returns 0-11
+        
+        // Spring season: Jan 1st to Jun 30th
+        // Fall season: Jul 1st to Dec 31st
+        if (currentMonth >= 1 && currentMonth <= 6) {
+            // Current Spring season: Jan 1st to Jun 30th
+            return Math.floor(new Date(currentYear, 0, 1, 0, 0, 0).getTime() / 1000);
+        } else {
+            // Current Fall season: Jul 1st to Dec 31st  
+            return Math.floor(new Date(currentYear, 6, 1, 0, 0, 0).getTime() / 1000);
+        }
     }
     
     // Date/time formatting functions
