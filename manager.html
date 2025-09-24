@@ -1340,6 +1340,202 @@
             .notes-text {
                 color: #333;
             }
+            
+            /* Mobile chart styles */
+            .card-charts-section {
+                margin-top: 20px;
+                padding: 15px;
+            }
+            
+            .charts-grid {
+                gap: 20px;
+            }
+            
+            .chart-canvas {
+                height: 200px;
+            }
+        }
+        
+        /* Teams section styles - view.html compatibility */
+        .team-selector-container {
+            margin-bottom: 25px;
+        }
+        
+        .form-label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .form-select {
+            width: 100%;
+            padding: 10px 12px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            font-size: 14px;
+            background: white;
+            color: #333;
+            cursor: pointer;
+        }
+        
+        .form-select:focus {
+            outline: none;
+            border-color: #2196F3;
+        }
+        
+        .selected-team-container {
+            margin-top: 20px;
+        }
+        
+        .team-card-full {
+            background: white;
+            border-radius: 12px;
+            padding: 25px;
+            border-left: 5px solid #2196F3;
+            box-shadow: 0 4px 15px rgba(0,0,0,0.1);
+        }
+        
+        .members-list-full {
+            margin-top: 20px;
+        }
+        
+        .member-item {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 15px;
+            background: #f8f9fa;
+            border-radius: 8px;
+            margin-bottom: 10px;
+            border-left: 4px solid #2196F3;
+            transition: background-color 0.3s ease;
+        }
+        
+        .member-item:hover {
+            background: #e9ecef;
+        }
+        
+        .member-info {
+            display: flex;
+            align-items: center;
+            gap: 12px;
+            flex: 1;
+        }
+        
+        .member-photo {
+            width: 40px;
+            height: 40px;
+            border-radius: 50%;
+            object-fit: cover;
+            border: 2px solid #e9ecef;
+            flex-shrink: 0;
+        }
+        
+        .member-details {
+            flex: 1;
+        }
+        
+        .member-name {
+            font-weight: 600;
+            color: #333;
+            margin-bottom: 3px;
+        }
+        
+        .member-meta {
+            font-size: 0.85em;
+            color: #666;
+        }
+        
+        .member-actions {
+            display: flex;
+            gap: 8px;
+            flex-shrink: 0;
+        }
+        
+        /* Chart styles for Cards section */
+        .card-charts-section {
+            margin-top: 30px;
+            padding: 20px;
+            background: white;
+            border-radius: 15px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+        
+        .charts-header {
+            text-align: center;
+            margin-bottom: 30px;
+            padding-bottom: 15px;
+            border-bottom: 2px solid #f0f0f0;
+        }
+        
+        .charts-title {
+            font-size: 1.5em;
+            color: #333;
+            margin: 0 0 10px 0;
+            font-weight: 600;
+        }
+        
+        .charts-subtitle {
+            color: #666;
+            font-size: 0.9em;
+            margin: 0;
+        }
+        
+        .charts-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(450px, 1fr));
+            gap: 30px;
+            margin-bottom: 30px;
+        }
+        
+        .chart-container {
+            background: #f8f9fa;
+            border-radius: 12px;
+            padding: 20px;
+            border: 1px solid #e9ecef;
+            position: relative;
+        }
+        
+        .chart-title {
+            font-size: 1.1em;
+            font-weight: 600;
+            color: #333;
+            margin: 0 0 15px 0;
+            text-align: center;
+        }
+        
+        .chart-canvas {
+            position: relative;
+            height: 300px;
+            width: 100%;
+        }
+        
+        .chart-no-data {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 300px;
+            color: #666;
+            font-style: italic;
+            text-align: center;
+            background: white;
+            border-radius: 8px;
+            border: 2px dashed #dee2e6;
+        }
+        
+        @media (max-width: 1024px) {
+            .charts-grid {
+                grid-template-columns: 1fr;
+            }
+            
+            .chart-container {
+                padding: 15px;
+            }
+            
+            .chart-canvas {
+                height: 250px;
+            }
         }
     </style>
 </head>
