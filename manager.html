@@ -875,6 +875,98 @@
             display: none;
         }
         
+        /* Card Tracker styles */
+        .card-tracker-table-container {
+            overflow-x: auto;
+            margin-bottom: 20px;
+        }
+        
+        .card-tracker-table {
+            width: 100%;
+            border-collapse: collapse;
+            background: white;
+            border-radius: 8px;
+            overflow: hidden;
+            box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+            font-size: 0.9em;
+        }
+        
+        .card-tracker-table th {
+            background: #f8f9fa;
+            color: #333;
+            font-weight: 600;
+            padding: 12px 8px;
+            text-align: left;
+            border-bottom: 2px solid #e9ecef;
+        }
+        
+        .center-header {
+            text-align: center !important;
+        }
+        
+        .card-tracker-table td {
+            padding: 10px 8px;
+            text-align: left;
+            border-bottom: 1px solid #f0f0f0;
+        }
+        
+        .card-tracker-table tbody tr:hover {
+            background: #f8f9fa;
+        }
+        
+        .team-name-badge {
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .player-name-cell {
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .center-cell {
+            text-align: center !important;
+        }
+        
+        .card-type-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.8em;
+            font-weight: 600;
+        }
+        
+        .card-type-yellow {
+            background: #fff3cd;
+            color: #856404;
+        }
+        
+        .card-type-red {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        .notes-cell {
+            max-width: 150px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .match-info-cell {
+            min-width: 120px;
+        }
+        
+        .referee-cell {
+            font-size: 0.9em;
+            color: #666;
+        }
+        
+        /* Mobile card tracker styles */
+        .card-tracker-mobile {
+            display: none;
+        }
+        
         @media (max-width: 768px) {
             .game-tracker-table-container {
                 display: none;
@@ -882,6 +974,108 @@
             
             .game-tracker-mobile {
                 display: block;
+            }
+            
+            .card-tracker-table {
+                display: none;
+            }
+            
+            .card-tracker-mobile {
+                display: block;
+            }
+            
+            .card-record-item {
+                background: white;
+                border-radius: 8px;
+                padding: 15px;
+                margin-bottom: 15px;
+                box-shadow: 0 2px 8px rgba(0,0,0,0.1);
+                border-left: 4px solid #2196F3;
+            }
+            
+            .card-record-header {
+                display: flex;
+                justify-content: space-between;
+                align-items: flex-start;
+                margin-bottom: 15px;
+            }
+            
+            .card-type-section {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+            }
+            
+            .card-minute {
+                background: #e9ecef;
+                color: #495057;
+                padding: 2px 6px;
+                border-radius: 4px;
+                font-size: 0.7em;
+                font-weight: 600;
+            }
+            
+            .card-date {
+                font-size: 0.9em;
+                color: #666;
+                font-weight: 500;
+            }
+            
+            .card-record-details {
+                display: grid;
+                gap: 12px;
+            }
+            
+            .player-team-info {
+                border-bottom: 1px solid #f0f0f0;
+                padding-bottom: 8px;
+            }
+            
+            .player-name-large {
+                font-weight: 600;
+                color: #333;
+                margin-bottom: 4px;
+            }
+            
+            .team-name-large {
+                color: #666;
+                font-size: 0.9em;
+            }
+            
+            .match-info-section {
+                border-bottom: 1px solid #f0f0f0;
+                padding-bottom: 8px;
+            }
+            
+            .match-teams {
+                font-weight: 600;
+                color: #333;
+                margin-bottom: 4px;
+            }
+            
+            .referee-info {
+                color: #666;
+                font-size: 0.9em;
+            }
+            
+            .infraction-section,
+            .notes-section {
+                display: grid;
+                gap: 4px;
+            }
+            
+            .infraction-label,
+            .notes-label {
+                font-weight: 600;
+                color: #666;
+                font-size: 0.8em;
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+            }
+            
+            .infraction-text,
+            .notes-text {
+                color: #333;
             }
             
             .game-record-item {
@@ -973,13 +1167,17 @@
             color: #333;
             font-weight: 600;
             padding: 12px 8px;
-            text-align: center;
+            text-align: left;
             border-bottom: 2px solid #e9ecef;
+        }
+        
+        .center-header {
+            text-align: center !important;
         }
         
         .card-tracker-table td {
             padding: 10px 8px;
-            text-align: center;
+            text-align: left;
             border-bottom: 1px solid #f0f0f0;
         }
         
@@ -987,39 +1185,52 @@
             background: #f8f9fa;
         }
         
-        .player-name-header {
-            text-align: left !important;
-            min-width: 150px;
-        }
-        
-        .player-name-cell {
-            text-align: left !important;
+        .team-name-badge {
             font-weight: 600;
             color: #333;
         }
         
-        .team-name-card-cell {
-            text-align: left !important;
-            color: #666;
+        .player-name-cell {
+            font-weight: 600;
+            color: #333;
+        }
+        
+        .center-cell {
+            text-align: center !important;
+        }
+        
+        .card-type-badge {
+            display: inline-block;
+            padding: 4px 8px;
+            border-radius: 4px;
+            font-size: 0.8em;
+            font-weight: 600;
+        }
+        
+        .card-type-yellow {
+            background: #fff3cd;
+            color: #856404;
+        }
+        
+        .card-type-red {
+            background: #f8d7da;
+            color: #721c24;
+        }
+        
+        .notes-cell {
+            max-width: 150px;
+            white-space: nowrap;
+            overflow: hidden;
+            text-overflow: ellipsis;
+        }
+        
+        .match-info-cell {
+            min-width: 120px;
+        }
+        
+        .referee-cell {
             font-size: 0.9em;
-        }
-        
-        .card-count {
-            font-weight: 600;
-        }
-        
-        .card-count.yellow-cards {
-            color: #f39c12;
-        }
-        
-        .card-count.red-cards {
-            color: #e74c3c;
-        }
-        
-        .card-total {
-            background: #e3f2fd !important;
-            font-weight: 600;
-            color: #1976d2;
+            color: #666;
         }
         
         /* Mobile card tracker styles */
@@ -1049,44 +1260,85 @@
                 display: flex;
                 justify-content: space-between;
                 align-items: flex-start;
-                margin-bottom: 10px;
+                margin-bottom: 15px;
             }
             
-            .card-player-info {
-                flex: 1;
+            .card-type-section {
+                display: flex;
+                align-items: center;
+                gap: 8px;
             }
             
-            .card-player-name {
+            .card-minute {
+                background: #e9ecef;
+                color: #495057;
+                padding: 2px 6px;
+                border-radius: 4px;
+                font-size: 0.7em;
+                font-weight: 600;
+            }
+            
+            .card-date {
+                font-size: 0.9em;
+                color: #666;
+                font-weight: 500;
+            }
+            
+            .card-record-details {
+                display: grid;
+                gap: 12px;
+            }
+            
+            .player-team-info {
+                border-bottom: 1px solid #f0f0f0;
+                padding-bottom: 8px;
+            }
+            
+            .player-name-large {
                 font-weight: 600;
                 color: #333;
-                margin-bottom: 3px;
+                margin-bottom: 4px;
             }
             
-            .card-team-name {
+            .team-name-large {
                 color: #666;
                 font-size: 0.9em;
             }
             
-            .card-counts-mobile {
-                display: flex;
-                gap: 10px;
+            .match-info-section {
+                border-bottom: 1px solid #f0f0f0;
+                padding-bottom: 8px;
             }
             
-            .card-count-mobile {
-                padding: 4px 8px;
-                border-radius: 4px;
-                font-size: 0.8em;
+            .match-teams {
                 font-weight: 600;
+                color: #333;
+                margin-bottom: 4px;
             }
             
-            .card-count-mobile.yellow {
-                background: #fff3cd;
-                color: #856404;
+            .referee-info {
+                color: #666;
+                font-size: 0.9em;
             }
             
-            .card-count-mobile.red {
-                background: #f8d7da;
-                color: #721c24;
+            .infraction-section,
+            .notes-section {
+                display: grid;
+                gap: 4px;
+            }
+            
+            .infraction-label,
+            .notes-label {
+                font-weight: 600;
+                color: #666;
+                font-size: 0.8em;
+                text-transform: uppercase;
+                letter-spacing: 0.5px;
+            }
+            
+            .infraction-text,
+            .notes-text {
+                color: #333;
             }
         }
     </style>

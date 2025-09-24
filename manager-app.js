@@ -1349,122 +1349,173 @@ class CheckInManagerApp {
     }
     
     // Card Tracker section
-    async renderCardTracker() {
-        console.log('🃏 renderCardTracker called');
+    renderCardTracker() {
+        console.log('🎯 renderCardTracker called');
         const container = document.getElementById('cards-tracker-container');
         const cardTypeFilter = document.getElementById('card-type-filter')?.value || 'all';
         
-        try {
-            // Collect all card data from matches
-            const cardData = this.collectAllCardData();
-            
-            // Filter by card type if specified
-            let filteredCards = cardData;
-            if (cardTypeFilter !== 'all') {
-                filteredCards = cardData.filter(card => card.cardType === cardTypeFilter);
-            }
-            
-            console.log('🃏 Filtered card records:', filteredCards.length);
-            
-            if (filteredCards.length === 0) {
-                container.innerHTML = `
-                    <div class="empty-state">
-                        <h3>No card records found</h3>
-                        <p>Card records will appear here when cards are issued during matches</p>
-                    </div>
-                `;
-                return;
-            }
-            
-            // Group cards by player and calculate totals
-            const playerCardStats = this.calculatePlayerCardStats(filteredCards);
-            
-            // Sort by total cards (most cards first)
-            const sortedPlayers = Object.values(playerCardStats).sort((a, b) => {
-                const totalA = a.totalYellow + a.totalRed;
-                const totalB = b.totalYellow + b.totalRed;
-                if (totalB !== totalA) return totalB - totalA;
-                // If tied, sort by red cards first, then yellow cards
-                if (b.totalRed !== a.totalRed) return b.totalRed - a.totalRed;
-                if (b.totalYellow !== a.totalYellow) return b.totalYellow - a.totalYellow;
-                return a.playerName.localeCompare(b.playerName);
-            });
-            
-            // Render desktop table and mobile view
-            container.innerHTML = `
-                <!-- Desktop Table View -->
-                <table class="card-tracker-table">
-                    <thead>
-                        <tr>
-                            <th class="player-name-header">Player</th>
-                            <th class="team-name-header">Team</th>
-                            <th>🟨 Yellow</th>
-                            <th>🟥 Red</th>
-                            <th class="card-total">Total</th>
-                        </tr>
-                    </thead>
-                    <tbody>
-                        ${sortedPlayers.map(player => `
-                            <tr class="card-row">
-                                <td class="player-name-cell">${player.playerName}</td>
-                                <td class="team-name-card-cell">${player.teamName}</td>
-                                <td class="card-count yellow-cards">${player.totalYellow}</td>
-                                <td class="card-count red-cards">${player.totalRed}</td>
-                                <td class="card-total">${player.totalYellow + player.totalRed}</td>
-                            </tr>
-                        `).join('')}
-                    </tbody>
-                </table>
-                
-                <!-- Mobile Card View -->
-                <div class="card-tracker-mobile">
-                    ${sortedPlayers.map(player => `
-                        <div class="card-record-item">
-                            <div class="card-record-header">
-                                <div class="card-player-info">
-                                    <div class="card-player-name">${player.playerName}</div>
-                                    <div class="card-team-name">${player.teamName}</div>
-                                </div>
-                                <div class="card-counts-mobile">
-                                    <span class="card-count-mobile yellow">${player.totalYellow} 🟨</span>
-                                    <span class="card-count-mobile red">${player.totalRed} 🟥</span>
-                                </div>
-                            </div>
-                        </div>
-                    `).join('')}
-                </div>
-            `;
-            
-        } catch (error) {
-            console.error('Error rendering card tracker:', error);
+        console.log('📊 Card type filter:', cardTypeFilter);
+        
+        // Collect all cards from current season matches
+        const cardRecords = this.collectCurrentSeasonCards();
+        
+        console.log('📊 Collected card records:', cardRecords.length);
+        
+        // Filter by card type if specified
+        let filteredCards = cardRecords;
+        if (cardTypeFilter !== 'all') {
+            filteredCards = cardRecords.filter(card => card.cardType === cardTypeFilter);
+        }
+        
+        console.log('📊 Filtered cards:', filteredCards.length);
+        
+        if (filteredCards.length === 0) {
+            const message = cardTypeFilter === 'all' ? 'No cards issued' : `No ${cardTypeFilter} cards issued`;
+            console.log('📊 No cards to display:', message);
             container.innerHTML = `
                 <div class="empty-state">
-                    <h3>Error loading card data</h3>
-                    <p>Please try again later</p>
+                    <h3>${message}</h3>
+                    <p>Card records for the current season will appear here</p>
                 </div>
             `;
+            return;
         }
+        
+        console.log('📊 Displaying', filteredCards.length, 'cards');
+        
+        // Sort by combined date + time (most recent first), then by match, then by field number
+        filteredCards.sort((a, b) => {
+            const dateTimeA = this.getCardDateTime(a);
+            const dateTimeB = this.getCardDateTime(b);
+            
+            // Primary sort: by most recent datetime first (descending)
+            if (dateTimeA.getTime() !== dateTimeB.getTime()) {
+                return dateTimeB - dateTimeA;
+            }
+            
+            // Secondary sort: by field number (ascending) for cards at same datetime
+            const fieldA = this.getCardFieldNumber(a);
+            const fieldB = this.getCardFieldNumber(b);
+            
+            if (fieldA !== fieldB) {
+                return fieldA - fieldB;
+            }
+            
+            // Tertiary sort: by match (to group cards from same game together)
+            if (a.matchInfo !== b.matchInfo) {
+                return a.matchInfo.localeCompare(b.matchInfo);
+            }
+            
+            // Quaternary sort: by team name for consistency within same match
+            return a.teamName.localeCompare(b.teamName);
+        });
+        
+        container.innerHTML = `
+            <!-- Desktop Table View -->
+            <table class="card-tracker-table">
+                <thead>
+                    <tr>
+                        <th>Team</th>
+                        <th>Player</th>
+                        <th class="center-header">Card</th>
+                        <th>Infraction</th>
+                        <th>Notes</th>
+                        <th>Match</th>
+                        <th>Referee</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    ${filteredCards.map(card => `
+                        <tr>
+                            <td class="team-name-badge">${card.teamName}</td>
+                            <td class="player-name-cell">
+                                ${card.teamId && card.memberId ? 
+                                    `<a href="#" onclick="app.viewPlayerProfile('${card.teamId}', '${card.memberId}'); return false;" style="color: #007bff; text-decoration: none; font-weight: 600;" title="View ${card.playerName}'s profile">${card.playerName}</a>` : 
+                                    card.playerName
+                                }
+                            </td>
+                            <td class="center-cell">
+                                <span class="card-type-badge card-type-${card.cardType}">
+                                    ${card.cardType === 'yellow' ? '🟨 Yellow' : '🟥 Red'}
+                                </span>
+                            </td>
+                            <td>${card.reason || 'Not specified'}</td>
+                            <td class="notes-cell" title="${card.notes || ''}">${card.notes || '—'}</td>
+                            <td class="match-info-cell">
+                                <div><strong>${card.matchInfo}</strong></div>
+                                <div style="font-size: 0.8em; color: #888;">${this.epochToPacificDate(card.eventDate_epoch || card.eventDate)}</div>
+                                ${card.minute ? `<div style="font-size: 0.8em; color: #888;">${card.minute}'</div>` : ''}
+                            </td>
+                            <td class="referee-cell">${card.refereeName || 'Not recorded'}</td>
+                        </tr>
+                    `).join('')}
+                </tbody>
+            </table>
+            
+            <!-- Mobile Card View -->
+            <div class="card-tracker-mobile">
+                ${filteredCards.map(card => `
+                    <div class="card-record-item">
+                        <div class="card-record-header">
+                            <div class="card-type-section">
+                                <span class="card-type-badge card-type-${card.cardType}">
+                                    ${card.cardType === 'yellow' ? '🟨 Yellow' : '🟥 Red'}
+                                </span>
+                                ${card.minute ? `<span class="card-minute">${card.minute}'</span>` : ''}
+                            </div>
+                            <div class="card-date">${this.epochToPacificDate(card.eventDate_epoch || card.eventDate)}</div>
+                        </div>
+                        
+                        <div class="card-record-details">
+                            <div class="player-team-info">
+                                <div class="player-name-large">
+                                    ${card.teamId && card.memberId ? 
+                                        `<a href="#" onclick="app.viewPlayerProfile('${card.teamId}', '${card.memberId}'); return false;" style="color: #007bff; text-decoration: none; font-weight: 600;" title="View ${card.playerName}'s profile">${card.playerName}</a>` : 
+                                        card.playerName
+                                    }
+                                </div>
+                                <div class="team-name-large">${card.teamName}</div>
+                            </div>
+                            
+                            <div class="match-info-section">
+                                <div class="match-teams"><strong>${card.matchInfo}</strong></div>
+                                ${card.refereeName ? `<div class="referee-info">Referee: ${card.refereeName}</div>` : ''}
+                            </div>
+                            
+                            ${card.reason ? `
+                                <div class="infraction-section">
+                                    <div class="infraction-label">Infraction:</div>
+                                    <div class="infraction-text">${card.reason}</div>
+                                </div>
+                            ` : ''}
+                            
+                            ${card.notes ? `
+                                <div class="notes-section">
+                                    <div class="notes-label">Notes:</div>
+                                    <div class="notes-text">${card.notes}</div>
+                                </div>
+                            ` : ''}
+                        </div>
+                    </div>
+                `).join('')}
+            </div>
+        `;
     }
     
-    collectAllCardData() {
-        console.log('🔍 collectAllCardData called');
+    collectCurrentSeasonCards() {
         const cardRecords = [];
         
         // Create lookup maps for efficiency
         const teamLookup = new Map();
+        const refereeLookup = new Map();
+        
         this.teams.forEach(team => teamLookup.set(team.id, team));
+        this.referees.forEach(referee => refereeLookup.set(referee.id, referee));
         
-        // Get current season start epoch for filtering
-        const currentSeasonStart = this.getCurrentSeasonStartEpoch();
-        
-        // Process all events and matches to collect card data
+        // Process all events and matches
         this.events.forEach(event => {
-            // Filter by current season only
-            if (event.date_epoch < currentSeasonStart) {
-                return;
-            }
-            
-            if (!event.matches || event.matches.length === 0) {
+            // Only include current season events
+            if (!this.isCurrentSeasonEvent(event.date_epoch)) {
                 return;
             }
             
@@ -1473,90 +1524,140 @@ class CheckInManagerApp {
                     return;
                 }
                 
+                const homeTeam = teamLookup.get(match.homeTeamId);
+                const awayTeam = teamLookup.get(match.awayTeamId);
+                const mainReferee = refereeLookup.get(match.mainRefereeId);
+                
+                // Process each card in the match
                 match.cards.forEach(card => {
-                    const homeTeam = teamLookup.get(match.homeTeamId);
-                    const awayTeam = teamLookup.get(match.awayTeamId);
+                    // Determine which team the player belongs to
+                    let playerTeam = null;
+                    let playerName = card.memberName || 'Unknown Player'; // Use API-provided name first
                     
-                    // Determine which team this card belongs to
-                    const isHomeTeam = card.teamType === 'home';
-                    const team = isHomeTeam ? homeTeam : awayTeam;
-                    
-                    if (team) {
-                        // Find the member in the team
-                        const member = team.members?.find(m => m.id === card.memberId);
-                        
-                        if (member) {
-                            cardRecords.push({
-                                eventId: event.id,
-                                matchId: match.id,
-                                eventDate: event.date_epoch,
-                                memberId: card.memberId,
-                                memberName: card.memberName || member.name,
-                                teamId: team.id,
-                                teamName: team.name,
-                                teamType: card.teamType,
-                                cardType: card.cardType,
-                                reason: card.reason,
-                                notes: card.notes,
-                                minute: card.minute
-                            });
+                    // Check home team first
+                    if (homeTeam) {
+                        const homePlayer = homeTeam.members.find(m => m.id === card.memberId);
+                        if (homePlayer) {
+                            playerTeam = homeTeam;
+                            playerName = homePlayer.name; // Override with current team roster name if found
                         }
                     }
+                    
+                    // Check away team if not found in home team
+                    if (!playerTeam && awayTeam) {
+                        const awayPlayer = awayTeam.members.find(m => m.id === card.memberId);
+                        if (awayPlayer) {
+                            playerTeam = awayTeam;
+                            playerName = awayPlayer.name; // Override with current team roster name if found
+                        }
+                    }
+                    
+                    cardRecords.push({
+                        eventDate_epoch: event.date_epoch, // Add epoch for template compatibility
+                        eventName: event.name,
+                        matchInfo: `${homeTeam?.name || 'Unknown'} vs ${awayTeam?.name || 'Unknown'}`,
+                        teamName: playerTeam?.name || 'Unknown Team',
+                        playerName: playerName,
+                        cardType: card.cardType,
+                        reason: card.reason,
+                        notes: card.notes,
+                        minute: card.minute,
+                        refereeName: mainReferee?.name,
+                        // Add match time and field for enhanced sorting
+                        matchTime: match.time,
+                        matchTimeEpoch: match.time_epoch,
+                        matchField: match.field,
+                        // Add team and member IDs for clickable player profiles
+                        teamId: playerTeam?.id,
+                        memberId: card.memberId
+                    });
                 });
             });
         });
         
-        console.log(`🃏 Collected ${cardRecords.length} card records from current season`);
         return cardRecords;
     }
     
-    calculatePlayerCardStats(cardRecords) {
-        const playerStats = {};
+    // Helper method for card sorting
+    getCardDateTime(card) {
+        // Create combined datetime for proper chronological sorting
+        const baseDate = new Date(card.eventDate_epoch * 1000);
         
-        cardRecords.forEach(card => {
-            const playerId = card.memberId;
+        if (card.matchTimeEpoch) {
+            const timeDate = new Date(card.matchTimeEpoch * 1000);
+            return new Date(
+                baseDate.getFullYear(),
+                baseDate.getMonth(), 
+                baseDate.getDate(),
+                timeDate.getHours(),
+                timeDate.getMinutes(),
+                timeDate.getSeconds()
+            );
+        } else if (card.matchTime && typeof card.matchTime === 'string') {
+            const timeStr = card.matchTime.trim();
+            const [hours, minutes] = timeStr.includes(':') 
+                ? timeStr.split(':').map(n => parseInt(n)) 
+                : [0, 0];
             
-            if (!playerStats[playerId]) {
-                playerStats[playerId] = {
-                    playerId: playerId,
-                    playerName: card.memberName,
-                    teamId: card.teamId,
-                    teamName: card.teamName,
-                    totalYellow: 0,
-                    totalRed: 0,
-                    cards: []
-                };
-            }
-            
-            // Count card types
-            if (card.cardType === 'yellow') {
-                playerStats[playerId].totalYellow++;
-            } else if (card.cardType === 'red') {
-                playerStats[playerId].totalRed++;
-            }
-            
-            // Add card details
-            playerStats[playerId].cards.push(card);
-        });
-        
-        return playerStats;
+            return new Date(
+                baseDate.getFullYear(),
+                baseDate.getMonth(),
+                baseDate.getDate(),
+                hours || 0,
+                minutes || 0,
+                0
+            );
+        } else {
+            return baseDate;
+        }
     }
     
-    // Helper function to get current season start epoch timestamp
-    getCurrentSeasonStartEpoch() {
-        const now = new Date();
-        const currentYear = now.getFullYear();
-        const currentMonth = now.getMonth() + 1; // getMonth() returns 0-11
+    // Helper method for field sorting
+    getCardFieldNumber(card) {
+        if (!card.matchField) return 999999;
         
-        // Spring season: Jan 1st to Jun 30th
-        // Fall season: Jul 1st to Dec 31st
-        if (currentMonth >= 1 && currentMonth <= 6) {
-            // Current Spring season: Jan 1st to Jun 30th
-            return Math.floor(new Date(currentYear, 0, 1, 0, 0, 0).getTime() / 1000);
-        } else {
-            // Current Fall season: Jul 1st to Dec 31st  
-            return Math.floor(new Date(currentYear, 6, 1, 0, 0, 0).getTime() / 1000);
-        }
+        // Extract numeric part from field (e.g., "Field 1" -> 1, "1" -> 1)
+        const fieldStr = card.matchField.toString().toLowerCase();
+        const match = fieldStr.match(/(\d+)/);
+        return match ? parseInt(match[1]) : 999999;
+    }
+    
+    // Player profile view method (simplified for manager portal)
+    viewPlayerProfile(teamId, memberId) {
+        const team = this.teams.find(t => t.id === teamId);
+        if (!team) return;
+        
+        const member = team.members?.find(m => m.id === memberId);
+        if (!member) return;
+        
+        const modal = document.createElement('div');
+        modal.className = 'modal';
+        modal.innerHTML = `
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 class="modal-title">👤 Player Profile - ${member.name}</h3>
+                    <button class="close-btn" onclick="this.closest('.modal').remove()">&times;</button>
+                </div>
+                
+                <div class="modal-body">
+                    <div class="profile-info">
+                        <div class="profile-section">
+                            <h4>Player Information</h4>
+                            <p><strong>Name:</strong> ${member.name}</p>
+                            <p><strong>Team:</strong> ${team.name}</p>
+                            <p><strong>Jersey Number:</strong> ${member.jerseyNumber || 'Not assigned'}</p>
+                            <p><strong>Gender:</strong> ${member.gender || 'Not specified'}</p>
+                        </div>
+                    </div>
+                    
+                    <div class="form-actions">
+                        <button type="button" class="btn btn-secondary" onclick="this.closest('.modal').remove()">Close</button>
+                    </div>
+                </div>
+            </div>
+        `;
+        
+        document.body.appendChild(modal);
     }
     
     // Date/time formatting functions
