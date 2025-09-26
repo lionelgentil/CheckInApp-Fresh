@@ -200,6 +200,189 @@ function findPlayerMatch($playerName, $teamName, $players) {
     return null;
 }
 
+function generateSQLPreview($dryRun = true) {
+    try {
+        $db = connectToDatabase();
+        $sqlStatements = array();
+        
+        // Read CSV file
+        $csvFile = 'Cumulative PASS 2025 Card Data through Spring 2025 - Sheet1.csv';
+        if (!file_exists($csvFile)) {
+            return array('error' => "CSV file not found: $csvFile");
+        }
+        
+        $csvData = array();
+        if (($handle = fopen($csvFile, 'r')) !== false) {
+            $header = fgetcsv($handle);
+            while (($data = fgetcsv($handle)) !== false) {
+                $csvData[] = array_combine($header, $data);
+            }
+            fclose($handle);
+        }
+        
+        // Get all current players and teams
+        $playersQuery = "
+            SELECT tm.id, tm.name, tm.team_id, t.name as team_name, tm.active
+            FROM team_members tm 
+            JOIN teams t ON tm.team_id = t.id
+        ";
+        $players = $db->query($playersQuery)->fetchAll();
+        
+        $teamsQuery = "SELECT id, name FROM teams";
+        $teams = $db->query($teamsQuery)->fetchAll();
+        $teamMap = array();
+        foreach ($teams as $team) {
+            $teamMap[strtolower($team['name'])] = $team['id'];
+        }
+        
+        // Start building SQL statements
+        $sqlStatements[] = "-- ========================================";
+        $sqlStatements[] = "-- DISCIPLINARY HISTORY IMPORT SQL PREVIEW";
+        $sqlStatements[] = "-- ========================================";
+        $sqlStatements[] = "";
+        
+        // Clear existing records
+        $sqlStatements[] = "-- Clear existing disciplinary records";
+        $sqlStatements[] = "DELETE FROM player_disciplinary_records;";
+        $sqlStatements[] = "";
+        
+        $playersToAdd = array();
+        $recordsToImport = array();
+        $skippedCount = 0;
+        
+        foreach ($csvData as $rowIndex => $row) {
+            $playerName = normalizePlayerName(isset($row['Name of Player Receiving Card']) ? $row['Name of Player Receiving Card'] : '');
+            $teamName = normalizeTeamName(isset($row['Team of Player Receiving Yellow Card']) ? $row['Team of Player Receiving Yellow Card'] : '');
+            $cardType = normalizeCardType(isset($row['Card Type']) ? $row['Card Type'] : '');
+            $gameDate = parseGameDate(isset($row['Game (Date)']) ? $row['Game (Date)'] : '');
+            
+            // Skip invalid records
+            if ($cardType === null || empty($playerName) || empty($teamName)) {
+                $skippedCount++;
+                $sqlStatements[] = "-- SKIPPED ROW " . ($rowIndex + 2) . ": " . 
+                    ($cardType === null ? "Invalid card type" : 
+                     (empty($playerName) ? "Missing player name" : "Missing team name")) . 
+                    " - Player: '$playerName', Team: '$teamName'";
+                continue;
+            }
+            
+            // Check if team exists
+            $teamId = isset($teamMap[strtolower($teamName)]) ? $teamMap[strtolower($teamName)] : null;
+            if (!$teamId) {
+                $skippedCount++;
+                $sqlStatements[] = "-- SKIPPED ROW " . ($rowIndex + 2) . ": Team not found - '$teamName' for player '$playerName'";
+                continue;
+            }
+            
+            // Find or prepare player
+            $player = findPlayerMatch($playerName, $teamName, $players);
+            
+            if (!$player) {
+                // Check if we already planned to add this player
+                $playerKey = strtolower($playerName) . '|' . strtolower($teamName);
+                if (!isset($playersToAdd[$playerKey])) {
+                    $playersToAdd[$playerKey] = array(
+                        'name' => $playerName,
+                        'team_id' => $teamId,
+                        'team_name' => $teamName,
+                        'active' => false
+                    );
+                }
+                $player = $playersToAdd[$playerKey];
+            }
+            
+            // Prepare record for SQL generation
+            $recordsToImport[] = array(
+                'player_name' => $playerName,
+                'team_name' => $teamName,
+                'card_type' => $cardType,
+                'reason' => trim(isset($row['Reason Card Issued']) ? $row['Reason Card Issued'] : ''),
+                'incident_date_epoch' => $gameDate,
+                'season' => trim(isset($row['Season']) ? $row['Season'] : ''),
+                'division' => trim(isset($row['Division']) ? $row['Division'] : ''),
+                'additional_comments' => trim(isset($row['Additional Comments about Card Issued']) ? $row['Additional Comments about Card Issued'] : ''),
+                'official_name' => trim(isset($row['Official Issuing Card']) ? $row['Official Issuing Card'] : ''),
+                'player' => $player,
+                'row_number' => $rowIndex + 2
+            );
+        }
+        
+        // Generate SQL for new players
+        if (!empty($playersToAdd)) {
+            $sqlStatements[] = "-- ========================================";
+            $sqlStatements[] = "-- ADD NEW PLAYERS (marked as inactive)";
+            $sqlStatements[] = "-- ========================================";
+            $sqlStatements[] = "";
+            
+            foreach ($playersToAdd as $playerData) {
+                $escapedName = str_replace("'", "''", $playerData['name']);
+                $sqlStatements[] = "-- Add inactive player: {$playerData['name']} to team {$playerData['team_name']}";
+                $sqlStatements[] = "INSERT INTO team_members (name, team_id, active, created_at)";
+                $sqlStatements[] = "VALUES ('{$escapedName}', '{$playerData['team_id']}', FALSE, NOW());";
+                $sqlStatements[] = "";
+            }
+        }
+        
+        // Generate SQL for disciplinary records
+        $sqlStatements[] = "-- ========================================";
+        $sqlStatements[] = "-- INSERT DISCIPLINARY RECORDS";
+        $sqlStatements[] = "-- ========================================";
+        $sqlStatements[] = "";
+        
+        foreach ($recordsToImport as $record) {
+            $player = $record['player'];
+            $notes = array(
+                'season' => $record['season'],
+                'division' => $record['division'],
+                'additional_comments' => $record['additional_comments'],
+                'official_name' => $record['official_name'],
+                'import_source' => 'csv_import'
+            );
+            $notesJson = str_replace("'", "''", json_encode($notes));
+            $escapedReason = str_replace("'", "''", $record['reason']);
+            
+            $sqlStatements[] = "-- CSV Row {$record['row_number']}: {$record['player_name']} ({$record['team_name']}) - {$record['card_type']} card";
+            
+            if (isset($player['id'])) {
+                // Existing player
+                $sqlStatements[] = "INSERT INTO player_disciplinary_records (member_id, card_type, reason, incident_date_epoch, notes, created_at)";
+                $sqlStatements[] = "VALUES ({$player['id']}, '{$record['card_type']}', '{$escapedReason}', " . 
+                    ($record['incident_date_epoch'] ? $record['incident_date_epoch'] : 'NULL') . ", '{$notesJson}', NOW());";
+            } else {
+                // New player - would need to get ID after insert
+                $escapedPlayerName = str_replace("'", "''", $record['player_name']);
+                $sqlStatements[] = "INSERT INTO player_disciplinary_records (member_id, card_type, reason, incident_date_epoch, notes, created_at)";
+                $sqlStatements[] = "VALUES ((SELECT id FROM team_members WHERE name = '{$escapedPlayerName}' AND team_id = '{$player['team_id']}' LIMIT 1), ";
+                $sqlStatements[] = "        '{$record['card_type']}', '{$escapedReason}', " . 
+                    ($record['incident_date_epoch'] ? $record['incident_date_epoch'] : 'NULL') . ", '{$notesJson}', NOW());";
+            }
+            $sqlStatements[] = "";
+        }
+        
+        // Summary
+        $sqlStatements[] = "-- ========================================";
+        $sqlStatements[] = "-- SUMMARY";
+        $sqlStatements[] = "-- ========================================";
+        $sqlStatements[] = "-- Total CSV rows processed: " . count($csvData);
+        $sqlStatements[] = "-- Records to import: " . count($recordsToImport);
+        $sqlStatements[] = "-- Records skipped: " . $skippedCount;
+        $sqlStatements[] = "-- New players to add: " . count($playersToAdd);
+        
+        return array(
+            'sql' => implode("\n", $sqlStatements),
+            'stats' => array(
+                'total_rows' => count($csvData),
+                'records_to_import' => count($recordsToImport),
+                'records_skipped' => $skippedCount,
+                'players_to_add' => count($playersToAdd)
+            )
+        );
+        
+    } catch (Exception $e) {
+        return array('error' => $e->getMessage());
+    }
+}
+
 function importDisciplinaryHistory($dryRun = true) {
     try {
         // Add debugging info
@@ -488,17 +671,38 @@ if ($method === 'POST') {
         exit;
     }
     
-    $dryRun = isset($input['dry_run']) ? $input['dry_run'] : true;
+    $action = isset($input['action']) ? $input['action'] : 'import';
     
-    try {
-        $result = importDisciplinaryHistory($dryRun);
-        echo json_encode($result);
-    } catch (Exception $e) {
-        http_response_code(500);
-        echo json_encode(array(
-            'success' => false,
-            'errors' => array('Server error: ' . $e->getMessage())
-        ));
+    if ($action === 'preview_sql') {
+        // Generate SQL preview
+        try {
+            $result = generateSQLPreview();
+            echo json_encode(array(
+                'success' => true,
+                'sql' => $result['sql'],
+                'stats' => $result['stats']
+            ));
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode(array(
+                'success' => false,
+                'errors' => array('SQL preview error: ' . $e->getMessage())
+            ));
+        }
+    } else {
+        // Regular import
+        $dryRun = isset($input['dry_run']) ? $input['dry_run'] : true;
+        
+        try {
+            $result = importDisciplinaryHistory($dryRun);
+            echo json_encode($result);
+        } catch (Exception $e) {
+            http_response_code(500);
+            echo json_encode(array(
+                'success' => false,
+                'errors' => array('Server error: ' . $e->getMessage())
+            ));
+        }
     }
 } else {
     http_response_code(405);

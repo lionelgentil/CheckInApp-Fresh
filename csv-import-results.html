@@ -271,6 +271,9 @@
         </div>
         
         <div class="action-buttons">
+            <button class="btn btn-primary" onclick="previewSQL()">
+                📋 Preview SQL Statements
+            </button>
             <button class="btn btn-primary" onclick="runDryRun()">
                 🔍 Run Dry Run (Test Only)
             </button>
@@ -306,6 +309,77 @@
     </div>
     
     <script>
+        async function previewSQL() {
+            const loading = document.getElementById('loading');
+            const results = document.getElementById('results');
+            const statsContainer = document.getElementById('statsContainer');
+            const errorsContainer = document.getElementById('errorsContainer');
+            const warningsContainer = document.getElementById('warningsContainer');
+            
+            // Show loading, hide results
+            loading.style.display = 'block';
+            results.style.display = 'none';
+            statsContainer.style.display = 'none';
+            errorsContainer.style.display = 'none';
+            warningsContainer.style.display = 'none';
+            
+            try {
+                const response = await fetch('/import_disciplinary_history.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        action: 'preview_sql'
+                    })
+                });
+                
+                const result = await response.json();
+                
+                // Hide loading
+                loading.style.display = 'none';
+                
+                if (result.success) {
+                    showSQLPreview(result.sql, result.stats);
+                } else {
+                    showResults({
+                        success: false,
+                        errors: result.errors || ['Unknown error occurred']
+                    }, 'error');
+                }
+                
+            } catch (error) {
+                loading.style.display = 'none';
+                showResults({
+                    success: false,
+                    errors: [`Network error: ${error.message}`]
+                }, 'error');
+            }
+        }
+        
+        function showSQLPreview(sql, stats) {
+            const results = document.getElementById('results');
+            results.className = 'results info';
+            results.style.display = 'block';
+            
+            let message = '📋 SQL PREVIEW - EXACT STATEMENTS THAT WILL BE EXECUTED\n';
+            message += '================================================================\n\n';
+            message += `📊 Summary: ${stats.records_to_import} records to import, ${stats.records_skipped} skipped, ${stats.players_to_add} new players\n\n`;
+            message += sql;
+            
+            results.textContent = message;
+            
+            // Also show stats
+            displayStats({
+                records_processed: stats.total_rows,
+                records_imported: stats.records_to_import,
+                records_skipped: stats.records_skipped,
+                players_added: stats.players_to_add,
+                errors: [],
+                warnings: []
+            });
+        }
+        
         async function runDryRun() {
             await runImport(true);
         }
