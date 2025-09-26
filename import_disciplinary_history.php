@@ -214,7 +214,9 @@ function importDisciplinaryHistory($dryRun = true) {
             'players_added' => 0,
             'errors' => array(),
             'warnings' => array(),
-            'dry_run' => $dryRun
+            'dry_run' => $dryRun,
+            'skipped_details' => array(),  // Add detailed breakdown of skipped records
+            'team_stats' => array()        // Add team-by-team statistics
         );
         
         // Read CSV file
@@ -297,6 +299,7 @@ function importDisciplinaryHistory($dryRun = true) {
         
         $playersToAdd = array();
         $recordsToImport = array();
+        $teamStats = array();  // Track statistics by team
         
         foreach ($csvData as $row) {
             $playerName = normalizePlayerName(isset($row['Name of Player Receiving Card']) ? $row['Name of Player Receiving Card'] : '');
@@ -304,8 +307,33 @@ function importDisciplinaryHistory($dryRun = true) {
             $cardType = normalizeCardType(isset($row['Card Type']) ? $row['Card Type'] : '');
             $gameDate = parseGameDate(isset($row['Game (Date)']) ? $row['Game (Date)'] : '');
             
-            // Skip N/A records
+            // Initialize team stats
+            if (!isset($teamStats[$teamName])) {
+                $teamStats[$teamName] = array(
+                    'total' => 0,
+                    'imported' => 0,
+                    'skipped' => 0,
+                    'skip_reasons' => array()
+                );
+            }
+            $teamStats[$teamName]['total']++;
+            
+            // Track skip reasons with details
+            $skipReason = null;
             if ($cardType === null || empty($playerName) || empty($teamName)) {
+                if ($cardType === null) $skipReason = 'Invalid card type (N/A)';
+                else if (empty($playerName)) $skipReason = 'Missing player name';
+                else if (empty($teamName)) $skipReason = 'Missing team name';
+                
+                $results['skipped_details'][] = array(
+                    'player' => $playerName,
+                    'team' => $teamName,
+                    'date' => isset($row['Game (Date)']) ? $row['Game (Date)'] : '',
+                    'card_type' => isset($row['Card Type']) ? $row['Card Type'] : '',
+                    'reason' => $skipReason
+                );
+                $teamStats[$teamName]['skipped']++;
+                $teamStats[$teamName]['skip_reasons'][$skipReason] = isset($teamStats[$teamName]['skip_reasons'][$skipReason]) ? $teamStats[$teamName]['skip_reasons'][$skipReason] + 1 : 1;
                 $results['records_skipped']++;
                 continue;
             }
@@ -328,8 +356,18 @@ function importDisciplinaryHistory($dryRun = true) {
                         );
                     } else {
                         // Instead of erroring, log as warning and skip this record
+                        $skipReason = 'Team not found in database';
                         $warningMsg = "Team not found: '$teamName' for player '$playerName' - skipping record";
                         $results['warnings'][] = $warningMsg;
+                        $results['skipped_details'][] = array(
+                            'player' => $playerName,
+                            'team' => $teamName,
+                            'date' => isset($row['Game (Date)']) ? $row['Game (Date)'] : '',
+                            'card_type' => isset($row['Card Type']) ? $row['Card Type'] : '',
+                            'reason' => $skipReason
+                        );
+                        $teamStats[$teamName]['skipped']++;
+                        $teamStats[$teamName]['skip_reasons'][$skipReason] = isset($teamStats[$teamName]['skip_reasons'][$skipReason]) ? $teamStats[$teamName]['skip_reasons'][$skipReason] + 1 : 1;
                         error_log($warningMsg);
                         $results['records_skipped']++;
                         continue;
@@ -351,7 +389,13 @@ function importDisciplinaryHistory($dryRun = true) {
                 'official_name' => trim(isset($row['Official Issuing Card']) ? $row['Official Issuing Card'] : ''),
                 'player' => $player
             );
+            
+            // Track successful import for this team
+            $teamStats[$teamName]['imported']++;
         }
+        
+        // Finalize team statistics
+        $results['team_stats'] = $teamStats;
         
         if (!$dryRun) {
             // Add new players

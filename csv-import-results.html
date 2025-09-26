@@ -413,6 +413,45 @@
                 if (result.warnings && result.warnings.length > 0) {
                     message += `- Warnings: ${result.warnings.length}\n`;
                 }
+                
+                // Add detailed breakdown if skipped records exist
+                if (result.skipped_details && result.skipped_details.length > 0) {
+                    message += `\n📋 SKIPPED RECORDS BREAKDOWN:\n`;
+                    const skipReasons = {};
+                    result.skipped_details.forEach(skip => {
+                        if (!skipReasons[skip.reason]) {
+                            skipReasons[skip.reason] = [];
+                        }
+                        skipReasons[skip.reason].push(`${skip.player} (${skip.team}) - ${skip.date}`);
+                    });
+                    
+                    for (const [reason, records] of Object.entries(skipReasons)) {
+                        message += `\n${reason}: ${records.length} records\n`;
+                        records.slice(0, 5).forEach(record => {
+                            message += `  • ${record}\n`;
+                        });
+                        if (records.length > 5) {
+                            message += `  ... and ${records.length - 5} more\n`;
+                        }
+                    }
+                }
+                
+                // Add team statistics if available
+                if (result.team_stats) {
+                    message += `\n🏆 TEAM STATISTICS:\n`;
+                    const sortedTeams = Object.entries(result.team_stats)
+                        .sort(([,a], [,b]) => b.total - a.total);
+                    
+                    sortedTeams.forEach(([team, stats]) => {
+                        if (stats.total > 0) {
+                            message += `${team}: ${stats.imported}/${stats.total} imported`;
+                            if (stats.skipped > 0) {
+                                message += ` (${stats.skipped} skipped)`;
+                            }
+                            message += `\n`;
+                        }
+                    });
+                }
             } else {
                 message += `❌ Import ${result.dry_run ? 'simulation' : 'execution'} failed!\n\n`;
                 if (result.errors && result.errors.length > 0) {
