@@ -102,6 +102,7 @@ class CheckInApp extends CheckInCore {
         this.teams = []; // Full team data (loaded on demand)
         this.teamsBasic = []; // Lightweight team data (id, name, category, colorData, memberCount)
         this.hasCompleteTeamsData = false; // Track if we have full teams data vs partial
+        this.teamManagers = []; // Team managers data
         this.events = [];
         this.referees = [];
         this.currentEditingTeam = null;
@@ -580,6 +581,15 @@ class CheckInApp extends CheckInCore {
         }
     }
 
+    async loadTeamManagers() {
+        try {
+            this.teamManagers = await this.cachedFetch('/api/team-managers');
+        } catch (error) {
+            console.error('Error loading team managers:', error);
+            this.teamManagers = [];
+        }
+    }
+
     // =====================================
     // LAZY PHOTO LOADING (On-demand photo loading)
     // =====================================
@@ -911,6 +921,10 @@ class CheckInApp extends CheckInCore {
                 if (!this.hasCompleteTeamsData) {
                     await this.loadTeams(); // Load complete team data for roster display
                 }
+                // Load team managers for display in teams section
+                if (this.teamManagers.length === 0) {
+                    await this.loadTeamManagers();
+                }
                 await this.renderTeams();
             } else if (sectionName === 'events') {
                 // Performance optimization: Use lightweight team data for events display
@@ -1100,6 +1114,10 @@ class CheckInApp extends CheckInCore {
                 
                 // Create captain names list
                 const captainNames = allCaptains.map(c => c.memberName).join(', ');
+
+                // Get team managers for this team
+                const teamManagers = this.teamManagers.filter(manager => manager.team_id === selectedTeam.id);
+                const managerNames = teamManagers.map(manager => `${manager.first_name} ${manager.last_name}`).join(', ');
                 
                 // Calculate roster statistics
                 const totalPlayers = selectedTeam.members.length;
@@ -1136,6 +1154,7 @@ class CheckInApp extends CheckInCore {
                                     <div class="team-name">${selectedTeam.name}</div>
                                     <div class="team-category">${selectedTeam.category || ''}</div>
                                     ${allCaptains.length > 0 ? `<div class="team-captain">👑 Captain${allCaptains.length > 1 ? 's' : ''}: ${captainNames}</div>` : ''}
+                                    ${teamManagers.length > 0 ? `<div class="team-manager">💼 Manager${teamManagers.length > 1 ? 's' : ''}: ${managerNames}</div>` : ''}
                                 </div>
                                 <div class="team-actions">
                                     <button class="btn btn-small" onclick="app.showAddMemberModal('${selectedTeam.id}')" title="Add Member">+</button>
