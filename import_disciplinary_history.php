@@ -465,9 +465,17 @@ function generateSQLPreview($dryRun = true) {
             
             foreach ($playersToAdd as $playerData) {
                 $escapedName = str_replace("'", "''", $playerData['name']);
+                // Generate a sample UUID for preview
+                $sampleUuid = sprintf('%04x%04x-%04x-%04x-%04x-%04x%04x%04x',
+                    mt_rand(0, 0xffff), mt_rand(0, 0xffff),
+                    mt_rand(0, 0xffff),
+                    mt_rand(0, 0x0fff) | 0x4000,
+                    mt_rand(0, 0x3fff) | 0x8000,
+                    mt_rand(0, 0xffff), mt_rand(0, 0xffff), mt_rand(0, 0xffff)
+                );
                 $sqlStatements[] = "-- Add inactive player: {$playerData['name']} to team {$playerData['team_name']}";
-                $sqlStatements[] = "INSERT INTO team_members (name, team_id, active, created_at_epoch)";
-                $sqlStatements[] = "VALUES ('{$escapedName}', '{$playerData['team_id']}', 0, " . time() . ");";
+                $sqlStatements[] = "INSERT INTO team_members (id, name, team_id, active, created_at_epoch)";
+                $sqlStatements[] = "VALUES ('{$sampleUuid}', '{$escapedName}', '{$playerData['team_id']}', 0, " . time() . ");";
                 $sqlStatements[] = "";
             }
         }
@@ -738,13 +746,21 @@ function importDisciplinaryHistory($dryRun = true) {
         if (!$dryRun) {
             // Add new players
             foreach ($playersToAdd as $playerData) {
+                // Generate UUID for the player ID
+                $newPlayerId = sprintf('%04x%04x-%04x-%04x-%04x-%04x%04x%04x',
+                    mt_rand(0, 0xffff), mt_rand(0, 0xffff),
+                    mt_rand(0, 0xffff),
+                    mt_rand(0, 0x0fff) | 0x4000,
+                    mt_rand(0, 0x3fff) | 0x8000,
+                    mt_rand(0, 0xffff), mt_rand(0, 0xffff), mt_rand(0, 0xffff)
+                );
+                
                 $stmt = $db->prepare("
-                    INSERT INTO team_members (name, team_id, active, created_at_epoch) 
-                    VALUES (?, ?, ?, ?) 
-                    RETURNING id
+                    INSERT INTO team_members (id, name, team_id, active, created_at_epoch) 
+                    VALUES (?, ?, ?, ?, ?)
                 ");
-                $stmt->execute(array($playerData['name'], $playerData['team_id'], 0, time()));
-                $newPlayerId = $stmt->fetchColumn();
+                $stmt->execute(array($newPlayerId, $playerData['name'], $playerData['team_id'], 0, time()));
+                
                 $playerData['id'] = $newPlayerId;
                 
                 // Update players array for record insertion
