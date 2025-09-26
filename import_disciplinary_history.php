@@ -98,7 +98,7 @@ function normalizeTeamName($teamName) {
     // Remove division indicators in parentheses
     $teamName = preg_replace('/\s*\([^)]*\)$/', '', $teamName);
     
-    // Common team name mappings
+    // Common team name mappings - handle all variations
     $mappings = array(
         'Lumberjacks' => 'Lumberjacks',
         'Renegades' => 'Renegades', 
@@ -116,7 +116,7 @@ function normalizeTeamName($teamName) {
         'KR3W' => 'KR3W',
         'Mayhem' => 'Mayhem',
         'Green Achers' => 'Green Achers',
-        'GreenAchers' => 'Green Achers',
+        'GreenAchers' => 'Green Achers',  // Handle both variations
         'BU1' => 'BU1',
         'BU2' => 'BU2',
         'Boom City' => 'Boom City',
@@ -127,7 +127,9 @@ function normalizeTeamName($teamName) {
         'Shin Splints Utd' => 'Shin Splints United',
         'Ol\'Limpians' => 'Ol\'Limpians',
         'BenchWarmers' => 'BenchWarmers',
-        'Grass Stains' => 'Grass Stains'
+        'Grass Stains' => 'Grass Stains',
+        // Add new teams from recent data
+        'Bandits FC' => 'Bandits FC'
     );
     
     return isset($mappings[$teamName]) ? $mappings[$teamName] : $teamName;
@@ -262,6 +264,30 @@ function importDisciplinaryHistory($dryRun = true) {
             $teamMap[strtolower($team['name'])] = $team['id'];
         }
         
+        error_log("Teams in database: " . implode(', ', array_keys($teamMap)));
+        
+        // Get unique team names from CSV for debugging
+        $csvTeams = array();
+        foreach ($csvData as $row) {
+            $teamName = normalizeTeamName(isset($row['Team of Player Receiving Yellow Card']) ? $row['Team of Player Receiving Yellow Card'] : '');
+            if (!empty($teamName)) {
+                $csvTeams[$teamName] = true;
+            }
+        }
+        error_log("Unique teams in CSV: " . implode(', ', array_keys($csvTeams)));
+        
+        // Find missing teams
+        $missingTeams = array();
+        foreach (array_keys($csvTeams) as $csvTeam) {
+            if (!isset($teamMap[strtolower($csvTeam)])) {
+                $missingTeams[] = $csvTeam;
+            }
+        }
+        if (!empty($missingTeams)) {
+            error_log("Teams in CSV but not in database: " . implode(', ', $missingTeams));
+            $results['warnings'][] = "Teams found in CSV but not in database: " . implode(', ', $missingTeams);
+        }
+        
         if (!$dryRun) {
             $db->beginTransaction();
             
@@ -302,7 +328,10 @@ function importDisciplinaryHistory($dryRun = true) {
                             'active' => false
                         );
                     } else {
-                        $results['errors'][] = "Team not found: $teamName for player $playerName";
+                        // Instead of erroring, log as warning and skip this record
+                        $warningMsg = "Team not found: '$teamName' for player '$playerName' - skipping record";
+                        $results['warnings'][] = $warningMsg;
+                        error_log($warningMsg);
                         $results['records_skipped']++;
                         continue;
                     }
