@@ -1,0 +1,528 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>CSV Import Results - CheckIn App</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+            background: linear-gradient(135deg, #667db6 0%, #0082c8 25%, #667db6 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+        
+        .container {
+            max-width: 1000px;
+            margin: 0 auto;
+            background: white;
+            border-radius: 15px;
+            padding: 30px;
+            box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
+        }
+        
+        .header {
+            text-align: center;
+            margin-bottom: 30px;
+            color: #333;
+        }
+        
+        .warning {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+            color: #856404;
+        }
+        
+        .info {
+            background: #d1ecf1;
+            border: 1px solid #bee5eb;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+            color: #0c5460;
+        }
+        
+        .action-buttons {
+            display: flex;
+            gap: 15px;
+            margin-bottom: 30px;
+            flex-wrap: wrap;
+        }
+        
+        .btn {
+            padding: 12px 20px;
+            border: none;
+            border-radius: 8px;
+            font-size: 14px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+            text-decoration: none;
+            display: inline-block;
+            text-align: center;
+        }
+        
+        .btn-primary {
+            background: #2196F3;
+            color: white;
+        }
+        
+        .btn-primary:hover {
+            background: #1976D2;
+        }
+        
+        .btn-danger {
+            background: #dc3545;
+            color: white;
+        }
+        
+        .btn-danger:hover {
+            background: #c82333;
+        }
+        
+        .btn-secondary {
+            background: #6c757d;
+            color: white;
+        }
+        
+        .btn-secondary:hover {
+            background: #5a6268;
+        }
+        
+        .btn:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+        
+        .results {
+            margin-top: 20px;
+            padding: 20px;
+            border-radius: 8px;
+            font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
+            font-size: 13px;
+            white-space: pre-wrap;
+            display: none;
+        }
+        
+        .results.success {
+            background: #d4edda;
+            border: 1px solid #c3e6cb;
+            color: #155724;
+        }
+        
+        .results.error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        
+        .results.info {
+            background: #d1ecf1;
+            border: 1px solid #bee5eb;
+            color: #0c5460;
+        }
+        
+        .loading {
+            display: none;
+            text-align: center;
+            color: #666;
+            margin: 20px 0;
+        }
+        
+        .loading .spinner {
+            display: inline-block;
+            width: 20px;
+            height: 20px;
+            border: 3px solid #f3f3f3;
+            border-top: 3px solid #2196F3;
+            border-radius: 50%;
+            animation: spin 1s linear infinite;
+            margin-right: 10px;
+        }
+        
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+        
+        .stats-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+            gap: 15px;
+            margin: 20px 0;
+        }
+        
+        .stat-card {
+            background: #f8f9fa;
+            padding: 15px;
+            border-radius: 8px;
+            text-align: center;
+            border-left: 4px solid #2196F3;
+        }
+        
+        .stat-card.warning {
+            border-left-color: #ffc107;
+        }
+        
+        .stat-card.danger {
+            border-left-color: #dc3545;
+        }
+        
+        .stat-card.success {
+            border-left-color: #28a745;
+        }
+        
+        .stat-number {
+            font-size: 24px;
+            font-weight: bold;
+            color: #333;
+            margin-bottom: 5px;
+        }
+        
+        .stat-label {
+            font-size: 12px;
+            color: #666;
+            text-transform: uppercase;
+            letter-spacing: 0.5px;
+        }
+        
+        .error-list, .warning-list {
+            margin-top: 15px;
+            padding: 15px;
+            border-radius: 8px;
+            max-height: 200px;
+            overflow-y: auto;
+        }
+        
+        .error-list {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+        }
+        
+        .warning-list {
+            background: #fff3cd;
+            border: 1px solid #ffeaa7;
+            color: #856404;
+        }
+        
+        .error-list h4, .warning-list h4 {
+            margin-bottom: 10px;
+            font-size: 14px;
+        }
+        
+        .error-list ul, .warning-list ul {
+            list-style-type: none;
+            padding: 0;
+        }
+        
+        .error-list li, .warning-list li {
+            padding: 5px 0;
+            border-bottom: 1px solid rgba(0,0,0,0.1);
+            font-size: 12px;
+        }
+        
+        .error-list li:last-child, .warning-list li:last-child {
+            border-bottom: none;
+        }
+        
+        @media (max-width: 768px) {
+            .action-buttons {
+                flex-direction: column;
+            }
+            
+            .btn {
+                width: 100%;
+            }
+            
+            .stats-grid {
+                grid-template-columns: 1fr 1fr;
+            }
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="header">
+            <h1>📊 CSV Import Results</h1>
+            <p>Import disciplinary history from CSV file</p>
+        </div>
+        
+        <div class="info">
+            <strong>📋 Import Process:</strong><br>
+            1. <strong>Dry Run</strong> - Test the import without making changes to preview results<br>
+            2. <strong>Backup Database</strong> - Create backup tables before actual import<br>
+            3. <strong>Run Import</strong> - Execute the actual import (replaces all existing records)<br>
+            4. <strong>Verify Results</strong> - Check the imported data using database maintenance
+        </div>
+        
+        <div class="warning">
+            <strong>⚠️ Important:</strong> The actual import will DELETE all existing disciplinary records 
+            and replace them with data from the CSV file. Make sure to run the backup process first!
+        </div>
+        
+        <div class="action-buttons">
+            <button class="btn btn-primary" onclick="runDryRun()">
+                🔍 Run Dry Run (Test Only)
+            </button>
+            <button class="btn btn-danger" onclick="runActualImport()" id="actualImportBtn">
+                ⚡ Run Actual Import
+            </button>
+            <a href="db-maintenance.html" class="btn btn-secondary">
+                🔧 Database Maintenance
+            </a>
+            <button class="btn btn-secondary" onclick="clearResults()">
+                🗑️ Clear Results
+            </button>
+        </div>
+        
+        <div class="loading" id="loading">
+            <div class="spinner"></div>
+            Processing import request...
+        </div>
+        
+        <div class="results" id="results"></div>
+        
+        <div id="statsContainer" style="display: none;">
+            <div class="stats-grid" id="statsGrid"></div>
+        </div>
+        
+        <div id="errorsContainer" style="display: none;">
+            <div class="error-list" id="errorsList"></div>
+        </div>
+        
+        <div id="warningsContainer" style="display: none;">
+            <div class="warning-list" id="warningsList"></div>
+        </div>
+    </div>
+    
+    <script>
+        async function runDryRun() {
+            await runImport(true);
+        }
+        
+        async function runActualImport() {
+            if (!confirm('⚠️ This will DELETE all existing disciplinary records and replace them with CSV data.\n\nAre you sure you want to continue?')) {
+                return;
+            }
+            
+            if (!confirm('🚨 FINAL WARNING: This action cannot be undone unless you have created a backup.\n\nProceed with actual import?')) {
+                return;
+            }
+            
+            await runImport(false);
+        }
+        
+        async function runImport(dryRun) {
+            const loading = document.getElementById('loading');
+            const results = document.getElementById('results');
+            const statsContainer = document.getElementById('statsContainer');
+            const errorsContainer = document.getElementById('errorsContainer');
+            const warningsContainer = document.getElementById('warningsContainer');
+            const actualImportBtn = document.getElementById('actualImportBtn');
+            
+            // Show loading, hide results
+            loading.style.display = 'block';
+            results.style.display = 'none';
+            statsContainer.style.display = 'none';
+            errorsContainer.style.display = 'none';
+            warningsContainer.style.display = 'none';
+            actualImportBtn.disabled = true;
+            
+            try {
+                const response = await fetch('/import_disciplinary_history.php', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    body: JSON.stringify({
+                        dry_run: dryRun
+                    })
+                });
+                
+                const result = await response.json();
+                
+                // Hide loading
+                loading.style.display = 'none';
+                actualImportBtn.disabled = false;
+                
+                if (result.success) {
+                    showResults(result, 'success');
+                    displayStats(result);
+                    
+                    if (result.errors && result.errors.length > 0) {
+                        displayErrors(result.errors);
+                    }
+                    
+                    if (result.warnings && result.warnings.length > 0) {
+                        displayWarnings(result.warnings);
+                    }
+                } else {
+                    showResults(result, 'error');
+                    if (result.errors && result.errors.length > 0) {
+                        displayErrors(result.errors);
+                    }
+                }
+                
+            } catch (error) {
+                loading.style.display = 'none';
+                actualImportBtn.disabled = false;
+                showResults({
+                    success: false,
+                    errors: [`Network error: ${error.message}`]
+                }, 'error');
+            }
+        }
+        
+        function showResults(result, type) {
+            const results = document.getElementById('results');
+            results.className = `results ${type}`;
+            results.style.display = 'block';
+            
+            let message = '';
+            
+            if (result.dry_run) {
+                message += '🔍 DRY RUN RESULTS (No changes made to database)\n';
+            } else {
+                message += '⚡ ACTUAL IMPORT RESULTS\n';
+            }
+            
+            message += '================================\n\n';
+            
+            if (result.success) {
+                message += `✅ Import ${result.dry_run ? 'simulation' : 'execution'} completed successfully!\n\n`;
+                message += `📊 Summary:\n`;
+                message += `- Records processed: ${result.records_processed || 0}\n`;
+                message += `- Records imported: ${result.records_imported || 0}\n`;
+                message += `- Records skipped: ${result.records_skipped || 0}\n`;
+                message += `- Players added: ${result.players_added || 0}\n`;
+                
+                if (result.errors && result.errors.length > 0) {
+                    message += `- Errors: ${result.errors.length}\n`;
+                }
+                
+                if (result.warnings && result.warnings.length > 0) {
+                    message += `- Warnings: ${result.warnings.length}\n`;
+                }
+            } else {
+                message += `❌ Import ${result.dry_run ? 'simulation' : 'execution'} failed!\n\n`;
+                if (result.errors && result.errors.length > 0) {
+                    message += `Errors encountered:\n`;
+                    result.errors.forEach(error => {
+                        message += `- ${error}\n`;
+                    });
+                }
+            }
+            
+            results.textContent = message;
+        }
+        
+        function displayStats(result) {
+            const statsContainer = document.getElementById('statsContainer');
+            const statsGrid = document.getElementById('statsGrid');
+            
+            statsGrid.innerHTML = '';
+            
+            const stats = [
+                {
+                    number: result.records_processed || 0,
+                    label: 'Records Processed',
+                    type: 'info'
+                },
+                {
+                    number: result.records_imported || 0,
+                    label: 'Records Imported',
+                    type: 'success'
+                },
+                {
+                    number: result.records_skipped || 0,
+                    label: 'Records Skipped',
+                    type: 'warning'
+                },
+                {
+                    number: result.players_added || 0,
+                    label: 'Players Added',
+                    type: 'info'
+                },
+                {
+                    number: (result.errors && result.errors.length) || 0,
+                    label: 'Errors',
+                    type: 'danger'
+                },
+                {
+                    number: (result.warnings && result.warnings.length) || 0,
+                    label: 'Warnings',
+                    type: 'warning'
+                }
+            ];
+            
+            stats.forEach(stat => {
+                const statCard = document.createElement('div');
+                statCard.className = `stat-card ${stat.type}`;
+                statCard.innerHTML = `
+                    <div class="stat-number">${stat.number}</div>
+                    <div class="stat-label">${stat.label}</div>
+                `;
+                statsGrid.appendChild(statCard);
+            });
+            
+            statsContainer.style.display = 'block';
+        }
+        
+        function displayErrors(errors) {
+            const errorsContainer = document.getElementById('errorsContainer');
+            const errorsList = document.getElementById('errorsList');
+            
+            errorsList.innerHTML = `
+                <h4>❌ Errors (${errors.length})</h4>
+                <ul>
+                    ${errors.map(error => `<li>${escapeHtml(error)}</li>`).join('')}
+                </ul>
+            `;
+            
+            errorsContainer.style.display = 'block';
+        }
+        
+        function displayWarnings(warnings) {
+            const warningsContainer = document.getElementById('warningsContainer');
+            const warningsList = document.getElementById('warningsList');
+            
+            warningsList.innerHTML = `
+                <h4>⚠️ Warnings (${warnings.length})</h4>
+                <ul>
+                    ${warnings.map(warning => `<li>${escapeHtml(warning)}</li>`).join('')}
+                </ul>
+            `;
+            
+            warningsContainer.style.display = 'block';
+        }
+        
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+        
+        function clearResults() {
+            const results = document.getElementById('results');
+            const statsContainer = document.getElementById('statsContainer');
+            const errorsContainer = document.getElementById('errorsContainer');
+            const warningsContainer = document.getElementById('warningsContainer');
+            
+            results.style.display = 'none';
+            statsContainer.style.display = 'none';
+            errorsContainer.style.display = 'none';
+            warningsContainer.style.display = 'none';
+        }
+    </script>
+</body>
+</html>

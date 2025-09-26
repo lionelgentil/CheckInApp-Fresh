@@ -169,24 +169,124 @@
         <div class="quick-queries">
             <h3>Quick Actions:</h3>
             
-            <div class="quick-query">
-                <code>UPDATE team_members SET photo = NULL WHERE photo IS NOT NULL;</code>
-                <button class="btn btn-secondary" onclick="useQuery(this.previousElementSibling.textContent)">Use Query</button>
+            <!-- Backup Queries -->
+            <div style="margin-bottom: 25px;">
+                <h4 style="color: #dc3545; margin-bottom: 15px;">📦 Backup Operations</h4>
+                
+                <div class="quick-query">
+                    <code>CREATE TABLE player_disciplinary_records_backup AS SELECT * FROM player_disciplinary_records;</code>
+                    <button class="btn btn-secondary" onclick="useQuery(this.previousElementSibling.textContent)">Use Query</button>
+                </div>
+                
+                <div class="quick-query">
+                    <code>SELECT COUNT(*) as backup_count FROM player_disciplinary_records_backup;</code>
+                    <button class="btn btn-secondary" onclick="useQuery(this.previousElementSibling.textContent)">Use Query</button>
+                </div>
+                
+                <div class="quick-query">
+                    <code>CREATE TABLE team_members_backup AS SELECT * FROM team_members;</code>
+                    <button class="btn btn-secondary" onclick="useQuery(this.previousElementSibling.textContent)">Use Query</button>
+                </div>
             </div>
             
-            <div class="quick-query">
-                <code>SELECT COUNT(*) as total_members, COUNT(photo) as members_with_photos FROM team_members;</code>
-                <button class="btn btn-secondary" onclick="useQuery(this.previousElementSibling.textContent)">Use Query</button>
+            <!-- Verification Queries -->
+            <div style="margin-bottom: 25px;">
+                <h4 style="color: #28a745; margin-bottom: 15px;">✅ Import Verification</h4>
+                
+                <div class="quick-query">
+                    <code>SELECT COUNT(*) as total_records FROM player_disciplinary_records;</code>
+                    <button class="btn btn-secondary" onclick="useQuery(this.previousElementSibling.textContent)">Use Query</button>
+                </div>
+                
+                <div class="quick-query">
+                    <code>SELECT card_type, COUNT(*) as count FROM player_disciplinary_records GROUP BY card_type;</code>
+                    <button class="btn btn-secondary" onclick="useQuery(this.previousElementSibling.textContent)">Use Query</button>
+                </div>
+                
+                <div class="quick-query">
+                    <code>SELECT DATE(MIN(incident_date_epoch), 'unixepoch') as earliest, DATE(MAX(incident_date_epoch), 'unixepoch') as latest FROM player_disciplinary_records;</code>
+                    <button class="btn btn-secondary" onclick="useQuery(this.previousElementSibling.textContent)">Use Query</button>
+                </div>
+                
+                <div class="quick-query">
+                    <code>SELECT COUNT(*) as orphaned_records FROM player_disciplinary_records WHERE member_id NOT IN (SELECT id FROM team_members);</code>
+                    <button class="btn btn-secondary" onclick="useQuery(this.previousElementSibling.textContent)">Use Query</button>
+                </div>
+                
+                <div class="quick-query">
+                    <code>SELECT COALESCE(active, true) as active_status, COUNT(*) as count FROM team_members GROUP BY COALESCE(active, true);</code>
+                    <button class="btn btn-secondary" onclick="useQuery(this.previousElementSibling.textContent)">Use Query</button>
+                </div>
             </div>
             
-            <div class="quick-query">
-                <code>SELECT id, name, photo FROM team_members WHERE photo IS NOT NULL LIMIT 10;</code>
-                <button class="btn btn-secondary" onclick="useQuery(this.previousElementSibling.textContent)">Use Query</button>
+            <!-- Restore Queries -->
+            <div style="margin-bottom: 25px;">
+                <h4 style="color: #ffc107; margin-bottom: 15px;">🔄 Restore Operations (Emergency)</h4>
+                
+                <div class="quick-query">
+                    <code>DELETE FROM player_disciplinary_records;</code>
+                    <button class="btn btn-secondary" onclick="useQuery(this.previousElementSibling.textContent)">Use Query</button>
+                </div>
+                
+                <div class="quick-query">
+                    <code>INSERT INTO player_disciplinary_records SELECT * FROM player_disciplinary_records_backup;</code>
+                    <button class="btn btn-secondary" onclick="useQuery(this.previousElementSibling.textContent)">Use Query</button>
+                </div>
+                
+                <div class="quick-query">
+                    <code>DROP TABLE player_disciplinary_records_backup;</code>
+                    <button class="btn btn-secondary" onclick="useQuery(this.previousElementSibling.textContent)">Use Query</button>
+                </div>
             </div>
             
-            <div class="quick-query">
-                <code>UPDATE team_members SET photo = NULL WHERE photo LIKE '%/api/photos%';</code>
-                <button class="btn btn-secondary" onclick="useQuery(this.previousElementSibling.textContent)">Use Query</button>
+            <!-- Standard Queries -->
+            <div style="margin-bottom: 25px;">
+                <h4 style="color: #2196F3; margin-bottom: 15px;">📊 Standard Database Queries</h4>
+                
+                <div class="quick-query">
+                    <code>SELECT COUNT(*) FROM teams;</code>
+                    <button class="btn btn-secondary" onclick="useQuery(this.previousElementSibling.textContent)">Use Query</button>
+                </div>
+                
+                <div class="quick-query">
+                    <code>SELECT COUNT(*) FROM team_members;</code>
+                    <button class="btn btn-secondary" onclick="useQuery(this.previousElementSibling.textContent)">Use Query</button>
+                </div>
+                
+                <div class="quick-query">
+                    <code>VACUUM;</code>
+                    <button class="btn btn-secondary" onclick="useQuery(this.previousElementSibling.textContent)">Use Query</button>
+                </div>
+                
+                <div class="quick-query">
+                    <code>ANALYZE;</code>
+                    <button class="btn btn-secondary" onclick="useQuery(this.previousElementSibling.textContent)">Use Query</button>
+                </div>
+            </div>
+            
+            <!-- Photo Management Queries -->
+            <div>
+                <h4 style="color: #6c757d; margin-bottom: 15px;">📸 Photo Management</h4>
+                
+                <div class="quick-query">
+                    <code>UPDATE team_members SET photo = NULL WHERE photo IS NOT NULL;</code>
+                    <button class="btn btn-secondary" onclick="useQuery(this.previousElementSibling.textContent)">Use Query</button>
+                </div>
+                
+                <div class="quick-query">
+                    <code>SELECT COUNT(*) as total_members, COUNT(photo) as members_with_photos FROM team_members;</code>
+                    <button class="btn btn-secondary" onclick="useQuery(this.previousElementSibling.textContent)">Use Query</button>
+                </div>
+                
+                <div class="quick-query">
+                    <code>SELECT id, name, photo FROM team_members WHERE photo IS NOT NULL LIMIT 10;</code>
+                    <button class="btn btn-secondary" onclick="useQuery(this.previousElementSibling.textContent)">Use Query</button>
+                </div>
+                
+                <div class="quick-query">
+                    <code>UPDATE team_members SET photo = NULL WHERE photo LIKE '%/api/photos%';</code>
+                    <button class="btn btn-secondary" onclick="useQuery(this.previousElementSibling.textContent)">Use Query</button>
+                </div>
             </div>
         </div>
     </div>
