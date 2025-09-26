@@ -3,15 +3,44 @@ header('Content-Type: application/json');
 error_reporting(E_ALL);
 ini_set('display_errors', 1);
 
-require_once 'config.php';
-
 function connectToDatabase() {
-    $database_url = getenv('DATABASE_URL');
-    if (!$database_url) {
-        throw new Exception('DATABASE_URL environment variable not set');
+    // Check common Railway PostgreSQL variable patterns
+    $possibleVars = array('DATABASE_URL', 'POSTGRES_URL', 'POSTGRESQL_URL');
+    $databaseUrl = null;
+    
+    foreach ($possibleVars as $var) {
+        if (isset($_ENV[$var])) {
+            $databaseUrl = $_ENV[$var];
+            break;
+        }
     }
     
-    $db_parts = parse_url($database_url);
+    // Also check getenv function
+    if (!$databaseUrl) {
+        foreach ($possibleVars as $var) {
+            $envValue = getenv($var);
+            if ($envValue) {
+                $databaseUrl = $envValue;
+                break;
+            }
+        }
+    }
+    
+    // Also check for any PostgreSQL connection strings in environment
+    foreach ($_ENV as $key => $value) {
+        if ((strpos($key, 'DATABASE_URL') !== false || 
+             strpos($key, 'POSTGRES') !== false) && 
+            strpos($value, 'postgres://') === 0) {
+            $databaseUrl = $value;
+            break;
+        }
+    }
+    
+    if (!$databaseUrl) {
+        throw new Exception('PostgreSQL database required. No DATABASE_URL found.');
+    }
+    
+    $db_parts = parse_url($databaseUrl);
     $host = $db_parts['host'];
     $port = $db_parts['port'];
     $dbname = ltrim($db_parts['path'], '/');
@@ -172,6 +201,9 @@ function findPlayerMatch($playerName, $teamName, $players) {
 
 function importDisciplinaryHistory($dryRun = true) {
     try {
+        // Add debugging info
+        error_log("Starting import with dry_run: " . ($dryRun ? 'true' : 'false'));
+        
         $db = connectToDatabase();
         $results = array(
             'success' => false,
@@ -186,17 +218,31 @@ function importDisciplinaryHistory($dryRun = true) {
         
         // Read CSV file
         $csvFile = 'Cumulative PASS 2025 Card Data through Spring 2025 - Sheet1.csv';
+        error_log("Looking for CSV file: " . $csvFile);
+        
         if (!file_exists($csvFile)) {
-            throw new Exception("CSV file not found: $csvFile");
+            $results['errors'][] = "CSV file not found: $csvFile";
+            error_log("CSV file not found: " . $csvFile);
+            return $results;
         }
+        
+        error_log("CSV file found, starting to read data");
         
         $csvData = array();
         if (($handle = fopen($csvFile, 'r')) !== false) {
             $header = fgetcsv($handle);
+            error_log("CSV headers: " . implode(', ', $header));
+            
+            $rowCount = 0;
             while (($data = fgetcsv($handle)) !== false) {
                 $csvData[] = array_combine($header, $data);
+                $rowCount++;
             }
             fclose($handle);
+            error_log("Read $rowCount rows from CSV");
+        } else {
+            $results['errors'][] = "Could not open CSV file for reading";
+            return $results;
         }
         
         $results['records_processed'] = count($csvData);
@@ -355,12 +401,33 @@ function importDisciplinaryHistory($dryRun = true) {
 
 // Handle the request
 $method = $_SERVER['REQUEST_METHOD'];
-$input = json_decode(file_get_contents('php://input'), true);
 
 if ($method === 'POST') {
+    $rawInput = file_get_contents('php://input');
+    $input = json_decode($rawInput, true);
+    
+    // Handle JSON parsing errors
+    if (json_last_error() !== JSON_ERROR_NONE) {
+        http_response_code(400);
+        echo json_encode(array(
+            'success' => false,
+            'errors' => array('Invalid JSON input: ' . json_last_error_msg())
+        ));
+        exit;
+    }
+    
     $dryRun = isset($input['dry_run']) ? $input['dry_run'] : true;
-    $result = importDisciplinaryHistory($dryRun);
-    echo json_encode($result);
+    
+    try {
+        $result = importDisciplinaryHistory($dryRun);
+        echo json_encode($result);
+    } catch (Exception $e) {
+        http_response_code(500);
+        echo json_encode(array(
+            'success' => false,
+            'errors' => array('Server error: ' . $e->getMessage())
+        ));
+    }
 } else {
     http_response_code(405);
     echo json_encode(array('error' => 'Method not allowed'));
