@@ -466,8 +466,8 @@ function generateSQLPreview($dryRun = true) {
             foreach ($playersToAdd as $playerData) {
                 $escapedName = str_replace("'", "''", $playerData['name']);
                 $sqlStatements[] = "-- Add inactive player: {$playerData['name']} to team {$playerData['team_name']}";
-                $sqlStatements[] = "INSERT INTO team_members (name, team_id, active, created_at)";
-                $sqlStatements[] = "VALUES ('{$escapedName}', '{$playerData['team_id']}', FALSE, NOW());";
+                $sqlStatements[] = "INSERT INTO team_members (name, team_id, active, created_at_epoch)";
+                $sqlStatements[] = "VALUES ('{$escapedName}', '{$playerData['team_id']}', FALSE, " . time() . ");";
                 $sqlStatements[] = "";
             }
         }
@@ -500,16 +500,16 @@ function generateSQLPreview($dryRun = true) {
             
             if (isset($player['id'])) {
                 // Existing player
-                $sqlStatements[] = "INSERT INTO player_disciplinary_records (member_id, card_type, reason, incident_date_epoch, notes, created_at)";
+                $sqlStatements[] = "INSERT INTO player_disciplinary_records (member_id, card_type, reason, incident_date_epoch, notes, created_at_epoch)";
                 $sqlStatements[] = "VALUES ({$player['id']}, '{$record['card_type']}', '{$escapedReason}', " . 
-                    ($record['incident_date_epoch'] ? $record['incident_date_epoch'] : 'NULL') . ", '{$notesJson}', NOW());";
+                    ($record['incident_date_epoch'] ? $record['incident_date_epoch'] : 'NULL') . ", '{$notesJson}', " . time() . ");";
             } else {
                 // New player - would need to get ID after insert
                 $escapedPlayerName = str_replace("'", "''", $record['player_name']);
-                $sqlStatements[] = "INSERT INTO player_disciplinary_records (member_id, card_type, reason, incident_date_epoch, notes, created_at)";
+                $sqlStatements[] = "INSERT INTO player_disciplinary_records (member_id, card_type, reason, incident_date_epoch, notes, created_at_epoch)";
                 $sqlStatements[] = "VALUES ((SELECT id FROM team_members WHERE name = '{$escapedPlayerName}' AND team_id = '{$player['team_id']}' LIMIT 1), ";
                 $sqlStatements[] = "        '{$record['card_type']}', '{$escapedReason}', " . 
-                    ($record['incident_date_epoch'] ? $record['incident_date_epoch'] : 'NULL') . ", '{$notesJson}', NOW());";
+                    ($record['incident_date_epoch'] ? $record['incident_date_epoch'] : 'NULL') . ", '{$notesJson}', " . time() . ");";
             }
             $sqlStatements[] = "";
         }
@@ -739,11 +739,11 @@ function importDisciplinaryHistory($dryRun = true) {
             // Add new players
             foreach ($playersToAdd as $playerData) {
                 $stmt = $db->prepare("
-                    INSERT INTO team_members (name, team_id, active, created_at) 
-                    VALUES (?, ?, ?, NOW()) 
+                    INSERT INTO team_members (name, team_id, active, created_at_epoch) 
+                    VALUES (?, ?, ?, ?) 
                     RETURNING id
                 ");
-                $stmt->execute(array($playerData['name'], $playerData['team_id'], false));
+                $stmt->execute(array($playerData['name'], $playerData['team_id'], false, time()));
                 $newPlayerId = $stmt->fetchColumn();
                 $playerData['id'] = $newPlayerId;
                 
@@ -755,8 +755,8 @@ function importDisciplinaryHistory($dryRun = true) {
             // Insert disciplinary records
             $stmt = $db->prepare("
                 INSERT INTO player_disciplinary_records 
-                (member_id, card_type, reason, incident_date_epoch, notes, created_at) 
-                VALUES (?, ?, ?, ?, ?, NOW())
+                (member_id, card_type, reason, incident_date_epoch, notes, created_at_epoch) 
+                VALUES (?, ?, ?, ?, ?, ?)
             ");
             
             foreach ($recordsToImport as $record) {
@@ -777,7 +777,8 @@ function importDisciplinaryHistory($dryRun = true) {
                         $record['card_type'],
                         $record['reason'],
                         $record['incident_date_epoch'],
-                        $notes
+                        $notes,
+                        time()  // created_at_epoch
                     ));
                     
                     $results['records_imported']++;
