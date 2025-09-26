@@ -780,26 +780,35 @@ function importDisciplinaryHistory($dryRun = true) {
                 $memberId = isset($player['id']) ? $player['id'] : null;
                 
                 if ($memberId) {
-                    $notes = json_encode(array(
-                        'season' => $record['season'],
-                        'division' => $record['division'],
-                        'additional_comments' => $record['additional_comments'],
-                        'official_name' => $record['official_name'],
-                        'import_source' => 'csv_import'
-                    ));
-                    
-                    $stmt->execute(array(
-                        $memberId,
-                        $record['card_type'],
-                        $record['reason'],
-                        $record['incident_date_epoch'],
-                        $notes,
-                        time()  // created_at_epoch
-                    ));
-                    
-                    $results['records_imported']++;
+                    try {
+                        $notes = json_encode(array(
+                            'season' => $record['season'],
+                            'division' => $record['division'],
+                            'additional_comments' => $record['additional_comments'],
+                            'official_name' => $record['official_name'],
+                            'import_source' => 'csv_import'
+                        ));
+                        
+                        $stmt->execute(array(
+                            $memberId,
+                            $record['card_type'],
+                            $record['reason'],
+                            $record['incident_date_epoch'],
+                            $notes,
+                            time()  // created_at_epoch
+                        ));
+                        
+                        $results['records_imported']++;
+                    } catch (Exception $e) {
+                        $errorMsg = "Failed to insert record for {$record['player_name']}: " . $e->getMessage();
+                        $results['errors'][] = $errorMsg;
+                        error_log($errorMsg);
+                        $results['records_skipped']++;
+                    }
                 } else {
-                    $results['errors'][] = "Could not find member ID for {$record['player_name']}";
+                    $errorMsg = "Could not find member ID for {$record['player_name']} in team {$record['team_name']}";
+                    $results['errors'][] = $errorMsg;
+                    error_log($errorMsg);
                     $results['records_skipped']++;
                 }
             }

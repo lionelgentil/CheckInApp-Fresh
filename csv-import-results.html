@@ -482,6 +482,13 @@
                 
                 if (result.errors && result.errors.length > 0) {
                     message += `- Errors: ${result.errors.length}\n`;
+                    message += `\n❌ FIRST 10 ERRORS:\n`;
+                    result.errors.slice(0, 10).forEach((error, index) => {
+                        message += `${index + 1}. ${error}\n`;
+                    });
+                    if (result.errors.length > 10) {
+                        message += `... and ${result.errors.length - 10} more errors\n`;
+                    }
                 }
                 
                 if (result.warnings && result.warnings.length > 0) {
