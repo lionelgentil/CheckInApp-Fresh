@@ -137,79 +137,145 @@ function normalizeTeamName($teamName) {
 function normalizeReason($reason) {
     $reason = trim($reason);
     
-    // Common reason mappings from CSV abbreviations to database values
+    // Valid card reasons from config.js - MUST match exactly
+    $validReasons = array(
+        "Unsporting behavior",
+        "Dissent by word or action", 
+        "Persistent infringement",
+        "Delaying the restart of play",
+        "Failure to respect distance",
+        "Entering/leaving without permission",
+        "Sliding",
+        "Reckless/aggressive challenge",
+        "Stopping a promising attack",
+        "Serious foul play",
+        "Violent conduct",
+        "Spitting",
+        "Denial of a goal scoring opportunity",
+        "Offensive/insulting language",
+        "Second yellow card"
+    );
+    
+    // Mapping from CSV abbreviations/variations to valid database reasons
     $mappings = array(
-        'UB' => 'Unsporting Behavior',
+        // UB variations -> Unsporting behavior
+        'UB' => 'Unsporting behavior',
+        'USB' => 'Unsporting behavior',
+        'unsporting behavior' => 'Unsporting behavior',
+        'Unsporting Behavior' => 'Unsporting behavior',
+        'Taunting' => 'Unsporting behavior',
+        
+        // Sliding variations
         'UB - Sliding' => 'Sliding',
+        'UB-Sliding' => 'Sliding',
+        'Slide Tackle' => 'Sliding',
+        'Repeated Slide Tackling' => 'Sliding',
+        
+        // Reckless/aggressive challenge variations
         'UB - Reckless' => 'Reckless/aggressive challenge',
-        'UB - Stopping promising attack' => 'Stopping a promising attack',
         'UB - Pushing' => 'Reckless/aggressive challenge',
         'UB - Reckless Challenge' => 'Reckless/aggressive challenge',
         'UB/Reckless Challenge' => 'Reckless/aggressive challenge',
         'UB-Reckless' => 'Reckless/aggressive challenge',
         'UB-Reckless Challenge' => 'Reckless/aggressive challenge',
-        'UB-Stopping a promising attack' => 'Stopping a promising attack',
-        'UB-Sliding' => 'Sliding',
-        'UB-Lack of respect' => 'Dissent by word or action',
-        'USB' => 'Unsporting Behavior',
-        'Dissent' => 'Dissent by word or action',
-        'Dissent by word' => 'Dissent by word or action',
-        'Persistent Offences' => 'Persistent offenses',
-        'Persistent Offenses' => 'Persistent offenses',
-        'Delaying Restart' => 'Delaying the restart of play',
-        'Deliberate Foul' => 'Reckless/aggressive challenge',
-        'Slide Tackle' => 'Sliding',
-        'Repeated Slide Tackling' => 'Sliding',
-        'Reckless tackle from behind' => 'Reckless/aggressive challenge',
-        'Denial of goal scoring opportunity' => 'Denies an opponent an obvious goal-scoring opportunity by committing an offense which was an attempt to play the ball and a penalty kick is awarded',
-        'Dangerous Play' => 'Dangerous play high kick with contact to opponent\'s face',
-        'Flagrant Play, out of control running over a player from behind' => 'Reckless/aggressive challenge',
-        'Foul language toward ref' => 'Dissent by word or action',
-        'Abusive language & physical violence' => 'Using offensive, insulting or abusive language and/or action(s)',
-        'UB/ Intentional foul & physical pushing' => 'Using offensive, insulting or abusive language and/or action(s)',
-        'Retaliation and Pushing' => 'Player confrontation (pushing, arguing, chest bumping, etc)',
+        'UB-Reckless/Arm to Face' => 'Reckless/aggressive challenge',
+        'Aggressive Foul/Dangerous Play' => 'Reckless/aggressive challenge',
         'Aggressive Foul, stepping over opposing player' => 'Reckless/aggressive challenge',
         'Reckless shoulder challenge' => 'Reckless/aggressive challenge',
-        'AL/Gestures' => 'Using offensive, insulting or abusive language and/or action(s)',
-        'Dissent - Word or Action' => 'Dissent by word or action',
         'Flagrant Play, out of control running over a player from behind' => 'Reckless/aggressive challenge',
-        'Aggressive Foul/Dangerous Play' => 'Reckless/aggressive challenge',
+        'Deliberate Foul' => 'Reckless/aggressive challenge',
+        'Reckless tackle from behind' => 'Reckless/aggressive challenge',
         'Grabbed player from behind' => 'Reckless/aggressive challenge',
+        'Late tackle on girl. Not intentional but dangerous.' => 'Reckless/aggressive challenge',
+        'Dangerous Play' => 'Reckless/aggressive challenge',
+        'Tripping' => 'Reckless/aggressive challenge',
+        'Pushing' => 'Reckless/aggressive challenge',
+        
+        // Stopping a promising attack variations
+        'UB - Stopping promising attack' => 'Stopping a promising attack',
+        'UB-Stopping a promising attack' => 'Stopping a promising attack',
         'Unsporting behavior stopping a  promising attack by tripping' => 'Stopping a promising attack',
         'Unsporting behavior - stopping a promising attack by handling' => 'Stopping a promising attack',
-        'Unsporting behavior arguing and chest bumping with opponent' => 'Player confrontation (pushing, arguing, chest bumping, etc)',
-        'Late tackle on girl. Not intentional but dangerous.' => 'Reckless/aggressive challenge',
-        'unsporting behavior' => 'Unsporting Behavior',
-        'Dissent by word or action' => 'Dissent by word or action',
-        'Reckless/aggressive challenge' => 'Reckless/aggressive challenge',
-        'Player confrontation (pushing, arguing, chest bumping, etc)' => 'Player confrontation (pushing, arguing, chest bumping, etc)',
-        'Taunting' => 'Unsporting Behavior',
-        'Using offensive, insulting or abusive language and/or action(s)' => 'Using offensive, insulting or abusive language and/or action(s)',
-        'Receiving a second caution in the same match' => 'Receiving a second caution in the same match',
-        'Handball denying a goal or an obvious goal-scoring opportunity' => 'Handball denying a goal or an obvious goal-scoring opportunity',
-        'Entering, re-entering, or deliberately leaving the field of play without the referee\'s permission' => 'Entering, re-entering, or deliberately leaving the field of play without the referee\'s permission',
-        'Failing to respect the required distance when play is restarted with a dropped ball, corner kick, free kick or throw-in' => 'Failing to respect the required distance when play is restarted with a dropped ball, corner kick, free kick or throw-in',
-        'Denies an opponent an obvious goal-scoring opportunity by committing an offense which was an attempt to play the ball and a penalty kick is awarded' => 'Denies an opponent an obvious goal-scoring opportunity by committing an offense which was an attempt to play the ball and a penalty kick is awarded',
-        'Tripping' => 'Reckless/aggressive challenge',
         'Holding and grabbing the opponent from advancing' => 'Stopping a promising attack',
+        
+        // Dissent variations
+        'Dissent' => 'Dissent by word or action',
+        'Dissent by word' => 'Dissent by word or action',
+        'Dissent - Word' => 'Dissent by word or action',
+        'Dissent - Word or Action' => 'Dissent by word or action',
+        'UB-Lack of respect' => 'Dissent by word or action',
+        'Foul language toward ref' => 'Dissent by word or action',
+        
+        // Persistent infringement variations
+        'Persistent Offences' => 'Persistent infringement',
+        'Persistent Offenses' => 'Persistent infringement',
+        'Persistent offenses' => 'Persistent infringement',
+        
+        // Delaying restart variations
+        'Delaying Restart' => 'Delaying the restart of play',
+        
+        // Denial of goal scoring opportunity variations
+        'Denial of goal scoring opportunity' => 'Denial of a goal scoring opportunity',
+        'Denial of Goal Scoring Opportunity' => 'Denial of a goal scoring opportunity',
+        'Handball denying a goal or an obvious goal-scoring opportunity' => 'Denial of a goal scoring opportunity',
+        'Denies an opponent an obvious goal-scoring opportunity by committing an offense which was an attempt to play the ball and a penalty kick is awarded' => 'Denial of a goal scoring opportunity',
+        
+        // Offensive language variations
+        'Using offensive, insulting or abusive language and/or action(s)' => 'Offensive/insulting language',
+        'Abusive language & physical violence' => 'Offensive/insulting language',
+        'UB/ Intentional foul & physical pushing' => 'Offensive/insulting language',
+        'AL/Gestures' => 'Offensive/insulting language',
+        
+        // Second yellow variations
+        'Receiving a second caution in the same match' => 'Second yellow card',
+        'Reckless/aggressive challenge; Receiving a second caution in the same match' => 'Second yellow card',
+        
+        // Failure to respect distance
+        'Failing to respect the required distance when play is restarted with a dropped ball, corner kick, free kick or throw-in' => 'Failure to respect distance',
+        
+        // Entering/leaving without permission
+        'Entering, re-entering, or deliberately leaving the field of play without the referee\'s permission' => 'Entering/leaving without permission',
+        
+        // Generic unsporting behavior for complex descriptions
+        'Player confrontation (pushing, arguing, chest bumping, etc)' => 'Unsporting behavior',
+        'Unsporting behavior arguing and chest bumping with opponent' => 'Unsporting behavior',
+        'Retaliation and Pushing' => 'Unsporting behavior',
+        'Dissent by word or action; Player confrontation (pushing, arguing, chest bumping, etc)' => 'Unsporting behavior',
+        'Aggressive Foul/Dangerous Play, Dissent - Word' => 'Reckless/aggressive challenge',
+        'Dissent by word or action, Player confrontation (pushing, arguing, chest bumping, etc), Taunting' => 'Unsporting behavior',
+        
+        // Special cases
         'NA' => '',  // Map N/A to empty string
-        '' => ''     // Keep empty strings empty
+        '' => '',    // Keep empty strings empty
+        'Other' => 'Unsporting behavior'  // Map "Other" to generic unsporting behavior
     );
     
     // First try exact match
     if (isset($mappings[$reason])) {
-        return $mappings[$reason];
+        $mapped = $mappings[$reason];
+        // Validate that the mapped reason is in our valid list
+        if (in_array($mapped, $validReasons) || $mapped === '') {
+            return $mapped;
+        }
     }
     
     // If no exact match, try case-insensitive match
     foreach ($mappings as $csvReason => $dbReason) {
         if (strcasecmp($csvReason, $reason) === 0) {
-            return $dbReason;
+            if (in_array($dbReason, $validReasons) || $dbReason === '') {
+                return $dbReason;
+            }
         }
     }
     
-    // If no mapping found, return original reason
-    return $reason;
+    // Check if the reason is already a valid reason (exact match)
+    if (in_array($reason, $validReasons)) {
+        return $reason;
+    }
+    
+    // If no mapping found and not a valid reason, default to "Unsporting behavior"
+    // This ensures we never insert invalid reasons into the database
+    return 'Unsporting behavior';
 }
 
 function normalizeCardType($cardType) {
