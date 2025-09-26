@@ -467,7 +467,7 @@ function generateSQLPreview($dryRun = true) {
                 $escapedName = str_replace("'", "''", $playerData['name']);
                 $sqlStatements[] = "-- Add inactive player: {$playerData['name']} to team {$playerData['team_name']}";
                 $sqlStatements[] = "INSERT INTO team_members (name, team_id, active, created_at_epoch)";
-                $sqlStatements[] = "VALUES ('{$escapedName}', '{$playerData['team_id']}', FALSE, " . time() . ");";
+                $sqlStatements[] = "VALUES ('{$escapedName}', '{$playerData['team_id']}', 0, " . time() . ");";
                 $sqlStatements[] = "";
             }
         }
@@ -743,7 +743,7 @@ function importDisciplinaryHistory($dryRun = true) {
                     VALUES (?, ?, ?, ?) 
                     RETURNING id
                 ");
-                $stmt->execute(array($playerData['name'], $playerData['team_id'], false, time()));
+                $stmt->execute(array($playerData['name'], $playerData['team_id'], 0, time()));
                 $newPlayerId = $stmt->fetchColumn();
                 $playerData['id'] = $newPlayerId;
                 
