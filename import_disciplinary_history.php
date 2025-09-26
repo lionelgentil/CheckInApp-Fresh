@@ -110,25 +110,24 @@ function normalizeTeamName($teamName) {
         'Flash' => 'Flash',
         'Knights' => 'Knights',
         'Phoenix' => 'Phoenix',
-        'Stingrays ReUtd' => 'Stingrays ReUtd',
+        'Stingrays ReUtd' => 'Stingrays ReUnited',  // Fix: CSV has "ReUtd", DB has "ReUnited"
         'Stingrays' => 'Stingrays',
         'Goal Diggers' => 'Goal Diggers',
         'KR3W' => 'KR3W',
         'Mayhem' => 'Mayhem',
-        'Green Achers' => 'Green Achers',
-        'GreenAchers' => 'Green Achers',  // Handle both variations
-        'BU1' => 'BU1',
-        'BU2' => 'BU2',
-        'Boom City' => 'Boom City',
+        'Green Achers' => 'GreenAchers',  // Fix: CSV has "Green Achers", DB has "GreenAchers"
+        'GreenAchers' => 'GreenAchers',
+        'BU1' => 'BU1',  // These might be missing teams that need to be created
+        'BU2' => 'BU2',  // These might be missing teams that need to be created
+        'Boom City' => 'Boom City',  // This might be missing team that needs to be created
         'Perezosos F.C.' => 'Perezosos F.C.',
-        'SloAssBus VSC' => 'SloAssBus VSC',
+        'SloAssBus VSC' => 'SloAssBus VSC',  // This might be missing team that needs to be created
         'Beers and Tears' => 'Beers and Tears',
         'Shin Splints United' => 'Shin Splints United',
         'Shin Splints Utd' => 'Shin Splints United',
         'Ol\'Limpians' => 'Ol\'Limpians',
         'BenchWarmers' => 'BenchWarmers',
         'Grass Stains' => 'Grass Stains',
-        // Add new teams from recent data
         'Bandits FC' => 'Bandits FC'
     );
     
