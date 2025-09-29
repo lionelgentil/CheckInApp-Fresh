@@ -2913,6 +2913,13 @@ function createMemberProfile($db) {
         ]);
 
         if ($result) {
+            // Ensure the member is immediately available for photo upload
+            // Force commit if we're in a transaction
+            if ($db->inTransaction()) {
+                $db->commit();
+                $db->beginTransaction(); // Restart transaction for any subsequent operations
+            }
+
             ob_end_clean();
             echo json_encode(['success' => true, 'message' => 'Member created successfully']);
         } else {

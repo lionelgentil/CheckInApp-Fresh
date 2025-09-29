@@ -2251,6 +2251,12 @@ Please check the browser console (F12) for more details.`);
                 try {
                     await this.createMemberProfile(teamId, newMember);
                     console.log('✅ Member created in database:', newMember.id);
+
+                    // Small delay to ensure database commit is processed
+                    if (photoFile) {
+                        console.log('⏳ Waiting 200ms before photo upload to ensure database commit...');
+                        await new Promise(resolve => setTimeout(resolve, 200));
+                    }
                 } catch (error) {
                     console.error('❌ Failed to create member in database:', error);
                     throw new Error('Failed to create member: ' + error.message);
@@ -2294,7 +2300,14 @@ Please check the browser console (F12) for more details.`);
                     console.log('🖼️ New member photo uses direct URL');
                 }
             }
-            
+
+            // 🎉 Success confirmation for member creation
+            if (!this.currentEditingMember) {
+                alert(`✅ Player "${name}" has been successfully added to ${team.name}!`);
+            } else {
+                alert(`✅ Player "${name}" has been successfully updated!`);
+            }
+
             // Handle modal state
             if (!this.currentEditingMember) {
                 // Keep modal open for adding more members
