@@ -218,30 +218,41 @@ class CheckInApp extends CheckInCore {
     async apiRequest(url, options = {}, cacheKey = null, cacheTimestamp = null) {
         try {
             const response = await fetch(url, options);
-            
+
             // Handle 401 Unauthorized - session expired
             if (response.status === 401) {
                 console.warn('🔐 Session expired (401), redirecting to re-authenticate...');
                 this.handleSessionExpired();
                 return; // Don't continue processing
             }
-            
+
             if (response.ok) {
-                const data = await response.json();
-                
-                // Cache the response if caching was requested
-                if (cacheKey && cacheTimestamp) {
-                    this.apiCache.set(cacheKey, {
-                        data: data,
-                        timestamp: cacheTimestamp
-                    });
+                // Get response text first to debug JSON parsing issues
+                const responseText = await response.text();
+
+                try {
+                    const data = JSON.parse(responseText);
+
+                    // Cache the response if caching was requested
+                    if (cacheKey && cacheTimestamp) {
+                        this.apiCache.set(cacheKey, {
+                            data: data,
+                            timestamp: cacheTimestamp
+                        });
+                    }
+
+                    return data;
+                } catch (jsonError) {
+                    console.error('❌ JSON parsing error:', jsonError);
+                    console.error('❌ Response text:', responseText);
+                    console.error('❌ URL:', url);
+                    console.error('❌ Options:', options);
+                    throw new Error('Invalid JSON response from server: ' + responseText.substring(0, 200));
                 }
-                
-                return data;
             }
-            
+
             throw new Error(`HTTP ${response.status}: ${response.statusText}`);
-            
+
         } catch (error) {
             // Don't handle network errors as session issues
             if (error.name === 'TypeError' && error.message.includes('fetch')) {

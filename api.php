@@ -1340,10 +1340,17 @@ function getSpecificTeams($db) {
 }
 
 function saveTeams($db) {
-    $input = json_decode(file_get_contents('php://input'), true);
-    if (!$input) {
+    $rawInput = file_get_contents('php://input');
+    $input = json_decode($rawInput, true);
+
+    if (!$input || !is_array($input)) {
         http_response_code(400);
-        echo json_encode(['error' => 'Invalid JSON data']);
+        echo json_encode([
+            'error' => 'Invalid JSON data',
+            'json_error' => json_last_error_msg(),
+            'raw_input_length' => strlen($rawInput),
+            'raw_input_preview' => substr($rawInput, 0, 200)
+        ]);
         return;
     }
     
@@ -1356,9 +1363,11 @@ function saveTeams($db) {
         // First, collect all incoming member IDs
         $incomingMemberIds = [];
         foreach ($input as $team) {
-            if (isset($team['members']) && is_array($team['members'])) {
+            if (is_array($team) && isset($team['members']) && is_array($team['members'])) {
                 foreach ($team['members'] as $member) {
-                    $incomingMemberIds[] = $member['id'];
+                    if (is_array($member) && isset($member['id'])) {
+                        $incomingMemberIds[] = $member['id'];
+                    }
                 }
             }
         }
@@ -1367,7 +1376,9 @@ function saveTeams($db) {
         // First collect all team IDs from input
         $incomingTeamIds = [];
         foreach ($input as $team) {
-            $incomingTeamIds[] = $team['id'];
+            if (is_array($team) && isset($team['id'])) {
+                $incomingTeamIds[] = $team['id'];
+            }
         }
         
         // Delete teams that are not in the incoming data
@@ -1379,6 +1390,11 @@ function saveTeams($db) {
         }
         
         foreach ($input as $team) {
+            // Skip invalid team data
+            if (!is_array($team) || !isset($team['id']) || !isset($team['name'])) {
+                continue;
+            }
+
             // Use UPSERT for teams too to avoid deletion cascades
             $stmt = $db->prepare('
                 INSERT INTO teams (id, name, category, color, description, captain_id)
@@ -1401,6 +1417,11 @@ function saveTeams($db) {
             
             if (isset($team['members']) && is_array($team['members'])) {
                 foreach ($team['members'] as $member) {
+                    // Skip invalid member data
+                    if (!is_array($member) || !isset($member['id']) || !isset($member['name'])) {
+                        continue;
+                    }
+
                     // Clean photo value before storing - only store filenames, not URLs
                     $photoValue = $member['photo'] ?? null;
                     if ($photoValue) {
@@ -2857,36 +2878,51 @@ function updateMemberProfile($db) {
 
 // Create new team member - for admin app
 function createMemberProfile($db) {
+    // Ensure clean output by starting output buffering
+    ob_start();
+
     try {
         $input = json_decode(file_get_contents('php://input'), true);
-        
+
         $teamId = $input['teamId'] ?? null;
         $member = $input['member'] ?? null;
-        
+
         if (!$teamId || !$member || !$member['id'] || !$member['name']) {
+            ob_end_clean();
             http_response_code(400);
             echo json_encode(['error' => 'Team ID and member data are required']);
             return;
         }
-        
+
+        // Ensure jerseyNumber is properly handled (null if empty/0)
+        $jerseyNumber = isset($member['jerseyNumber']) && $member['jerseyNumber'] !== '' && $member['jerseyNumber'] !== 0
+            ? (int)$member['jerseyNumber']
+            : null;
+
+        // Ensure gender is properly handled
+        $gender = isset($member['gender']) && $member['gender'] !== '' ? $member['gender'] : null;
+
         // Insert new member
         $stmt = $db->prepare('INSERT INTO team_members (id, team_id, name, jersey_number, gender) VALUES (?, ?, ?, ?, ?)');
         $result = $stmt->execute([
             $member['id'],
             $teamId,
             $member['name'],
-            $member['jerseyNumber'],
-            $member['gender']
+            $jerseyNumber,
+            $gender
         ]);
-        
+
         if ($result) {
+            ob_end_clean();
             echo json_encode(['success' => true, 'message' => 'Member created successfully']);
         } else {
+            ob_end_clean();
             http_response_code(500);
             echo json_encode(['error' => 'Failed to create member']);
         }
-        
+
     } catch (Exception $e) {
+        ob_end_clean();
         http_response_code(500);
         echo json_encode(['error' => 'Failed to create member: ' . $e->getMessage()]);
     }
