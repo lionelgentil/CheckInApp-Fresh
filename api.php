@@ -1353,6 +1353,17 @@ function saveTeams($db) {
         ]);
         return;
     }
+
+    // SAFETY CHECK: Prevent accidental team deletion
+    // If we receive less than 3 teams, this is probably an error - refuse to process
+    if (count($input) < 3) {
+        http_response_code(400);
+        echo json_encode([
+            'error' => 'Refusing to process: received too few teams (' . count($input) . '). This could cause accidental data loss.',
+            'received_teams' => array_map(function($t) { return ['id' => $t['id'] ?? 'no-id', 'name' => $t['name'] ?? 'no-name']; }, $input)
+        ]);
+        return;
+    }
     
     $db->beginTransaction();
     
@@ -2913,13 +2924,6 @@ function createMemberProfile($db) {
         ]);
 
         if ($result) {
-            // Ensure the member is immediately available for photo upload
-            // Force commit if we're in a transaction
-            if ($db->inTransaction()) {
-                $db->commit();
-                $db->beginTransaction(); // Restart transaction for any subsequent operations
-            }
-
             ob_end_clean();
             echo json_encode(['success' => true, 'message' => 'Member created successfully']);
         } else {
@@ -3969,11 +3973,12 @@ function executeDbMaintenance($db) {
         // Security: Only allow safe operations
         $allowedOperations = [
             'SELECT',
+            'INSERT',     // Added for data recovery operations
             'UPDATE',
             'DELETE',
             'CREATE INDEX',
             'CREATE TABLE',  // Temporary: Allow table creation for team_managers
-            'DROP INDEX', 
+            'DROP INDEX',
             'ANALYZE',
             'VACUUM',
             'REINDEX'
@@ -4009,7 +4014,7 @@ function executeDbMaintenance($db) {
         if (!$operationAllowed) {
             http_response_code(400);
             echo json_encode([
-                'error' => 'Operation not allowed. Only SELECT, UPDATE, DELETE, CREATE INDEX, DROP INDEX, ANALYZE, VACUUM, and REINDEX are permitted. Dangerous operations like DROP TABLE, TRUNCATE, etc. are blocked.',
+                'error' => 'Operation not allowed. Only SELECT, INSERT, UPDATE, DELETE, CREATE INDEX, CREATE TABLE, DROP INDEX, ANALYZE, VACUUM, and REINDEX are permitted. Dangerous operations like DROP TABLE, TRUNCATE, etc. are blocked.',
                 'allowed_operations' => $allowedOperations
             ]);
             return;
