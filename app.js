@@ -2801,11 +2801,20 @@ Please check the browser console (F12) for more details.`);
     }
     
     async saveDetailedMember(teamId, memberId) {
+        console.log('🎯 saveDetailedMember called with teamId:', teamId, 'memberId:', memberId);
+
         const name = document.getElementById('detailed-member-name').value.trim();
         const jerseyNumber = document.getElementById('detailed-member-jersey').value;
         const gender = document.getElementById('detailed-member-gender').value;
         const photoFile = document.getElementById('detailed-member-photo').files[0];
-        
+
+        console.log('📝 Form values read:', {
+            name: name,
+            jerseyNumber: jerseyNumber,
+            gender: gender,
+            hasPhotoFile: !!photoFile
+        });
+
         if (!name) {
             alert('Please enter a player name');
             return;

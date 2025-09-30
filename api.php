@@ -2946,7 +2946,19 @@ function updateMemberProfile($db) {
 
         // Update member profile (supports name, jersey number, and gender)
         $stmt = $db->prepare('UPDATE team_members SET name = ?, jersey_number = ?, gender = ? WHERE id = ? AND team_id = ?');
-        $result = $stmt->execute([$name, $jerseyNumber, $gender, $memberId, $teamId]);
+
+        // Debug: Log the exact parameters being passed to SQL
+        $sqlParams = [$name, $jerseyNumber, $gender, $memberId, $teamId];
+        error_log("updateMemberProfile DEBUG - SQL parameters:");
+        error_log("  SQL: UPDATE team_members SET name = ?, jersey_number = ?, gender = ? WHERE id = ? AND team_id = ?");
+        error_log("  Params: " . json_encode($sqlParams));
+        error_log("  Param 1 (name): " . var_export($name, true));
+        error_log("  Param 2 (jersey_number): " . var_export($jerseyNumber, true));
+        error_log("  Param 3 (gender): " . var_export($gender, true));
+        error_log("  Param 4 (id): " . var_export($memberId, true));
+        error_log("  Param 5 (team_id): " . var_export($teamId, true));
+
+        $result = $stmt->execute($sqlParams);
 
         // Debug: Check how many rows were affected
         $rowCount = $stmt->rowCount();
