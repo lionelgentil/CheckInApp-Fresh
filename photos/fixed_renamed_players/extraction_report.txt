@@ -1,0 +1,611 @@
+📸 FIXED PHOTO EXTRACTION AND RENAMING REPORT
+=======================================================
+
+Teams processed: 28
+Total photo mappings: 555
+
+TEAMS AND PLAYERS:
+------------------------------
+
+🏆 BANDITS FC: 23 players
+   Mikey-Aburamadan (male) - cellImage_452565328_0.jpg
+   Allan-Brooks (male) - cellImage_452565328_1.jpg
+   David-Grubb (male) - cellImage_452565328_10.jpg
+   Ricardo-Gutierrez (male) - cellImage_452565328_11.jpg
+   Ryan-Kissinger (male) - cellImage_452565328_12.jpg
+   Miguel-Klee (male) - cellImage_452565328_13.jpg
+   Ivania-Limon (female) - cellImage_452565328_14.jpg
+   Elliot-Lopes (male) - cellImage_452565328_15.jpg
+   Brannon-Marsh (male) - cellImage_452565328_16.jpg
+   Jesus-Moreno (male) - cellImage_452565328_17.jpg
+   George-Piliotis (male) - cellImage_452565328_18.jpg
+   Ryan-Reichert (male) - cellImage_452565328_19.jpg
+   Miguel-Carrillo (male) - cellImage_452565328_2.jpg
+   Isela-Ruiz (female) - cellImage_452565328_20.jpg
+   Cesar-Soto (male) - cellImage_452565328_21.jpg
+   Conner-Stockett (male) - cellImage_452565328_22.jpg
+   Alberto-Chavez (male) - cellImage_452565328_3.jpg
+   Davide-Carle (male) - cellImage_452565328_4.jpg
+   Brendon-Felix (male) - cellImage_452565328_5.jpg
+   Christopher-Flores (male) - cellImage_452565328_6.jpg
+   David-Goldner (male) - cellImage_452565328_7.jpg
+   Joshua-Gomez (male) - cellImage_452565328_8.jpg
+   Adam-Grubb (male) - cellImage_452565328_9.jpg
+
+🏆 BEERS AND TEARS: 18 players
+   Hunter-Bokn (male) - cellImage_657423562_0.jpg
+   Matthew-Bradley (male) - cellImage_657423562_1.jpg
+   Anthony-Martinez (male) - cellImage_657423562_10.jpg
+   Nathan-McCall (male) - cellImage_657423562_11.jpg
+   Michael-Mease (male) - cellImage_657423562_12.jpg
+   Laura-Pacheco (female) - cellImage_657423562_13.jpg
+   Hannah-Rogers (female) - cellImage_657423562_14.jpg
+   Rajeev-Thundiyil (male) - cellImage_657423562_15.jpg
+   Jaymi-Van Dam (male) - cellImage_657423562_16.jpg
+   Robin-Zhang (male) - cellImage_657423562_17.jpg
+   Zane-Calini (male) - cellImage_657423562_2.jpg
+   Tyler-Collier (male) - cellImage_657423562_3.jpg
+   Angelina-David (female) - cellImage_657423562_4.jpg
+   Jose-Maria-Hernandez (male) - cellImage_657423562_5.jpg
+   Carlos-Hernandez Fattorini (male) - cellImage_657423562_6.jpg
+   Wesley-Hsiao (male) - cellImage_657423562_7.jpg
+   Andrey-Klochkov (male) - cellImage_657423562_8.jpg
+   Andrea-Martinez (female) - cellImage_657423562_9.jpg
+
+🏆 BENCHWARMERS: 19 players
+   Brandon-Aviles (male) - cellImage_1081231751_0.jpg
+   Gokhan-Ates (male) - cellImage_1081231751_1.jpg
+   Alexis-Gonzalez (male) - cellImage_1081231751_10.jpg
+   Samuel-Hui (male) - cellImage_1081231751_11.jpg
+   Adam-Irino (male) - cellImage_1081231751_12.jpg
+   Ryan-Jackson (male) - cellImage_1081231751_13.jpg
+   Mazen-Jaouni (male) - cellImage_1081231751_14.jpg
+   Tyson-Kane (male) - cellImage_1081231751_15.jpg
+   Halleigh-Macpherson (female) - cellImage_1081231751_16.jpg
+   Bryan-Martinez (male) - cellImage_1081231751_17.jpg
+   Andrew-Mondello (male) - cellImage_1081231751_18.jpg
+   Sanjeeb-Bose (male) - cellImage_1081231751_2.jpg
+   Luke-Boynton (male) - cellImage_1081231751_3.jpg
+   Junior-Castillo Martinez (male) - cellImage_1081231751_4.jpg
+   Liam-Corcoran (male) - cellImage_1081231751_5.jpg
+   Taylor-Cortezzo (female) - cellImage_1081231751_6.jpg
+   Stephen-Crook (male) - cellImage_1081231751_7.jpg
+   Leslie-Dominguez Maciel (female) - cellImage_1081231751_8.jpg
+   Domonic-Faulk (male) - cellImage_1081231751_9.jpg
+
+🏆 FIRE N ICE: 25 players
+   Josh-Butterfield (male) - cellImage_887470351_0.jpg
+   Stacey-Brown (female) - cellImage_887470351_1.jpg
+   Shane-Henderson (male) - cellImage_887470351_10.jpg
+   Jasjit-Johal (male) - cellImage_887470351_11.jpg
+   Jasmyn-Johal (female) - cellImage_887470351_12.jpg
+   Andrew-King (male) - cellImage_887470351_13.jpg
+   Kevin-Ko (male) - cellImage_887470351_14.jpg
+   Melissa-Kondrick (female) - cellImage_887470351_15.jpg
+   Douglas-Lezameta (male) - cellImage_887470351_16.jpg
+   Heidi-Matzen (female) - cellImage_887470351_17.jpg
+   Eryn-Neidle (female) - cellImage_887470351_18.jpg
+   Kevin-Oh (male) - cellImage_887470351_19.jpg
+   Sarah-Cebulski (female) - cellImage_887470351_2.jpg
+   Ashwin-Prasad (male) - cellImage_887470351_20.jpg
+   Alison-Pschier (female) - cellImage_887470351_21.jpg
+   Eric-Ruhland (male) - cellImage_887470351_22.jpg
+   Mary-Scavone (female) - cellImage_887470351_23.jpg
+   Matt-Troyer (male) - cellImage_887470351_24.jpg
+   Shelby-Chang (female) - cellImage_887470351_3.jpg
+   Colleen-Coffey (female) - cellImage_887470351_4.jpg
+   Erin-Dorff (female) - cellImage_887470351_5.jpg
+   Dan-Droubay (male) - cellImage_887470351_6.jpg
+   Christopher-Gardner (male) - cellImage_887470351_7.jpg
+   Oleg-Gekker (male) - cellImage_887470351_8.jpg
+   Harinder-Grewal (male) - cellImage_887470351_9.jpg
+
+🏆 FIREBALL: 23 players
+   Lori-Balleza (female) - cellImage_641454463_0.jpg
+   Breahna-Berry (female) - cellImage_641454463_1.jpg
+   Trisha-Leong (female) - cellImage_641454463_10.jpg
+   Cristina-Millard (female) - cellImage_641454463_11.jpg
+   Caitlin-Montez (female) - cellImage_641454463_12.jpg
+   Christian-Neves (male) - cellImage_641454463_13.jpg
+   Seth-Niermeyer (male) - cellImage_641454463_14.jpg
+   Nicholas-Norberg (male) - cellImage_641454463_15.jpg
+   Eric-Pane (male) - cellImage_641454463_16.jpg
+   Nolan-Parker (male) - cellImage_641454463_17.jpg
+   Tyler-Revak (male) - cellImage_641454463_18.jpg
+   Kirstie-Rodrigues (female) - cellImage_641454463_19.jpg
+   Patty-Bingham (female) - cellImage_641454463_2.jpg
+   Nick-Rodrigues (male) - cellImage_641454463_20.jpg
+   David-Schneider (male) - cellImage_641454463_21.jpg
+   Ross-Smith (male) - cellImage_641454463_22.jpg
+   Dan-Campbell (male) - cellImage_641454463_3.jpg
+   Christian-Conderman (male) - cellImage_641454463_4.jpg
+   Julie-Creighton (female) - cellImage_641454463_5.jpg
+   Summer-Eichenberger (female) - cellImage_641454463_6.jpg
+   Tim-Gray (male) - cellImage_641454463_7.jpg
+   Todd-Henry (male) - cellImage_641454463_8.jpg
+   Cameron-Lavassani (male) - cellImage_641454463_9.jpg
+
+🏆 FLASH: 20 players
+   Veronica-Carson (female) - cellImage_1709239627_0.jpg
+   Alexandra-Bruno (female) - cellImage_1709239627_1.jpg
+   Karl-Jeppesen (male) - cellImage_1709239627_10.jpg
+   Robia-Llamas (female) - cellImage_1709239627_11.jpg
+   Alison-Lombardo-Click (female) - cellImage_1709239627_12.jpg
+   Mari-Mantle (female) - cellImage_1709239627_13.jpg
+   Parker-Moore (male) - cellImage_1709239627_14.jpg
+   Kevin-Ng (male) - cellImage_1709239627_15.jpg
+   Noah-Pederson (male) - cellImage_1709239627_16.jpg
+   Cynthia-Pena Martinez (female) - cellImage_1709239627_17.jpg
+   Amber-Price (female) - cellImage_1709239627_18.jpg
+   Masseeh-Rahman (male) - cellImage_1709239627_19.jpg
+   Amanda-Cleveland (female) - cellImage_1709239627_2.jpg
+   Hayden-Craig (female) - cellImage_1709239627_3.jpg
+   Jordan-Crawford (male) - cellImage_1709239627_4.jpg
+   Saaxewer-Diop (male) - cellImage_1709239627_5.jpg
+   Arnaldo-Guizamano (male) - cellImage_1709239627_6.jpg
+   Autumn-Halvorsen (female) - cellImage_1709239627_7.jpg
+   Lennart-Hertwig (male) - cellImage_1709239627_8.jpg
+   Michael-Hertwig (male) - cellImage_1709239627_9.jpg
+
+🏆 GOAL DIGGERS: 23 players
+   Kat-Barclay (female) - cellImage_129061384_0.jpg
+   Gail-Boyd (female) - cellImage_129061384_1.jpg
+   Hueseyin-Koeksal (male) - cellImage_129061384_10.jpg
+   Allan-Ospina (male) - cellImage_129061384_11.jpg
+   Gustavo-Roche (male) - cellImage_129061384_12.jpg
+   Shawn-Saha (male) - cellImage_129061384_13.jpg
+   Arvind-Sathe (male) - cellImage_129061384_14.jpg
+   Chandan-Sharma (male) - cellImage_129061384_15.jpg
+   Marissa-Skog (female) - cellImage_129061384_16.jpg
+   Andrea-Spamer (female) - cellImage_129061384_17.jpg
+   Kristen-Taylor (female) - cellImage_129061384_18.jpg
+   Katrina-Tempero (female) - cellImage_129061384_19.jpg
+   Mary-Carter (female) - cellImage_129061384_2.jpg
+   Patrick-Tupper (male) - cellImage_129061384_20.jpg
+   Ulash-Turkhan (male) - cellImage_129061384_21.jpg
+   Joseph-Vasquez (male) - cellImage_129061384_22.jpg
+   Erica-Dewberry (female) - cellImage_129061384_3.jpg
+   Kimberly-Fernandez (female) - cellImage_129061384_4.jpg
+   Ashley-Grenier (female) - cellImage_129061384_5.jpg
+   Allison-Hallas (female) - cellImage_129061384_6.jpg
+   Simran-Hansrai (male) - cellImage_129061384_7.jpg
+   David-Harris (male) - cellImage_129061384_8.jpg
+   Quais-Hasseeb (male) - cellImage_129061384_9.jpg
+
+🏆 GRASS STAINS: 21 players
+   Jose-Acosta (male) - cellImage_1705627521_0.jpg
+   Eli-Amezcua (male) - cellImage_1705627521_1.jpg
+   Ella-Economos (female) - cellImage_1705627521_10.jpg
+   Tori-Harding (female) - cellImage_1705627521_11.jpg
+   Yvette-Jaimes (female) - cellImage_1705627521_12.jpg
+   Andrew-Kiland (male) - cellImage_1705627521_13.jpg
+   Danny-Lopez (male) - cellImage_1705627521_14.jpg
+   Claudia-Macias Flores (female) - cellImage_1705627521_15.jpg
+   Adrian-Ortiz (male) - cellImage_1705627521_16.jpg
+   Benicio-Suarez (male) - cellImage_1705627521_17.jpg
+   Jessica-Umscheid (female) - cellImage_1705627521_18.jpg
+   Hector-Vega (male) - cellImage_1705627521_19.jpg
+   Jasmine-Amezcua (female) - cellImage_1705627521_2.jpg
+   Elias-Venegas (male) - cellImage_1705627521_20.jpg
+   Alejandro-Avila (male) - cellImage_1705627521_3.jpg
+   Aaron-Berndt (male) - cellImage_1705627521_4.jpg
+   Erick-Calva (male) - cellImage_1705627521_5.jpg
+   Alex-Camarena (male) - cellImage_1705627521_6.jpg
+   Jon-Cerda (male) - cellImage_1705627521_7.jpg
+   Salvador-Cortez (male) - cellImage_1705627521_8.jpg
+   Fabricio-Custodio (male) - cellImage_1705627521_9.jpg
+
+🏆 GREEN ACHERS: 22 players
+   Carlos-AlvarezMartinez (male) - cellImage_1154828902_0.jpg
+   Robert-Anaya (male) - cellImage_1154828902_1.jpg
+   Matt-Harizal (male) - cellImage_1154828902_10.jpg
+   Phil-Herlich (male) - cellImage_1154828902_11.jpg
+   Sheila-Hibbard (female) - cellImage_1154828902_12.jpg
+   Frederic-Joucken (male) - cellImage_1154828902_13.jpg
+   Anthony-Kovac (male) - cellImage_1154828902_14.jpg
+   Michael-Lee (male) - cellImage_1154828902_15.jpg
+   Ronda-Maples (female) - cellImage_1154828902_16.jpg
+   Loto-Rickman (female) - cellImage_1154828902_17.jpg
+   Shawn-Shimozono (male) - cellImage_1154828902_18.jpg
+   Michael-Torino (male) - cellImage_1154828902_19.jpg
+   Leila-Balch (female) - cellImage_1154828902_2.jpg
+   Laura-Waller (female) - cellImage_1154828902_20.jpg
+   Katie-Warren (female) - cellImage_1154828902_21.jpg
+   Eric-Berg (male) - cellImage_1154828902_3.jpg
+   Jennifer-Berg (female) - cellImage_1154828902_4.jpg
+   Joe-Carlucci (male) - cellImage_1154828902_5.jpg
+   Tom-Croker (male) - cellImage_1154828902_6.jpg
+   Kim Hang-Cross (female) - cellImage_1154828902_7.jpg
+   Tracey-Dilling (female) - cellImage_1154828902_8.jpg
+   Karem-Gonzalez (female) - cellImage_1154828902_9.jpg
+
+🏆 KR3W: 22 players
+   Edgar-Alas (male) - cellImage_551928764_0.jpg
+   Blake-Beede (male) - cellImage_551928764_1.jpg
+   Allan-Ospina (male) - cellImage_551928764_10.jpg
+   Ann-Peterson (female) - cellImage_551928764_11.jpg
+   Manuel-Portillo (male) - cellImage_551928764_12.jpg
+   Eduardo-Reyes (male) - cellImage_551928764_13.jpg
+   Igor-Sak (male) - cellImage_551928764_14.jpg
+   Dane-Shaffar (male) - cellImage_551928764_15.jpg
+   Ernesto-Solis (male) - cellImage_551928764_16.jpg
+   Natasha-Springer (female) - cellImage_551928764_17.jpg
+   James-Stover (male) - cellImage_551928764_18.jpg
+   Michael-Torino (male) - cellImage_551928764_19.jpg
+   Daisy-Acosta (female) - cellImage_551928764_2.jpg
+   Brandon-Villalpando (male) - cellImage_551928764_20.jpg
+   Manny-Vizcarra (male) - cellImage_551928764_21.jpg
+   Jessica-Hayes (female) - cellImage_551928764_3.jpg
+   Shane-Henninger (male) - cellImage_551928764_4.jpg
+   Connor-Hodges (male) - cellImage_551928764_5.jpg
+   Octavio-Morales (male) - cellImage_551928764_6.jpg
+   Rudi-Moreno (male) - cellImage_551928764_7.jpg
+   Sofi-Naprawa (female) - cellImage_551928764_8.jpg
+   Ariana-Nino (female) - cellImage_551928764_9.jpg
+
+🏆 KNIGHTS: 25 players
+   Victor-Barrera (male) - cellImage_776601003_0.jpg
+   Amanda-Beck (female) - cellImage_776601003_1.jpg
+   Hillary-Harvey (female) - cellImage_776601003_10.jpg
+   Andrea-Irons (female) - cellImage_776601003_11.jpg
+   Kyle-Kline (male) - cellImage_776601003_12.jpg
+   Laci-Lacombe (female) - cellImage_776601003_13.jpg
+   Mckenna-Masinter (female) - cellImage_776601003_14.jpg
+   Mike-Murphy (male) - cellImage_776601003_15.jpg
+   Johanna-Perez (female) - cellImage_776601003_16.jpg
+   Isabella-Perez (female) - cellImage_776601003_17.jpg
+   Melissa-Pizzo (female) - cellImage_776601003_18.jpg
+   Sam-Ravasdy (female) - cellImage_776601003_19.jpg
+   Jake-Burton (male) - cellImage_776601003_2.jpg
+   Abhishek-Savant (male) - cellImage_776601003_20.jpg
+   Allison-Silva (female) - cellImage_776601003_21.jpg
+   Aldair-Suastegui (male) - cellImage_776601003_22.jpg
+   Miguel-Suastegui (male) - cellImage_776601003_23.jpg
+   Rachel-Tabaracci (female) - cellImage_776601003_24.jpg
+   Abby-Crandall (female) - cellImage_776601003_3.jpg
+   John-Eaton (male) - cellImage_776601003_4.jpg
+   Trevor-Elder (male) - cellImage_776601003_5.jpg
+   Kaylee-Fitzpatrick (female) - cellImage_776601003_6.jpg
+   Gerardo-Garcia (male) - cellImage_776601003_7.jpg
+   Moises-Gonzalez (male) - cellImage_776601003_8.jpg
+   Alexander-Gonzalez Beatriz (male) - cellImage_776601003_9.jpg
+
+🏆 LUMBERJACKS: 26 players
+   Kristen-Balch (female) - cellImage_510981946_0.jpg
+   Diego-Arroyo (male) - cellImage_510981946_1.jpg
+   Tanya-Lissade (female) - cellImage_510981946_10.jpg
+   Canela-MacLeod (female) - cellImage_510981946_11.jpg
+   Neima-Mahini (male) - cellImage_510981946_12.jpg
+   Russell-Mansky (male) - cellImage_510981946_13.jpg
+   Tara-Mansky (female) - cellImage_510981946_14.jpg
+   Amanda-Morrison (female) - cellImage_510981946_15.jpg
+   Roberta-Morrow (female) - cellImage_510981946_16.jpg
+   Julio-Munoz (male) - cellImage_510981946_17.jpg
+   JuanPablo-Munoz Arroyo (male) - cellImage_510981946_18.jpg
+   Karrina-Orbegoso (female) - cellImage_510981946_19.jpg
+   Elizabeth-Baxter (female) - cellImage_510981946_2.jpg
+   Sierra-Parini (female) - cellImage_510981946_20.jpg
+   Paul-Rosso (male) - cellImage_510981946_21.jpg
+   Cynthia-Saavedra Ruiz (female) - cellImage_510981946_22.jpg
+   Danielle-Schneider (female) - cellImage_510981946_23.jpg
+   Rich-Schuster (male) - cellImage_510981946_24.jpg
+   Bronte-Sewel (female) - cellImage_510981946_25.jpg
+   Francisco-Becerra (male) - cellImage_510981946_3.jpg
+   Jessica-Becerra (female) - cellImage_510981946_4.jpg
+   Mario-Borjon (male) - cellImage_510981946_5.jpg
+   Cebrina-Chagoya (female) - cellImage_510981946_6.jpg
+   Josiah-Clark (male) - cellImage_510981946_7.jpg
+   Natasha-Coelho (female) - cellImage_510981946_8.jpg
+   Robert-Hansen (male) - cellImage_510981946_9.jpg
+
+🏆 MAYHEM: 26 players
+   Carlton-Alexander (male) - cellImage_46385280_0.jpg
+   Antonio-Castillo (male) - cellImage_46385280_1.jpg
+   Sabrina-Herrero (female) - cellImage_46385280_10.jpg
+   Edwin-Huitron (male) - cellImage_46385280_11.jpg
+   Jonathan-Hur (male) - cellImage_46385280_12.jpg
+   Bryan-Lee (male) - cellImage_46385280_13.jpg
+   Dan-Mariscal (male) - cellImage_46385280_14.jpg
+   Nicolas-Pacheco Soliz (male) - cellImage_46385280_15.jpg
+   Erika-Ramos (female) - cellImage_46385280_16.jpg
+   Kayla-Remund (female) - cellImage_46385280_17.jpg
+   Stephanee-Sabala (female) - cellImage_46385280_18.jpg
+   Jillian-Saffin (female) - cellImage_46385280_19.jpg
+   Samantha-Cawthorn (female) - cellImage_46385280_2.jpg
+   Martin-Sauzade (male) - cellImage_46385280_20.jpg
+   Isaiah-Schutz-Ramon (male) - cellImage_46385280_21.jpg
+   Haley-Scott (female) - cellImage_46385280_22.jpg
+   Jordan-Volponi (female) - cellImage_46385280_23.jpg
+   Chloe-Voorhees (female) - cellImage_46385280_24.jpg
+   Sarah-Welker (female) - cellImage_46385280_25.jpg
+   Avery-Chamberlain (male) - cellImage_46385280_3.jpg
+   Luca-Disbrow (male) - cellImage_46385280_4.jpg
+   Tyler-Dumbacher (male) - cellImage_46385280_5.jpg
+   Douglas-Ferreira (male) - cellImage_46385280_6.jpg
+   Amber-Gerheart (female) - cellImage_46385280_7.jpg
+   David-Gutierrez (male) - cellImage_46385280_8.jpg
+   Yari-Gutierrez (female) - cellImage_46385280_9.jpg
+
+🏆 MISKICKS: 25 players
+   Remon-Aguib (male) - cellImage_963022013_0.jpg
+   Demian-Bannister (male) - cellImage_963022013_1.jpg
+   Alejandro-Flores (male) - cellImage_963022013_10.jpg
+   Anton-Koleci (male) - cellImage_963022013_11.jpg
+   Ronda-Maples (female) - cellImage_963022013_12.jpg
+   Andrew-Mobley (male) - cellImage_963022013_13.jpg
+   Michel-Molina (male) - cellImage_963022013_14.jpg
+   Megan-Murphy (female) - cellImage_963022013_15.jpg
+   Ani-Nahapetian (female) - cellImage_963022013_16.jpg
+   Gabriela-Nassar (female) - cellImage_963022013_17.jpg
+   Cristina-Rios (female) - cellImage_963022013_18.jpg
+   Robert-Rios (male) - cellImage_963022013_19.jpg
+   Amanda-Benge (female) - cellImage_963022013_2.jpg
+   Taylor-Rios (female) - cellImage_963022013_20.jpg
+   Issa-Samara (male) - cellImage_963022013_21.jpg
+   Matt-Selwood (male) - cellImage_963022013_22.jpg
+   Ethan-Shang (male) - cellImage_963022013_23.jpg
+   Sara-Skinner (female) - cellImage_963022013_24.jpg
+   Darian-Benge (male) - cellImage_963022013_3.jpg
+   Eric-Berg (male) - cellImage_963022013_4.jpg
+   Jennifer-Berg (female) - cellImage_963022013_5.jpg
+   Matt-Bojorquez (male) - cellImage_963022013_6.jpg
+   Kim Hang-Cross (female) - cellImage_963022013_7.jpg
+   Mauricio-Diaz-Perez (male) - cellImage_963022013_8.jpg
+   Dan-Droubay (male) - cellImage_963022013_9.jpg
+
+🏆 OL'LIMPIANS: 27 players
+   John-Aisien (male) - cellImage_2055007842_0.jpg
+   Kelly-Bair (female) - cellImage_2055007842_1.jpg
+   Patty-Hough (female) - cellImage_2055007842_10.jpg
+   James-Jones (male) - cellImage_2055007842_11.jpg
+   Anchalee-Kunnaragthai (female) - cellImage_2055007842_12.jpg
+   Andrew-Lamirand (male) - cellImage_2055007842_13.jpg
+   Andrew-Li (male) - cellImage_2055007842_14.jpg
+   Shawn-McHugh (male) - cellImage_2055007842_15.jpg
+   Wendy-McHugh (female) - cellImage_2055007842_16.jpg
+   Russell-Mansky (male) - cellImage_2055007842_17.jpg
+   Tara-Mansky (female) - cellImage_2055007842_18.jpg
+   Natalie-Mattei (female) - cellImage_2055007842_19.jpg
+   Kristen-Balch (female) - cellImage_2055007842_2.jpg
+   Mike-Montoya (male) - cellImage_2055007842_20.jpg
+   Megan-Murphy (female) - cellImage_2055007842_21.jpg
+   Lauren-Nelson (female) - cellImage_2055007842_22.jpg
+   Jim-Nicholas (male) - cellImage_2055007842_23.jpg
+   Paul-Rosso (male) - cellImage_2055007842_24.jpg
+   Jon-Skye (male) - cellImage_2055007842_25.jpg
+   Oscar-Vazquez (male) - cellImage_2055007842_26.jpg
+   Julie-Barr (female) - cellImage_2055007842_3.jpg
+   Elizabeth-Baxter (female) - cellImage_2055007842_4.jpg
+   Ian-Buggs (male) - cellImage_2055007842_5.jpg
+   Whitney-Clark (female) - cellImage_2055007842_6.jpg
+   Lionel-Gentil (male) - cellImage_2055007842_7.jpg
+   Mark-Hjerpe (male) - cellImage_2055007842_8.jpg
+   Angela-Holstrom (female) - cellImage_2055007842_9.jpg
+
+🏆 PEREZOSOS F.C.: 26 players
+   Armando-Carmona (male) - cellImage_1047660690_0.jpg
+   Jeffrey-Bui (male) - cellImage_1047660690_1.jpg
+   Jami-Marcoe (female) - cellImage_1047660690_10.jpg
+   Diego-Mejia (male) - cellImage_1047660690_11.jpg
+   Ulises-Mora (male) - cellImage_1047660690_12.jpg
+   Uriel-Moreno (male) - cellImage_1047660690_13.jpg
+   Paul-Ortiz (male) - cellImage_1047660690_14.jpg
+   Humberto-Ramos (male) - cellImage_1047660690_15.jpg
+   Armando-Rangel (male) - cellImage_1047660690_16.jpg
+   Christina-Rangel (female) - cellImage_1047660690_17.jpg
+   Erick-Rangel (male) - cellImage_1047660690_18.jpg
+   Janet-Rangel-Galicia (female) - cellImage_1047660690_19.jpg
+   Ana-Carmona Morales (female) - cellImage_1047660690_2.jpg
+   Aldo-Reyes (male) - cellImage_1047660690_20.jpg
+   Claudia-Reyes (female) - cellImage_1047660690_21.jpg
+   Noe-Reyes (male) - cellImage_1047660690_22.jpg
+   Anahi-Rojas (female) - cellImage_1047660690_23.jpg
+   Gloria-Roman (female) - cellImage_1047660690_24.jpg
+   Christina-Vasquez (female) - cellImage_1047660690_25.jpg
+   Jennifer-Caro (female) - cellImage_1047660690_3.jpg
+   Curtis-Crittendon (male) - cellImage_1047660690_4.jpg
+   Karina-De Jesus (female) - cellImage_1047660690_5.jpg
+   Tania-Espejo (female) - cellImage_1047660690_6.jpg
+   Edgar-Gutierrez (male) - cellImage_1047660690_7.jpg
+   Madeleine-Hernandez (female) - cellImage_1047660690_8.jpg
+   Edmundo-Juarez Gomez (male) - cellImage_1047660690_9.jpg
+
+🏆 PHOENIX: 19 players
+   Mohamed-Abdelsalam (male) - cellImage_1864316218_0.jpg
+   Morgan-Becker (female) - cellImage_1864316218_1.jpg
+   Erik-Lopez (male) - cellImage_1864316218_10.jpg
+   Ericka-Luzzi (female) - cellImage_1864316218_11.jpg
+   Sonia-Patel (female) - cellImage_1864316218_12.jpg
+   Alfonso-Pedraza (male) - cellImage_1864316218_13.jpg
+   Erick-Ramos (male) - cellImage_1864316218_14.jpg
+   Juan-Ramos (male) - cellImage_1864316218_15.jpg
+   Manuel-Ramos (male) - cellImage_1864316218_16.jpg
+   Angel-Salazar (male) - cellImage_1864316218_17.jpg
+   Christian-Schwartz (male) - cellImage_1864316218_18.jpg
+   Jesus-Cortez (male) - cellImage_1864316218_2.jpg
+   Julio-Franco (male) - cellImage_1864316218_3.jpg
+   Julian-Galeana (male) - cellImage_1864316218_4.jpg
+   Elizabeth-Gondkoff (female) - cellImage_1864316218_5.jpg
+   Megan-Grassi (female) - cellImage_1864316218_6.jpg
+   Tony-Guizar (male) - cellImage_1864316218_7.jpg
+   Kristy-Hearn (female) - cellImage_1864316218_8.jpg
+   Alicia-Ibarra (female) - cellImage_1864316218_9.jpg
+
+🏆 RAT PACK: 28 players
+   Jose G-Aguas loza (male) - cellImage_1093004299_0.jpg
+   Pat-Aguiar (male) - cellImage_1093004299_1.jpg
+   Jay-Goomany (male) - cellImage_1093004299_10.jpg
+   Andrea-Irons (female) - cellImage_1093004299_11.jpg
+   Nicole-Irwin (female) - cellImage_1093004299_12.jpg
+   Alison-Lombardo-Click (female) - cellImage_1093004299_13.jpg
+   Ysabel-Mandac (female) - cellImage_1093004299_14.jpg
+   Mari-Mantle (female) - cellImage_1093004299_15.jpg
+   Carissa-Miramontes (female) - cellImage_1093004299_16.jpg
+   Javier-Miramontes (male) - cellImage_1093004299_17.jpg
+   Raul-Miramontes (male) - cellImage_1093004299_18.jpg
+   Jessica-Monarrez (female) - cellImage_1093004299_19.jpg
+   Rachel-Amador (female) - cellImage_1093004299_2.jpg
+   Kevin-Ng (male) - cellImage_1093004299_20.jpg
+   Susana-Reyes (female) - cellImage_1093004299_21.jpg
+   Dianah-Rodriguez (female) - cellImage_1093004299_22.jpg
+   Juan-Rodriguez (male) - cellImage_1093004299_23.jpg
+   Matthew-Smith (male) - cellImage_1093004299_24.jpg
+   Kevin-Strei (male) - cellImage_1093004299_25.jpg
+   Audra-Triska (female) - cellImage_1093004299_26.jpg
+   Steve-Umeki (male) - cellImage_1093004299_27.jpg
+   Owen-Barcelona (male) - cellImage_1093004299_3.jpg
+   Cesar-Chavez (male) - cellImage_1093004299_4.jpg
+   Gina-Epperley (female) - cellImage_1093004299_5.jpg
+   Pablo-Espinosa (male) - cellImage_1093004299_6.jpg
+   Kay-French (female) - cellImage_1093004299_7.jpg
+   Brianna-Garcia (female) - cellImage_1093004299_8.jpg
+   Jeff-Goodman (male) - cellImage_1093004299_9.jpg
+
+🏆 RENEGADES: 20 players
+   Luis-Alves (male) - cellImage_676128091_0.jpg
+   Igal-Bluvol (male) - cellImage_676128091_1.jpg
+   Jake-Jenkins (male) - cellImage_676128091_10.jpg
+   Jorge-Jeri (male) - cellImage_676128091_11.jpg
+   Kelly-Jones (male) - cellImage_676128091_12.jpg
+   Robia-Llamas (female) - cellImage_676128091_13.jpg
+   Elmer-Madriaga (male) - cellImage_676128091_14.jpg
+   Gabrielle-Miller-Messner (female) - cellImage_676128091_15.jpg
+   Neil-Mody (male) - cellImage_676128091_16.jpg
+   Nikki-Pritchett (female) - cellImage_676128091_17.jpg
+   Biju-Srinivasan (male) - cellImage_676128091_18.jpg
+   Megan-Tanti (female) - cellImage_676128091_19.jpg
+   Matthew-Chen (male) - cellImage_676128091_2.jpg
+   Michelle-Chen (female) - cellImage_676128091_3.jpg
+   Luis-Coelho (male) - cellImage_676128091_4.jpg
+   Paulo-Franca (male) - cellImage_676128091_5.jpg
+   Darrin-Furukawa (male) - cellImage_676128091_6.jpg
+   Jenna-Gabrio (female) - cellImage_676128091_7.jpg
+   Cindy-Garavito (female) - cellImage_676128091_8.jpg
+   Oscar-Garavito (male) - cellImage_676128091_9.jpg
+
+🏆 SHIN SPLINTS UNITED: 16 players
+   Kristina-Alvarez (female) - cellImage_1031126922_0.jpg
+   Priscilla-Alvarez (female) - cellImage_1031126922_1.jpg
+   Lindsey-Linford (female) - cellImage_1031126922_10.jpg
+   Samantha-Linford (female) - cellImage_1031126922_11.jpg
+   Joseph-Paredes (male) - cellImage_1031126922_12.jpg
+   Elio-Sanabria (male) - cellImage_1031126922_13.jpg
+   William-Shaddix (male) - cellImage_1031126922_14.jpg
+   Vance-Speed (male) - cellImage_1031126922_15.jpg
+   Kevin-Andrade (male) - cellImage_1031126922_2.jpg
+   Laurel-Bakiskan (female) - cellImage_1031126922_3.jpg
+   Maria-Camacho (female) - cellImage_1031126922_4.jpg
+   Andrew-Covel (male) - cellImage_1031126922_5.jpg
+   Jocelyn-Figueroa (female) - cellImage_1031126922_6.jpg
+   Rene-Hernandez (male) - cellImage_1031126922_7.jpg
+   Julia-Holden (female) - cellImage_1031126922_8.jpg
+   Scott-Huang (male) - cellImage_1031126922_9.jpg
+
+🏆 SPARTANS: 26 players
+   Patricia-Arsenault (female) - cellImage_57314377_0.jpg
+   Alex-Arsenault (male) - cellImage_57314377_1.jpg
+   Anthony-Maddalon (male) - cellImage_57314377_10.jpg
+   Gustavo-Manrique (male) - cellImage_57314377_11.jpg
+   Roberto-Manrique (male) - cellImage_57314377_12.jpg
+   Avery-Mast (female) - cellImage_57314377_13.jpg
+   Veronica-Medina (female) - cellImage_57314377_14.jpg
+   Jill-Motta (female) - cellImage_57314377_15.jpg
+   Daniel-Osei (male) - cellImage_57314377_16.jpg
+   Melissa-Pizzo (female) - cellImage_57314377_17.jpg
+   Ernie-Rodgers (male) - cellImage_57314377_18.jpg
+   Noel-Rodgers (female) - cellImage_57314377_19.jpg
+   Christina-Cefalo (female) - cellImage_57314377_2.jpg
+   Christy-Silvanic (female) - cellImage_57314377_20.jpg
+   Tegan-Tinoco (female) - cellImage_57314377_21.jpg
+   Mike-Voelker (male) - cellImage_57314377_22.jpg
+   Steven-Volking (male) - cellImage_57314377_23.jpg
+   Jerry-Walker (male) - cellImage_57314377_24.jpg
+   Justin-Walton (male) - cellImage_57314377_25.jpg
+   Michael-Corritone (male) - cellImage_57314377_3.jpg
+   David-DeWitt (male) - cellImage_57314377_4.jpg
+   Meng Yu Ben-Eeo (male) - cellImage_57314377_5.jpg
+   Megan-Grassi (female) - cellImage_57314377_6.jpg
+   Rachel-Karkazis (female) - cellImage_57314377_7.jpg
+   Elizabeth-King (female) - cellImage_57314377_8.jpg
+   Jeff-King (male) - cellImage_57314377_9.jpg
+
+🏆 STINGRAYS: 27 players
+   Anthony-Alberto (male) - cellImage_1489512637_0.jpg
+   Osiris-Chavez (male) - cellImage_1489512637_1.jpg
+   Bri-May (female) - cellImage_1489512637_10.jpg
+   Ian-McCubbin (male) - cellImage_1489512637_11.jpg
+   Quinn-McGreer (male) - cellImage_1489512637_12.jpg
+   Michael-McMasters (male) - cellImage_1489512637_13.jpg
+   Robin-Moresco (female) - cellImage_1489512637_14.jpg
+   Stephan-Morrison-Ketter (male) - cellImage_1489512637_15.jpg
+   Kirsten-Navarro (female) - cellImage_1489512637_16.jpg
+   Romina-Oviedo (female) - cellImage_1489512637_17.jpg
+   Gerard Lawrence-Pinto (male) - cellImage_1489512637_18.jpg
+   Alejandro-Rangel Rodriguez (male) - cellImage_1489512637_19.jpg
+   Lee-Coppin (male) - cellImage_1489512637_2.jpg
+   Courtney-Stonesifer (female) - cellImage_1489512637_20.jpg
+   Cesar-Suarez (male) - cellImage_1489512637_21.jpg
+   Nicole-Torquato (female) - cellImage_1489512637_22.jpg
+   Jessica-Wofford (female) - cellImage_1489512637_23.jpg
+   Ben-Wold (male) - cellImage_1489512637_24.jpg
+   Angela-Woodward (female) - cellImage_1489512637_25.jpg
+   Luis-Zapata (male) - cellImage_1489512637_26.jpg
+   Ari-Erman (male) - cellImage_1489512637_3.jpg
+   Allison-Jones (female) - cellImage_1489512637_4.jpg
+   Jessica-Ko (female) - cellImage_1489512637_5.jpg
+   Tami-Kwong (female) - cellImage_1489512637_6.jpg
+   Joslyn-Laran (female) - cellImage_1489512637_7.jpg
+   Noelle-Marceno (female) - cellImage_1489512637_8.jpg
+   Caren-McCarthy (female) - cellImage_1489512637_9.jpg
+
+🏆 STINGRAYS REUNITED: 26 players
+   Gary-Brown (male) - cellImage_955769308_0.jpg
+   Darren-Clarke (male) - cellImage_955769308_1.jpg
+   Mark-McLaughlin (male) - cellImage_955769308_10.jpg
+   Jonas-Moe (male) - cellImage_955769308_11.jpg
+   Robin-Moresco (female) - cellImage_955769308_12.jpg
+   Debbie-Natsch (female) - cellImage_955769308_13.jpg
+   Randall-Natsch (male) - cellImage_955769308_14.jpg
+   Kirsten-Navarro (female) - cellImage_955769308_15.jpg
+   Rick-Nultemeier (male) - cellImage_955769308_16.jpg
+   Aurelien-Perron (male) - cellImage_955769308_17.jpg
+   Maninder-Sagoo (male) - cellImage_955769308_18.jpg
+   Benicio-Suarez (male) - cellImage_955769308_19.jpg
+   Lee-Coppin (male) - cellImage_955769308_2.jpg
+   Kristy-Switzer (female) - cellImage_955769308_20.jpg
+   Mark-Wiesendanger (male) - cellImage_955769308_21.jpg
+   Andrew-Woodward (male) - cellImage_955769308_22.jpg
+   Angela-Woodward (female) - cellImage_955769308_23.jpg
+   Melissa-Yee (female) - cellImage_955769308_24.jpg
+   Luis-Zapata (male) - cellImage_955769308_25.jpg
+   Melissa-Cox (female) - cellImage_955769308_3.jpg
+   Katy-Duffy-Sherr (female) - cellImage_955769308_4.jpg
+   Ari-Erman (male) - cellImage_955769308_5.jpg
+   Joslyn-Laran (female) - cellImage_955769308_6.jpg
+   Jared-Jamison (male) - cellImage_955769308_7.jpg
+   Bri-May (female) - cellImage_955769308_8.jpg
+   Ian-McCubbin (male) - cellImage_955769308_9.jpg
+
+🏆 SUBPARCELONA: 22 players
+   Gail-Benbow (female) - cellImage_164656542_0.jpg
+   Jeff-Benbow (male) - cellImage_164656542_1.jpg
+   Dion-Hock (male) - cellImage_164656542_10.jpg
+   Guillermo-Huicochea (male) - cellImage_164656542_11.jpg
+   Bryan-Huot (male) - cellImage_164656542_12.jpg
+   Laura-Huot (female) - cellImage_164656542_13.jpg
+   Tyson-Kane (male) - cellImage_164656542_14.jpg
+   Alan-Kaplan (male) - cellImage_164656542_15.jpg
+   Maggy-Kelly (female) - cellImage_164656542_16.jpg
+   Dominic-McKeown (male) - cellImage_164656542_17.jpg
+   Alex A-Movasseghi (male) - cellImage_164656542_18.jpg
+   Brad-Peterson (male) - cellImage_164656542_19.jpg
+   TJ-Cariaso (male) - cellImage_164656542_2.jpg
+   Sajid-Saleem (male) - cellImage_164656542_20.jpg
+   Dannika-Silvia (female) - cellImage_164656542_21.jpg
+   Mike-Douglas (male) - cellImage_164656542_3.jpg
+   Umut-Dulger (male) - cellImage_164656542_4.jpg
+   Patrick-Feng (male) - cellImage_164656542_5.jpg
+   Geraj Vinny Rajesh-Gersome Selvaraj (male) - cellImage_164656542_6.jpg
+   Cristofer-Gourtzelis (male) - cellImage_164656542_7.jpg
+   Diego-Gourtzelis (male) - cellImage_164656542_8.jpg
+   Jill-Haut (female) - cellImage_164656542_9.jpg

@@ -1,0 +1,3332 @@
+{
+  "cellImage_676128091_0.jpg": {
+    "player_name": "Luis-Alves",
+    "gender": "male",
+    "team_name": "Renegades",
+    "final_filename": "Luis-Alves-Renegades.jpg"
+  },
+  "cellImage_676128091_1.jpg": {
+    "player_name": "Igal-Bluvol",
+    "gender": "male",
+    "team_name": "Renegades",
+    "final_filename": "Igal-Bluvol-Renegades.jpg"
+  },
+  "cellImage_676128091_2.jpg": {
+    "player_name": "Matthew-Chen",
+    "gender": "male",
+    "team_name": "Renegades",
+    "final_filename": "Matthew-Chen-Renegades.jpg"
+  },
+  "cellImage_676128091_3.jpg": {
+    "player_name": "Michelle-Chen",
+    "gender": "female",
+    "team_name": "Renegades",
+    "final_filename": "Michelle-Chen-Renegades.jpg"
+  },
+  "cellImage_676128091_4.jpg": {
+    "player_name": "Luis-Coelho",
+    "gender": "male",
+    "team_name": "Renegades",
+    "final_filename": "Luis-Coelho-Renegades.jpg"
+  },
+  "cellImage_676128091_5.jpg": {
+    "player_name": "Paulo-Franca",
+    "gender": "male",
+    "team_name": "Renegades",
+    "final_filename": "Paulo-Franca-Renegades.jpg"
+  },
+  "cellImage_676128091_6.jpg": {
+    "player_name": "Darrin-Furukawa",
+    "gender": "male",
+    "team_name": "Renegades",
+    "final_filename": "Darrin-Furukawa-Renegades.jpg"
+  },
+  "cellImage_676128091_7.jpg": {
+    "player_name": "Jenna-Gabrio",
+    "gender": "female",
+    "team_name": "Renegades",
+    "final_filename": "Jenna-Gabrio-Renegades.jpg"
+  },
+  "cellImage_676128091_8.jpg": {
+    "player_name": "Cindy-Garavito",
+    "gender": "female",
+    "team_name": "Renegades",
+    "final_filename": "Cindy-Garavito-Renegades.jpg"
+  },
+  "cellImage_676128091_9.jpg": {
+    "player_name": "Oscar-Garavito",
+    "gender": "male",
+    "team_name": "Renegades",
+    "final_filename": "Oscar-Garavito-Renegades.jpg"
+  },
+  "cellImage_676128091_10.jpg": {
+    "player_name": "Jake-Jenkins",
+    "gender": "male",
+    "team_name": "Renegades",
+    "final_filename": "Jake-Jenkins-Renegades.jpg"
+  },
+  "cellImage_676128091_11.jpg": {
+    "player_name": "Jorge-Jeri",
+    "gender": "male",
+    "team_name": "Renegades",
+    "final_filename": "Jorge-Jeri-Renegades.jpg"
+  },
+  "cellImage_676128091_12.jpg": {
+    "player_name": "Kelly-Jones",
+    "gender": "male",
+    "team_name": "Renegades",
+    "final_filename": "Kelly-Jones-Renegades.jpg"
+  },
+  "cellImage_676128091_13.jpg": {
+    "player_name": "Robia-Llamas",
+    "gender": "female",
+    "team_name": "Renegades",
+    "final_filename": "Robia-Llamas-Renegades.jpg"
+  },
+  "cellImage_676128091_14.jpg": {
+    "player_name": "Elmer-Madriaga",
+    "gender": "male",
+    "team_name": "Renegades",
+    "final_filename": "Elmer-Madriaga-Renegades.jpg"
+  },
+  "cellImage_676128091_15.jpg": {
+    "player_name": "Gabrielle-Miller-Messner",
+    "gender": "female",
+    "team_name": "Renegades",
+    "final_filename": "Gabrielle-Miller-Messner-Renegades.jpg"
+  },
+  "cellImage_676128091_16.jpg": {
+    "player_name": "Neil-Mody",
+    "gender": "male",
+    "team_name": "Renegades",
+    "final_filename": "Neil-Mody-Renegades.jpg"
+  },
+  "cellImage_676128091_17.jpg": {
+    "player_name": "Nikki-Pritchett",
+    "gender": "female",
+    "team_name": "Renegades",
+    "final_filename": "Nikki-Pritchett-Renegades.jpg"
+  },
+  "cellImage_676128091_18.jpg": {
+    "player_name": "Biju-Srinivasan",
+    "gender": "male",
+    "team_name": "Renegades",
+    "final_filename": "Biju-Srinivasan-Renegades.jpg"
+  },
+  "cellImage_676128091_19.jpg": {
+    "player_name": "Megan-Tanti",
+    "gender": "female",
+    "team_name": "Renegades",
+    "final_filename": "Megan-Tanti-Renegades.jpg"
+  },
+  "cellImage_1705627521_0.jpg": {
+    "player_name": "Jose-Acosta",
+    "gender": "male",
+    "team_name": "Grass Stains",
+    "final_filename": "Jose-Acosta-Grass_Stains.jpg"
+  },
+  "cellImage_1705627521_1.jpg": {
+    "player_name": "Eli-Amezcua",
+    "gender": "male",
+    "team_name": "Grass Stains",
+    "final_filename": "Eli-Amezcua-Grass_Stains.jpg"
+  },
+  "cellImage_1705627521_2.jpg": {
+    "player_name": "Jasmine-Amezcua",
+    "gender": "female",
+    "team_name": "Grass Stains",
+    "final_filename": "Jasmine-Amezcua-Grass_Stains.jpg"
+  },
+  "cellImage_1705627521_3.jpg": {
+    "player_name": "Alejandro-Avila",
+    "gender": "male",
+    "team_name": "Grass Stains",
+    "final_filename": "Alejandro-Avila-Grass_Stains.jpg"
+  },
+  "cellImage_1705627521_4.jpg": {
+    "player_name": "Aaron-Berndt",
+    "gender": "male",
+    "team_name": "Grass Stains",
+    "final_filename": "Aaron-Berndt-Grass_Stains.jpg"
+  },
+  "cellImage_1705627521_5.jpg": {
+    "player_name": "Erick-Calva",
+    "gender": "male",
+    "team_name": "Grass Stains",
+    "final_filename": "Erick-Calva-Grass_Stains.jpg"
+  },
+  "cellImage_1705627521_6.jpg": {
+    "player_name": "Alex-Camarena",
+    "gender": "male",
+    "team_name": "Grass Stains",
+    "final_filename": "Alex-Camarena-Grass_Stains.jpg"
+  },
+  "cellImage_1705627521_7.jpg": {
+    "player_name": "Jon-Cerda",
+    "gender": "male",
+    "team_name": "Grass Stains",
+    "final_filename": "Jon-Cerda-Grass_Stains.jpg"
+  },
+  "cellImage_1705627521_8.jpg": {
+    "player_name": "Salvador-Cortez",
+    "gender": "male",
+    "team_name": "Grass Stains",
+    "final_filename": "Salvador-Cortez-Grass_Stains.jpg"
+  },
+  "cellImage_1705627521_9.jpg": {
+    "player_name": "Fabricio-Custodio",
+    "gender": "male",
+    "team_name": "Grass Stains",
+    "final_filename": "Fabricio-Custodio-Grass_Stains.jpg"
+  },
+  "cellImage_1705627521_10.jpg": {
+    "player_name": "Ella-Economos",
+    "gender": "female",
+    "team_name": "Grass Stains",
+    "final_filename": "Ella-Economos-Grass_Stains.jpg"
+  },
+  "cellImage_1705627521_11.jpg": {
+    "player_name": "Tori-Harding",
+    "gender": "female",
+    "team_name": "Grass Stains",
+    "final_filename": "Tori-Harding-Grass_Stains.jpg"
+  },
+  "cellImage_1705627521_12.jpg": {
+    "player_name": "Yvette-Jaimes",
+    "gender": "female",
+    "team_name": "Grass Stains",
+    "final_filename": "Yvette-Jaimes-Grass_Stains.jpg"
+  },
+  "cellImage_1705627521_13.jpg": {
+    "player_name": "Andrew-Kiland",
+    "gender": "male",
+    "team_name": "Grass Stains",
+    "final_filename": "Andrew-Kiland-Grass_Stains.jpg"
+  },
+  "cellImage_1705627521_14.jpg": {
+    "player_name": "Danny-Lopez",
+    "gender": "male",
+    "team_name": "Grass Stains",
+    "final_filename": "Danny-Lopez-Grass_Stains.jpg"
+  },
+  "cellImage_1705627521_15.jpg": {
+    "player_name": "Claudia-Macias Flores",
+    "gender": "female",
+    "team_name": "Grass Stains",
+    "final_filename": "Claudia-Macias Flores-Grass_Stains.jpg"
+  },
+  "cellImage_1705627521_16.jpg": {
+    "player_name": "Adrian-Ortiz",
+    "gender": "male",
+    "team_name": "Grass Stains",
+    "final_filename": "Adrian-Ortiz-Grass_Stains.jpg"
+  },
+  "cellImage_1705627521_17.jpg": {
+    "player_name": "Benicio-Suarez",
+    "gender": "male",
+    "team_name": "Grass Stains",
+    "final_filename": "Benicio-Suarez-Grass_Stains.jpg"
+  },
+  "cellImage_1705627521_18.jpg": {
+    "player_name": "Jessica-Umscheid",
+    "gender": "female",
+    "team_name": "Grass Stains",
+    "final_filename": "Jessica-Umscheid-Grass_Stains.jpg"
+  },
+  "cellImage_1705627521_19.jpg": {
+    "player_name": "Hector-Vega",
+    "gender": "male",
+    "team_name": "Grass Stains",
+    "final_filename": "Hector-Vega-Grass_Stains.jpg"
+  },
+  "cellImage_1705627521_20.jpg": {
+    "player_name": "Elias-Venegas",
+    "gender": "male",
+    "team_name": "Grass Stains",
+    "final_filename": "Elias-Venegas-Grass_Stains.jpg"
+  },
+  "cellImage_1031126922_0.jpg": {
+    "player_name": "Kristina-Alvarez",
+    "gender": "female",
+    "team_name": "Shin Splints United",
+    "final_filename": "Kristina-Alvarez-Shin_Splints_United.jpg"
+  },
+  "cellImage_1031126922_1.jpg": {
+    "player_name": "Priscilla-Alvarez",
+    "gender": "female",
+    "team_name": "Shin Splints United",
+    "final_filename": "Priscilla-Alvarez-Shin_Splints_United.jpg"
+  },
+  "cellImage_1031126922_2.jpg": {
+    "player_name": "Kevin-Andrade",
+    "gender": "male",
+    "team_name": "Shin Splints United",
+    "final_filename": "Kevin-Andrade-Shin_Splints_United.jpg"
+  },
+  "cellImage_1031126922_3.jpg": {
+    "player_name": "Laurel-Bakiskan",
+    "gender": "female",
+    "team_name": "Shin Splints United",
+    "final_filename": "Laurel-Bakiskan-Shin_Splints_United.jpg"
+  },
+  "cellImage_1031126922_4.jpg": {
+    "player_name": "Maria-Camacho",
+    "gender": "female",
+    "team_name": "Shin Splints United",
+    "final_filename": "Maria-Camacho-Shin_Splints_United.jpg"
+  },
+  "cellImage_1031126922_5.jpg": {
+    "player_name": "Andrew-Covel",
+    "gender": "male",
+    "team_name": "Shin Splints United",
+    "final_filename": "Andrew-Covel-Shin_Splints_United.jpg"
+  },
+  "cellImage_1031126922_6.jpg": {
+    "player_name": "Jocelyn-Figueroa",
+    "gender": "female",
+    "team_name": "Shin Splints United",
+    "final_filename": "Jocelyn-Figueroa-Shin_Splints_United.jpg"
+  },
+  "cellImage_1031126922_7.jpg": {
+    "player_name": "Rene-Hernandez",
+    "gender": "male",
+    "team_name": "Shin Splints United",
+    "final_filename": "Rene-Hernandez-Shin_Splints_United.jpg"
+  },
+  "cellImage_1031126922_8.jpg": {
+    "player_name": "Julia-Holden",
+    "gender": "female",
+    "team_name": "Shin Splints United",
+    "final_filename": "Julia-Holden-Shin_Splints_United.jpg"
+  },
+  "cellImage_1031126922_9.jpg": {
+    "player_name": "Scott-Huang",
+    "gender": "male",
+    "team_name": "Shin Splints United",
+    "final_filename": "Scott-Huang-Shin_Splints_United.jpg"
+  },
+  "cellImage_1031126922_10.jpg": {
+    "player_name": "Lindsey-Linford",
+    "gender": "female",
+    "team_name": "Shin Splints United",
+    "final_filename": "Lindsey-Linford-Shin_Splints_United.jpg"
+  },
+  "cellImage_1031126922_11.jpg": {
+    "player_name": "Samantha-Linford",
+    "gender": "female",
+    "team_name": "Shin Splints United",
+    "final_filename": "Samantha-Linford-Shin_Splints_United.jpg"
+  },
+  "cellImage_1031126922_12.jpg": {
+    "player_name": "Joseph-Paredes",
+    "gender": "male",
+    "team_name": "Shin Splints United",
+    "final_filename": "Joseph-Paredes-Shin_Splints_United.jpg"
+  },
+  "cellImage_1031126922_13.jpg": {
+    "player_name": "Elio-Sanabria",
+    "gender": "male",
+    "team_name": "Shin Splints United",
+    "final_filename": "Elio-Sanabria-Shin_Splints_United.jpg"
+  },
+  "cellImage_1031126922_14.jpg": {
+    "player_name": "William-Shaddix",
+    "gender": "male",
+    "team_name": "Shin Splints United",
+    "final_filename": "William-Shaddix-Shin_Splints_United.jpg"
+  },
+  "cellImage_1031126922_15.jpg": {
+    "player_name": "Vance-Speed",
+    "gender": "male",
+    "team_name": "Shin Splints United",
+    "final_filename": "Vance-Speed-Shin_Splints_United.jpg"
+  },
+  "cellImage_1047660690_0.jpg": {
+    "player_name": "Armando-Carmona",
+    "gender": "male",
+    "team_name": "Perezosos F.C.",
+    "final_filename": "Armando-Carmona-Perezosos_F.C..jpg"
+  },
+  "cellImage_1047660690_1.jpg": {
+    "player_name": "Jeffrey-Bui",
+    "gender": "male",
+    "team_name": "Perezosos F.C.",
+    "final_filename": "Jeffrey-Bui-Perezosos_F.C..jpg"
+  },
+  "cellImage_1047660690_2.jpg": {
+    "player_name": "Ana-Carmona Morales",
+    "gender": "female",
+    "team_name": "Perezosos F.C.",
+    "final_filename": "Ana-Carmona Morales-Perezosos_F.C..jpg"
+  },
+  "cellImage_1047660690_3.jpg": {
+    "player_name": "Jennifer-Caro",
+    "gender": "female",
+    "team_name": "Perezosos F.C.",
+    "final_filename": "Jennifer-Caro-Perezosos_F.C..jpg"
+  },
+  "cellImage_1047660690_4.jpg": {
+    "player_name": "Curtis-Crittendon",
+    "gender": "male",
+    "team_name": "Perezosos F.C.",
+    "final_filename": "Curtis-Crittendon-Perezosos_F.C..jpg"
+  },
+  "cellImage_1047660690_5.jpg": {
+    "player_name": "Karina-De Jesus",
+    "gender": "female",
+    "team_name": "Perezosos F.C.",
+    "final_filename": "Karina-De Jesus-Perezosos_F.C..jpg"
+  },
+  "cellImage_1047660690_6.jpg": {
+    "player_name": "Tania-Espejo",
+    "gender": "female",
+    "team_name": "Perezosos F.C.",
+    "final_filename": "Tania-Espejo-Perezosos_F.C..jpg"
+  },
+  "cellImage_1047660690_7.jpg": {
+    "player_name": "Edgar-Gutierrez",
+    "gender": "male",
+    "team_name": "Perezosos F.C.",
+    "final_filename": "Edgar-Gutierrez-Perezosos_F.C..jpg"
+  },
+  "cellImage_1047660690_8.jpg": {
+    "player_name": "Madeleine-Hernandez",
+    "gender": "female",
+    "team_name": "Perezosos F.C.",
+    "final_filename": "Madeleine-Hernandez-Perezosos_F.C..jpg"
+  },
+  "cellImage_1047660690_9.jpg": {
+    "player_name": "Edmundo-Juarez Gomez",
+    "gender": "male",
+    "team_name": "Perezosos F.C.",
+    "final_filename": "Edmundo-Juarez Gomez-Perezosos_F.C..jpg"
+  },
+  "cellImage_1047660690_10.jpg": {
+    "player_name": "Jami-Marcoe",
+    "gender": "female",
+    "team_name": "Perezosos F.C.",
+    "final_filename": "Jami-Marcoe-Perezosos_F.C..jpg"
+  },
+  "cellImage_1047660690_11.jpg": {
+    "player_name": "Diego-Mejia",
+    "gender": "male",
+    "team_name": "Perezosos F.C.",
+    "final_filename": "Diego-Mejia-Perezosos_F.C..jpg"
+  },
+  "cellImage_1047660690_12.jpg": {
+    "player_name": "Ulises-Mora",
+    "gender": "male",
+    "team_name": "Perezosos F.C.",
+    "final_filename": "Ulises-Mora-Perezosos_F.C..jpg"
+  },
+  "cellImage_1047660690_13.jpg": {
+    "player_name": "Uriel-Moreno",
+    "gender": "male",
+    "team_name": "Perezosos F.C.",
+    "final_filename": "Uriel-Moreno-Perezosos_F.C..jpg"
+  },
+  "cellImage_1047660690_14.jpg": {
+    "player_name": "Paul-Ortiz",
+    "gender": "male",
+    "team_name": "Perezosos F.C.",
+    "final_filename": "Paul-Ortiz-Perezosos_F.C..jpg"
+  },
+  "cellImage_1047660690_15.jpg": {
+    "player_name": "Humberto-Ramos",
+    "gender": "male",
+    "team_name": "Perezosos F.C.",
+    "final_filename": "Humberto-Ramos-Perezosos_F.C..jpg"
+  },
+  "cellImage_1047660690_16.jpg": {
+    "player_name": "Armando-Rangel",
+    "gender": "male",
+    "team_name": "Perezosos F.C.",
+    "final_filename": "Armando-Rangel-Perezosos_F.C..jpg"
+  },
+  "cellImage_1047660690_17.jpg": {
+    "player_name": "Christina-Rangel",
+    "gender": "female",
+    "team_name": "Perezosos F.C.",
+    "final_filename": "Christina-Rangel-Perezosos_F.C..jpg"
+  },
+  "cellImage_1047660690_18.jpg": {
+    "player_name": "Erick-Rangel",
+    "gender": "male",
+    "team_name": "Perezosos F.C.",
+    "final_filename": "Erick-Rangel-Perezosos_F.C..jpg"
+  },
+  "cellImage_1047660690_19.jpg": {
+    "player_name": "Janet-Rangel-Galicia",
+    "gender": "female",
+    "team_name": "Perezosos F.C.",
+    "final_filename": "Janet-Rangel-Galicia-Perezosos_F.C..jpg"
+  },
+  "cellImage_1047660690_20.jpg": {
+    "player_name": "Aldo-Reyes",
+    "gender": "male",
+    "team_name": "Perezosos F.C.",
+    "final_filename": "Aldo-Reyes-Perezosos_F.C..jpg"
+  },
+  "cellImage_1047660690_21.jpg": {
+    "player_name": "Claudia-Reyes",
+    "gender": "female",
+    "team_name": "Perezosos F.C.",
+    "final_filename": "Claudia-Reyes-Perezosos_F.C..jpg"
+  },
+  "cellImage_1047660690_22.jpg": {
+    "player_name": "Noe-Reyes",
+    "gender": "male",
+    "team_name": "Perezosos F.C.",
+    "final_filename": "Noe-Reyes-Perezosos_F.C..jpg"
+  },
+  "cellImage_1047660690_23.jpg": {
+    "player_name": "Anahi-Rojas",
+    "gender": "female",
+    "team_name": "Perezosos F.C.",
+    "final_filename": "Anahi-Rojas-Perezosos_F.C..jpg"
+  },
+  "cellImage_1047660690_24.jpg": {
+    "player_name": "Gloria-Roman",
+    "gender": "female",
+    "team_name": "Perezosos F.C.",
+    "final_filename": "Gloria-Roman-Perezosos_F.C..jpg"
+  },
+  "cellImage_1047660690_25.jpg": {
+    "player_name": "Christina-Vasquez",
+    "gender": "female",
+    "team_name": "Perezosos F.C.",
+    "final_filename": "Christina-Vasquez-Perezosos_F.C..jpg"
+  },
+  "cellImage_551928764_0.jpg": {
+    "player_name": "Edgar-Alas",
+    "gender": "male",
+    "team_name": "KR3W",
+    "final_filename": "Edgar-Alas-KR3W.jpg"
+  },
+  "cellImage_551928764_1.jpg": {
+    "player_name": "Blake-Beede",
+    "gender": "male",
+    "team_name": "KR3W",
+    "final_filename": "Blake-Beede-KR3W.jpg"
+  },
+  "cellImage_551928764_2.jpg": {
+    "player_name": "Daisy-Acosta",
+    "gender": "female",
+    "team_name": "KR3W",
+    "final_filename": "Daisy-Acosta-KR3W.jpg"
+  },
+  "cellImage_551928764_3.jpg": {
+    "player_name": "Jessica-Hayes",
+    "gender": "female",
+    "team_name": "KR3W",
+    "final_filename": "Jessica-Hayes-KR3W.jpg"
+  },
+  "cellImage_551928764_4.jpg": {
+    "player_name": "Shane-Henninger",
+    "gender": "male",
+    "team_name": "KR3W",
+    "final_filename": "Shane-Henninger-KR3W.jpg"
+  },
+  "cellImage_551928764_5.jpg": {
+    "player_name": "Connor-Hodges",
+    "gender": "male",
+    "team_name": "KR3W",
+    "final_filename": "Connor-Hodges-KR3W.jpg"
+  },
+  "cellImage_551928764_6.jpg": {
+    "player_name": "Octavio-Morales",
+    "gender": "male",
+    "team_name": "KR3W",
+    "final_filename": "Octavio-Morales-KR3W.jpg"
+  },
+  "cellImage_551928764_7.jpg": {
+    "player_name": "Rudi-Moreno",
+    "gender": "male",
+    "team_name": "KR3W",
+    "final_filename": "Rudi-Moreno-KR3W.jpg"
+  },
+  "cellImage_551928764_8.jpg": {
+    "player_name": "Sofi-Naprawa",
+    "gender": "female",
+    "team_name": "KR3W",
+    "final_filename": "Sofi-Naprawa-KR3W.jpg"
+  },
+  "cellImage_551928764_9.jpg": {
+    "player_name": "Ariana-Nino",
+    "gender": "female",
+    "team_name": "KR3W",
+    "final_filename": "Ariana-Nino-KR3W.jpg"
+  },
+  "cellImage_551928764_10.jpg": {
+    "player_name": "Allan-Ospina",
+    "gender": "male",
+    "team_name": "KR3W",
+    "final_filename": "Allan-Ospina-KR3W.jpg"
+  },
+  "cellImage_551928764_11.jpg": {
+    "player_name": "Ann-Peterson",
+    "gender": "female",
+    "team_name": "KR3W",
+    "final_filename": "Ann-Peterson-KR3W.jpg"
+  },
+  "cellImage_551928764_12.jpg": {
+    "player_name": "Manuel-Portillo",
+    "gender": "male",
+    "team_name": "KR3W",
+    "final_filename": "Manuel-Portillo-KR3W.jpg"
+  },
+  "cellImage_551928764_13.jpg": {
+    "player_name": "Eduardo-Reyes",
+    "gender": "male",
+    "team_name": "KR3W",
+    "final_filename": "Eduardo-Reyes-KR3W.jpg"
+  },
+  "cellImage_551928764_14.jpg": {
+    "player_name": "Igor-Sak",
+    "gender": "male",
+    "team_name": "KR3W",
+    "final_filename": "Igor-Sak-KR3W.jpg"
+  },
+  "cellImage_551928764_15.jpg": {
+    "player_name": "Dane-Shaffar",
+    "gender": "male",
+    "team_name": "KR3W",
+    "final_filename": "Dane-Shaffar-KR3W.jpg"
+  },
+  "cellImage_551928764_16.jpg": {
+    "player_name": "Ernesto-Solis",
+    "gender": "male",
+    "team_name": "KR3W",
+    "final_filename": "Ernesto-Solis-KR3W.jpg"
+  },
+  "cellImage_551928764_17.jpg": {
+    "player_name": "Natasha-Springer",
+    "gender": "female",
+    "team_name": "KR3W",
+    "final_filename": "Natasha-Springer-KR3W.jpg"
+  },
+  "cellImage_551928764_18.jpg": {
+    "player_name": "James-Stover",
+    "gender": "male",
+    "team_name": "KR3W",
+    "final_filename": "James-Stover-KR3W.jpg"
+  },
+  "cellImage_551928764_19.jpg": {
+    "player_name": "Michael-Torino",
+    "gender": "male",
+    "team_name": "KR3W",
+    "final_filename": "Michael-Torino-KR3W.jpg"
+  },
+  "cellImage_551928764_20.jpg": {
+    "player_name": "Brandon-Villalpando",
+    "gender": "male",
+    "team_name": "KR3W",
+    "final_filename": "Brandon-Villalpando-KR3W.jpg"
+  },
+  "cellImage_551928764_21.jpg": {
+    "player_name": "Manny-Vizcarra",
+    "gender": "male",
+    "team_name": "KR3W",
+    "final_filename": "Manny-Vizcarra-KR3W.jpg"
+  },
+  "cellImage_2055007842_0.jpg": {
+    "player_name": "John-Aisien",
+    "gender": "male",
+    "team_name": "Ol'Limpians",
+    "final_filename": "John-Aisien-Ol'Limpians.jpg"
+  },
+  "cellImage_2055007842_1.jpg": {
+    "player_name": "Kelly-Bair",
+    "gender": "female",
+    "team_name": "Ol'Limpians",
+    "final_filename": "Kelly-Bair-Ol'Limpians.jpg"
+  },
+  "cellImage_2055007842_2.jpg": {
+    "player_name": "Kristen-Balch",
+    "gender": "female",
+    "team_name": "Ol'Limpians",
+    "final_filename": "Kristen-Balch-Ol'Limpians.jpg"
+  },
+  "cellImage_2055007842_3.jpg": {
+    "player_name": "Julie-Barr",
+    "gender": "female",
+    "team_name": "Ol'Limpians",
+    "final_filename": "Julie-Barr-Ol'Limpians.jpg"
+  },
+  "cellImage_2055007842_4.jpg": {
+    "player_name": "Elizabeth-Baxter",
+    "gender": "female",
+    "team_name": "Ol'Limpians",
+    "final_filename": "Elizabeth-Baxter-Ol'Limpians.jpg"
+  },
+  "cellImage_2055007842_5.jpg": {
+    "player_name": "Ian-Buggs",
+    "gender": "male",
+    "team_name": "Ol'Limpians",
+    "final_filename": "Ian-Buggs-Ol'Limpians.jpg"
+  },
+  "cellImage_2055007842_6.jpg": {
+    "player_name": "Whitney-Clark",
+    "gender": "female",
+    "team_name": "Ol'Limpians",
+    "final_filename": "Whitney-Clark-Ol'Limpians.jpg"
+  },
+  "cellImage_2055007842_7.jpg": {
+    "player_name": "Lionel-Gentil",
+    "gender": "male",
+    "team_name": "Ol'Limpians",
+    "final_filename": "Lionel-Gentil-Ol'Limpians.jpg"
+  },
+  "cellImage_2055007842_8.jpg": {
+    "player_name": "Mark-Hjerpe",
+    "gender": "male",
+    "team_name": "Ol'Limpians",
+    "final_filename": "Mark-Hjerpe-Ol'Limpians.jpg"
+  },
+  "cellImage_2055007842_9.jpg": {
+    "player_name": "Angela-Holstrom",
+    "gender": "female",
+    "team_name": "Ol'Limpians",
+    "final_filename": "Angela-Holstrom-Ol'Limpians.jpg"
+  },
+  "cellImage_2055007842_10.jpg": {
+    "player_name": "Patty-Hough",
+    "gender": "female",
+    "team_name": "Ol'Limpians",
+    "final_filename": "Patty-Hough-Ol'Limpians.jpg"
+  },
+  "cellImage_2055007842_11.jpg": {
+    "player_name": "James-Jones",
+    "gender": "male",
+    "team_name": "Ol'Limpians",
+    "final_filename": "James-Jones-Ol'Limpians.jpg"
+  },
+  "cellImage_2055007842_12.jpg": {
+    "player_name": "Anchalee-Kunnaragthai",
+    "gender": "female",
+    "team_name": "Ol'Limpians",
+    "final_filename": "Anchalee-Kunnaragthai-Ol'Limpians.jpg"
+  },
+  "cellImage_2055007842_13.jpg": {
+    "player_name": "Andrew-Lamirand",
+    "gender": "male",
+    "team_name": "Ol'Limpians",
+    "final_filename": "Andrew-Lamirand-Ol'Limpians.jpg"
+  },
+  "cellImage_2055007842_14.jpg": {
+    "player_name": "Andrew-Li",
+    "gender": "male",
+    "team_name": "Ol'Limpians",
+    "final_filename": "Andrew-Li-Ol'Limpians.jpg"
+  },
+  "cellImage_2055007842_15.jpg": {
+    "player_name": "Shawn-McHugh",
+    "gender": "male",
+    "team_name": "Ol'Limpians",
+    "final_filename": "Shawn-McHugh-Ol'Limpians.jpg"
+  },
+  "cellImage_2055007842_16.jpg": {
+    "player_name": "Wendy-McHugh",
+    "gender": "female",
+    "team_name": "Ol'Limpians",
+    "final_filename": "Wendy-McHugh-Ol'Limpians.jpg"
+  },
+  "cellImage_2055007842_17.jpg": {
+    "player_name": "Russell-Mansky",
+    "gender": "male",
+    "team_name": "Ol'Limpians",
+    "final_filename": "Russell-Mansky-Ol'Limpians.jpg"
+  },
+  "cellImage_2055007842_18.jpg": {
+    "player_name": "Tara-Mansky",
+    "gender": "female",
+    "team_name": "Ol'Limpians",
+    "final_filename": "Tara-Mansky-Ol'Limpians.jpg"
+  },
+  "cellImage_2055007842_19.jpg": {
+    "player_name": "Natalie-Mattei",
+    "gender": "female",
+    "team_name": "Ol'Limpians",
+    "final_filename": "Natalie-Mattei-Ol'Limpians.jpg"
+  },
+  "cellImage_2055007842_20.jpg": {
+    "player_name": "Mike-Montoya",
+    "gender": "male",
+    "team_name": "Ol'Limpians",
+    "final_filename": "Mike-Montoya-Ol'Limpians.jpg"
+  },
+  "cellImage_2055007842_21.jpg": {
+    "player_name": "Megan-Murphy",
+    "gender": "female",
+    "team_name": "Ol'Limpians",
+    "final_filename": "Megan-Murphy-Ol'Limpians.jpg"
+  },
+  "cellImage_2055007842_22.jpg": {
+    "player_name": "Lauren-Nelson",
+    "gender": "female",
+    "team_name": "Ol'Limpians",
+    "final_filename": "Lauren-Nelson-Ol'Limpians.jpg"
+  },
+  "cellImage_2055007842_23.jpg": {
+    "player_name": "Jim-Nicholas",
+    "gender": "male",
+    "team_name": "Ol'Limpians",
+    "final_filename": "Jim-Nicholas-Ol'Limpians.jpg"
+  },
+  "cellImage_2055007842_24.jpg": {
+    "player_name": "Paul-Rosso",
+    "gender": "male",
+    "team_name": "Ol'Limpians",
+    "final_filename": "Paul-Rosso-Ol'Limpians.jpg"
+  },
+  "cellImage_2055007842_25.jpg": {
+    "player_name": "Jon-Skye",
+    "gender": "male",
+    "team_name": "Ol'Limpians",
+    "final_filename": "Jon-Skye-Ol'Limpians.jpg"
+  },
+  "cellImage_2055007842_26.jpg": {
+    "player_name": "Oscar-Vazquez",
+    "gender": "male",
+    "team_name": "Ol'Limpians",
+    "final_filename": "Oscar-Vazquez-Ol'Limpians.jpg"
+  },
+  "cellImage_57314377_0.jpg": {
+    "player_name": "Patricia-Arsenault",
+    "gender": "female",
+    "team_name": "Spartans",
+    "final_filename": "Patricia-Arsenault-Spartans.jpg"
+  },
+  "cellImage_57314377_1.jpg": {
+    "player_name": "Alex-Arsenault",
+    "gender": "male",
+    "team_name": "Spartans",
+    "final_filename": "Alex-Arsenault-Spartans.jpg"
+  },
+  "cellImage_57314377_2.jpg": {
+    "player_name": "Christina-Cefalo",
+    "gender": "female",
+    "team_name": "Spartans",
+    "final_filename": "Christina-Cefalo-Spartans.jpg"
+  },
+  "cellImage_57314377_3.jpg": {
+    "player_name": "Michael-Corritone",
+    "gender": "male",
+    "team_name": "Spartans",
+    "final_filename": "Michael-Corritone-Spartans.jpg"
+  },
+  "cellImage_57314377_4.jpg": {
+    "player_name": "David-DeWitt",
+    "gender": "male",
+    "team_name": "Spartans",
+    "final_filename": "David-DeWitt-Spartans.jpg"
+  },
+  "cellImage_57314377_5.jpg": {
+    "player_name": "Meng Yu Ben-Eeo",
+    "gender": "male",
+    "team_name": "Spartans",
+    "final_filename": "Meng Yu Ben-Eeo-Spartans.jpg"
+  },
+  "cellImage_57314377_6.jpg": {
+    "player_name": "Megan-Grassi",
+    "gender": "female",
+    "team_name": "Spartans",
+    "final_filename": "Megan-Grassi-Spartans.jpg"
+  },
+  "cellImage_57314377_7.jpg": {
+    "player_name": "Rachel-Karkazis",
+    "gender": "female",
+    "team_name": "Spartans",
+    "final_filename": "Rachel-Karkazis-Spartans.jpg"
+  },
+  "cellImage_57314377_8.jpg": {
+    "player_name": "Elizabeth-King",
+    "gender": "female",
+    "team_name": "Spartans",
+    "final_filename": "Elizabeth-King-Spartans.jpg"
+  },
+  "cellImage_57314377_9.jpg": {
+    "player_name": "Jeff-King",
+    "gender": "male",
+    "team_name": "Spartans",
+    "final_filename": "Jeff-King-Spartans.jpg"
+  },
+  "cellImage_57314377_10.jpg": {
+    "player_name": "Anthony-Maddalon",
+    "gender": "male",
+    "team_name": "Spartans",
+    "final_filename": "Anthony-Maddalon-Spartans.jpg"
+  },
+  "cellImage_57314377_11.jpg": {
+    "player_name": "Gustavo-Manrique",
+    "gender": "male",
+    "team_name": "Spartans",
+    "final_filename": "Gustavo-Manrique-Spartans.jpg"
+  },
+  "cellImage_57314377_12.jpg": {
+    "player_name": "Roberto-Manrique",
+    "gender": "male",
+    "team_name": "Spartans",
+    "final_filename": "Roberto-Manrique-Spartans.jpg"
+  },
+  "cellImage_57314377_13.jpg": {
+    "player_name": "Avery-Mast",
+    "gender": "female",
+    "team_name": "Spartans",
+    "final_filename": "Avery-Mast-Spartans.jpg"
+  },
+  "cellImage_57314377_14.jpg": {
+    "player_name": "Veronica-Medina",
+    "gender": "female",
+    "team_name": "Spartans",
+    "final_filename": "Veronica-Medina-Spartans.jpg"
+  },
+  "cellImage_57314377_15.jpg": {
+    "player_name": "Jill-Motta",
+    "gender": "female",
+    "team_name": "Spartans",
+    "final_filename": "Jill-Motta-Spartans.jpg"
+  },
+  "cellImage_57314377_16.jpg": {
+    "player_name": "Daniel-Osei",
+    "gender": "male",
+    "team_name": "Spartans",
+    "final_filename": "Daniel-Osei-Spartans.jpg"
+  },
+  "cellImage_57314377_17.jpg": {
+    "player_name": "Melissa-Pizzo",
+    "gender": "female",
+    "team_name": "Spartans",
+    "final_filename": "Melissa-Pizzo-Spartans.jpg"
+  },
+  "cellImage_57314377_18.jpg": {
+    "player_name": "Ernie-Rodgers",
+    "gender": "male",
+    "team_name": "Spartans",
+    "final_filename": "Ernie-Rodgers-Spartans.jpg"
+  },
+  "cellImage_57314377_19.jpg": {
+    "player_name": "Noel-Rodgers",
+    "gender": "female",
+    "team_name": "Spartans",
+    "final_filename": "Noel-Rodgers-Spartans.jpg"
+  },
+  "cellImage_57314377_20.jpg": {
+    "player_name": "Christy-Silvanic",
+    "gender": "female",
+    "team_name": "Spartans",
+    "final_filename": "Christy-Silvanic-Spartans.jpg"
+  },
+  "cellImage_57314377_21.jpg": {
+    "player_name": "Tegan-Tinoco",
+    "gender": "female",
+    "team_name": "Spartans",
+    "final_filename": "Tegan-Tinoco-Spartans.jpg"
+  },
+  "cellImage_57314377_22.jpg": {
+    "player_name": "Mike-Voelker",
+    "gender": "male",
+    "team_name": "Spartans",
+    "final_filename": "Mike-Voelker-Spartans.jpg"
+  },
+  "cellImage_57314377_23.jpg": {
+    "player_name": "Steven-Volking",
+    "gender": "male",
+    "team_name": "Spartans",
+    "final_filename": "Steven-Volking-Spartans.jpg"
+  },
+  "cellImage_57314377_24.jpg": {
+    "player_name": "Jerry-Walker",
+    "gender": "male",
+    "team_name": "Spartans",
+    "final_filename": "Jerry-Walker-Spartans.jpg"
+  },
+  "cellImage_57314377_25.jpg": {
+    "player_name": "Justin-Walton",
+    "gender": "male",
+    "team_name": "Spartans",
+    "final_filename": "Justin-Walton-Spartans.jpg"
+  },
+  "cellImage_1081231751_0.jpg": {
+    "player_name": "Brandon-Aviles",
+    "gender": "male",
+    "team_name": "BenchWarmers",
+    "final_filename": "Brandon-Aviles-BenchWarmers.jpg"
+  },
+  "cellImage_1081231751_1.jpg": {
+    "player_name": "Gokhan-Ates",
+    "gender": "male",
+    "team_name": "BenchWarmers",
+    "final_filename": "Gokhan-Ates-BenchWarmers.jpg"
+  },
+  "cellImage_1081231751_2.jpg": {
+    "player_name": "Sanjeeb-Bose",
+    "gender": "male",
+    "team_name": "BenchWarmers",
+    "final_filename": "Sanjeeb-Bose-BenchWarmers.jpg"
+  },
+  "cellImage_1081231751_3.jpg": {
+    "player_name": "Luke-Boynton",
+    "gender": "male",
+    "team_name": "BenchWarmers",
+    "final_filename": "Luke-Boynton-BenchWarmers.jpg"
+  },
+  "cellImage_1081231751_4.jpg": {
+    "player_name": "Junior-Castillo Martinez",
+    "gender": "male",
+    "team_name": "BenchWarmers",
+    "final_filename": "Junior-Castillo Martinez-BenchWarmers.jpg"
+  },
+  "cellImage_1081231751_5.jpg": {
+    "player_name": "Liam-Corcoran",
+    "gender": "male",
+    "team_name": "BenchWarmers",
+    "final_filename": "Liam-Corcoran-BenchWarmers.jpg"
+  },
+  "cellImage_1081231751_6.jpg": {
+    "player_name": "Taylor-Cortezzo",
+    "gender": "female",
+    "team_name": "BenchWarmers",
+    "final_filename": "Taylor-Cortezzo-BenchWarmers.jpg"
+  },
+  "cellImage_1081231751_7.jpg": {
+    "player_name": "Stephen-Crook",
+    "gender": "male",
+    "team_name": "BenchWarmers",
+    "final_filename": "Stephen-Crook-BenchWarmers.jpg"
+  },
+  "cellImage_1081231751_8.jpg": {
+    "player_name": "Leslie-Dominguez Maciel",
+    "gender": "female",
+    "team_name": "BenchWarmers",
+    "final_filename": "Leslie-Dominguez Maciel-BenchWarmers.jpg"
+  },
+  "cellImage_1081231751_9.jpg": {
+    "player_name": "Domonic-Faulk",
+    "gender": "male",
+    "team_name": "BenchWarmers",
+    "final_filename": "Domonic-Faulk-BenchWarmers.jpg"
+  },
+  "cellImage_1081231751_10.jpg": {
+    "player_name": "Alexis-Gonzalez",
+    "gender": "male",
+    "team_name": "BenchWarmers",
+    "final_filename": "Alexis-Gonzalez-BenchWarmers.jpg"
+  },
+  "cellImage_1081231751_11.jpg": {
+    "player_name": "Samuel-Hui",
+    "gender": "male",
+    "team_name": "BenchWarmers",
+    "final_filename": "Samuel-Hui-BenchWarmers.jpg"
+  },
+  "cellImage_1081231751_12.jpg": {
+    "player_name": "Adam-Irino",
+    "gender": "male",
+    "team_name": "BenchWarmers",
+    "final_filename": "Adam-Irino-BenchWarmers.jpg"
+  },
+  "cellImage_1081231751_13.jpg": {
+    "player_name": "Ryan-Jackson",
+    "gender": "male",
+    "team_name": "BenchWarmers",
+    "final_filename": "Ryan-Jackson-BenchWarmers.jpg"
+  },
+  "cellImage_1081231751_14.jpg": {
+    "player_name": "Mazen-Jaouni",
+    "gender": "male",
+    "team_name": "BenchWarmers",
+    "final_filename": "Mazen-Jaouni-BenchWarmers.jpg"
+  },
+  "cellImage_1081231751_15.jpg": {
+    "player_name": "Tyson-Kane",
+    "gender": "male",
+    "team_name": "BenchWarmers",
+    "final_filename": "Tyson-Kane-BenchWarmers.jpg"
+  },
+  "cellImage_1081231751_16.jpg": {
+    "player_name": "Halleigh-Macpherson",
+    "gender": "female",
+    "team_name": "BenchWarmers",
+    "final_filename": "Halleigh-Macpherson-BenchWarmers.jpg"
+  },
+  "cellImage_1081231751_17.jpg": {
+    "player_name": "Bryan-Martinez",
+    "gender": "male",
+    "team_name": "BenchWarmers",
+    "final_filename": "Bryan-Martinez-BenchWarmers.jpg"
+  },
+  "cellImage_1081231751_18.jpg": {
+    "player_name": "Andrew-Mondello",
+    "gender": "male",
+    "team_name": "BenchWarmers",
+    "final_filename": "Andrew-Mondello-BenchWarmers.jpg"
+  },
+  "cellImage_129061384_0.jpg": {
+    "player_name": "Kat-Barclay",
+    "gender": "female",
+    "team_name": "Goal Diggers",
+    "final_filename": "Kat-Barclay-Goal_Diggers.jpg"
+  },
+  "cellImage_129061384_1.jpg": {
+    "player_name": "Gail-Boyd",
+    "gender": "female",
+    "team_name": "Goal Diggers",
+    "final_filename": "Gail-Boyd-Goal_Diggers.jpg"
+  },
+  "cellImage_129061384_2.jpg": {
+    "player_name": "Mary-Carter",
+    "gender": "female",
+    "team_name": "Goal Diggers",
+    "final_filename": "Mary-Carter-Goal_Diggers.jpg"
+  },
+  "cellImage_129061384_3.jpg": {
+    "player_name": "Erica-Dewberry",
+    "gender": "female",
+    "team_name": "Goal Diggers",
+    "final_filename": "Erica-Dewberry-Goal_Diggers.jpg"
+  },
+  "cellImage_129061384_4.jpg": {
+    "player_name": "Kimberly-Fernandez",
+    "gender": "female",
+    "team_name": "Goal Diggers",
+    "final_filename": "Kimberly-Fernandez-Goal_Diggers.jpg"
+  },
+  "cellImage_129061384_5.jpg": {
+    "player_name": "Ashley-Grenier",
+    "gender": "female",
+    "team_name": "Goal Diggers",
+    "final_filename": "Ashley-Grenier-Goal_Diggers.jpg"
+  },
+  "cellImage_129061384_6.jpg": {
+    "player_name": "Allison-Hallas",
+    "gender": "female",
+    "team_name": "Goal Diggers",
+    "final_filename": "Allison-Hallas-Goal_Diggers.jpg"
+  },
+  "cellImage_129061384_7.jpg": {
+    "player_name": "Simran-Hansrai",
+    "gender": "male",
+    "team_name": "Goal Diggers",
+    "final_filename": "Simran-Hansrai-Goal_Diggers.jpg"
+  },
+  "cellImage_129061384_8.jpg": {
+    "player_name": "David-Harris",
+    "gender": "male",
+    "team_name": "Goal Diggers",
+    "final_filename": "David-Harris-Goal_Diggers.jpg"
+  },
+  "cellImage_129061384_9.jpg": {
+    "player_name": "Quais-Hasseeb",
+    "gender": "male",
+    "team_name": "Goal Diggers",
+    "final_filename": "Quais-Hasseeb-Goal_Diggers.jpg"
+  },
+  "cellImage_129061384_10.jpg": {
+    "player_name": "Hueseyin-Koeksal",
+    "gender": "male",
+    "team_name": "Goal Diggers",
+    "final_filename": "Hueseyin-Koeksal-Goal_Diggers.jpg"
+  },
+  "cellImage_129061384_11.jpg": {
+    "player_name": "Allan-Ospina",
+    "gender": "male",
+    "team_name": "Goal Diggers",
+    "final_filename": "Allan-Ospina-Goal_Diggers.jpg"
+  },
+  "cellImage_129061384_12.jpg": {
+    "player_name": "Gustavo-Roche",
+    "gender": "male",
+    "team_name": "Goal Diggers",
+    "final_filename": "Gustavo-Roche-Goal_Diggers.jpg"
+  },
+  "cellImage_129061384_13.jpg": {
+    "player_name": "Shawn-Saha",
+    "gender": "male",
+    "team_name": "Goal Diggers",
+    "final_filename": "Shawn-Saha-Goal_Diggers.jpg"
+  },
+  "cellImage_129061384_14.jpg": {
+    "player_name": "Arvind-Sathe",
+    "gender": "male",
+    "team_name": "Goal Diggers",
+    "final_filename": "Arvind-Sathe-Goal_Diggers.jpg"
+  },
+  "cellImage_129061384_15.jpg": {
+    "player_name": "Chandan-Sharma",
+    "gender": "male",
+    "team_name": "Goal Diggers",
+    "final_filename": "Chandan-Sharma-Goal_Diggers.jpg"
+  },
+  "cellImage_129061384_16.jpg": {
+    "player_name": "Marissa-Skog",
+    "gender": "female",
+    "team_name": "Goal Diggers",
+    "final_filename": "Marissa-Skog-Goal_Diggers.jpg"
+  },
+  "cellImage_129061384_17.jpg": {
+    "player_name": "Andrea-Spamer",
+    "gender": "female",
+    "team_name": "Goal Diggers",
+    "final_filename": "Andrea-Spamer-Goal_Diggers.jpg"
+  },
+  "cellImage_129061384_18.jpg": {
+    "player_name": "Kristen-Taylor",
+    "gender": "female",
+    "team_name": "Goal Diggers",
+    "final_filename": "Kristen-Taylor-Goal_Diggers.jpg"
+  },
+  "cellImage_129061384_19.jpg": {
+    "player_name": "Katrina-Tempero",
+    "gender": "female",
+    "team_name": "Goal Diggers",
+    "final_filename": "Katrina-Tempero-Goal_Diggers.jpg"
+  },
+  "cellImage_129061384_20.jpg": {
+    "player_name": "Patrick-Tupper",
+    "gender": "male",
+    "team_name": "Goal Diggers",
+    "final_filename": "Patrick-Tupper-Goal_Diggers.jpg"
+  },
+  "cellImage_129061384_21.jpg": {
+    "player_name": "Ulash-Turkhan",
+    "gender": "male",
+    "team_name": "Goal Diggers",
+    "final_filename": "Ulash-Turkhan-Goal_Diggers.jpg"
+  },
+  "cellImage_129061384_22.jpg": {
+    "player_name": "Joseph-Vasquez",
+    "gender": "male",
+    "team_name": "Goal Diggers",
+    "final_filename": "Joseph-Vasquez-Goal_Diggers.jpg"
+  },
+  "cellImage_641454463_0.jpg": {
+    "player_name": "Lori-Balleza",
+    "gender": "female",
+    "team_name": "Fireball",
+    "final_filename": "Lori-Balleza-Fireball.jpg"
+  },
+  "cellImage_641454463_1.jpg": {
+    "player_name": "Breahna-Berry",
+    "gender": "female",
+    "team_name": "Fireball",
+    "final_filename": "Breahna-Berry-Fireball.jpg"
+  },
+  "cellImage_641454463_2.jpg": {
+    "player_name": "Patty-Bingham",
+    "gender": "female",
+    "team_name": "Fireball",
+    "final_filename": "Patty-Bingham-Fireball.jpg"
+  },
+  "cellImage_641454463_3.jpg": {
+    "player_name": "Dan-Campbell",
+    "gender": "male",
+    "team_name": "Fireball",
+    "final_filename": "Dan-Campbell-Fireball.jpg"
+  },
+  "cellImage_641454463_4.jpg": {
+    "player_name": "Christian-Conderman",
+    "gender": "male",
+    "team_name": "Fireball",
+    "final_filename": "Christian-Conderman-Fireball.jpg"
+  },
+  "cellImage_641454463_5.jpg": {
+    "player_name": "Julie-Creighton",
+    "gender": "female",
+    "team_name": "Fireball",
+    "final_filename": "Julie-Creighton-Fireball.jpg"
+  },
+  "cellImage_641454463_6.jpg": {
+    "player_name": "Summer-Eichenberger",
+    "gender": "female",
+    "team_name": "Fireball",
+    "final_filename": "Summer-Eichenberger-Fireball.jpg"
+  },
+  "cellImage_641454463_7.jpg": {
+    "player_name": "Tim-Gray",
+    "gender": "male",
+    "team_name": "Fireball",
+    "final_filename": "Tim-Gray-Fireball.jpg"
+  },
+  "cellImage_641454463_8.jpg": {
+    "player_name": "Todd-Henry",
+    "gender": "male",
+    "team_name": "Fireball",
+    "final_filename": "Todd-Henry-Fireball.jpg"
+  },
+  "cellImage_641454463_9.jpg": {
+    "player_name": "Cameron-Lavassani",
+    "gender": "male",
+    "team_name": "Fireball",
+    "final_filename": "Cameron-Lavassani-Fireball.jpg"
+  },
+  "cellImage_641454463_10.jpg": {
+    "player_name": "Trisha-Leong",
+    "gender": "female",
+    "team_name": "Fireball",
+    "final_filename": "Trisha-Leong-Fireball.jpg"
+  },
+  "cellImage_641454463_11.jpg": {
+    "player_name": "Cristina-Millard",
+    "gender": "female",
+    "team_name": "Fireball",
+    "final_filename": "Cristina-Millard-Fireball.jpg"
+  },
+  "cellImage_641454463_12.jpg": {
+    "player_name": "Caitlin-Montez",
+    "gender": "female",
+    "team_name": "Fireball",
+    "final_filename": "Caitlin-Montez-Fireball.jpg"
+  },
+  "cellImage_641454463_13.jpg": {
+    "player_name": "Christian-Neves",
+    "gender": "male",
+    "team_name": "Fireball",
+    "final_filename": "Christian-Neves-Fireball.jpg"
+  },
+  "cellImage_641454463_14.jpg": {
+    "player_name": "Seth-Niermeyer",
+    "gender": "male",
+    "team_name": "Fireball",
+    "final_filename": "Seth-Niermeyer-Fireball.jpg"
+  },
+  "cellImage_641454463_15.jpg": {
+    "player_name": "Nicholas-Norberg",
+    "gender": "male",
+    "team_name": "Fireball",
+    "final_filename": "Nicholas-Norberg-Fireball.jpg"
+  },
+  "cellImage_641454463_16.jpg": {
+    "player_name": "Eric-Pane",
+    "gender": "male",
+    "team_name": "Fireball",
+    "final_filename": "Eric-Pane-Fireball.jpg"
+  },
+  "cellImage_641454463_17.jpg": {
+    "player_name": "Nolan-Parker",
+    "gender": "male",
+    "team_name": "Fireball",
+    "final_filename": "Nolan-Parker-Fireball.jpg"
+  },
+  "cellImage_641454463_18.jpg": {
+    "player_name": "Tyler-Revak",
+    "gender": "male",
+    "team_name": "Fireball",
+    "final_filename": "Tyler-Revak-Fireball.jpg"
+  },
+  "cellImage_641454463_19.jpg": {
+    "player_name": "Kirstie-Rodrigues",
+    "gender": "female",
+    "team_name": "Fireball",
+    "final_filename": "Kirstie-Rodrigues-Fireball.jpg"
+  },
+  "cellImage_641454463_20.jpg": {
+    "player_name": "Nick-Rodrigues",
+    "gender": "male",
+    "team_name": "Fireball",
+    "final_filename": "Nick-Rodrigues-Fireball.jpg"
+  },
+  "cellImage_641454463_21.jpg": {
+    "player_name": "David-Schneider",
+    "gender": "male",
+    "team_name": "Fireball",
+    "final_filename": "David-Schneider-Fireball.jpg"
+  },
+  "cellImage_641454463_22.jpg": {
+    "player_name": "Ross-Smith",
+    "gender": "male",
+    "team_name": "Fireball",
+    "final_filename": "Ross-Smith-Fireball.jpg"
+  },
+  "cellImage_46385280_0.jpg": {
+    "player_name": "Carlton-Alexander",
+    "gender": "male",
+    "team_name": "Mayhem",
+    "final_filename": "Carlton-Alexander-Mayhem.jpg"
+  },
+  "cellImage_46385280_1.jpg": {
+    "player_name": "Antonio-Castillo",
+    "gender": "male",
+    "team_name": "Mayhem",
+    "final_filename": "Antonio-Castillo-Mayhem.jpg"
+  },
+  "cellImage_46385280_2.jpg": {
+    "player_name": "Samantha-Cawthorn",
+    "gender": "female",
+    "team_name": "Mayhem",
+    "final_filename": "Samantha-Cawthorn-Mayhem.jpg"
+  },
+  "cellImage_46385280_3.jpg": {
+    "player_name": "Avery-Chamberlain",
+    "gender": "male",
+    "team_name": "Mayhem",
+    "final_filename": "Avery-Chamberlain-Mayhem.jpg"
+  },
+  "cellImage_46385280_4.jpg": {
+    "player_name": "Luca-Disbrow",
+    "gender": "male",
+    "team_name": "Mayhem",
+    "final_filename": "Luca-Disbrow-Mayhem.jpg"
+  },
+  "cellImage_46385280_5.jpg": {
+    "player_name": "Tyler-Dumbacher",
+    "gender": "male",
+    "team_name": "Mayhem",
+    "final_filename": "Tyler-Dumbacher-Mayhem.jpg"
+  },
+  "cellImage_46385280_6.jpg": {
+    "player_name": "Douglas-Ferreira",
+    "gender": "male",
+    "team_name": "Mayhem",
+    "final_filename": "Douglas-Ferreira-Mayhem.jpg"
+  },
+  "cellImage_46385280_7.jpg": {
+    "player_name": "Amber-Gerheart",
+    "gender": "female",
+    "team_name": "Mayhem",
+    "final_filename": "Amber-Gerheart-Mayhem.jpg"
+  },
+  "cellImage_46385280_8.jpg": {
+    "player_name": "David-Gutierrez",
+    "gender": "male",
+    "team_name": "Mayhem",
+    "final_filename": "David-Gutierrez-Mayhem.jpg"
+  },
+  "cellImage_46385280_9.jpg": {
+    "player_name": "Yari-Gutierrez",
+    "gender": "female",
+    "team_name": "Mayhem",
+    "final_filename": "Yari-Gutierrez-Mayhem.jpg"
+  },
+  "cellImage_46385280_10.jpg": {
+    "player_name": "Sabrina-Herrero",
+    "gender": "female",
+    "team_name": "Mayhem",
+    "final_filename": "Sabrina-Herrero-Mayhem.jpg"
+  },
+  "cellImage_46385280_11.jpg": {
+    "player_name": "Edwin-Huitron",
+    "gender": "male",
+    "team_name": "Mayhem",
+    "final_filename": "Edwin-Huitron-Mayhem.jpg"
+  },
+  "cellImage_46385280_12.jpg": {
+    "player_name": "Jonathan-Hur",
+    "gender": "male",
+    "team_name": "Mayhem",
+    "final_filename": "Jonathan-Hur-Mayhem.jpg"
+  },
+  "cellImage_46385280_13.jpg": {
+    "player_name": "Bryan-Lee",
+    "gender": "male",
+    "team_name": "Mayhem",
+    "final_filename": "Bryan-Lee-Mayhem.jpg"
+  },
+  "cellImage_46385280_14.jpg": {
+    "player_name": "Dan-Mariscal",
+    "gender": "male",
+    "team_name": "Mayhem",
+    "final_filename": "Dan-Mariscal-Mayhem.jpg"
+  },
+  "cellImage_46385280_15.jpg": {
+    "player_name": "Nicolas-Pacheco Soliz",
+    "gender": "male",
+    "team_name": "Mayhem",
+    "final_filename": "Nicolas-Pacheco Soliz-Mayhem.jpg"
+  },
+  "cellImage_46385280_16.jpg": {
+    "player_name": "Erika-Ramos",
+    "gender": "female",
+    "team_name": "Mayhem",
+    "final_filename": "Erika-Ramos-Mayhem.jpg"
+  },
+  "cellImage_46385280_17.jpg": {
+    "player_name": "Kayla-Remund",
+    "gender": "female",
+    "team_name": "Mayhem",
+    "final_filename": "Kayla-Remund-Mayhem.jpg"
+  },
+  "cellImage_46385280_18.jpg": {
+    "player_name": "Stephanee-Sabala",
+    "gender": "female",
+    "team_name": "Mayhem",
+    "final_filename": "Stephanee-Sabala-Mayhem.jpg"
+  },
+  "cellImage_46385280_19.jpg": {
+    "player_name": "Jillian-Saffin",
+    "gender": "female",
+    "team_name": "Mayhem",
+    "final_filename": "Jillian-Saffin-Mayhem.jpg"
+  },
+  "cellImage_46385280_20.jpg": {
+    "player_name": "Martin-Sauzade",
+    "gender": "male",
+    "team_name": "Mayhem",
+    "final_filename": "Martin-Sauzade-Mayhem.jpg"
+  },
+  "cellImage_46385280_21.jpg": {
+    "player_name": "Isaiah-Schutz-Ramon",
+    "gender": "male",
+    "team_name": "Mayhem",
+    "final_filename": "Isaiah-Schutz-Ramon-Mayhem.jpg"
+  },
+  "cellImage_46385280_22.jpg": {
+    "player_name": "Haley-Scott",
+    "gender": "female",
+    "team_name": "Mayhem",
+    "final_filename": "Haley-Scott-Mayhem.jpg"
+  },
+  "cellImage_46385280_23.jpg": {
+    "player_name": "Jordan-Volponi",
+    "gender": "female",
+    "team_name": "Mayhem",
+    "final_filename": "Jordan-Volponi-Mayhem.jpg"
+  },
+  "cellImage_46385280_24.jpg": {
+    "player_name": "Chloe-Voorhees",
+    "gender": "female",
+    "team_name": "Mayhem",
+    "final_filename": "Chloe-Voorhees-Mayhem.jpg"
+  },
+  "cellImage_46385280_25.jpg": {
+    "player_name": "Sarah-Welker",
+    "gender": "female",
+    "team_name": "Mayhem",
+    "final_filename": "Sarah-Welker-Mayhem.jpg"
+  },
+  "cellImage_776601003_0.jpg": {
+    "player_name": "Victor-Barrera",
+    "gender": "male",
+    "team_name": "Knights",
+    "final_filename": "Victor-Barrera-Knights.jpg"
+  },
+  "cellImage_776601003_1.jpg": {
+    "player_name": "Amanda-Beck",
+    "gender": "female",
+    "team_name": "Knights",
+    "final_filename": "Amanda-Beck-Knights.jpg"
+  },
+  "cellImage_776601003_2.jpg": {
+    "player_name": "Jake-Burton",
+    "gender": "male",
+    "team_name": "Knights",
+    "final_filename": "Jake-Burton-Knights.jpg"
+  },
+  "cellImage_776601003_3.jpg": {
+    "player_name": "Abby-Crandall",
+    "gender": "female",
+    "team_name": "Knights",
+    "final_filename": "Abby-Crandall-Knights.jpg"
+  },
+  "cellImage_776601003_4.jpg": {
+    "player_name": "John-Eaton",
+    "gender": "male",
+    "team_name": "Knights",
+    "final_filename": "John-Eaton-Knights.jpg"
+  },
+  "cellImage_776601003_5.jpg": {
+    "player_name": "Trevor-Elder",
+    "gender": "male",
+    "team_name": "Knights",
+    "final_filename": "Trevor-Elder-Knights.jpg"
+  },
+  "cellImage_776601003_6.jpg": {
+    "player_name": "Kaylee-Fitzpatrick",
+    "gender": "female",
+    "team_name": "Knights",
+    "final_filename": "Kaylee-Fitzpatrick-Knights.jpg"
+  },
+  "cellImage_776601003_7.jpg": {
+    "player_name": "Gerardo-Garcia",
+    "gender": "male",
+    "team_name": "Knights",
+    "final_filename": "Gerardo-Garcia-Knights.jpg"
+  },
+  "cellImage_776601003_8.jpg": {
+    "player_name": "Moises-Gonzalez",
+    "gender": "male",
+    "team_name": "Knights",
+    "final_filename": "Moises-Gonzalez-Knights.jpg"
+  },
+  "cellImage_776601003_9.jpg": {
+    "player_name": "Alexander-Gonzalez Beatriz",
+    "gender": "male",
+    "team_name": "Knights",
+    "final_filename": "Alexander-Gonzalez Beatriz-Knights.jpg"
+  },
+  "cellImage_776601003_10.jpg": {
+    "player_name": "Hillary-Harvey",
+    "gender": "female",
+    "team_name": "Knights",
+    "final_filename": "Hillary-Harvey-Knights.jpg"
+  },
+  "cellImage_776601003_11.jpg": {
+    "player_name": "Andrea-Irons",
+    "gender": "female",
+    "team_name": "Knights",
+    "final_filename": "Andrea-Irons-Knights.jpg"
+  },
+  "cellImage_776601003_12.jpg": {
+    "player_name": "Kyle-Kline",
+    "gender": "male",
+    "team_name": "Knights",
+    "final_filename": "Kyle-Kline-Knights.jpg"
+  },
+  "cellImage_776601003_13.jpg": {
+    "player_name": "Laci-Lacombe",
+    "gender": "female",
+    "team_name": "Knights",
+    "final_filename": "Laci-Lacombe-Knights.jpg"
+  },
+  "cellImage_776601003_14.jpg": {
+    "player_name": "Mckenna-Masinter",
+    "gender": "female",
+    "team_name": "Knights",
+    "final_filename": "Mckenna-Masinter-Knights.jpg"
+  },
+  "cellImage_776601003_15.jpg": {
+    "player_name": "Mike-Murphy",
+    "gender": "male",
+    "team_name": "Knights",
+    "final_filename": "Mike-Murphy-Knights.jpg"
+  },
+  "cellImage_776601003_16.jpg": {
+    "player_name": "Johanna-Perez",
+    "gender": "female",
+    "team_name": "Knights",
+    "final_filename": "Johanna-Perez-Knights.jpg"
+  },
+  "cellImage_776601003_17.jpg": {
+    "player_name": "Isabella-Perez",
+    "gender": "female",
+    "team_name": "Knights",
+    "final_filename": "Isabella-Perez-Knights.jpg"
+  },
+  "cellImage_776601003_18.jpg": {
+    "player_name": "Melissa-Pizzo",
+    "gender": "female",
+    "team_name": "Knights",
+    "final_filename": "Melissa-Pizzo-Knights.jpg"
+  },
+  "cellImage_776601003_19.jpg": {
+    "player_name": "Sam-Ravasdy",
+    "gender": "female",
+    "team_name": "Knights",
+    "final_filename": "Sam-Ravasdy-Knights.jpg"
+  },
+  "cellImage_776601003_20.jpg": {
+    "player_name": "Abhishek-Savant",
+    "gender": "male",
+    "team_name": "Knights",
+    "final_filename": "Abhishek-Savant-Knights.jpg"
+  },
+  "cellImage_776601003_21.jpg": {
+    "player_name": "Allison-Silva",
+    "gender": "female",
+    "team_name": "Knights",
+    "final_filename": "Allison-Silva-Knights.jpg"
+  },
+  "cellImage_776601003_22.jpg": {
+    "player_name": "Aldair-Suastegui",
+    "gender": "male",
+    "team_name": "Knights",
+    "final_filename": "Aldair-Suastegui-Knights.jpg"
+  },
+  "cellImage_776601003_23.jpg": {
+    "player_name": "Miguel-Suastegui",
+    "gender": "male",
+    "team_name": "Knights",
+    "final_filename": "Miguel-Suastegui-Knights.jpg"
+  },
+  "cellImage_776601003_24.jpg": {
+    "player_name": "Rachel-Tabaracci",
+    "gender": "female",
+    "team_name": "Knights",
+    "final_filename": "Rachel-Tabaracci-Knights.jpg"
+  },
+  "cellImage_955769308_0.jpg": {
+    "player_name": "Gary-Brown",
+    "gender": "male",
+    "team_name": "Stingrays ReUnited",
+    "final_filename": "Gary-Brown-Stingrays_ReUnited.jpg"
+  },
+  "cellImage_955769308_1.jpg": {
+    "player_name": "Darren-Clarke",
+    "gender": "male",
+    "team_name": "Stingrays ReUnited",
+    "final_filename": "Darren-Clarke-Stingrays_ReUnited.jpg"
+  },
+  "cellImage_955769308_2.jpg": {
+    "player_name": "Lee-Coppin",
+    "gender": "male",
+    "team_name": "Stingrays ReUnited",
+    "final_filename": "Lee-Coppin-Stingrays_ReUnited.jpg"
+  },
+  "cellImage_955769308_3.jpg": {
+    "player_name": "Melissa-Cox",
+    "gender": "female",
+    "team_name": "Stingrays ReUnited",
+    "final_filename": "Melissa-Cox-Stingrays_ReUnited.jpg"
+  },
+  "cellImage_955769308_4.jpg": {
+    "player_name": "Katy-Duffy-Sherr",
+    "gender": "female",
+    "team_name": "Stingrays ReUnited",
+    "final_filename": "Katy-Duffy-Sherr-Stingrays_ReUnited.jpg"
+  },
+  "cellImage_955769308_5.jpg": {
+    "player_name": "Ari-Erman",
+    "gender": "male",
+    "team_name": "Stingrays ReUnited",
+    "final_filename": "Ari-Erman-Stingrays_ReUnited.jpg"
+  },
+  "cellImage_955769308_6.jpg": {
+    "player_name": "Joslyn-Laran",
+    "gender": "female",
+    "team_name": "Stingrays ReUnited",
+    "final_filename": "Joslyn-Laran-Stingrays_ReUnited.jpg"
+  },
+  "cellImage_955769308_7.jpg": {
+    "player_name": "Jared-Jamison",
+    "gender": "male",
+    "team_name": "Stingrays ReUnited",
+    "final_filename": "Jared-Jamison-Stingrays_ReUnited.jpg"
+  },
+  "cellImage_955769308_8.jpg": {
+    "player_name": "Bri-May",
+    "gender": "female",
+    "team_name": "Stingrays ReUnited",
+    "final_filename": "Bri-May-Stingrays_ReUnited.jpg"
+  },
+  "cellImage_955769308_9.jpg": {
+    "player_name": "Ian-McCubbin",
+    "gender": "male",
+    "team_name": "Stingrays ReUnited",
+    "final_filename": "Ian-McCubbin-Stingrays_ReUnited.jpg"
+  },
+  "cellImage_955769308_10.jpg": {
+    "player_name": "Mark-McLaughlin",
+    "gender": "male",
+    "team_name": "Stingrays ReUnited",
+    "final_filename": "Mark-McLaughlin-Stingrays_ReUnited.jpg"
+  },
+  "cellImage_955769308_11.jpg": {
+    "player_name": "Jonas-Moe",
+    "gender": "male",
+    "team_name": "Stingrays ReUnited",
+    "final_filename": "Jonas-Moe-Stingrays_ReUnited.jpg"
+  },
+  "cellImage_955769308_12.jpg": {
+    "player_name": "Robin-Moresco",
+    "gender": "female",
+    "team_name": "Stingrays ReUnited",
+    "final_filename": "Robin-Moresco-Stingrays_ReUnited.jpg"
+  },
+  "cellImage_955769308_13.jpg": {
+    "player_name": "Debbie-Natsch",
+    "gender": "female",
+    "team_name": "Stingrays ReUnited",
+    "final_filename": "Debbie-Natsch-Stingrays_ReUnited.jpg"
+  },
+  "cellImage_955769308_14.jpg": {
+    "player_name": "Randall-Natsch",
+    "gender": "male",
+    "team_name": "Stingrays ReUnited",
+    "final_filename": "Randall-Natsch-Stingrays_ReUnited.jpg"
+  },
+  "cellImage_955769308_15.jpg": {
+    "player_name": "Kirsten-Navarro",
+    "gender": "female",
+    "team_name": "Stingrays ReUnited",
+    "final_filename": "Kirsten-Navarro-Stingrays_ReUnited.jpg"
+  },
+  "cellImage_955769308_16.jpg": {
+    "player_name": "Rick-Nultemeier",
+    "gender": "male",
+    "team_name": "Stingrays ReUnited",
+    "final_filename": "Rick-Nultemeier-Stingrays_ReUnited.jpg"
+  },
+  "cellImage_955769308_17.jpg": {
+    "player_name": "Aurelien-Perron",
+    "gender": "male",
+    "team_name": "Stingrays ReUnited",
+    "final_filename": "Aurelien-Perron-Stingrays_ReUnited.jpg"
+  },
+  "cellImage_955769308_18.jpg": {
+    "player_name": "Maninder-Sagoo",
+    "gender": "male",
+    "team_name": "Stingrays ReUnited",
+    "final_filename": "Maninder-Sagoo-Stingrays_ReUnited.jpg"
+  },
+  "cellImage_955769308_19.jpg": {
+    "player_name": "Benicio-Suarez",
+    "gender": "male",
+    "team_name": "Stingrays ReUnited",
+    "final_filename": "Benicio-Suarez-Stingrays_ReUnited.jpg"
+  },
+  "cellImage_955769308_20.jpg": {
+    "player_name": "Kristy-Switzer",
+    "gender": "female",
+    "team_name": "Stingrays ReUnited",
+    "final_filename": "Kristy-Switzer-Stingrays_ReUnited.jpg"
+  },
+  "cellImage_955769308_21.jpg": {
+    "player_name": "Mark-Wiesendanger",
+    "gender": "male",
+    "team_name": "Stingrays ReUnited",
+    "final_filename": "Mark-Wiesendanger-Stingrays_ReUnited.jpg"
+  },
+  "cellImage_955769308_22.jpg": {
+    "player_name": "Andrew-Woodward",
+    "gender": "male",
+    "team_name": "Stingrays ReUnited",
+    "final_filename": "Andrew-Woodward-Stingrays_ReUnited.jpg"
+  },
+  "cellImage_955769308_23.jpg": {
+    "player_name": "Angela-Woodward",
+    "gender": "female",
+    "team_name": "Stingrays ReUnited",
+    "final_filename": "Angela-Woodward-Stingrays_ReUnited.jpg"
+  },
+  "cellImage_955769308_24.jpg": {
+    "player_name": "Melissa-Yee",
+    "gender": "female",
+    "team_name": "Stingrays ReUnited",
+    "final_filename": "Melissa-Yee-Stingrays_ReUnited.jpg"
+  },
+  "cellImage_955769308_25.jpg": {
+    "player_name": "Luis-Zapata",
+    "gender": "male",
+    "team_name": "Stingrays ReUnited",
+    "final_filename": "Luis-Zapata-Stingrays_ReUnited.jpg"
+  },
+  "cellImage_1709239627_0.jpg": {
+    "player_name": "Veronica-Carson",
+    "gender": "female",
+    "team_name": "Flash",
+    "final_filename": "Veronica-Carson-Flash.jpg"
+  },
+  "cellImage_1709239627_1.jpg": {
+    "player_name": "Alexandra-Bruno",
+    "gender": "female",
+    "team_name": "Flash",
+    "final_filename": "Alexandra-Bruno-Flash.jpg"
+  },
+  "cellImage_1709239627_2.jpg": {
+    "player_name": "Amanda-Cleveland",
+    "gender": "female",
+    "team_name": "Flash",
+    "final_filename": "Amanda-Cleveland-Flash.jpg"
+  },
+  "cellImage_1709239627_3.jpg": {
+    "player_name": "Hayden-Craig",
+    "gender": "female",
+    "team_name": "Flash",
+    "final_filename": "Hayden-Craig-Flash.jpg"
+  },
+  "cellImage_1709239627_4.jpg": {
+    "player_name": "Jordan-Crawford",
+    "gender": "male",
+    "team_name": "Flash",
+    "final_filename": "Jordan-Crawford-Flash.jpg"
+  },
+  "cellImage_1709239627_5.jpg": {
+    "player_name": "Saaxewer-Diop",
+    "gender": "male",
+    "team_name": "Flash",
+    "final_filename": "Saaxewer-Diop-Flash.jpg"
+  },
+  "cellImage_1709239627_6.jpg": {
+    "player_name": "Arnaldo-Guizamano",
+    "gender": "male",
+    "team_name": "Flash",
+    "final_filename": "Arnaldo-Guizamano-Flash.jpg"
+  },
+  "cellImage_1709239627_7.jpg": {
+    "player_name": "Autumn-Halvorsen",
+    "gender": "female",
+    "team_name": "Flash",
+    "final_filename": "Autumn-Halvorsen-Flash.jpg"
+  },
+  "cellImage_1709239627_8.jpg": {
+    "player_name": "Lennart-Hertwig",
+    "gender": "male",
+    "team_name": "Flash",
+    "final_filename": "Lennart-Hertwig-Flash.jpg"
+  },
+  "cellImage_1709239627_9.jpg": {
+    "player_name": "Michael-Hertwig",
+    "gender": "male",
+    "team_name": "Flash",
+    "final_filename": "Michael-Hertwig-Flash.jpg"
+  },
+  "cellImage_1709239627_10.jpg": {
+    "player_name": "Karl-Jeppesen",
+    "gender": "male",
+    "team_name": "Flash",
+    "final_filename": "Karl-Jeppesen-Flash.jpg"
+  },
+  "cellImage_1709239627_11.jpg": {
+    "player_name": "Robia-Llamas",
+    "gender": "female",
+    "team_name": "Flash",
+    "final_filename": "Robia-Llamas-Flash.jpg"
+  },
+  "cellImage_1709239627_12.jpg": {
+    "player_name": "Alison-Lombardo-Click",
+    "gender": "female",
+    "team_name": "Flash",
+    "final_filename": "Alison-Lombardo-Click-Flash.jpg"
+  },
+  "cellImage_1709239627_13.jpg": {
+    "player_name": "Mari-Mantle",
+    "gender": "female",
+    "team_name": "Flash",
+    "final_filename": "Mari-Mantle-Flash.jpg"
+  },
+  "cellImage_1709239627_14.jpg": {
+    "player_name": "Parker-Moore",
+    "gender": "male",
+    "team_name": "Flash",
+    "final_filename": "Parker-Moore-Flash.jpg"
+  },
+  "cellImage_1709239627_15.jpg": {
+    "player_name": "Kevin-Ng",
+    "gender": "male",
+    "team_name": "Flash",
+    "final_filename": "Kevin-Ng-Flash.jpg"
+  },
+  "cellImage_1709239627_16.jpg": {
+    "player_name": "Noah-Pederson",
+    "gender": "male",
+    "team_name": "Flash",
+    "final_filename": "Noah-Pederson-Flash.jpg"
+  },
+  "cellImage_1709239627_17.jpg": {
+    "player_name": "Cynthia-Pena Martinez",
+    "gender": "female",
+    "team_name": "Flash",
+    "final_filename": "Cynthia-Pena Martinez-Flash.jpg"
+  },
+  "cellImage_1709239627_18.jpg": {
+    "player_name": "Amber-Price",
+    "gender": "female",
+    "team_name": "Flash",
+    "final_filename": "Amber-Price-Flash.jpg"
+  },
+  "cellImage_1709239627_19.jpg": {
+    "player_name": "Masseeh-Rahman",
+    "gender": "male",
+    "team_name": "Flash",
+    "final_filename": "Masseeh-Rahman-Flash.jpg"
+  },
+  "cellImage_657423562_0.jpg": {
+    "player_name": "Hunter-Bokn",
+    "gender": "male",
+    "team_name": "Beers and Tears",
+    "final_filename": "Hunter-Bokn-Beers_and_Tears.jpg"
+  },
+  "cellImage_657423562_1.jpg": {
+    "player_name": "Matthew-Bradley",
+    "gender": "male",
+    "team_name": "Beers and Tears",
+    "final_filename": "Matthew-Bradley-Beers_and_Tears.jpg"
+  },
+  "cellImage_657423562_2.jpg": {
+    "player_name": "Zane-Calini",
+    "gender": "male",
+    "team_name": "Beers and Tears",
+    "final_filename": "Zane-Calini-Beers_and_Tears.jpg"
+  },
+  "cellImage_657423562_3.jpg": {
+    "player_name": "Tyler-Collier",
+    "gender": "male",
+    "team_name": "Beers and Tears",
+    "final_filename": "Tyler-Collier-Beers_and_Tears.jpg"
+  },
+  "cellImage_657423562_4.jpg": {
+    "player_name": "Angelina-David",
+    "gender": "female",
+    "team_name": "Beers and Tears",
+    "final_filename": "Angelina-David-Beers_and_Tears.jpg"
+  },
+  "cellImage_657423562_5.jpg": {
+    "player_name": "Jose-Maria-Hernandez",
+    "gender": "male",
+    "team_name": "Beers and Tears",
+    "final_filename": "Jose-Maria-Hernandez-Beers_and_Tears.jpg"
+  },
+  "cellImage_657423562_6.jpg": {
+    "player_name": "Carlos-Hernandez Fattorini",
+    "gender": "male",
+    "team_name": "Beers and Tears",
+    "final_filename": "Carlos-Hernandez Fattorini-Beers_and_Tears.jpg"
+  },
+  "cellImage_657423562_7.jpg": {
+    "player_name": "Wesley-Hsiao",
+    "gender": "male",
+    "team_name": "Beers and Tears",
+    "final_filename": "Wesley-Hsiao-Beers_and_Tears.jpg"
+  },
+  "cellImage_657423562_8.jpg": {
+    "player_name": "Andrey-Klochkov",
+    "gender": "male",
+    "team_name": "Beers and Tears",
+    "final_filename": "Andrey-Klochkov-Beers_and_Tears.jpg"
+  },
+  "cellImage_657423562_9.jpg": {
+    "player_name": "Andrea-Martinez",
+    "gender": "female",
+    "team_name": "Beers and Tears",
+    "final_filename": "Andrea-Martinez-Beers_and_Tears.jpg"
+  },
+  "cellImage_657423562_10.jpg": {
+    "player_name": "Anthony-Martinez",
+    "gender": "male",
+    "team_name": "Beers and Tears",
+    "final_filename": "Anthony-Martinez-Beers_and_Tears.jpg"
+  },
+  "cellImage_657423562_11.jpg": {
+    "player_name": "Nathan-McCall",
+    "gender": "male",
+    "team_name": "Beers and Tears",
+    "final_filename": "Nathan-McCall-Beers_and_Tears.jpg"
+  },
+  "cellImage_657423562_12.jpg": {
+    "player_name": "Michael-Mease",
+    "gender": "male",
+    "team_name": "Beers and Tears",
+    "final_filename": "Michael-Mease-Beers_and_Tears.jpg"
+  },
+  "cellImage_657423562_13.jpg": {
+    "player_name": "Laura-Pacheco",
+    "gender": "female",
+    "team_name": "Beers and Tears",
+    "final_filename": "Laura-Pacheco-Beers_and_Tears.jpg"
+  },
+  "cellImage_657423562_14.jpg": {
+    "player_name": "Hannah-Rogers",
+    "gender": "female",
+    "team_name": "Beers and Tears",
+    "final_filename": "Hannah-Rogers-Beers_and_Tears.jpg"
+  },
+  "cellImage_657423562_15.jpg": {
+    "player_name": "Rajeev-Thundiyil",
+    "gender": "male",
+    "team_name": "Beers and Tears",
+    "final_filename": "Rajeev-Thundiyil-Beers_and_Tears.jpg"
+  },
+  "cellImage_657423562_16.jpg": {
+    "player_name": "Jaymi-Van Dam",
+    "gender": "male",
+    "team_name": "Beers and Tears",
+    "final_filename": "Jaymi-Van Dam-Beers_and_Tears.jpg"
+  },
+  "cellImage_657423562_17.jpg": {
+    "player_name": "Robin-Zhang",
+    "gender": "male",
+    "team_name": "Beers and Tears",
+    "final_filename": "Robin-Zhang-Beers_and_Tears.jpg"
+  },
+  "cellImage_887470351_0.jpg": {
+    "player_name": "Josh-Butterfield",
+    "gender": "male",
+    "team_name": "Fire N Ice",
+    "final_filename": "Josh-Butterfield-Fire_N_Ice.jpg"
+  },
+  "cellImage_887470351_1.jpg": {
+    "player_name": "Stacey-Brown",
+    "gender": "female",
+    "team_name": "Fire N Ice",
+    "final_filename": "Stacey-Brown-Fire_N_Ice.jpg"
+  },
+  "cellImage_887470351_2.jpg": {
+    "player_name": "Sarah-Cebulski",
+    "gender": "female",
+    "team_name": "Fire N Ice",
+    "final_filename": "Sarah-Cebulski-Fire_N_Ice.jpg"
+  },
+  "cellImage_887470351_3.jpg": {
+    "player_name": "Shelby-Chang",
+    "gender": "female",
+    "team_name": "Fire N Ice",
+    "final_filename": "Shelby-Chang-Fire_N_Ice.jpg"
+  },
+  "cellImage_887470351_4.jpg": {
+    "player_name": "Colleen-Coffey",
+    "gender": "female",
+    "team_name": "Fire N Ice",
+    "final_filename": "Colleen-Coffey-Fire_N_Ice.jpg"
+  },
+  "cellImage_887470351_5.jpg": {
+    "player_name": "Erin-Dorff",
+    "gender": "female",
+    "team_name": "Fire N Ice",
+    "final_filename": "Erin-Dorff-Fire_N_Ice.jpg"
+  },
+  "cellImage_887470351_6.jpg": {
+    "player_name": "Dan-Droubay",
+    "gender": "male",
+    "team_name": "Fire N Ice",
+    "final_filename": "Dan-Droubay-Fire_N_Ice.jpg"
+  },
+  "cellImage_887470351_7.jpg": {
+    "player_name": "Christopher-Gardner",
+    "gender": "male",
+    "team_name": "Fire N Ice",
+    "final_filename": "Christopher-Gardner-Fire_N_Ice.jpg"
+  },
+  "cellImage_887470351_8.jpg": {
+    "player_name": "Oleg-Gekker",
+    "gender": "male",
+    "team_name": "Fire N Ice",
+    "final_filename": "Oleg-Gekker-Fire_N_Ice.jpg"
+  },
+  "cellImage_887470351_9.jpg": {
+    "player_name": "Harinder-Grewal",
+    "gender": "male",
+    "team_name": "Fire N Ice",
+    "final_filename": "Harinder-Grewal-Fire_N_Ice.jpg"
+  },
+  "cellImage_887470351_10.jpg": {
+    "player_name": "Shane-Henderson",
+    "gender": "male",
+    "team_name": "Fire N Ice",
+    "final_filename": "Shane-Henderson-Fire_N_Ice.jpg"
+  },
+  "cellImage_887470351_11.jpg": {
+    "player_name": "Jasjit-Johal",
+    "gender": "male",
+    "team_name": "Fire N Ice",
+    "final_filename": "Jasjit-Johal-Fire_N_Ice.jpg"
+  },
+  "cellImage_887470351_12.jpg": {
+    "player_name": "Jasmyn-Johal",
+    "gender": "female",
+    "team_name": "Fire N Ice",
+    "final_filename": "Jasmyn-Johal-Fire_N_Ice.jpg"
+  },
+  "cellImage_887470351_13.jpg": {
+    "player_name": "Andrew-King",
+    "gender": "male",
+    "team_name": "Fire N Ice",
+    "final_filename": "Andrew-King-Fire_N_Ice.jpg"
+  },
+  "cellImage_887470351_14.jpg": {
+    "player_name": "Kevin-Ko",
+    "gender": "male",
+    "team_name": "Fire N Ice",
+    "final_filename": "Kevin-Ko-Fire_N_Ice.jpg"
+  },
+  "cellImage_887470351_15.jpg": {
+    "player_name": "Melissa-Kondrick",
+    "gender": "female",
+    "team_name": "Fire N Ice",
+    "final_filename": "Melissa-Kondrick-Fire_N_Ice.jpg"
+  },
+  "cellImage_887470351_16.jpg": {
+    "player_name": "Douglas-Lezameta",
+    "gender": "male",
+    "team_name": "Fire N Ice",
+    "final_filename": "Douglas-Lezameta-Fire_N_Ice.jpg"
+  },
+  "cellImage_887470351_17.jpg": {
+    "player_name": "Heidi-Matzen",
+    "gender": "female",
+    "team_name": "Fire N Ice",
+    "final_filename": "Heidi-Matzen-Fire_N_Ice.jpg"
+  },
+  "cellImage_887470351_18.jpg": {
+    "player_name": "Eryn-Neidle",
+    "gender": "female",
+    "team_name": "Fire N Ice",
+    "final_filename": "Eryn-Neidle-Fire_N_Ice.jpg"
+  },
+  "cellImage_887470351_19.jpg": {
+    "player_name": "Kevin-Oh",
+    "gender": "male",
+    "team_name": "Fire N Ice",
+    "final_filename": "Kevin-Oh-Fire_N_Ice.jpg"
+  },
+  "cellImage_887470351_20.jpg": {
+    "player_name": "Ashwin-Prasad",
+    "gender": "male",
+    "team_name": "Fire N Ice",
+    "final_filename": "Ashwin-Prasad-Fire_N_Ice.jpg"
+  },
+  "cellImage_887470351_21.jpg": {
+    "player_name": "Alison-Pschier",
+    "gender": "female",
+    "team_name": "Fire N Ice",
+    "final_filename": "Alison-Pschier-Fire_N_Ice.jpg"
+  },
+  "cellImage_887470351_22.jpg": {
+    "player_name": "Eric-Ruhland",
+    "gender": "male",
+    "team_name": "Fire N Ice",
+    "final_filename": "Eric-Ruhland-Fire_N_Ice.jpg"
+  },
+  "cellImage_887470351_23.jpg": {
+    "player_name": "Mary-Scavone",
+    "gender": "female",
+    "team_name": "Fire N Ice",
+    "final_filename": "Mary-Scavone-Fire_N_Ice.jpg"
+  },
+  "cellImage_887470351_24.jpg": {
+    "player_name": "Matt-Troyer",
+    "gender": "male",
+    "team_name": "Fire N Ice",
+    "final_filename": "Matt-Troyer-Fire_N_Ice.jpg"
+  },
+  "cellImage_963022013_0.jpg": {
+    "player_name": "Remon-Aguib",
+    "gender": "male",
+    "team_name": "Miskicks",
+    "final_filename": "Remon-Aguib-Miskicks.jpg"
+  },
+  "cellImage_963022013_1.jpg": {
+    "player_name": "Demian-Bannister",
+    "gender": "male",
+    "team_name": "Miskicks",
+    "final_filename": "Demian-Bannister-Miskicks.jpg"
+  },
+  "cellImage_963022013_2.jpg": {
+    "player_name": "Amanda-Benge",
+    "gender": "female",
+    "team_name": "Miskicks",
+    "final_filename": "Amanda-Benge-Miskicks.jpg"
+  },
+  "cellImage_963022013_3.jpg": {
+    "player_name": "Darian-Benge",
+    "gender": "male",
+    "team_name": "Miskicks",
+    "final_filename": "Darian-Benge-Miskicks.jpg"
+  },
+  "cellImage_963022013_4.jpg": {
+    "player_name": "Eric-Berg",
+    "gender": "male",
+    "team_name": "Miskicks",
+    "final_filename": "Eric-Berg-Miskicks.jpg"
+  },
+  "cellImage_963022013_5.jpg": {
+    "player_name": "Jennifer-Berg",
+    "gender": "female",
+    "team_name": "Miskicks",
+    "final_filename": "Jennifer-Berg-Miskicks.jpg"
+  },
+  "cellImage_963022013_6.jpg": {
+    "player_name": "Matt-Bojorquez",
+    "gender": "male",
+    "team_name": "Miskicks",
+    "final_filename": "Matt-Bojorquez-Miskicks.jpg"
+  },
+  "cellImage_963022013_7.jpg": {
+    "player_name": "Kim Hang-Cross",
+    "gender": "female",
+    "team_name": "Miskicks",
+    "final_filename": "Kim Hang-Cross-Miskicks.jpg"
+  },
+  "cellImage_963022013_8.jpg": {
+    "player_name": "Mauricio-Diaz-Perez",
+    "gender": "male",
+    "team_name": "Miskicks",
+    "final_filename": "Mauricio-Diaz-Perez-Miskicks.jpg"
+  },
+  "cellImage_963022013_9.jpg": {
+    "player_name": "Dan-Droubay",
+    "gender": "male",
+    "team_name": "Miskicks",
+    "final_filename": "Dan-Droubay-Miskicks.jpg"
+  },
+  "cellImage_963022013_10.jpg": {
+    "player_name": "Alejandro-Flores",
+    "gender": "male",
+    "team_name": "Miskicks",
+    "final_filename": "Alejandro-Flores-Miskicks.jpg"
+  },
+  "cellImage_963022013_11.jpg": {
+    "player_name": "Anton-Koleci",
+    "gender": "male",
+    "team_name": "Miskicks",
+    "final_filename": "Anton-Koleci-Miskicks.jpg"
+  },
+  "cellImage_963022013_12.jpg": {
+    "player_name": "Ronda-Maples",
+    "gender": "female",
+    "team_name": "Miskicks",
+    "final_filename": "Ronda-Maples-Miskicks.jpg"
+  },
+  "cellImage_963022013_13.jpg": {
+    "player_name": "Andrew-Mobley",
+    "gender": "male",
+    "team_name": "Miskicks",
+    "final_filename": "Andrew-Mobley-Miskicks.jpg"
+  },
+  "cellImage_963022013_14.jpg": {
+    "player_name": "Michel-Molina",
+    "gender": "male",
+    "team_name": "Miskicks",
+    "final_filename": "Michel-Molina-Miskicks.jpg"
+  },
+  "cellImage_963022013_15.jpg": {
+    "player_name": "Megan-Murphy",
+    "gender": "female",
+    "team_name": "Miskicks",
+    "final_filename": "Megan-Murphy-Miskicks.jpg"
+  },
+  "cellImage_963022013_16.jpg": {
+    "player_name": "Ani-Nahapetian",
+    "gender": "female",
+    "team_name": "Miskicks",
+    "final_filename": "Ani-Nahapetian-Miskicks.jpg"
+  },
+  "cellImage_963022013_17.jpg": {
+    "player_name": "Gabriela-Nassar",
+    "gender": "female",
+    "team_name": "Miskicks",
+    "final_filename": "Gabriela-Nassar-Miskicks.jpg"
+  },
+  "cellImage_963022013_18.jpg": {
+    "player_name": "Cristina-Rios",
+    "gender": "female",
+    "team_name": "Miskicks",
+    "final_filename": "Cristina-Rios-Miskicks.jpg"
+  },
+  "cellImage_963022013_19.jpg": {
+    "player_name": "Robert-Rios",
+    "gender": "male",
+    "team_name": "Miskicks",
+    "final_filename": "Robert-Rios-Miskicks.jpg"
+  },
+  "cellImage_963022013_20.jpg": {
+    "player_name": "Taylor-Rios",
+    "gender": "female",
+    "team_name": "Miskicks",
+    "final_filename": "Taylor-Rios-Miskicks.jpg"
+  },
+  "cellImage_963022013_21.jpg": {
+    "player_name": "Issa-Samara",
+    "gender": "male",
+    "team_name": "Miskicks",
+    "final_filename": "Issa-Samara-Miskicks.jpg"
+  },
+  "cellImage_963022013_22.jpg": {
+    "player_name": "Matt-Selwood",
+    "gender": "male",
+    "team_name": "Miskicks",
+    "final_filename": "Matt-Selwood-Miskicks.jpg"
+  },
+  "cellImage_963022013_23.jpg": {
+    "player_name": "Ethan-Shang",
+    "gender": "male",
+    "team_name": "Miskicks",
+    "final_filename": "Ethan-Shang-Miskicks.jpg"
+  },
+  "cellImage_963022013_24.jpg": {
+    "player_name": "Sara-Skinner",
+    "gender": "female",
+    "team_name": "Miskicks",
+    "final_filename": "Sara-Skinner-Miskicks.jpg"
+  },
+  "cellImage_1489512637_0.jpg": {
+    "player_name": "Anthony-Alberto",
+    "gender": "male",
+    "team_name": "Stingrays",
+    "final_filename": "Anthony-Alberto-Stingrays.jpg"
+  },
+  "cellImage_1489512637_1.jpg": {
+    "player_name": "Osiris-Chavez",
+    "gender": "male",
+    "team_name": "Stingrays",
+    "final_filename": "Osiris-Chavez-Stingrays.jpg"
+  },
+  "cellImage_1489512637_2.jpg": {
+    "player_name": "Lee-Coppin",
+    "gender": "male",
+    "team_name": "Stingrays",
+    "final_filename": "Lee-Coppin-Stingrays.jpg"
+  },
+  "cellImage_1489512637_3.jpg": {
+    "player_name": "Ari-Erman",
+    "gender": "male",
+    "team_name": "Stingrays",
+    "final_filename": "Ari-Erman-Stingrays.jpg"
+  },
+  "cellImage_1489512637_4.jpg": {
+    "player_name": "Allison-Jones",
+    "gender": "female",
+    "team_name": "Stingrays",
+    "final_filename": "Allison-Jones-Stingrays.jpg"
+  },
+  "cellImage_1489512637_5.jpg": {
+    "player_name": "Jessica-Ko",
+    "gender": "female",
+    "team_name": "Stingrays",
+    "final_filename": "Jessica-Ko-Stingrays.jpg"
+  },
+  "cellImage_1489512637_6.jpg": {
+    "player_name": "Tami-Kwong",
+    "gender": "female",
+    "team_name": "Stingrays",
+    "final_filename": "Tami-Kwong-Stingrays.jpg"
+  },
+  "cellImage_1489512637_7.jpg": {
+    "player_name": "Joslyn-Laran",
+    "gender": "female",
+    "team_name": "Stingrays",
+    "final_filename": "Joslyn-Laran-Stingrays.jpg"
+  },
+  "cellImage_1489512637_8.jpg": {
+    "player_name": "Noelle-Marceno",
+    "gender": "female",
+    "team_name": "Stingrays",
+    "final_filename": "Noelle-Marceno-Stingrays.jpg"
+  },
+  "cellImage_1489512637_9.jpg": {
+    "player_name": "Caren-McCarthy",
+    "gender": "female",
+    "team_name": "Stingrays",
+    "final_filename": "Caren-McCarthy-Stingrays.jpg"
+  },
+  "cellImage_1489512637_10.jpg": {
+    "player_name": "Bri-May",
+    "gender": "female",
+    "team_name": "Stingrays",
+    "final_filename": "Bri-May-Stingrays.jpg"
+  },
+  "cellImage_1489512637_11.jpg": {
+    "player_name": "Ian-McCubbin",
+    "gender": "male",
+    "team_name": "Stingrays",
+    "final_filename": "Ian-McCubbin-Stingrays.jpg"
+  },
+  "cellImage_1489512637_12.jpg": {
+    "player_name": "Quinn-McGreer",
+    "gender": "male",
+    "team_name": "Stingrays",
+    "final_filename": "Quinn-McGreer-Stingrays.jpg"
+  },
+  "cellImage_1489512637_13.jpg": {
+    "player_name": "Michael-McMasters",
+    "gender": "male",
+    "team_name": "Stingrays",
+    "final_filename": "Michael-McMasters-Stingrays.jpg"
+  },
+  "cellImage_1489512637_14.jpg": {
+    "player_name": "Robin-Moresco",
+    "gender": "female",
+    "team_name": "Stingrays",
+    "final_filename": "Robin-Moresco-Stingrays.jpg"
+  },
+  "cellImage_1489512637_15.jpg": {
+    "player_name": "Stephan-Morrison-Ketter",
+    "gender": "male",
+    "team_name": "Stingrays",
+    "final_filename": "Stephan-Morrison-Ketter-Stingrays.jpg"
+  },
+  "cellImage_1489512637_16.jpg": {
+    "player_name": "Kirsten-Navarro",
+    "gender": "female",
+    "team_name": "Stingrays",
+    "final_filename": "Kirsten-Navarro-Stingrays.jpg"
+  },
+  "cellImage_1489512637_17.jpg": {
+    "player_name": "Romina-Oviedo",
+    "gender": "female",
+    "team_name": "Stingrays",
+    "final_filename": "Romina-Oviedo-Stingrays.jpg"
+  },
+  "cellImage_1489512637_18.jpg": {
+    "player_name": "Gerard Lawrence-Pinto",
+    "gender": "male",
+    "team_name": "Stingrays",
+    "final_filename": "Gerard Lawrence-Pinto-Stingrays.jpg"
+  },
+  "cellImage_1489512637_19.jpg": {
+    "player_name": "Alejandro-Rangel Rodriguez",
+    "gender": "male",
+    "team_name": "Stingrays",
+    "final_filename": "Alejandro-Rangel Rodriguez-Stingrays.jpg"
+  },
+  "cellImage_1489512637_20.jpg": {
+    "player_name": "Courtney-Stonesifer",
+    "gender": "female",
+    "team_name": "Stingrays",
+    "final_filename": "Courtney-Stonesifer-Stingrays.jpg"
+  },
+  "cellImage_1489512637_21.jpg": {
+    "player_name": "Cesar-Suarez",
+    "gender": "male",
+    "team_name": "Stingrays",
+    "final_filename": "Cesar-Suarez-Stingrays.jpg"
+  },
+  "cellImage_1489512637_22.jpg": {
+    "player_name": "Nicole-Torquato",
+    "gender": "female",
+    "team_name": "Stingrays",
+    "final_filename": "Nicole-Torquato-Stingrays.jpg"
+  },
+  "cellImage_1489512637_23.jpg": {
+    "player_name": "Jessica-Wofford",
+    "gender": "female",
+    "team_name": "Stingrays",
+    "final_filename": "Jessica-Wofford-Stingrays.jpg"
+  },
+  "cellImage_1489512637_24.jpg": {
+    "player_name": "Ben-Wold",
+    "gender": "male",
+    "team_name": "Stingrays",
+    "final_filename": "Ben-Wold-Stingrays.jpg"
+  },
+  "cellImage_1489512637_25.jpg": {
+    "player_name": "Angela-Woodward",
+    "gender": "female",
+    "team_name": "Stingrays",
+    "final_filename": "Angela-Woodward-Stingrays.jpg"
+  },
+  "cellImage_1489512637_26.jpg": {
+    "player_name": "Luis-Zapata",
+    "gender": "male",
+    "team_name": "Stingrays",
+    "final_filename": "Luis-Zapata-Stingrays.jpg"
+  },
+  "cellImage_1154828902_0.jpg": {
+    "player_name": "Carlos-AlvarezMartinez",
+    "gender": "male",
+    "team_name": "Green Achers",
+    "final_filename": "Carlos-AlvarezMartinez-Green_Achers.jpg"
+  },
+  "cellImage_1154828902_1.jpg": {
+    "player_name": "Robert-Anaya",
+    "gender": "male",
+    "team_name": "Green Achers",
+    "final_filename": "Robert-Anaya-Green_Achers.jpg"
+  },
+  "cellImage_1154828902_2.jpg": {
+    "player_name": "Leila-Balch",
+    "gender": "female",
+    "team_name": "Green Achers",
+    "final_filename": "Leila-Balch-Green_Achers.jpg"
+  },
+  "cellImage_1154828902_3.jpg": {
+    "player_name": "Eric-Berg",
+    "gender": "male",
+    "team_name": "Green Achers",
+    "final_filename": "Eric-Berg-Green_Achers.jpg"
+  },
+  "cellImage_1154828902_4.jpg": {
+    "player_name": "Jennifer-Berg",
+    "gender": "female",
+    "team_name": "Green Achers",
+    "final_filename": "Jennifer-Berg-Green_Achers.jpg"
+  },
+  "cellImage_1154828902_5.jpg": {
+    "player_name": "Joe-Carlucci",
+    "gender": "male",
+    "team_name": "Green Achers",
+    "final_filename": "Joe-Carlucci-Green_Achers.jpg"
+  },
+  "cellImage_1154828902_6.jpg": {
+    "player_name": "Tom-Croker",
+    "gender": "male",
+    "team_name": "Green Achers",
+    "final_filename": "Tom-Croker-Green_Achers.jpg"
+  },
+  "cellImage_1154828902_7.jpg": {
+    "player_name": "Kim Hang-Cross",
+    "gender": "female",
+    "team_name": "Green Achers",
+    "final_filename": "Kim Hang-Cross-Green_Achers.jpg"
+  },
+  "cellImage_1154828902_8.jpg": {
+    "player_name": "Tracey-Dilling",
+    "gender": "female",
+    "team_name": "Green Achers",
+    "final_filename": "Tracey-Dilling-Green_Achers.jpg"
+  },
+  "cellImage_1154828902_9.jpg": {
+    "player_name": "Karem-Gonzalez",
+    "gender": "female",
+    "team_name": "Green Achers",
+    "final_filename": "Karem-Gonzalez-Green_Achers.jpg"
+  },
+  "cellImage_1154828902_10.jpg": {
+    "player_name": "Matt-Harizal",
+    "gender": "male",
+    "team_name": "Green Achers",
+    "final_filename": "Matt-Harizal-Green_Achers.jpg"
+  },
+  "cellImage_1154828902_11.jpg": {
+    "player_name": "Phil-Herlich",
+    "gender": "male",
+    "team_name": "Green Achers",
+    "final_filename": "Phil-Herlich-Green_Achers.jpg"
+  },
+  "cellImage_1154828902_12.jpg": {
+    "player_name": "Sheila-Hibbard",
+    "gender": "female",
+    "team_name": "Green Achers",
+    "final_filename": "Sheila-Hibbard-Green_Achers.jpg"
+  },
+  "cellImage_1154828902_13.jpg": {
+    "player_name": "Frederic-Joucken",
+    "gender": "male",
+    "team_name": "Green Achers",
+    "final_filename": "Frederic-Joucken-Green_Achers.jpg"
+  },
+  "cellImage_1154828902_14.jpg": {
+    "player_name": "Anthony-Kovac",
+    "gender": "male",
+    "team_name": "Green Achers",
+    "final_filename": "Anthony-Kovac-Green_Achers.jpg"
+  },
+  "cellImage_1154828902_15.jpg": {
+    "player_name": "Michael-Lee",
+    "gender": "male",
+    "team_name": "Green Achers",
+    "final_filename": "Michael-Lee-Green_Achers.jpg"
+  },
+  "cellImage_1154828902_16.jpg": {
+    "player_name": "Ronda-Maples",
+    "gender": "female",
+    "team_name": "Green Achers",
+    "final_filename": "Ronda-Maples-Green_Achers.jpg"
+  },
+  "cellImage_1154828902_17.jpg": {
+    "player_name": "Loto-Rickman",
+    "gender": "female",
+    "team_name": "Green Achers",
+    "final_filename": "Loto-Rickman-Green_Achers.jpg"
+  },
+  "cellImage_1154828902_18.jpg": {
+    "player_name": "Shawn-Shimozono",
+    "gender": "male",
+    "team_name": "Green Achers",
+    "final_filename": "Shawn-Shimozono-Green_Achers.jpg"
+  },
+  "cellImage_1154828902_19.jpg": {
+    "player_name": "Michael-Torino",
+    "gender": "male",
+    "team_name": "Green Achers",
+    "final_filename": "Michael-Torino-Green_Achers.jpg"
+  },
+  "cellImage_1154828902_20.jpg": {
+    "player_name": "Laura-Waller",
+    "gender": "female",
+    "team_name": "Green Achers",
+    "final_filename": "Laura-Waller-Green_Achers.jpg"
+  },
+  "cellImage_1154828902_21.jpg": {
+    "player_name": "Katie-Warren",
+    "gender": "female",
+    "team_name": "Green Achers",
+    "final_filename": "Katie-Warren-Green_Achers.jpg"
+  },
+  "cellImage_452565328_0.jpg": {
+    "player_name": "Mikey-Aburamadan",
+    "gender": "male",
+    "team_name": "Bandits FC",
+    "final_filename": "Mikey-Aburamadan-Bandits_FC.jpg"
+  },
+  "cellImage_452565328_1.jpg": {
+    "player_name": "Allan-Brooks",
+    "gender": "male",
+    "team_name": "Bandits FC",
+    "final_filename": "Allan-Brooks-Bandits_FC.jpg"
+  },
+  "cellImage_452565328_2.jpg": {
+    "player_name": "Miguel-Carrillo",
+    "gender": "male",
+    "team_name": "Bandits FC",
+    "final_filename": "Miguel-Carrillo-Bandits_FC.jpg"
+  },
+  "cellImage_452565328_3.jpg": {
+    "player_name": "Alberto-Chavez",
+    "gender": "male",
+    "team_name": "Bandits FC",
+    "final_filename": "Alberto-Chavez-Bandits_FC.jpg"
+  },
+  "cellImage_452565328_4.jpg": {
+    "player_name": "Davide-Carle",
+    "gender": "male",
+    "team_name": "Bandits FC",
+    "final_filename": "Davide-Carle-Bandits_FC.jpg"
+  },
+  "cellImage_452565328_5.jpg": {
+    "player_name": "Brendon-Felix",
+    "gender": "male",
+    "team_name": "Bandits FC",
+    "final_filename": "Brendon-Felix-Bandits_FC.jpg"
+  },
+  "cellImage_452565328_6.jpg": {
+    "player_name": "Christopher-Flores",
+    "gender": "male",
+    "team_name": "Bandits FC",
+    "final_filename": "Christopher-Flores-Bandits_FC.jpg"
+  },
+  "cellImage_452565328_7.jpg": {
+    "player_name": "David-Goldner",
+    "gender": "male",
+    "team_name": "Bandits FC",
+    "final_filename": "David-Goldner-Bandits_FC.jpg"
+  },
+  "cellImage_452565328_8.jpg": {
+    "player_name": "Joshua-Gomez",
+    "gender": "male",
+    "team_name": "Bandits FC",
+    "final_filename": "Joshua-Gomez-Bandits_FC.jpg"
+  },
+  "cellImage_452565328_9.jpg": {
+    "player_name": "Adam-Grubb",
+    "gender": "male",
+    "team_name": "Bandits FC",
+    "final_filename": "Adam-Grubb-Bandits_FC.jpg"
+  },
+  "cellImage_452565328_10.jpg": {
+    "player_name": "David-Grubb",
+    "gender": "male",
+    "team_name": "Bandits FC",
+    "final_filename": "David-Grubb-Bandits_FC.jpg"
+  },
+  "cellImage_452565328_11.jpg": {
+    "player_name": "Ricardo-Gutierrez",
+    "gender": "male",
+    "team_name": "Bandits FC",
+    "final_filename": "Ricardo-Gutierrez-Bandits_FC.jpg"
+  },
+  "cellImage_452565328_12.jpg": {
+    "player_name": "Ryan-Kissinger",
+    "gender": "male",
+    "team_name": "Bandits FC",
+    "final_filename": "Ryan-Kissinger-Bandits_FC.jpg"
+  },
+  "cellImage_452565328_13.jpg": {
+    "player_name": "Miguel-Klee",
+    "gender": "male",
+    "team_name": "Bandits FC",
+    "final_filename": "Miguel-Klee-Bandits_FC.jpg"
+  },
+  "cellImage_452565328_14.jpg": {
+    "player_name": "Ivania-Limon",
+    "gender": "female",
+    "team_name": "Bandits FC",
+    "final_filename": "Ivania-Limon-Bandits_FC.jpg"
+  },
+  "cellImage_452565328_15.jpg": {
+    "player_name": "Elliot-Lopes",
+    "gender": "male",
+    "team_name": "Bandits FC",
+    "final_filename": "Elliot-Lopes-Bandits_FC.jpg"
+  },
+  "cellImage_452565328_16.jpg": {
+    "player_name": "Brannon-Marsh",
+    "gender": "male",
+    "team_name": "Bandits FC",
+    "final_filename": "Brannon-Marsh-Bandits_FC.jpg"
+  },
+  "cellImage_452565328_17.jpg": {
+    "player_name": "Jesus-Moreno",
+    "gender": "male",
+    "team_name": "Bandits FC",
+    "final_filename": "Jesus-Moreno-Bandits_FC.jpg"
+  },
+  "cellImage_452565328_18.jpg": {
+    "player_name": "George-Piliotis",
+    "gender": "male",
+    "team_name": "Bandits FC",
+    "final_filename": "George-Piliotis-Bandits_FC.jpg"
+  },
+  "cellImage_452565328_19.jpg": {
+    "player_name": "Ryan-Reichert",
+    "gender": "male",
+    "team_name": "Bandits FC",
+    "final_filename": "Ryan-Reichert-Bandits_FC.jpg"
+  },
+  "cellImage_452565328_20.jpg": {
+    "player_name": "Isela-Ruiz",
+    "gender": "female",
+    "team_name": "Bandits FC",
+    "final_filename": "Isela-Ruiz-Bandits_FC.jpg"
+  },
+  "cellImage_452565328_21.jpg": {
+    "player_name": "Cesar-Soto",
+    "gender": "male",
+    "team_name": "Bandits FC",
+    "final_filename": "Cesar-Soto-Bandits_FC.jpg"
+  },
+  "cellImage_452565328_22.jpg": {
+    "player_name": "Conner-Stockett",
+    "gender": "male",
+    "team_name": "Bandits FC",
+    "final_filename": "Conner-Stockett-Bandits_FC.jpg"
+  },
+  "cellImage_1864316218_0.jpg": {
+    "player_name": "Mohamed-Abdelsalam",
+    "gender": "male",
+    "team_name": "Phoenix",
+    "final_filename": "Mohamed-Abdelsalam-Phoenix.jpg"
+  },
+  "cellImage_1864316218_1.jpg": {
+    "player_name": "Morgan-Becker",
+    "gender": "female",
+    "team_name": "Phoenix",
+    "final_filename": "Morgan-Becker-Phoenix.jpg"
+  },
+  "cellImage_1864316218_2.jpg": {
+    "player_name": "Jesus-Cortez",
+    "gender": "male",
+    "team_name": "Phoenix",
+    "final_filename": "Jesus-Cortez-Phoenix.jpg"
+  },
+  "cellImage_1864316218_3.jpg": {
+    "player_name": "Julio-Franco",
+    "gender": "male",
+    "team_name": "Phoenix",
+    "final_filename": "Julio-Franco-Phoenix.jpg"
+  },
+  "cellImage_1864316218_4.jpg": {
+    "player_name": "Julian-Galeana",
+    "gender": "male",
+    "team_name": "Phoenix",
+    "final_filename": "Julian-Galeana-Phoenix.jpg"
+  },
+  "cellImage_1864316218_5.jpg": {
+    "player_name": "Elizabeth-Gondkoff",
+    "gender": "female",
+    "team_name": "Phoenix",
+    "final_filename": "Elizabeth-Gondkoff-Phoenix.jpg"
+  },
+  "cellImage_1864316218_6.jpg": {
+    "player_name": "Megan-Grassi",
+    "gender": "female",
+    "team_name": "Phoenix",
+    "final_filename": "Megan-Grassi-Phoenix.jpg"
+  },
+  "cellImage_1864316218_7.jpg": {
+    "player_name": "Tony-Guizar",
+    "gender": "male",
+    "team_name": "Phoenix",
+    "final_filename": "Tony-Guizar-Phoenix.jpg"
+  },
+  "cellImage_1864316218_8.jpg": {
+    "player_name": "Kristy-Hearn",
+    "gender": "female",
+    "team_name": "Phoenix",
+    "final_filename": "Kristy-Hearn-Phoenix.jpg"
+  },
+  "cellImage_1864316218_9.jpg": {
+    "player_name": "Alicia-Ibarra",
+    "gender": "female",
+    "team_name": "Phoenix",
+    "final_filename": "Alicia-Ibarra-Phoenix.jpg"
+  },
+  "cellImage_1864316218_10.jpg": {
+    "player_name": "Erik-Lopez",
+    "gender": "male",
+    "team_name": "Phoenix",
+    "final_filename": "Erik-Lopez-Phoenix.jpg"
+  },
+  "cellImage_1864316218_11.jpg": {
+    "player_name": "Ericka-Luzzi",
+    "gender": "female",
+    "team_name": "Phoenix",
+    "final_filename": "Ericka-Luzzi-Phoenix.jpg"
+  },
+  "cellImage_1864316218_12.jpg": {
+    "player_name": "Sonia-Patel",
+    "gender": "female",
+    "team_name": "Phoenix",
+    "final_filename": "Sonia-Patel-Phoenix.jpg"
+  },
+  "cellImage_1864316218_13.jpg": {
+    "player_name": "Alfonso-Pedraza",
+    "gender": "male",
+    "team_name": "Phoenix",
+    "final_filename": "Alfonso-Pedraza-Phoenix.jpg"
+  },
+  "cellImage_1864316218_14.jpg": {
+    "player_name": "Erick-Ramos",
+    "gender": "male",
+    "team_name": "Phoenix",
+    "final_filename": "Erick-Ramos-Phoenix.jpg"
+  },
+  "cellImage_1864316218_15.jpg": {
+    "player_name": "Juan-Ramos",
+    "gender": "male",
+    "team_name": "Phoenix",
+    "final_filename": "Juan-Ramos-Phoenix.jpg"
+  },
+  "cellImage_1864316218_16.jpg": {
+    "player_name": "Manuel-Ramos",
+    "gender": "male",
+    "team_name": "Phoenix",
+    "final_filename": "Manuel-Ramos-Phoenix.jpg"
+  },
+  "cellImage_1864316218_17.jpg": {
+    "player_name": "Angel-Salazar",
+    "gender": "male",
+    "team_name": "Phoenix",
+    "final_filename": "Angel-Salazar-Phoenix.jpg"
+  },
+  "cellImage_1864316218_18.jpg": {
+    "player_name": "Christian-Schwartz",
+    "gender": "male",
+    "team_name": "Phoenix",
+    "final_filename": "Christian-Schwartz-Phoenix.jpg"
+  },
+  "cellImage_510981946_0.jpg": {
+    "player_name": "Kristen-Balch",
+    "gender": "female",
+    "team_name": "Lumberjacks",
+    "final_filename": "Kristen-Balch-Lumberjacks.jpg"
+  },
+  "cellImage_510981946_1.jpg": {
+    "player_name": "Diego-Arroyo",
+    "gender": "male",
+    "team_name": "Lumberjacks",
+    "final_filename": "Diego-Arroyo-Lumberjacks.jpg"
+  },
+  "cellImage_510981946_2.jpg": {
+    "player_name": "Elizabeth-Baxter",
+    "gender": "female",
+    "team_name": "Lumberjacks",
+    "final_filename": "Elizabeth-Baxter-Lumberjacks.jpg"
+  },
+  "cellImage_510981946_3.jpg": {
+    "player_name": "Francisco-Becerra",
+    "gender": "male",
+    "team_name": "Lumberjacks",
+    "final_filename": "Francisco-Becerra-Lumberjacks.jpg"
+  },
+  "cellImage_510981946_4.jpg": {
+    "player_name": "Jessica-Becerra",
+    "gender": "female",
+    "team_name": "Lumberjacks",
+    "final_filename": "Jessica-Becerra-Lumberjacks.jpg"
+  },
+  "cellImage_510981946_5.jpg": {
+    "player_name": "Mario-Borjon",
+    "gender": "male",
+    "team_name": "Lumberjacks",
+    "final_filename": "Mario-Borjon-Lumberjacks.jpg"
+  },
+  "cellImage_510981946_6.jpg": {
+    "player_name": "Cebrina-Chagoya",
+    "gender": "female",
+    "team_name": "Lumberjacks",
+    "final_filename": "Cebrina-Chagoya-Lumberjacks.jpg"
+  },
+  "cellImage_510981946_7.jpg": {
+    "player_name": "Josiah-Clark",
+    "gender": "male",
+    "team_name": "Lumberjacks",
+    "final_filename": "Josiah-Clark-Lumberjacks.jpg"
+  },
+  "cellImage_510981946_8.jpg": {
+    "player_name": "Natasha-Coelho",
+    "gender": "female",
+    "team_name": "Lumberjacks",
+    "final_filename": "Natasha-Coelho-Lumberjacks.jpg"
+  },
+  "cellImage_510981946_9.jpg": {
+    "player_name": "Robert-Hansen",
+    "gender": "male",
+    "team_name": "Lumberjacks",
+    "final_filename": "Robert-Hansen-Lumberjacks.jpg"
+  },
+  "cellImage_510981946_10.jpg": {
+    "player_name": "Tanya-Lissade",
+    "gender": "female",
+    "team_name": "Lumberjacks",
+    "final_filename": "Tanya-Lissade-Lumberjacks.jpg"
+  },
+  "cellImage_510981946_11.jpg": {
+    "player_name": "Canela-MacLeod",
+    "gender": "female",
+    "team_name": "Lumberjacks",
+    "final_filename": "Canela-MacLeod-Lumberjacks.jpg"
+  },
+  "cellImage_510981946_12.jpg": {
+    "player_name": "Neima-Mahini",
+    "gender": "male",
+    "team_name": "Lumberjacks",
+    "final_filename": "Neima-Mahini-Lumberjacks.jpg"
+  },
+  "cellImage_510981946_13.jpg": {
+    "player_name": "Russell-Mansky",
+    "gender": "male",
+    "team_name": "Lumberjacks",
+    "final_filename": "Russell-Mansky-Lumberjacks.jpg"
+  },
+  "cellImage_510981946_14.jpg": {
+    "player_name": "Tara-Mansky",
+    "gender": "female",
+    "team_name": "Lumberjacks",
+    "final_filename": "Tara-Mansky-Lumberjacks.jpg"
+  },
+  "cellImage_510981946_15.jpg": {
+    "player_name": "Amanda-Morrison",
+    "gender": "female",
+    "team_name": "Lumberjacks",
+    "final_filename": "Amanda-Morrison-Lumberjacks.jpg"
+  },
+  "cellImage_510981946_16.jpg": {
+    "player_name": "Roberta-Morrow",
+    "gender": "female",
+    "team_name": "Lumberjacks",
+    "final_filename": "Roberta-Morrow-Lumberjacks.jpg"
+  },
+  "cellImage_510981946_17.jpg": {
+    "player_name": "Julio-Munoz",
+    "gender": "male",
+    "team_name": "Lumberjacks",
+    "final_filename": "Julio-Munoz-Lumberjacks.jpg"
+  },
+  "cellImage_510981946_18.jpg": {
+    "player_name": "JuanPablo-Munoz Arroyo",
+    "gender": "male",
+    "team_name": "Lumberjacks",
+    "final_filename": "JuanPablo-Munoz Arroyo-Lumberjacks.jpg"
+  },
+  "cellImage_510981946_19.jpg": {
+    "player_name": "Karrina-Orbegoso",
+    "gender": "female",
+    "team_name": "Lumberjacks",
+    "final_filename": "Karrina-Orbegoso-Lumberjacks.jpg"
+  },
+  "cellImage_510981946_20.jpg": {
+    "player_name": "Sierra-Parini",
+    "gender": "female",
+    "team_name": "Lumberjacks",
+    "final_filename": "Sierra-Parini-Lumberjacks.jpg"
+  },
+  "cellImage_510981946_21.jpg": {
+    "player_name": "Paul-Rosso",
+    "gender": "male",
+    "team_name": "Lumberjacks",
+    "final_filename": "Paul-Rosso-Lumberjacks.jpg"
+  },
+  "cellImage_510981946_22.jpg": {
+    "player_name": "Cynthia-Saavedra Ruiz",
+    "gender": "female",
+    "team_name": "Lumberjacks",
+    "final_filename": "Cynthia-Saavedra Ruiz-Lumberjacks.jpg"
+  },
+  "cellImage_510981946_23.jpg": {
+    "player_name": "Danielle-Schneider",
+    "gender": "female",
+    "team_name": "Lumberjacks",
+    "final_filename": "Danielle-Schneider-Lumberjacks.jpg"
+  },
+  "cellImage_510981946_24.jpg": {
+    "player_name": "Rich-Schuster",
+    "gender": "male",
+    "team_name": "Lumberjacks",
+    "final_filename": "Rich-Schuster-Lumberjacks.jpg"
+  },
+  "cellImage_510981946_25.jpg": {
+    "player_name": "Bronte-Sewel",
+    "gender": "female",
+    "team_name": "Lumberjacks",
+    "final_filename": "Bronte-Sewel-Lumberjacks.jpg"
+  },
+  "cellImage_164656542_0.jpg": {
+    "player_name": "Gail-Benbow",
+    "gender": "female",
+    "team_name": "Subparcelona",
+    "final_filename": "Gail-Benbow-Subparcelona.jpg"
+  },
+  "cellImage_164656542_1.jpg": {
+    "player_name": "Jeff-Benbow",
+    "gender": "male",
+    "team_name": "Subparcelona",
+    "final_filename": "Jeff-Benbow-Subparcelona.jpg"
+  },
+  "cellImage_164656542_2.jpg": {
+    "player_name": "TJ-Cariaso",
+    "gender": "male",
+    "team_name": "Subparcelona",
+    "final_filename": "TJ-Cariaso-Subparcelona.jpg"
+  },
+  "cellImage_164656542_3.jpg": {
+    "player_name": "Mike-Douglas",
+    "gender": "male",
+    "team_name": "Subparcelona",
+    "final_filename": "Mike-Douglas-Subparcelona.jpg"
+  },
+  "cellImage_164656542_4.jpg": {
+    "player_name": "Umut-Dulger",
+    "gender": "male",
+    "team_name": "Subparcelona",
+    "final_filename": "Umut-Dulger-Subparcelona.jpg"
+  },
+  "cellImage_164656542_5.jpg": {
+    "player_name": "Patrick-Feng",
+    "gender": "male",
+    "team_name": "Subparcelona",
+    "final_filename": "Patrick-Feng-Subparcelona.jpg"
+  },
+  "cellImage_164656542_6.jpg": {
+    "player_name": "Geraj Vinny Rajesh-Gersome Selvaraj",
+    "gender": "male",
+    "team_name": "Subparcelona",
+    "final_filename": "Geraj Vinny Rajesh-Gersome Selvaraj-Subparcelona.jpg"
+  },
+  "cellImage_164656542_7.jpg": {
+    "player_name": "Cristofer-Gourtzelis",
+    "gender": "male",
+    "team_name": "Subparcelona",
+    "final_filename": "Cristofer-Gourtzelis-Subparcelona.jpg"
+  },
+  "cellImage_164656542_8.jpg": {
+    "player_name": "Diego-Gourtzelis",
+    "gender": "male",
+    "team_name": "Subparcelona",
+    "final_filename": "Diego-Gourtzelis-Subparcelona.jpg"
+  },
+  "cellImage_164656542_9.jpg": {
+    "player_name": "Jill-Haut",
+    "gender": "female",
+    "team_name": "Subparcelona",
+    "final_filename": "Jill-Haut-Subparcelona.jpg"
+  },
+  "cellImage_164656542_10.jpg": {
+    "player_name": "Dion-Hock",
+    "gender": "male",
+    "team_name": "Subparcelona",
+    "final_filename": "Dion-Hock-Subparcelona.jpg"
+  },
+  "cellImage_164656542_11.jpg": {
+    "player_name": "Guillermo-Huicochea",
+    "gender": "male",
+    "team_name": "Subparcelona",
+    "final_filename": "Guillermo-Huicochea-Subparcelona.jpg"
+  },
+  "cellImage_164656542_12.jpg": {
+    "player_name": "Bryan-Huot",
+    "gender": "male",
+    "team_name": "Subparcelona",
+    "final_filename": "Bryan-Huot-Subparcelona.jpg"
+  },
+  "cellImage_164656542_13.jpg": {
+    "player_name": "Laura-Huot",
+    "gender": "female",
+    "team_name": "Subparcelona",
+    "final_filename": "Laura-Huot-Subparcelona.jpg"
+  },
+  "cellImage_164656542_14.jpg": {
+    "player_name": "Tyson-Kane",
+    "gender": "male",
+    "team_name": "Subparcelona",
+    "final_filename": "Tyson-Kane-Subparcelona.jpg"
+  },
+  "cellImage_164656542_15.jpg": {
+    "player_name": "Alan-Kaplan",
+    "gender": "male",
+    "team_name": "Subparcelona",
+    "final_filename": "Alan-Kaplan-Subparcelona.jpg"
+  },
+  "cellImage_164656542_16.jpg": {
+    "player_name": "Maggy-Kelly",
+    "gender": "female",
+    "team_name": "Subparcelona",
+    "final_filename": "Maggy-Kelly-Subparcelona.jpg"
+  },
+  "cellImage_164656542_17.jpg": {
+    "player_name": "Dominic-McKeown",
+    "gender": "male",
+    "team_name": "Subparcelona",
+    "final_filename": "Dominic-McKeown-Subparcelona.jpg"
+  },
+  "cellImage_164656542_18.jpg": {
+    "player_name": "Alex A-Movasseghi",
+    "gender": "male",
+    "team_name": "Subparcelona",
+    "final_filename": "Alex A-Movasseghi-Subparcelona.jpg"
+  },
+  "cellImage_164656542_19.jpg": {
+    "player_name": "Brad-Peterson",
+    "gender": "male",
+    "team_name": "Subparcelona",
+    "final_filename": "Brad-Peterson-Subparcelona.jpg"
+  },
+  "cellImage_164656542_20.jpg": {
+    "player_name": "Sajid-Saleem",
+    "gender": "male",
+    "team_name": "Subparcelona",
+    "final_filename": "Sajid-Saleem-Subparcelona.jpg"
+  },
+  "cellImage_164656542_21.jpg": {
+    "player_name": "Dannika-Silvia",
+    "gender": "female",
+    "team_name": "Subparcelona",
+    "final_filename": "Dannika-Silvia-Subparcelona.jpg"
+  },
+  "cellImage_1093004299_0.jpg": {
+    "player_name": "Jose G-Aguas loza",
+    "gender": "male",
+    "team_name": "Rat Pack",
+    "final_filename": "Jose G-Aguas loza-Rat_Pack.jpg"
+  },
+  "cellImage_1093004299_1.jpg": {
+    "player_name": "Pat-Aguiar",
+    "gender": "male",
+    "team_name": "Rat Pack",
+    "final_filename": "Pat-Aguiar-Rat_Pack.jpg"
+  },
+  "cellImage_1093004299_2.jpg": {
+    "player_name": "Rachel-Amador",
+    "gender": "female",
+    "team_name": "Rat Pack",
+    "final_filename": "Rachel-Amador-Rat_Pack.jpg"
+  },
+  "cellImage_1093004299_3.jpg": {
+    "player_name": "Owen-Barcelona",
+    "gender": "male",
+    "team_name": "Rat Pack",
+    "final_filename": "Owen-Barcelona-Rat_Pack.jpg"
+  },
+  "cellImage_1093004299_4.jpg": {
+    "player_name": "Cesar-Chavez",
+    "gender": "male",
+    "team_name": "Rat Pack",
+    "final_filename": "Cesar-Chavez-Rat_Pack.jpg"
+  },
+  "cellImage_1093004299_5.jpg": {
+    "player_name": "Gina-Epperley",
+    "gender": "female",
+    "team_name": "Rat Pack",
+    "final_filename": "Gina-Epperley-Rat_Pack.jpg"
+  },
+  "cellImage_1093004299_6.jpg": {
+    "player_name": "Pablo-Espinosa",
+    "gender": "male",
+    "team_name": "Rat Pack",
+    "final_filename": "Pablo-Espinosa-Rat_Pack.jpg"
+  },
+  "cellImage_1093004299_7.jpg": {
+    "player_name": "Kay-French",
+    "gender": "female",
+    "team_name": "Rat Pack",
+    "final_filename": "Kay-French-Rat_Pack.jpg"
+  },
+  "cellImage_1093004299_8.jpg": {
+    "player_name": "Brianna-Garcia",
+    "gender": "female",
+    "team_name": "Rat Pack",
+    "final_filename": "Brianna-Garcia-Rat_Pack.jpg"
+  },
+  "cellImage_1093004299_9.jpg": {
+    "player_name": "Jeff-Goodman",
+    "gender": "male",
+    "team_name": "Rat Pack",
+    "final_filename": "Jeff-Goodman-Rat_Pack.jpg"
+  },
+  "cellImage_1093004299_10.jpg": {
+    "player_name": "Jay-Goomany",
+    "gender": "male",
+    "team_name": "Rat Pack",
+    "final_filename": "Jay-Goomany-Rat_Pack.jpg"
+  },
+  "cellImage_1093004299_11.jpg": {
+    "player_name": "Andrea-Irons",
+    "gender": "female",
+    "team_name": "Rat Pack",
+    "final_filename": "Andrea-Irons-Rat_Pack.jpg"
+  },
+  "cellImage_1093004299_12.jpg": {
+    "player_name": "Nicole-Irwin",
+    "gender": "female",
+    "team_name": "Rat Pack",
+    "final_filename": "Nicole-Irwin-Rat_Pack.jpg"
+  },
+  "cellImage_1093004299_13.jpg": {
+    "player_name": "Alison-Lombardo-Click",
+    "gender": "female",
+    "team_name": "Rat Pack",
+    "final_filename": "Alison-Lombardo-Click-Rat_Pack.jpg"
+  },
+  "cellImage_1093004299_14.jpg": {
+    "player_name": "Ysabel-Mandac",
+    "gender": "female",
+    "team_name": "Rat Pack",
+    "final_filename": "Ysabel-Mandac-Rat_Pack.jpg"
+  },
+  "cellImage_1093004299_15.jpg": {
+    "player_name": "Mari-Mantle",
+    "gender": "female",
+    "team_name": "Rat Pack",
+    "final_filename": "Mari-Mantle-Rat_Pack.jpg"
+  },
+  "cellImage_1093004299_16.jpg": {
+    "player_name": "Carissa-Miramontes",
+    "gender": "female",
+    "team_name": "Rat Pack",
+    "final_filename": "Carissa-Miramontes-Rat_Pack.jpg"
+  },
+  "cellImage_1093004299_17.jpg": {
+    "player_name": "Javier-Miramontes",
+    "gender": "male",
+    "team_name": "Rat Pack",
+    "final_filename": "Javier-Miramontes-Rat_Pack.jpg"
+  },
+  "cellImage_1093004299_18.jpg": {
+    "player_name": "Raul-Miramontes",
+    "gender": "male",
+    "team_name": "Rat Pack",
+    "final_filename": "Raul-Miramontes-Rat_Pack.jpg"
+  },
+  "cellImage_1093004299_19.jpg": {
+    "player_name": "Jessica-Monarrez",
+    "gender": "female",
+    "team_name": "Rat Pack",
+    "final_filename": "Jessica-Monarrez-Rat_Pack.jpg"
+  },
+  "cellImage_1093004299_20.jpg": {
+    "player_name": "Kevin-Ng",
+    "gender": "male",
+    "team_name": "Rat Pack",
+    "final_filename": "Kevin-Ng-Rat_Pack.jpg"
+  },
+  "cellImage_1093004299_21.jpg": {
+    "player_name": "Susana-Reyes",
+    "gender": "female",
+    "team_name": "Rat Pack",
+    "final_filename": "Susana-Reyes-Rat_Pack.jpg"
+  },
+  "cellImage_1093004299_22.jpg": {
+    "player_name": "Dianah-Rodriguez",
+    "gender": "female",
+    "team_name": "Rat Pack",
+    "final_filename": "Dianah-Rodriguez-Rat_Pack.jpg"
+  },
+  "cellImage_1093004299_23.jpg": {
+    "player_name": "Juan-Rodriguez",
+    "gender": "male",
+    "team_name": "Rat Pack",
+    "final_filename": "Juan-Rodriguez-Rat_Pack.jpg"
+  },
+  "cellImage_1093004299_24.jpg": {
+    "player_name": "Matthew-Smith",
+    "gender": "male",
+    "team_name": "Rat Pack",
+    "final_filename": "Matthew-Smith-Rat_Pack.jpg"
+  },
+  "cellImage_1093004299_25.jpg": {
+    "player_name": "Kevin-Strei",
+    "gender": "male",
+    "team_name": "Rat Pack",
+    "final_filename": "Kevin-Strei-Rat_Pack.jpg"
+  },
+  "cellImage_1093004299_26.jpg": {
+    "player_name": "Audra-Triska",
+    "gender": "female",
+    "team_name": "Rat Pack",
+    "final_filename": "Audra-Triska-Rat_Pack.jpg"
+  },
+  "cellImage_1093004299_27.jpg": {
+    "player_name": "Steve-Umeki",
+    "gender": "male",
+    "team_name": "Rat Pack",
+    "final_filename": "Steve-Umeki-Rat_Pack.jpg"
+  }
+}
