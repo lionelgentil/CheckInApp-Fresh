@@ -2967,16 +2967,31 @@ function updateMemberProfile($db) {
         error_log("  rowCount(): $rowCount");
 
         if ($result && $rowCount > 0) {
-            error_log("updateMemberProfile SUCCESS - Updated $rowCount row(s)");
-            echo json_encode(['success' => true, 'message' => 'Member profile updated successfully']);
+            echo json_encode([
+                'success' => true,
+                'message' => 'Member profile updated successfully',
+                'debug' => [
+                    'rowsUpdated' => $rowCount,
+                    'params' => $sqlParams
+                ]
+            ]);
         } else if ($result && $rowCount === 0) {
-            error_log("updateMemberProfile WARNING - Query succeeded but no rows updated");
-            http_response_code(404);
-            echo json_encode(['error' => 'No matching record found to update', 'debug' => ['rowCount' => $rowCount]]);
+            echo json_encode([
+                'error' => 'No matching record found to update',
+                'debug' => [
+                    'rowCount' => $rowCount,
+                    'params' => $sqlParams,
+                    'existingRecord' => $existingRecord
+                ]
+            ]);
         } else {
-            error_log("updateMemberProfile ERROR - Query execution failed");
-            http_response_code(500);
-            echo json_encode(['error' => 'Failed to update member profile']);
+            echo json_encode([
+                'error' => 'Failed to update member profile',
+                'debug' => [
+                    'executeResult' => $result,
+                    'params' => $sqlParams
+                ]
+            ]);
         }
 
     } catch (Exception $e) {

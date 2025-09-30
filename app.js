@@ -2847,22 +2847,19 @@ Please check the browser console (F12) for more details.`);
         // Basic member info (name, jersey, gender) will be updated after database save
         if (photo) {
             member.photo = photo;
-            console.log('saveDetailedMember: Updated member photo to:', photo);
-            console.log('saveDetailedMember: Member object after update:', member);
-            
+
             // Double-check: also update in teams array (member should already be the reference, but be safe)
             const teamRef = this.teams.find(t => t.id === teamId);
             const memberRef = teamRef.members.find(m => m.id === memberId);
             if (memberRef && memberRef !== member) {
                 memberRef.photo = photo;
-                console.log('saveDetailedMember: Also updated photo in teams array reference');
             }
-            
+
             // Force immediate UI refresh to show new photo
-            console.log('saveDetailedMember: Forcing UI refresh...');
             this.renderTeams();
-            console.log('saveDetailedMember: UI refreshed');
         }
+
+        console.log('✅ Photo update section completed, continuing to disciplinary records...');
         
         console.log('🔍 About to collect disciplinary records...');
         
