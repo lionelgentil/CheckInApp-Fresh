@@ -11,8 +11,8 @@ require_once 'config.php';
 echo "=== ORPHANED PHOTO DETECTION ===\n\n";
 
 // Step 1: Scan /app/photos directory for UUID files
-echo "1. Scanning /app/photos directory...\n";
-$photoDir = '/app/photos/';
+echo "1. Scanning /app/storage/photos directory...\n";
+$photoDir = '/app/storage/photos/';
 $photoFiles = [];
 $photoUUIDs = [];
 
