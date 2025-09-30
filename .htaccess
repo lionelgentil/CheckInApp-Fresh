@@ -22,6 +22,11 @@ Header always set X-Content-Type-Options nosniff
 Header always set X-Frame-Options DENY
 Header always set X-XSS-Protection "1; mode=block"
 
+# Set correct MIME types for JavaScript files
+<FilesMatch "\.js$">
+    Header set Content-Type "application/javascript"
+</FilesMatch>
+
 # Cache static assets and photos
 <FilesMatch "\.(css|js|png|jpg|jpeg|gif|ico|svg)$">
     ExpiresActive On
