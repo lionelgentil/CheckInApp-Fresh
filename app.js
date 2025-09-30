@@ -2373,6 +2373,12 @@ Please check the browser console (F12) for more details.`);
     
     // 🚀 NEW: Granular API methods for better performance
     async updateMemberProfile(teamId, memberId, memberData) {
+        console.log('🚀 updateMemberProfile called with:', {
+            teamId,
+            memberId,
+            memberData
+        });
+
         const data = await this.fetch('/api/teams/member-profile', {
             method: 'POST',
             headers: {
@@ -2386,7 +2392,8 @@ Please check the browser console (F12) for more details.`);
                 gender: memberData.gender
             })
         });
-        
+
+        console.log('🚀 updateMemberProfile response:', data);
         return data;
     }
     
@@ -2912,12 +2919,31 @@ Please check the browser console (F12) for more details.`);
         
         try {
             // Check if basic member info actually changed
+            console.log('🔍 Checking if basic member info changed...');
+            console.log('🔍 Original values:', {
+                name: originalName,
+                jerseyNumber: originalJerseyNumber,
+                gender: originalGender
+            });
+            console.log('🔍 New values:', {
+                name: name,
+                jerseyNumber: jerseyNumber ? parseInt(jerseyNumber) : null,
+                gender: gender || null
+            });
+
             const basicInfoChanged = (
                 originalName !== name ||
                 (originalJerseyNumber || null) !== (jerseyNumber ? parseInt(jerseyNumber) : null) ||
                 (originalGender || null) !== (gender || null)
             );
-            
+
+            console.log('🔍 Individual comparisons:', {
+                'name changed': originalName !== name,
+                'jersey changed': (originalJerseyNumber || null) !== (jerseyNumber ? parseInt(jerseyNumber) : null),
+                'gender changed': (originalGender || null) !== (gender || null),
+                'overall changed': basicInfoChanged
+            });
+
             // Save basic member info if changed (using granular API for better performance)
             if (basicInfoChanged) {
                 console.log('💾 saveDetailedMember: Basic member info changed, using granular API');
@@ -2926,19 +2952,27 @@ Please check the browser console (F12) for more details.`);
                     jersey: originalJerseyNumber + ' → ' + (jerseyNumber || 'null'),
                     gender: originalGender + ' → ' + (gender || 'null')
                 });
-                
-                await this.updateMemberProfile(teamId, memberId, {
-                    name: name,
-                    jerseyNumber: jerseyNumber ? parseInt(jerseyNumber) : null,
-                    gender: gender || null
-                });
-                
-                // Update local member object after successful database update
-                member.name = name;
-                member.jerseyNumber = jerseyNumber ? parseInt(jerseyNumber) : null;
-                member.gender = gender || null;
-                
-                console.log('✅ Member profile saved and local object updated');
+
+                try {
+                    console.log('📞 About to call updateMemberProfile...');
+                    await this.updateMemberProfile(teamId, memberId, {
+                        name: name,
+                        jerseyNumber: jerseyNumber ? parseInt(jerseyNumber) : null,
+                        gender: gender || null
+                    });
+                    console.log('📞 updateMemberProfile completed successfully');
+
+                    // Update local member object after successful database update
+                    member.name = name;
+                    member.jerseyNumber = jerseyNumber ? parseInt(jerseyNumber) : null;
+                    member.gender = gender || null;
+
+                    console.log('✅ Member profile saved and local object updated');
+                } catch (updateError) {
+                    console.error('❌ Error in updateMemberProfile:', updateError);
+                    alert('Failed to update member profile: ' + updateError.message);
+                    return; // Don't continue if member update failed
+                }
             } else {
                 console.log('✅ saveDetailedMember: No basic info changes, skipping member profile update');
             }
