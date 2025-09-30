@@ -234,34 +234,76 @@ try {
     
     switch ($endpoint) {
         case 'auth':
-            // Handle auth sub-routes
-            if ($path === 'auth/check' && $method === 'GET') {
-                echo json_encode(array(
-                    'authenticated' => isAuthenticated(),
-                    'session_remaining' => isAuthenticated() ? SESSION_TIMEOUT - (time() - $_SESSION['auth_timestamp']) : 0
-                ));
-            } elseif ($path === 'auth/login' && $method === 'POST') {
-                $input = json_decode(file_get_contents('php://input'), true);
-                $password = isset($input['password']) ? $input['password'] : '';
-                
-                if (authenticate($password)) {
+            // Handle auth sub-routes with proper error handling
+            try {
+                header('Content-Type: application/json');
+
+                if ($path === 'auth/check' && $method === 'GET') {
+                    $isAuth = false;
+                    $sessionRemaining = 0;
+
+                    try {
+                        $isAuth = isAuthenticated();
+                        $sessionRemaining = $isAuth ? SESSION_TIMEOUT - (time() - $_SESSION['auth_timestamp']) : 0;
+                    } catch (Exception $e) {
+                        error_log("Auth check error: " . $e->getMessage());
+                        // Continue with false defaults
+                    }
+
                     echo json_encode(array(
-                        'success' => true,
-                        'message' => 'Authentication successful'
+                        'authenticated' => $isAuth,
+                        'session_remaining' => $sessionRemaining
                     ));
+                } elseif ($path === 'auth/login' && $method === 'POST') {
+                    $input = json_decode(file_get_contents('php://input'), true);
+                    $password = isset($input['password']) ? $input['password'] : '';
+
+                    if (!$password) {
+                        http_response_code(400);
+                        echo json_encode(array(
+                            'success' => false,
+                            'message' => 'Password required'
+                        ));
+                    } else {
+                        try {
+                            if (authenticate($password)) {
+                                echo json_encode(array(
+                                    'success' => true,
+                                    'message' => 'Authentication successful'
+                                ));
+                            } else {
+                                http_response_code(401);
+                                echo json_encode(array(
+                                    'success' => false,
+                                    'message' => 'Invalid password'
+                                ));
+                            }
+                        } catch (Exception $e) {
+                            error_log("Authentication error: " . $e->getMessage());
+                            http_response_code(500);
+                            echo json_encode(array(
+                                'success' => false,
+                                'message' => 'Authentication system error'
+                            ));
+                        }
+                    }
+                } elseif ($path === 'auth/logout' && $method === 'POST') {
+                    try {
+                        session_destroy();
+                        echo json_encode(array('success' => true, 'message' => 'Logged out successfully'));
+                    } catch (Exception $e) {
+                        error_log("Logout error: " . $e->getMessage());
+                        echo json_encode(array('success' => true, 'message' => 'Logged out'));
+                    }
                 } else {
-                    http_response_code(401);
-                    echo json_encode(array(
-                        'success' => false,
-                        'message' => 'Invalid password'
-                    ));
+                    http_response_code(404);
+                    echo json_encode(['error' => 'Auth endpoint not found', 'path' => $path, 'method' => $method]);
                 }
-            } elseif ($path === 'auth/logout' && $method === 'POST') {
-                session_destroy();
-                echo json_encode(array('success' => true, 'message' => 'Logged out successfully'));
-            } else {
-                http_response_code(404);
-                echo json_encode(['error' => 'Auth endpoint not found']);
+            } catch (Exception $e) {
+                error_log("Auth case error: " . $e->getMessage());
+                http_response_code(500);
+                header('Content-Type: application/json');
+                echo json_encode(['error' => 'Authentication system error']);
             }
             break;
             
