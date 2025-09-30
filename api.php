@@ -2884,13 +2884,75 @@ function updateAttendanceOnly($db) {
 
 // Update member profile data (name, jersey number, gender) - enhanced for admin app
 function updateMemberProfile($db) {
-    // Force immediate output to browser console via JSON response
-    echo json_encode([
-        'CLAUDE_DEBUG' => 'updateMemberProfile function IS being called!',
-        'timestamp' => date('Y-m-d H:i:s'),
-        'success' => false
-    ]);
-    return; // Exit early to prove this function is being executed
+    try {
+        $input = json_decode(file_get_contents('php://input'), true);
+
+        $teamId = $input['teamId'] ?? null;
+        $memberId = $input['memberId'] ?? null;
+        $name = $input['name'] ?? null;
+        $jerseyNumber = $input['jerseyNumber'] ?? null;
+        $gender = $input['gender'] ?? null;
+
+        if (!$teamId || !$memberId) {
+            http_response_code(400);
+            echo json_encode([
+                'error' => 'Team ID and Member ID are required',
+                'CLAUDE_DEBUG' => 'Missing required parameters'
+            ]);
+            return;
+        }
+
+        // Check if record exists
+        $checkStmt = $db->prepare('SELECT id, name FROM team_members WHERE id = ? AND team_id = ?');
+        $checkStmt->execute([$memberId, $teamId]);
+        $existingRecord = $checkStmt->fetch();
+
+        if (!$existingRecord) {
+            http_response_code(404);
+            echo json_encode([
+                'error' => 'Member not found',
+                'CLAUDE_DEBUG' => 'No record found for member'
+            ]);
+            return;
+        }
+
+        // Update member profile (supports name, jersey number, and gender)
+        $stmt = $db->prepare('UPDATE team_members SET name = ?, jersey_number = ?, gender = ? WHERE id = ? AND team_id = ?');
+        $result = $stmt->execute([$name, $jerseyNumber, $gender, $memberId, $teamId]);
+        $rowCount = $stmt->rowCount();
+
+        if ($result && $rowCount > 0) {
+            echo json_encode([
+                'success' => true,
+                'message' => 'Member profile updated successfully',
+                'CLAUDE_DEBUG' => 'UPDATE SUCCESSFUL!',
+                'debug' => [
+                    'rowsUpdated' => $rowCount,
+                    'oldName' => $existingRecord['name'],
+                    'newName' => $name,
+                    'sql' => 'UPDATE team_members SET name = ?, jersey_number = ?, gender = ? WHERE id = ? AND team_id = ?',
+                    'params' => [$name, $jerseyNumber, $gender, $memberId, $teamId]
+                ]
+            ]);
+        } else {
+            echo json_encode([
+                'error' => 'Failed to update - no rows affected',
+                'CLAUDE_DEBUG' => 'SQL executed but no rows updated',
+                'debug' => [
+                    'executeResult' => $result,
+                    'rowCount' => $rowCount,
+                    'params' => [$name, $jerseyNumber, $gender, $memberId, $teamId]
+                ]
+            ]);
+        }
+
+    } catch (Exception $e) {
+        http_response_code(500);
+        echo json_encode([
+            'error' => 'Failed to update member profile: ' . $e->getMessage(),
+            'CLAUDE_DEBUG' => 'EXCEPTION occurred'
+        ]);
+    }
 }
 
 // Create new team member - for admin app
