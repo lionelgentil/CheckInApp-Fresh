@@ -6,7 +6,48 @@
  * and identifies which UUIDs don't exist in the team_members table.
  */
 
-require_once 'config.php';
+// Database connection - same logic as api.php
+$databaseUrl = null;
+
+// Try various environment variable patterns for Railway
+$envVars = ['DATABASE_URL', 'DATABASE_PRIVATE_URL', 'POSTGRES_URL', 'POSTGRESQL_URL'];
+foreach ($envVars as $var) {
+    if (!empty($_ENV[$var])) {
+        $databaseUrl = $_ENV[$var];
+        break;
+    } elseif (!empty(getenv($var))) {
+        $databaseUrl = getenv($var);
+        break;
+    }
+}
+
+if (!$databaseUrl) {
+    die("ERROR: No database URL found in environment variables\n");
+}
+
+try {
+    // Parse PostgreSQL URL and convert to PDO connection string
+    $parsedUrl = parse_url($databaseUrl);
+    $host = $parsedUrl['host'];
+    $port = $parsedUrl['port'] ?? 5432;
+    $dbname = ltrim($parsedUrl['path'], '/');
+    $user = $parsedUrl['user'];
+    $password = $parsedUrl['pass'];
+
+    // Build PostgreSQL PDO connection string
+    $dsn = "pgsql:host={$host};port={$port};dbname={$dbname};connect_timeout=10";
+
+    // PDO options
+    $options = [
+        PDO::ATTR_ERRMODE => PDO::ERRMODE_EXCEPTION,
+        PDO::ATTR_DEFAULT_FETCH_MODE => PDO::FETCH_ASSOC
+    ];
+
+    $pdo = new PDO($dsn, $user, $password, $options);
+
+} catch (PDOException $e) {
+    die("Database connection error: " . $e->getMessage() . "\n");
+}
 
 echo "=== ORPHANED PHOTO DETECTION ===\n\n";
 
@@ -38,8 +79,6 @@ echo "Unique member UUIDs: " . count(array_unique($photoUUIDs)) . "\n\n";
 // Step 2: Query existing team_members
 echo "2. Querying existing team_members...\n";
 try {
-    $pdo = new PDO($dsn, $username, $password, $options);
-
     $stmt = $pdo->query("SELECT id FROM team_members");
     $existingMembers = $stmt->fetchAll(PDO::FETCH_COLUMN);
 
