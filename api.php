@@ -427,7 +427,9 @@ try {
             
         case 'teams/member-profile':
             // Update limited member profile data (jersey number, photo) - no admin auth required
+            error_log("CLAUDE DEBUG: teams/member-profile endpoint reached with method: $method");
             if ($method === 'POST') {
+                error_log("CLAUDE DEBUG: About to call updateMemberProfile function");
                 updateMemberProfile($db);
             }
             break;
@@ -2907,7 +2909,7 @@ function updateMemberProfile($db) {
         $gender = $input['gender'] ?? null;
 
         // Debug: Log input parameters
-        error_log("updateMemberProfile DEBUG - Input: teamId=$teamId, memberId=$memberId, name=$name, jerseyNumber=$jerseyNumber, gender=$gender");
+        error_log("updateMemberProfile DEBUG [TIMESTAMP:" . time() . "] - Input: teamId=$teamId, memberId=$memberId, name=$name, jerseyNumber=$jerseyNumber, gender=$gender");
 
         if (!$teamId || !$memberId) {
             error_log("updateMemberProfile ERROR - Missing required parameters");
@@ -2944,6 +2946,7 @@ function updateMemberProfile($db) {
             echo json_encode([
                 'success' => true,
                 'message' => 'Member profile updated successfully',
+                'CLAUDE_DEBUG_MARKER' => 'updateMemberProfile function executed at ' . date('Y-m-d H:i:s'),
                 'debug' => [
                     'rowsUpdated' => $rowCount,
                     'oldName' => $existingRecord['name'],
