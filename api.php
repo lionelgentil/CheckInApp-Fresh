@@ -4,6 +4,9 @@
  * RESTful API for team and event management
  */
 
+// CLAUDE TEST: This should appear in logs for ANY request to api.php
+error_log("CLAUDE TEST: api.php file loaded at " . date('Y-m-d H:i:s') . " for URI: " . ($_SERVER['REQUEST_URI'] ?? 'unknown'));
+
 // Start session for authentication BEFORE any output
 session_start();
 
@@ -226,12 +229,18 @@ try {
 $path = isset($_GET['path']) ? $_GET['path'] : '';
 $method = $_SERVER['REQUEST_METHOD'];
 
+// CLAUDE DEBUG: Log ALL requests to this API file
+error_log("CLAUDE DEBUG API ENTRY: path='$path', method='$method', timestamp=" . time());
+
 // Route requests
 try {
     // Extract the main endpoint from the path
-    $pathSegments = explode('/', $path);  
+    $pathSegments = explode('/', $path);
     $endpoint = $pathSegments[0];
-    
+
+    // CLAUDE DEBUG: Log the extracted endpoint
+    error_log("CLAUDE DEBUG ROUTING: extracted endpoint='$endpoint' from path='$path'");
+
     switch ($endpoint) {
         case 'auth':
             // Handle auth sub-routes with proper error handling
@@ -2899,80 +2908,13 @@ function updateAttendanceOnly($db) {
 
 // Update member profile data (name, jersey number, gender) - enhanced for admin app
 function updateMemberProfile($db) {
-    try {
-        $input = json_decode(file_get_contents('php://input'), true);
-
-        $teamId = $input['teamId'] ?? null;
-        $memberId = $input['memberId'] ?? null;
-        $name = $input['name'] ?? null;
-        $jerseyNumber = $input['jerseyNumber'] ?? null;
-        $gender = $input['gender'] ?? null;
-
-        // Debug: Log input parameters
-        error_log("updateMemberProfile DEBUG [TIMESTAMP:" . time() . "] - Input: teamId=$teamId, memberId=$memberId, name=$name, jerseyNumber=$jerseyNumber, gender=$gender");
-
-        if (!$teamId || !$memberId) {
-            error_log("updateMemberProfile ERROR - Missing required parameters");
-            http_response_code(400);
-            echo json_encode(['error' => 'Team ID and Member ID are required']);
-            return;
-        }
-
-        // Debug: Check if the record exists before updating
-        $checkStmt = $db->prepare('SELECT id, name, team_id FROM team_members WHERE id = ? AND team_id = ?');
-        $checkStmt->execute([$memberId, $teamId]);
-        $existingRecord = $checkStmt->fetch();
-
-        if (!$existingRecord) {
-            error_log("updateMemberProfile ERROR - No record found with id=$memberId AND team_id=$teamId");
-            http_response_code(404);
-            echo json_encode(['error' => 'Member not found']);
-            return;
-        }
-
-        error_log("updateMemberProfile DEBUG - Found existing record: " . json_encode($existingRecord));
-
-        // Update member profile (supports name, jersey number, and gender)
-        $stmt = $db->prepare('UPDATE team_members SET name = ?, jersey_number = ?, gender = ? WHERE id = ? AND team_id = ?');
-        $sqlParams = [$name, $jerseyNumber, $gender, $memberId, $teamId];
-
-        error_log("updateMemberProfile DEBUG - Executing SQL with params: " . json_encode($sqlParams));
-        $result = $stmt->execute($sqlParams);
-        $rowCount = $stmt->rowCount();
-
-        error_log("updateMemberProfile DEBUG - SQL result: success=$result, rowCount=$rowCount");
-
-        if ($result && $rowCount > 0) {
-            echo json_encode([
-                'success' => true,
-                'message' => 'Member profile updated successfully',
-                'CLAUDE_DEBUG_MARKER' => 'updateMemberProfile function executed at ' . date('Y-m-d H:i:s'),
-                'debug' => [
-                    'rowsUpdated' => $rowCount,
-                    'oldName' => $existingRecord['name'],
-                    'newName' => $name
-                ]
-            ]);
-        } else if ($result && $rowCount === 0) {
-            echo json_encode([
-                'error' => 'No matching record found to update',
-                'debug' => [
-                    'rowCount' => $rowCount,
-                    'existingRecord' => $existingRecord
-                ]
-            ]);
-        } else {
-            echo json_encode([
-                'error' => 'Failed to update member profile',
-                'debug' => ['executeResult' => $result]
-            ]);
-        }
-
-    } catch (Exception $e) {
-        error_log("updateMemberProfile EXCEPTION: " . $e->getMessage());
-        http_response_code(500);
-        echo json_encode(['error' => 'Failed to update member profile: ' . $e->getMessage()]);
-    }
+    // Force immediate output to browser console via JSON response
+    echo json_encode([
+        'CLAUDE_DEBUG' => 'updateMemberProfile function IS being called!',
+        'timestamp' => date('Y-m-d H:i:s'),
+        'success' => false
+    ]);
+    return; // Exit early to prove this function is being executed
 }
 
 // Create new team member - for admin app
