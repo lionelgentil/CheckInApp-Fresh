@@ -2897,6 +2897,14 @@ function updateAttendanceOnly($db) {
 
 // Update member profile data (name, jersey number, gender) - enhanced for admin app
 function updateMemberProfile($db) {
+    // OBVIOUS DEBUG TEST - this should always appear in response
+    echo json_encode([
+        'TEST_DEBUG' => 'updateMemberProfile function called with enhanced debugging',
+        'timestamp' => time(),
+        'success' => false  // Force failure to see if this appears
+    ]);
+    return; // Exit early for testing
+
     try {
         $input = json_decode(file_get_contents('php://input'), true);
 
