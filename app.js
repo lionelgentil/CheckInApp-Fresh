@@ -724,7 +724,6 @@ class CheckInApp extends CheckInCore {
     // Get member photo URL with gender defaults
     getMemberPhotoUrl(member) {
         // DEBUG: Log photo data to understand what we're receiving
-        console.log('🖼️ getMemberPhotoUrl called for member:', member.name, 'photo data:', member.photo);
         
         // Check if member has a real custom photo
         if (member.photo) {
@@ -744,7 +743,6 @@ class CheckInApp extends CheckInCore {
             
             // Handle direct photo URLs (new optimized format)
             if (member.photo.startsWith('/photos/')) {
-                console.log('⚡ Using direct photo URL for:', member.name, 'URL:', member.photo);
                 return member.photo; // Direct static file serving (fastest)
             }
             
@@ -756,7 +754,6 @@ class CheckInApp extends CheckInCore {
                     // Check if the filename has a valid image extension
                     if (filename.includes('.jpg') || filename.includes('.jpeg') || 
                         filename.includes('.png') || filename.includes('.webp')) {
-                        console.log('🔗 Converting API URL to direct URL for:', member.name, 'filename:', filename);
                         // Convert to direct URL for better performance
                         return `/photos/${filename}`;
                     }
@@ -839,8 +836,7 @@ class CheckInApp extends CheckInCore {
     
     // 🚀 NEW: Force refresh member photo in all UI elements
     forceRefreshMemberPhoto(memberId, newPhotoUrl) {
-        console.log('🖼️ Force refreshing photo for member:', memberId, 'with URL:', newPhotoUrl);
-        
+
         // Find all image elements for this member and update them immediately
         const memberImages = document.querySelectorAll(`img[alt*="${memberId}"], img[data-member-id="${memberId}"]`);
         
@@ -1280,9 +1276,8 @@ class CheckInApp extends CheckInCore {
             const selectedTeam = this.teams.find(team => team.id === selectedTeamId);
             if (selectedTeam && selectedTeam.members.length > 0) {
                 this.loadLifetimeCardsForTeam(selectedTeam);
-                
+
                 // 🖼️ Photos now use direct URLs (no lazy loading needed)
-                console.log('🖼️ Team photos use direct URLs with HTTP caching');
             }
         }
         
@@ -2297,7 +2292,6 @@ Please check the browser console (F12) for more details.`);
                 if (selectedTeamId === teamId) {
                     console.log('📸 Triggering photo loading for newly added member with photo');
                     // 🖼️ Photos now use direct URLs (no lazy loading needed)
-                    console.log('🖼️ New member photo uses direct URL');
                 }
             }
 
@@ -2730,9 +2724,8 @@ Please check the browser console (F12) for more details.`);
         `);
         
         document.body.appendChild(modal);
-        
+
         // 🖼️ Photos now use direct URLs (no lazy loading needed)
-        console.log('🖼️ Edit modal photo uses direct URL');
     }
     
     addDisciplinaryRecord() {
@@ -3038,7 +3031,6 @@ Please check the browser console (F12) for more details.`);
                 // For edited members with new photos, ensure the photo loads if this team is currently selected
                 const selectedTeamId = document.getElementById('teams-team-selector')?.value;
                 // 🖼️ Photos now use direct URLs (no lazy loading needed)
-                console.log('🖼️ Updated member photo uses direct URL');
             }
             
             this.closeModal();
@@ -3480,9 +3472,7 @@ Please check the browser console (F12) for more details.`);
         `);
         
         document.body.appendChild(modal);
-        
         // 🖼️ Photos now use direct URLs (no lazy loading needed)
-        console.log('🖼️ Player profile photo uses direct URL');
     }
     
     // Event Management
@@ -7519,9 +7509,7 @@ Please check the browser console (F12) for more details.`);
         
         // 🚀 PERFORMANCE: Initialize lazy loading for newly rendered grid images
         this.initializeLazyImages(container);
-        
         // 🖼️ Photos now use direct URLs with HTTP caching (no lazy loading needed)
-        console.log('🖼️ Match grid photos use direct URLs');
     }
     
     // Bulk load suspensions for multiple teams (similar to captain loading pattern)
