@@ -238,6 +238,15 @@ try {
     $pathSegments = explode('/', $path);
     $endpoint = $pathSegments[0];
 
+    // For multi-segment paths like 'teams/member-profile', use full path as endpoint
+    if (count($pathSegments) > 1) {
+        $fullPath = implode('/', array_slice($pathSegments, 0, 2)); // Take first 2 segments
+        if (in_array($fullPath, ['teams/member-profile', 'teams/member-create', 'teams/member-delete',
+        'teams/member-deactivate', 'teams/member-search-inactive', 'teams/member-reactivate'])) {
+            $endpoint = $fullPath;
+        }
+    }
+
     // CLAUDE DEBUG: Log the extracted endpoint
     error_log("CLAUDE DEBUG ROUTING: extracted endpoint='$endpoint' from path='$path'");
 

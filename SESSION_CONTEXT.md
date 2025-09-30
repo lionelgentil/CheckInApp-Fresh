@@ -1,5 +1,75 @@
 # CheckIn App - Current Session Context
 
+Primary Issue
+
+  Player name updates return {"success": true} but don't persist to database after page refresh.
+
+  Root Cause Discovered
+
+  API routing issue in /api.php around line 237-242. The endpoint extraction logic is taking only the first path segment
+  ('teams') instead of the full path ('teams/member-profile').
+
+  Railway Logs Evidence
+
+  [Tue Sep 30 21:07:12.068238 2025] CLAUDE DEBUG API ENTRY: path='teams/member-profile', method='POST',
+  timestamp=1759266432
+  [Tue Sep 30 21:07:12.068265 2025] CLAUDE DEBUG ROUTING: extracted endpoint='teams' from path='teams/member-profile'
+
+  Required Fix
+
+  In /api.php around line 237-242, replace the endpoint extraction logic:
+
+  Current Code:
+  // Extract the main endpoint from the path
+  $pathSegments = explode('/', $path);
+  $endpoint = $pathSegments[0];
+
+  // CLAUDE DEBUG: Log the extracted endpoint
+  error_log("CLAUDE DEBUG ROUTING: extracted endpoint='$endpoint' from path='$path'");
+
+  Fixed Code:
+  // Extract the main endpoint from the path
+  $pathSegments = explode('/', $path);
+  $endpoint = $pathSegments[0];
+
+  // For multi-segment paths like 'teams/member-profile', use full path as endpoint
+  if (count($pathSegments) > 1) {
+      $fullPath = implode('/', array_slice($pathSegments, 0, 2)); // Take first 2 segments
+      if (in_array($fullPath, ['teams/member-profile', 'teams/member-create', 'teams/member-delete',
+  'teams/member-deactivate', 'teams/member-search-inactive', 'teams/member-reactivate'])) {
+          $endpoint = $fullPath;
+      }
+  }
+
+  // CLAUDE DEBUG: Log the extracted endpoint
+  error_log("CLAUDE DEBUG ROUTING: extracted endpoint='$endpoint' from path='$path'");
+
+  Current Status
+
+  - Enhanced updateMemberProfile function is already deployed with comprehensive debugging
+  - Photo console logs cleaned from app.js but not yet deployed
+  - Routing fix identified but edit commands not working in current session
+
+  Test After Fix
+
+  Try updating a player name and verify response includes CLAUDE_DEBUG markers from the enhanced updateMemberProfile
+  function instead of simple {"success": true}.
+
+  Files Modified This Session
+
+  1. /api.php - Enhanced updateMemberProfile function with debugging
+  2. /app.js - Removed photo console logs (not yet committed)
+
+  Key Technical Details
+
+  - CheckIn App v6.5.0 with 24 teams, 473+ players
+  - PostgreSQL database with UUID primary keys
+  - API requests go to /api/teams/member-profile via .htaccess routing
+  - Switch statement in api.php looks for case 'teams/member-profile' but gets 'teams'
+  " />
+
+
+
 ## Session Summary
 **Date**: 2025-09-26  
 **Last Task Completed**: Added Team Managers display to main app Teams section
