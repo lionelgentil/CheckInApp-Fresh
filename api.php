@@ -2897,14 +2897,6 @@ function updateAttendanceOnly($db) {
 
 // Update member profile data (name, jersey number, gender) - enhanced for admin app
 function updateMemberProfile($db) {
-    // OBVIOUS DEBUG TEST - this should always appear in response
-    echo json_encode([
-        'TEST_DEBUG' => 'updateMemberProfile function called with enhanced debugging',
-        'timestamp' => time(),
-        'success' => false  // Force failure to see if this appears
-    ]);
-    return; // Exit early for testing
-
     try {
         $input = json_decode(file_get_contents('php://input'), true);
 
@@ -2915,12 +2907,7 @@ function updateMemberProfile($db) {
         $gender = $input['gender'] ?? null;
 
         // Debug: Log input parameters
-        error_log("updateMemberProfile DEBUG - Input parameters:");
-        error_log("  teamId: " . var_export($teamId, true));
-        error_log("  memberId: " . var_export($memberId, true));
-        error_log("  name: " . var_export($name, true));
-        error_log("  jerseyNumber: " . var_export($jerseyNumber, true));
-        error_log("  gender: " . var_export($gender, true));
+        error_log("updateMemberProfile DEBUG - Input: teamId=$teamId, memberId=$memberId, name=$name, jerseyNumber=$jerseyNumber, gender=$gender");
 
         if (!$teamId || !$memberId) {
             error_log("updateMemberProfile ERROR - Missing required parameters");
@@ -2934,45 +2921,24 @@ function updateMemberProfile($db) {
         $checkStmt->execute([$memberId, $teamId]);
         $existingRecord = $checkStmt->fetch();
 
-        error_log("updateMemberProfile DEBUG - Existing record check:");
-        if ($existingRecord) {
-            error_log("  Found record: " . json_encode($existingRecord));
-        } else {
-            error_log("  No record found with id=$memberId AND team_id=$teamId");
-
-            // Check if record exists with just the member ID
-            $checkIdStmt = $db->prepare('SELECT id, name, team_id FROM team_members WHERE id = ?');
-            $checkIdStmt->execute([$memberId]);
-            $recordById = $checkIdStmt->fetch();
-
-            if ($recordById) {
-                error_log("  But found record with just id=$memberId: " . json_encode($recordById));
-            } else {
-                error_log("  No record found with id=$memberId at all");
-            }
+        if (!$existingRecord) {
+            error_log("updateMemberProfile ERROR - No record found with id=$memberId AND team_id=$teamId");
+            http_response_code(404);
+            echo json_encode(['error' => 'Member not found']);
+            return;
         }
+
+        error_log("updateMemberProfile DEBUG - Found existing record: " . json_encode($existingRecord));
 
         // Update member profile (supports name, jersey number, and gender)
         $stmt = $db->prepare('UPDATE team_members SET name = ?, jersey_number = ?, gender = ? WHERE id = ? AND team_id = ?');
-
-        // Debug: Log the exact parameters being passed to SQL
         $sqlParams = [$name, $jerseyNumber, $gender, $memberId, $teamId];
-        error_log("updateMemberProfile DEBUG - SQL parameters:");
-        error_log("  SQL: UPDATE team_members SET name = ?, jersey_number = ?, gender = ? WHERE id = ? AND team_id = ?");
-        error_log("  Params: " . json_encode($sqlParams));
-        error_log("  Param 1 (name): " . var_export($name, true));
-        error_log("  Param 2 (jersey_number): " . var_export($jerseyNumber, true));
-        error_log("  Param 3 (gender): " . var_export($gender, true));
-        error_log("  Param 4 (id): " . var_export($memberId, true));
-        error_log("  Param 5 (team_id): " . var_export($teamId, true));
 
+        error_log("updateMemberProfile DEBUG - Executing SQL with params: " . json_encode($sqlParams));
         $result = $stmt->execute($sqlParams);
-
-        // Debug: Check how many rows were affected
         $rowCount = $stmt->rowCount();
-        error_log("updateMemberProfile DEBUG - Update result:");
-        error_log("  execute() returned: " . var_export($result, true));
-        error_log("  rowCount(): $rowCount");
+
+        error_log("updateMemberProfile DEBUG - SQL result: success=$result, rowCount=$rowCount");
 
         if ($result && $rowCount > 0) {
             echo json_encode([
@@ -2980,7 +2946,8 @@ function updateMemberProfile($db) {
                 'message' => 'Member profile updated successfully',
                 'debug' => [
                     'rowsUpdated' => $rowCount,
-                    'params' => $sqlParams
+                    'oldName' => $existingRecord['name'],
+                    'newName' => $name
                 ]
             ]);
         } else if ($result && $rowCount === 0) {
@@ -2988,23 +2955,18 @@ function updateMemberProfile($db) {
                 'error' => 'No matching record found to update',
                 'debug' => [
                     'rowCount' => $rowCount,
-                    'params' => $sqlParams,
                     'existingRecord' => $existingRecord
                 ]
             ]);
         } else {
             echo json_encode([
                 'error' => 'Failed to update member profile',
-                'debug' => [
-                    'executeResult' => $result,
-                    'params' => $sqlParams
-                ]
+                'debug' => ['executeResult' => $result]
             ]);
         }
 
     } catch (Exception $e) {
         error_log("updateMemberProfile EXCEPTION: " . $e->getMessage());
-        error_log("Stack trace: " . $e->getTraceAsString());
         http_response_code(500);
         echo json_encode(['error' => 'Failed to update member profile: ' . $e->getMessage()]);
     }
