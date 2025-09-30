@@ -1413,53 +1413,29 @@ function saveTeams($db) {
         http_response_code(400);
         echo json_encode([
             'error' => 'Refusing to process: received too few teams (' . count($input) . '). This could cause accidental data loss.',
-            'received_teams' => array_map(function($t) { return ['id' => $t['id'] ?? 'no-id', 'name' => $t['name'] ?? 'no-name']; }, $input)
+            'received_teams' => array_map(function($t) {
+                return [
+                    'id' => (is_array($t) ? ($t['id'] ?? 'no-id') : 'not-array'),
+                    'name' => (is_array($t) ? ($t['name'] ?? 'no-name') : 'not-array')
+                ];
+            }, $input)
         ]);
         return;
     }
-    
+
     $db->beginTransaction();
-    
+
     try {
-        // IMPORTANT: Instead of DELETE FROM team_members (which cascades to disciplinary records),
-        // we'll use UPSERT approach to preserve member IDs and disciplinary data
-        
-        // First, collect all incoming member IDs
-        $incomingMemberIds = [];
-        foreach ($input as $team) {
-            if (is_array($team) && isset($team['members']) && is_array($team['members'])) {
-                foreach ($team['members'] as $member) {
-                    if (is_array($member) && isset($member['id'])) {
-                        $incomingMemberIds[] = $member['id'];
-                    }
-                }
-            }
-        }
-        
-        // Clean up teams that are no longer in the input data
-        // First collect all team IDs from input
-        $incomingTeamIds = [];
-        foreach ($input as $team) {
-            if (is_array($team) && isset($team['id'])) {
-                $incomingTeamIds[] = $team['id'];
-            }
-        }
-        
-        // Delete teams that are not in the incoming data
-        // This is safe because we use UPSERT for members, preserving disciplinary records
-        if (!empty($incomingTeamIds)) {
-            $placeholders = str_repeat('?,', count($incomingTeamIds) - 1) . '?';
-            $stmt = $db->prepare("DELETE FROM teams WHERE id NOT IN ({$placeholders})");
-            $stmt->execute($incomingTeamIds);
-        }
-        
+        // SAFE APPROACH: Only INSERT/UPDATE, never DELETE
+        // Use UPSERT approach to preserve all existing data
+
         foreach ($input as $team) {
             // Skip invalid team data
             if (!is_array($team) || !isset($team['id']) || !isset($team['name'])) {
                 continue;
             }
 
-            // Use UPSERT for teams too to avoid deletion cascades
+            // Use UPSERT for teams - never delete existing teams
             $stmt = $db->prepare('
                 INSERT INTO teams (id, name, category, color, description, captain_id)
                 VALUES (?, ?, ?, ?, ?, ?)
@@ -1478,7 +1454,7 @@ function saveTeams($db) {
                 $team['description'] ?? '',
                 $team['captainId'] ?? null
             ]);
-            
+
             if (isset($team['members']) && is_array($team['members'])) {
                 foreach ($team['members'] as $member) {
                     // Skip invalid member data
@@ -1503,8 +1479,8 @@ function saveTeams($db) {
                         }
                         // If it's already just a filename, use as-is
                     }
-                    
-                    // Use INSERT ON CONFLICT (UPSERT) to preserve existing members and their disciplinary records
+
+                    // Use INSERT ON CONFLICT (UPSERT) to preserve existing members
                     $stmt = $db->prepare('
                         INSERT INTO team_members (id, team_id, name, jersey_number, gender, photo)
                         VALUES (?, ?, ?, ?, ?, ?)
@@ -1526,10 +1502,10 @@ function saveTeams($db) {
                 }
             }
         }
-        
+
         $db->commit();
         echo json_encode(['success' => true]);
-        
+
     } catch (Exception $e) {
         $db->rollBack();
         throw $e;
