@@ -2667,66 +2667,72 @@ Please check the browser console (F12) for more details.`);
         }
         
         const modal = this.createModal(`Edit Player: ${member.name}`, `
-            <div class="form-group">
-                <label class="form-label">Player Name *</label>
-                <input type="text" class="form-input" id="detailed-member-name" value="${member.name}" required>
-            </div>
-            <div class="form-group">
-                <label class="form-label">Team Assignment *</label>
-                <select class="form-select" id="detailed-member-team" required>
-                    ${this.teams.map(team => `
-                        <option value="${team.id}" ${team.id === teamId ? 'selected' : ''}>${team.name}</option>
-                    `).join('')}
-                </select>
-            </div>
-            <div class="form-group">
-                <label class="form-label">Jersey Number</label>
-                <input type="number" class="form-input" id="detailed-member-jersey" value="${member.jerseyNumber || ''}" min="1" max="99">
-            </div>
-            <div class="form-group">
-                <label class="form-label">Gender</label>
-                <select class="form-select" id="detailed-member-gender">
-                    <option value="">Select gender</option>
-                    <option value="male" ${member.gender === 'male' ? 'selected' : ''}>Male</option>
-                    <option value="female" ${member.gender === 'female' ? 'selected' : ''}>Female</option>
-                </select>
-            </div>
-            <div class="form-group">
-                <label class="form-label">${photoLabel}</label>
-                <input type="file" class="form-input file-input" id="detailed-member-photo" accept="image/*" ${isMobile ? 'capture="environment"' : ''}>
-                ${member.photo ? `<img src="${this.getMemberPhotoUrl(member)}" data-member-id="${member.id}" alt="Current photo" class="preview-image">` : ''}
-                ${isMobile ? '<small style="color: #666; font-size: 0.85em; display: block; margin-top: 5px;">📸 This will open your camera</small>' : ''}
-            </div>
-
-            <div class="form-group">
-                <label class="form-label">Lifetime Cards</label>
-                <small style="color: #666; display: block; margin-bottom: 10px;">Add cards received outside of this system (previous seasons, other competitions, etc.)</small>
-                <div id="disciplinary-records-container">
-                    ${disciplinaryRecords.map((record, index) => `
-                        <div class="disciplinary-record-item" style="display: flex; flex-direction: column; gap: 10px; margin-bottom: 15px; padding: 15px; background: #f8f9fa; border-radius: 8px; border-left: 4px solid ${record.cardType === 'yellow' ? '#ffc107' : '#dc3545'};">
-                            <div style="display: flex; gap: 10px; align-items: center;">
-                                <select class="form-select" style="width: 120px;" data-record-index="${index}" data-field="cardType">
-                                    <option value="yellow" ${record.cardType === 'yellow' ? 'selected' : ''}>🟨 Yellow</option>
-                                    <option value="red" ${record.cardType === 'red' ? 'selected' : ''}>🟥 Red</option>
-                                </select>
-                                <input type="date" class="form-input" style="flex: 1;" placeholder="Date" data-record-index="${index}" data-field="incidentDate" value="${record.incidentDate || ''}">
-                                <button class="btn btn-small btn-danger" onclick="app.removeDisciplinaryRecord(${index})">🗑️</button>
-                            </div>
-                            <div style="display: flex; gap: 10px;">
-                                <select class="form-select" style="flex: 1;" data-record-index="${index}" data-field="reason">
-                                    <option value="">Select Reason</option>
-                                    ${generateCardReasonsOptions(record.reason)}
-                                </select>
-                            </div>
-                            <textarea class="form-input" placeholder="Additional Notes (optional)" data-record-index="${index}" data-field="notes" rows="2">${record.notes || ''}</textarea>
-                        </div>
-                    `).join('')}
-                    ${disciplinaryRecords.length === 0 ? '<p style="text-align: center; color: #666; font-style: italic; margin: 20px 0;">No lifetime cards</p>' : ''}
+            <div style="display: flex; gap: 20px; max-height: 70vh;">
+                <!-- Left Column: Form Fields -->
+                <div style="flex: 1; min-width: 300px;">
+                    <div class="form-group">
+                        <label class="form-label">Player Name *</label>
+                        <input type="text" class="form-input" id="detailed-member-name" value="${member.name}" required>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Team Assignment *</label>
+                        <select class="form-select" id="detailed-member-team" required>
+                            ${this.teams.map(team => `
+                                <option value="${team.id}" ${team.id === teamId ? 'selected' : ''}>${team.name}</option>
+                            `).join('')}
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Jersey Number</label>
+                        <input type="number" class="form-input" id="detailed-member-jersey" value="${member.jerseyNumber || ''}" min="1" max="99">
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">Gender</label>
+                        <select class="form-select" id="detailed-member-gender">
+                            <option value="">Select gender</option>
+                            <option value="male" ${member.gender === 'male' ? 'selected' : ''}>Male</option>
+                            <option value="female" ${member.gender === 'female' ? 'selected' : ''}>Female</option>
+                        </select>
+                    </div>
+                    <div class="form-group">
+                        <label class="form-label">${photoLabel}</label>
+                        <input type="file" class="form-input file-input" id="detailed-member-photo" accept="image/*" ${isMobile ? 'capture="environment"' : ''}>
+                        ${member.photo ? `<img src="${this.getMemberPhotoUrl(member)}" data-member-id="${member.id}" alt="Current photo" class="preview-image" style="max-width: 100px; margin-top: 8px;">` : ''}
+                        ${isMobile ? '<small style="color: #666; font-size: 0.85em; display: block; margin-top: 5px;">📸 This will open your camera</small>' : ''}
+                    </div>
                 </div>
-                <button class="btn btn-secondary" onclick="app.addDisciplinaryRecord()" style="margin-top: 10px;">+ Add Lifetime Card</button>
+
+                <!-- Right Column: Disciplinary Records -->
+                <div style="flex: 1; min-width: 300px;">
+                    <div class="form-group">
+                        <label class="form-label">Lifetime Cards</label>
+                        <small style="color: #666; display: block; margin-bottom: 10px;">Add cards received outside of this system (previous seasons, other competitions, etc.)</small>
+                        <div id="disciplinary-records-container" style="max-height: 400px; overflow-y: auto; border: 1px solid #e9ecef; border-radius: 8px; padding: 10px;">
+                            ${disciplinaryRecords.map((record, index) => `
+                                <div class="disciplinary-record-item" style="display: flex; flex-direction: column; gap: 8px; margin-bottom: 12px; padding: 12px; background: #f8f9fa; border-radius: 6px; border-left: 4px solid ${record.cardType === 'yellow' ? '#ffc107' : '#dc3545'};">
+                                    <div style="display: flex; gap: 8px; align-items: center;">
+                                        <select class="form-select" style="width: 100px; font-size: 0.85em; padding: 4px;" data-record-index="${index}" data-field="cardType">
+                                            <option value="yellow" ${record.cardType === 'yellow' ? 'selected' : ''}>🟨 Yellow</option>
+                                            <option value="red" ${record.cardType === 'red' ? 'selected' : ''}>🟥 Red</option>
+                                        </select>
+                                        <input type="date" class="form-input" style="flex: 1; font-size: 0.85em; padding: 4px;" placeholder="Date" data-record-index="${index}" data-field="incidentDate" value="${record.incidentDate || ''}">
+                                        <button class="btn btn-small btn-danger" style="padding: 4px 8px; font-size: 0.8em;" onclick="app.removeDisciplinaryRecord(${index})">🗑️</button>
+                                    </div>
+                                    <select class="form-select" style="font-size: 0.85em; padding: 4px;" data-record-index="${index}" data-field="reason">
+                                        <option value="">Select Reason</option>
+                                        ${generateCardReasonsOptions(record.reason)}
+                                    </select>
+                                    <textarea class="form-input" placeholder="Additional Notes (optional)" data-record-index="${index}" data-field="notes" rows="2" style="font-size: 0.85em; padding: 4px;">${record.notes || ''}</textarea>
+                                </div>
+                            `).join('')}
+                            ${disciplinaryRecords.length === 0 ? '<p style="text-align: center; color: #666; font-style: italic; margin: 20px 0;">No lifetime cards</p>' : ''}
+                        </div>
+                        <button class="btn btn-secondary" onclick="app.addDisciplinaryRecord()" style="margin-top: 10px; width: 100%; font-size: 0.9em;">+ Add Lifetime Card</button>
+                    </div>
+                </div>
             </div>
 
-            <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px;">
+            <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px; padding-top: 15px; border-top: 1px solid #e9ecef;">
                 <button class="btn btn-secondary" onclick="app.closeModal()">Cancel</button>
                 <button class="btn" onclick="app.saveDetailedMember('${teamId}', '${member.id}')">Update Player</button>
             </div>
