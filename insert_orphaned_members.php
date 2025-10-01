@@ -105,7 +105,7 @@ echo "4. Preparing to insert " . count($orphanedUUIDs) . " orphaned members...\n
 echo "   Assigning to team: 'Players without clear match-based team assignment'\n\n";
 
 $defaultTeamId = "eca83a30-72e3-4696-bc09-4e8c5834c839";
-$insertSQL = "INSERT INTO team_members (id, team_id, name, jersey_number, gender, photo, created_at_epoch) VALUES (?, ?, ?, NULL, 'unknown', ?, ?)";
+$insertSQL = "INSERT INTO team_members (id, team_id, name, jersey_number, gender, photo, created_at_epoch) VALUES (?, ?, ?, NULL, 'male', ?, ?)";
 $stmt = $pdo->prepare($insertSQL);
 
 $insertedCount = 0;
@@ -155,8 +155,9 @@ echo "\n=== NEXT STEPS ===\n";
 echo "1. All members assigned to 'Players without clear match-based team assignment'\n";
 echo "2. Manually reassign members to their correct teams as needed\n";
 echo "3. Update member names from placeholder names\n";
-echo "4. Update gender and jersey numbers as needed\n";
-echo "5. All members now have photo references set\n";
+echo "4. Update gender from default 'male' to correct values\n";
+echo "5. Update jersey numbers as needed\n";
+echo "6. All members now have photo references set\n";
 
 echo "\n=== READY FOR MANUAL TEAM REASSIGNMENT ===\n";
 ?>
