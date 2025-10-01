@@ -2382,6 +2382,7 @@ Please check the browser console (F12) for more details.`);
                 teamId: teamId,
                 memberId: memberId,
                 name: memberData.name,
+                team_id: memberData.team_id,
                 jerseyNumber: memberData.jerseyNumber,
                 gender: memberData.gender
             })
