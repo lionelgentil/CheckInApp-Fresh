@@ -3070,9 +3070,9 @@ Please check the browser console (F12) for more details.`);
             // Show success message
             if (originalTeamId !== newTeamId) {
                 const newTeam = this.teams.find(t => t.id === newTeamId);
-                this.showSuccess(`Player "${name}" moved to ${newTeam?.name || 'new team'} successfully!`);
+                alert(`✅ Player "${name}" moved to ${newTeam?.name || 'new team'} successfully!`);
             } else if (basicInfoChanged) {
-                this.showSuccess(`Player "${name}" updated successfully!`);
+                alert(`✅ Player "${name}" updated successfully!`);
             }
 
             // 🖼️ PHOTO FIX: Trigger lazy loading for edited member's photo
