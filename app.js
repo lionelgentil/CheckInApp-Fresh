@@ -2739,7 +2739,7 @@ Please check the browser console (F12) for more details.`);
                             <textarea class="form-input" placeholder="Additional notes (optional)" data-record-index="${index}" data-field="notes" rows="2" style="width: 100%; font-size: 0.9em; resize: vertical;">${record.notes || ''}</textarea>
                         </div>
                     `).join('')}
-                    ${disciplinaryRecords.length === 0 ? '<div style="text-align: center; color: #888; font-style: italic; padding: 30px; background: #f8f9fa; border-radius: 8px;">No lifetime cards</div>' : ''}
+                    ${disciplinaryRecords.length === 0 ? '<div style="text-align: center; color: #888; font-style: italic; padding: 12px; background: #f8f9fa; border-radius: 8px; font-size: 0.9em;">No lifetime cards</div>' : ''}
                 </div>
 
                 <button class="btn btn-secondary" onclick="app.addDisciplinaryRecord()" style="width: 100%; margin-top: 12px; font-size: 0.9em; padding: 10px;">+ Add Lifetime Card</button>
