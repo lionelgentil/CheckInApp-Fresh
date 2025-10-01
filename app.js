@@ -3088,13 +3088,13 @@ Please check the browser console (F12) for more details.`);
             
             this.renderTeams();
 
-            // Show success message
+            // Show success message only for team changes (removed for regular updates)
             if (originalTeamId !== newTeamId) {
                 const newTeam = this.teams.find(t => t.id === newTeamId);
-                alert(`✅ Player "${name}" moved to ${newTeam?.name || 'new team'} successfully!`);
-            } else if (basicInfoChanged) {
-                alert(`✅ Player "${name}" updated successfully!`);
+                // Optional: You could remove this line too if you don't want any success messages
+                // alert(`✅ Player "${name}" moved to ${newTeam?.name || 'new team'} successfully!`);
             }
+            // Removed success alert for regular updates - modal closing is sufficient feedback
 
             // 🖼️ PHOTO FIX: Trigger lazy loading for edited member's photo
             if (photoFile) {
