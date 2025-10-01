@@ -105,7 +105,7 @@ echo "4. Preparing to insert " . count($orphanedUUIDs) . " orphaned members...\n
 echo "   Assigning to team: 'Players without clear match-based team assignment'\n\n";
 
 $defaultTeamId = "eca83a30-72e3-4696-bc09-4e8c5834c839";
-$insertSQL = "INSERT INTO team_members (id, team_id, name, jersey_number, gender, photo, created_at) VALUES (?, ?, ?, NULL, 'unknown', ?, NOW())";
+$insertSQL = "INSERT INTO team_members (id, team_id, name, jersey_number, gender, photo, created_at_epoch) VALUES (?, ?, ?, NULL, 'unknown', ?, ?)";
 $stmt = $pdo->prepare($insertSQL);
 
 $insertedCount = 0;
@@ -117,7 +117,8 @@ echo "5. Inserting members...\n";
 foreach ($orphanedPhotos as $uuid => $filename) {
     try {
         $placeholderName = "Player-" . substr($uuid, 0, 8); // Shorter placeholder name
-        $stmt->execute([$uuid, $defaultTeamId, $placeholderName, $filename]);
+        $currentEpoch = time(); // Current Unix timestamp
+        $stmt->execute([$uuid, $defaultTeamId, $placeholderName, $filename, $currentEpoch]);
         $insertedCount++;
 
         if ($insertedCount % 10 === 0) {
