@@ -418,7 +418,7 @@ class CheckInManagerApp {
                     <h3 class="modal-title">👤 Player Profile - ${member.name}</h3>
                     <button class="close-btn" onclick="this.closest('.modal').remove()">&times;</button>
                 </div>
-                
+
                 <div class="modal-body">
                     <div class="profile-info">
                         <div class="profile-section" style="display: flex; align-items: center; gap: 15px; margin-bottom: 20px;">
@@ -430,7 +430,7 @@ class CheckInManagerApp {
                                 <p><strong>Gender:</strong> ${member.gender || 'Not specified'}</p>
                             </div>
                         </div>
-                        
+
                         <div class="profile-section">
                             <h4 style="margin: 0 0 12px 0; color: #333; display: flex; align-items: center; gap: 8px;">
                                 📋 Disciplinary Record (Current Season)
@@ -438,7 +438,7 @@ class CheckInManagerApp {
                                     ${currentSeasonCards.length} card${currentSeasonCards.length !== 1 ? 's' : ''}
                                 </span>
                             </h4>
-                            
+
                             ${currentSeasonCards.length > 0 ? `
                                 <div style="max-height: 250px; overflow-y: auto; border: 1px solid #e9ecef; border-radius: 8px;">
                                     ${currentSeasonCards.map(card => `
@@ -467,7 +467,7 @@ class CheckInManagerApp {
                             `}
                         </div>
                     </div>
-                    
+
                     <div class="form-actions">
                         <button type="button" class="btn btn-secondary" onclick="this.closest('.modal').remove()">Close</button>
                     </div>

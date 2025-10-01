@@ -2671,6 +2671,14 @@ Please check the browser console (F12) for more details.`);
                 <input type="text" class="form-input" id="detailed-member-name" value="${member.name}" required>
             </div>
             <div class="form-group">
+                <label class="form-label">Team Assignment *</label>
+                <select class="form-select" id="detailed-member-team" required>
+                    ${this.teams.map(team => `
+                        <option value="${team.id}" ${team.id === teamId ? 'selected' : ''}>${team.name}</option>
+                    `).join('')}
+                </select>
+            </div>
+            <div class="form-group">
                 <label class="form-label">Jersey Number</label>
                 <input type="number" class="form-input" id="detailed-member-jersey" value="${member.jerseyNumber || ''}" min="1" max="99">
             </div>
@@ -2688,7 +2696,7 @@ Please check the browser console (F12) for more details.`);
                 ${member.photo ? `<img src="${this.getMemberPhotoUrl(member)}" data-member-id="${member.id}" alt="Current photo" class="preview-image">` : ''}
                 ${isMobile ? '<small style="color: #666; font-size: 0.85em; display: block; margin-top: 5px;">📸 This will open your camera</small>' : ''}
             </div>
-            
+
             <div class="form-group">
                 <label class="form-label">Lifetime Cards</label>
                 <small style="color: #666; display: block; margin-bottom: 10px;">Add cards received outside of this system (previous seasons, other competitions, etc.)</small>
@@ -2716,7 +2724,7 @@ Please check the browser console (F12) for more details.`);
                 </div>
                 <button class="btn btn-secondary" onclick="app.addDisciplinaryRecord()" style="margin-top: 10px;">+ Add Lifetime Card</button>
             </div>
-            
+
             <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px;">
                 <button class="btn btn-secondary" onclick="app.closeModal()">Cancel</button>
                 <button class="btn" onclick="app.saveDetailedMember('${teamId}', '${member.id}')">Update Player</button>
@@ -2797,12 +2805,14 @@ Please check the browser console (F12) for more details.`);
         console.log('🎯 saveDetailedMember called with teamId:', teamId, 'memberId:', memberId);
 
         const name = document.getElementById('detailed-member-name').value.trim();
+        const newTeamId = document.getElementById('detailed-member-team').value;
         const jerseyNumber = document.getElementById('detailed-member-jersey').value;
         const gender = document.getElementById('detailed-member-gender').value;
         const photoFile = document.getElementById('detailed-member-photo').files[0];
 
         console.log('📝 Form values read:', {
             name: name,
+            newTeamId: newTeamId,
             jerseyNumber: jerseyNumber,
             gender: gender,
             hasPhotoFile: !!photoFile
@@ -2812,16 +2822,17 @@ Please check the browser console (F12) for more details.`);
             alert('Please enter a player name');
             return;
         }
-        
-        const team = this.teams.find(t => t.id === teamId);
-        const member = team.members.find(m => m.id === memberId);
-        if (!team || !member) return;
-        
+
+        const originalTeam = this.teams.find(t => t.id === teamId);
+        const member = originalTeam.members.find(m => m.id === memberId);
+        if (!originalTeam || !member) return;
+
         // Capture original values BEFORE updating member object
         const originalName = member.name;
         const originalJerseyNumber = member.jerseyNumber;
         const originalGender = member.gender;
-        
+        const originalTeamId = teamId;
+
         let photo = member.photo;
         if (photoFile) {
             try {
@@ -2835,7 +2846,7 @@ Please check the browser console (F12) for more details.`);
                 alert('Photo upload failed: ' + error.message);
             }
         }
-        
+
         // Photo update is handled immediately above (uploaded to server and member.photo updated)
         // Basic member info (name, jersey, gender) will be updated after database save
         if (photo) {
@@ -2922,24 +2933,28 @@ Please check the browser console (F12) for more details.`);
             console.log('🔍 Original values:', {
                 name: originalName,
                 jerseyNumber: originalJerseyNumber,
-                gender: originalGender
+                gender: originalGender,
+                teamId: originalTeamId
             });
             console.log('🔍 New values:', {
                 name: name,
                 jerseyNumber: jerseyNumber ? parseInt(jerseyNumber) : null,
-                gender: gender || null
+                gender: gender || null,
+                teamId: newTeamId
             });
 
             const basicInfoChanged = (
                 originalName !== name ||
                 (originalJerseyNumber || null) !== (jerseyNumber ? parseInt(jerseyNumber) : null) ||
-                (originalGender || null) !== (gender || null)
+                (originalGender || null) !== (gender || null) ||
+                originalTeamId !== newTeamId
             );
 
             console.log('🔍 Individual comparisons:', {
                 'name changed': originalName !== name,
                 'jersey changed': (originalJerseyNumber || null) !== (jerseyNumber ? parseInt(jerseyNumber) : null),
                 'gender changed': (originalGender || null) !== (gender || null),
+                'team changed': originalTeamId !== newTeamId,
                 'overall changed': basicInfoChanged
             });
 
@@ -2949,22 +2964,48 @@ Please check the browser console (F12) for more details.`);
                 console.log('Changes:', {
                     name: originalName + ' → ' + name,
                     jersey: originalJerseyNumber + ' → ' + (jerseyNumber || 'null'),
-                    gender: originalGender + ' → ' + (gender || 'null')
+                    gender: originalGender + ' → ' + (gender || 'null'),
+                    team: originalTeamId + ' → ' + newTeamId
                 });
 
                 try {
                     console.log('📞 About to call updateMemberProfile...');
                     await this.updateMemberProfile(teamId, memberId, {
                         name: name,
+                        team_id: newTeamId,
                         jerseyNumber: jerseyNumber ? parseInt(jerseyNumber) : null,
                         gender: gender || null
                     });
                     console.log('📞 updateMemberProfile completed successfully');
 
-                    // Update local member object after successful database update
-                    member.name = name;
-                    member.jerseyNumber = jerseyNumber ? parseInt(jerseyNumber) : null;
-                    member.gender = gender || null;
+                    // Handle team changes in local data
+                    if (originalTeamId !== newTeamId) {
+                        console.log('🔄 Moving member between teams locally...');
+
+                        // Remove from original team
+                        const originalTeamIndex = originalTeam.members.findIndex(m => m.id === memberId);
+                        if (originalTeamIndex !== -1) {
+                            originalTeam.members.splice(originalTeamIndex, 1);
+                        }
+
+                        // Add to new team
+                        const newTeam = this.teams.find(t => t.id === newTeamId);
+                        if (newTeam) {
+                            if (!newTeam.members) newTeam.members = [];
+                            // Update member data
+                            member.name = name;
+                            member.jerseyNumber = jerseyNumber ? parseInt(jerseyNumber) : null;
+                            member.gender = gender || null;
+                            newTeam.members.push(member);
+                        }
+
+                        console.log('✅ Member moved between teams locally');
+                    } else {
+                        // Update local member object after successful database update (same team)
+                        member.name = name;
+                        member.jerseyNumber = jerseyNumber ? parseInt(jerseyNumber) : null;
+                        member.gender = gender || null;
+                    }
 
                     console.log('✅ Member profile saved and local object updated');
                 } catch (updateError) {
@@ -3025,7 +3066,15 @@ Please check the browser console (F12) for more details.`);
             }
             
             this.renderTeams();
-            
+
+            // Show success message
+            if (originalTeamId !== newTeamId) {
+                const newTeam = this.teams.find(t => t.id === newTeamId);
+                this.showSuccess(`Player "${name}" moved to ${newTeam?.name || 'new team'} successfully!`);
+            } else if (basicInfoChanged) {
+                this.showSuccess(`Player "${name}" updated successfully!`);
+            }
+
             // 🖼️ PHOTO FIX: Trigger lazy loading for edited member's photo
             if (photoFile) {
                 // For edited members with new photos, ensure the photo loads if this team is currently selected
