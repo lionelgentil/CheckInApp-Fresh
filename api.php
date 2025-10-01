@@ -2901,6 +2901,7 @@ function updateMemberProfile($db) {
         $name = $input['name'] ?? null;
         $jerseyNumber = $input['jerseyNumber'] ?? null;
         $gender = $input['gender'] ?? null;
+        $newTeamId = $input['team_id'] ?? null; // New team assignment
 
         if (!$teamId || !$memberId) {
             http_response_code(400);
@@ -2925,34 +2926,69 @@ function updateMemberProfile($db) {
             return;
         }
 
-        // Update member profile (supports name, jersey number, and gender)
-        $stmt = $db->prepare('UPDATE team_members SET name = ?, jersey_number = ?, gender = ? WHERE id = ? AND team_id = ?');
-        $result = $stmt->execute([$name, $jerseyNumber, $gender, $memberId, $teamId]);
-        $rowCount = $stmt->rowCount();
+        // If team_id is being changed, update it as well
+        if ($newTeamId && $newTeamId !== $teamId) {
+            // Update member profile including team assignment
+            $stmt = $db->prepare('UPDATE team_members SET name = ?, jersey_number = ?, gender = ?, team_id = ? WHERE id = ?');
+            $result = $stmt->execute([$name, $jerseyNumber, $gender, $newTeamId, $memberId]);
+            $rowCount = $stmt->rowCount();
 
-        if ($result && $rowCount > 0) {
-            echo json_encode([
-                'success' => true,
-                'message' => 'Member profile updated successfully',
-                'CLAUDE_DEBUG' => 'UPDATE SUCCESSFUL!',
-                'debug' => [
-                    'rowsUpdated' => $rowCount,
-                    'oldName' => $existingRecord['name'],
-                    'newName' => $name,
-                    'sql' => 'UPDATE team_members SET name = ?, jersey_number = ?, gender = ? WHERE id = ? AND team_id = ?',
-                    'params' => [$name, $jerseyNumber, $gender, $memberId, $teamId]
-                ]
-            ]);
+            if ($result && $rowCount > 0) {
+                echo json_encode([
+                    'success' => true,
+                    'message' => 'Member profile updated successfully (team changed)',
+                    'CLAUDE_DEBUG' => 'UPDATE WITH TEAM CHANGE SUCCESSFUL!',
+                    'debug' => [
+                        'rowsUpdated' => $rowCount,
+                        'oldName' => $existingRecord['name'],
+                        'newName' => $name,
+                        'oldTeamId' => $teamId,
+                        'newTeamId' => $newTeamId,
+                        'sql' => 'UPDATE team_members SET name = ?, jersey_number = ?, gender = ?, team_id = ? WHERE id = ?',
+                        'params' => [$name, $jerseyNumber, $gender, $newTeamId, $memberId]
+                    ]
+                ]);
+            } else {
+                echo json_encode([
+                    'error' => 'Failed to update - no rows affected',
+                    'CLAUDE_DEBUG' => 'SQL executed but no rows updated (team change)',
+                    'debug' => [
+                        'executeResult' => $result,
+                        'rowCount' => $rowCount,
+                        'params' => [$name, $jerseyNumber, $gender, $newTeamId, $memberId]
+                    ]
+                ]);
+            }
         } else {
-            echo json_encode([
-                'error' => 'Failed to update - no rows affected',
-                'CLAUDE_DEBUG' => 'SQL executed but no rows updated',
-                'debug' => [
-                    'executeResult' => $result,
-                    'rowCount' => $rowCount,
-                    'params' => [$name, $jerseyNumber, $gender, $memberId, $teamId]
-                ]
-            ]);
+            // Update member profile (supports name, jersey number, and gender - no team change)
+            $stmt = $db->prepare('UPDATE team_members SET name = ?, jersey_number = ?, gender = ? WHERE id = ? AND team_id = ?');
+            $result = $stmt->execute([$name, $jerseyNumber, $gender, $memberId, $teamId]);
+            $rowCount = $stmt->rowCount();
+
+            if ($result && $rowCount > 0) {
+                echo json_encode([
+                    'success' => true,
+                    'message' => 'Member profile updated successfully',
+                    'CLAUDE_DEBUG' => 'UPDATE SUCCESSFUL!',
+                    'debug' => [
+                        'rowsUpdated' => $rowCount,
+                        'oldName' => $existingRecord['name'],
+                        'newName' => $name,
+                        'sql' => 'UPDATE team_members SET name = ?, jersey_number = ?, gender = ? WHERE id = ? AND team_id = ?',
+                        'params' => [$name, $jerseyNumber, $gender, $memberId, $teamId]
+                    ]
+                ]);
+            } else {
+                echo json_encode([
+                    'error' => 'Failed to update - no rows affected',
+                    'CLAUDE_DEBUG' => 'SQL executed but no rows updated',
+                    'debug' => [
+                        'executeResult' => $result,
+                        'rowCount' => $rowCount,
+                        'params' => [$name, $jerseyNumber, $gender, $memberId, $teamId]
+                    ]
+                ]);
+            }
         }
 
     } catch (Exception $e) {
