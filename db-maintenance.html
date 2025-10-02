@@ -488,37 +488,27 @@
             }
 
             try {
-                // Test authentication with a simple API call
-                const response = await fetch('/api/auth-test', {
+                // Use the proper authentication endpoint
+                const response = await fetch('/api/auth/login', {
                     method: 'POST',
                     headers: {
-                        'Content-Type': 'application/json',
-                        'Authorization': 'Basic ' + btoa('admin:' + password)
+                        'Content-Type': 'application/json'
                     },
-                    body: JSON.stringify({ test: true })
+                    body: JSON.stringify({ password: password })
                 });
 
-                if (response.ok) {
+                const result = await response.json();
+
+                if (response.ok && result.success) {
                     // Authentication successful
                     isAuthenticated = true;
                     document.getElementById('authSection').style.display = 'none';
                     document.getElementById('mainContent').style.display = 'block';
-
-                    // Store credentials for subsequent API calls
-                    window.authHeader = 'Basic ' + btoa('admin:' + password);
                 } else {
-                    showAuthError('Invalid password');
+                    showAuthError(result.message || 'Invalid password');
                 }
             } catch (error) {
-                // Fallback: Try with the password directly
-                if (password === 'your-admin-password') { // You should replace this with actual validation
-                    isAuthenticated = true;
-                    document.getElementById('authSection').style.display = 'none';
-                    document.getElementById('mainContent').style.display = 'block';
-                    window.authHeader = 'Basic ' + btoa('admin:' + password);
-                } else {
-                    showAuthError('Authentication failed - invalid password');
-                }
+                showAuthError('Authentication failed - network error');
             }
         }
 
@@ -534,12 +524,27 @@
         }
 
         function logout() {
-            isAuthenticated = false;
-            window.authHeader = null;
-            document.getElementById('authSection').style.display = 'block';
-            document.getElementById('mainContent').style.display = 'none';
-            document.getElementById('passwordInput').value = '';
-            clearQuery();
+            // Call the logout API endpoint
+            fetch('/api/auth/logout', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                }
+            }).then(() => {
+                // Clear local state
+                isAuthenticated = false;
+                document.getElementById('authSection').style.display = 'block';
+                document.getElementById('mainContent').style.display = 'none';
+                document.getElementById('passwordInput').value = '';
+                clearQuery();
+            }).catch(() => {
+                // Still clear local state even if logout API fails
+                isAuthenticated = false;
+                document.getElementById('authSection').style.display = 'block';
+                document.getElementById('mainContent').style.display = 'none';
+                document.getElementById('passwordInput').value = '';
+                clearQuery();
+            });
         }
 
         function useQuery(query) {
@@ -569,18 +574,12 @@
             showResult('Executing query...', 'success');
 
             try {
-                const headers = {
-                    'Content-Type': 'application/json'
-                };
-
-                // Add auth header if available
-                if (window.authHeader) {
-                    headers['Authorization'] = window.authHeader;
-                }
-
                 const response = await fetch('/api/db-maintenance', {
                     method: 'POST',
-                    headers,
+                    headers: {
+                        'Content-Type': 'application/json'
+                    },
+                    credentials: 'include', // Include session cookies
                     body: JSON.stringify({ query: query })
                 });
 
@@ -601,7 +600,9 @@
                     showResult(message, 'success');
                 } else {
                     if (response.status === 401) {
-                        showResult('Authentication failed. Please logout and login again.', 'error');
+                        showResult('Authentication expired. Please logout and login again.', 'error');
+                        // Auto logout on auth failure
+                        logout();
                     } else {
                         showResult(`Error: ${result.error}`, 'error');
                     }
