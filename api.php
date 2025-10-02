@@ -4108,9 +4108,11 @@ function executeDbMaintenance($db) {
             'CREATE INDEX',
             'CREATE TABLE',  // Temporary: Allow table creation for team_managers
             'DROP INDEX',
+            'DROP TABLE',    // Added for table cleanup operations
             'ANALYZE',
             'VACUUM',
-            'REINDEX'
+            'REINDEX',
+            'TRUNCATE'       // Added for table cleanup
         ];
         
         $operationAllowed = false;
@@ -4123,14 +4125,13 @@ function executeDbMaintenance($db) {
             }
         }
         
-        // Also block dangerous keywords
+        // Also block dangerous keywords that could affect system integrity
         $dangerousKeywords = [
-            'DROP TABLE',
             'DROP DATABASE',
-            'TRUNCATE',
             'ALTER TABLE',
-            // 'CREATE TABLE',  // Temporarily removed to allow team_managers table creation
-            'CREATE DATABASE'
+            'CREATE DATABASE',
+            'GRANT',
+            'REVOKE'
         ];
         
         foreach ($dangerousKeywords as $dangerous) {
@@ -4143,7 +4144,7 @@ function executeDbMaintenance($db) {
         if (!$operationAllowed) {
             http_response_code(400);
             echo json_encode([
-                'error' => 'Operation not allowed. Only SELECT, INSERT, UPDATE, DELETE, CREATE INDEX, CREATE TABLE, DROP INDEX, ANALYZE, VACUUM, and REINDEX are permitted. Dangerous operations like DROP TABLE, TRUNCATE, etc. are blocked.',
+                'error' => 'Operation not allowed. Only SELECT, INSERT, UPDATE, DELETE, CREATE/DROP INDEX, CREATE/DROP TABLE, ANALYZE, VACUUM, REINDEX, and TRUNCATE are permitted. Operations affecting database structure (DROP DATABASE, ALTER TABLE, etc.) are blocked for security.',
                 'allowed_operations' => $allowedOperations
             ]);
             return;

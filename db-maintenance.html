@@ -10,29 +10,93 @@
             padding: 0;
             box-sizing: border-box;
         }
-        
+
         body {
             font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
             background: linear-gradient(135deg, #667db6 0%, #0082c8 25%, #667db6 100%);
             min-height: 100vh;
             padding: 20px;
         }
-        
+
         .container {
-            max-width: 800px;
+            max-width: 900px;
             margin: 0 auto;
             background: white;
             border-radius: 15px;
             padding: 30px;
             box-shadow: 0 10px 30px rgba(0, 0, 0, 0.1);
         }
-        
+
         .header {
             text-align: center;
             margin-bottom: 30px;
             color: #333;
         }
-        
+
+        /* Authentication Styles */
+        .auth-container {
+            max-width: 400px;
+            margin: 0 auto;
+            text-align: center;
+        }
+
+        .auth-form {
+            background: #f8f9fa;
+            border-radius: 10px;
+            padding: 30px;
+            margin-bottom: 20px;
+        }
+
+        .auth-input {
+            width: 100%;
+            padding: 12px;
+            border: 2px solid #e9ecef;
+            border-radius: 8px;
+            font-size: 16px;
+            margin-bottom: 15px;
+        }
+
+        .auth-input:focus {
+            outline: none;
+            border-color: #2196F3;
+        }
+
+        .auth-btn {
+            width: 100%;
+            background: #2196F3;
+            color: white;
+            border: none;
+            border-radius: 8px;
+            padding: 12px;
+            font-size: 16px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .auth-btn:hover {
+            background: #1976D2;
+        }
+
+        .auth-error {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            color: #721c24;
+            padding: 10px;
+            border-radius: 8px;
+            margin-top: 15px;
+            display: none;
+        }
+
+        /* Hide main content until authenticated */
+        .main-content {
+            display: none;
+        }
+
+        .main-content.authenticated {
+            display: block;
+        }
+
         .warning {
             background: #fff3cd;
             border: 1px solid #ffeaa7;
@@ -41,18 +105,27 @@
             margin-bottom: 20px;
             color: #856404;
         }
-        
+
+        .danger-warning {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+            border-radius: 8px;
+            padding: 15px;
+            margin-bottom: 20px;
+            color: #721c24;
+        }
+
         .form-group {
             margin-bottom: 20px;
         }
-        
+
         .form-label {
             display: block;
             margin-bottom: 8px;
             font-weight: 600;
             color: #333;
         }
-        
+
         .form-textarea {
             width: 100%;
             padding: 12px;
@@ -63,12 +136,12 @@
             resize: vertical;
             min-height: 120px;
         }
-        
+
         .form-textarea:focus {
             outline: none;
             border-color: #2196F3;
         }
-        
+
         .btn {
             background: #dc3545;
             color: white;
@@ -80,19 +153,27 @@
             cursor: pointer;
             transition: all 0.3s ease;
         }
-        
+
         .btn:hover {
             background: #c82333;
         }
-        
+
         .btn-secondary {
             background: #6c757d;
         }
-        
+
         .btn-secondary:hover {
             background: #5a6268;
         }
-        
+
+        .btn-danger {
+            background: #dc3545;
+        }
+
+        .btn-danger:hover {
+            background: #c82333;
+        }
+
         .result {
             margin-top: 20px;
             padding: 15px;
@@ -101,25 +182,25 @@
             font-size: 13px;
             white-space: pre-wrap;
         }
-        
+
         .result.success {
             background: #d4edda;
             border: 1px solid #c3e6cb;
             color: #155724;
         }
-        
+
         .result.error {
             background: #f8d7da;
             border: 1px solid #f5c6cb;
             color: #721c24;
         }
-        
+
         .quick-queries {
             margin-top: 30px;
             padding-top: 20px;
             border-top: 2px solid #f0f0f0;
         }
-        
+
         .quick-query {
             margin-bottom: 15px;
             padding: 10px;
@@ -129,203 +210,387 @@
             justify-content: space-between;
             align-items: center;
         }
-        
+
         .quick-query code {
             font-family: 'Monaco', 'Menlo', 'Ubuntu Mono', monospace;
             font-size: 13px;
             flex: 1;
         }
-        
+
         .quick-query button {
             margin-left: 10px;
+        }
+
+        .quick-query.danger {
+            background: #f8d7da;
+            border: 1px solid #f5c6cb;
+        }
+
+        .quick-query.danger code {
+            color: #721c24;
+        }
+
+        .logout-btn {
+            position: absolute;
+            top: 20px;
+            right: 20px;
+            background: #6c757d;
+            color: white;
+            border: none;
+            border-radius: 6px;
+            padding: 8px 15px;
+            font-size: 12px;
+            cursor: pointer;
+        }
+
+        .logout-btn:hover {
+            background: #5a6268;
+        }
+
+        .query-section {
+            border: 2px solid #e9ecef;
+            border-radius: 10px;
+            padding: 20px;
+            margin-bottom: 20px;
+        }
+
+        .query-section h4 {
+            margin-bottom: 15px;
+            padding-bottom: 10px;
+            border-bottom: 1px solid #e9ecef;
         }
     </style>
 </head>
 <body>
-    <div class="container">
+    <!-- Authentication Form -->
+    <div id="authSection" class="auth-container">
+        <h1 style="color: white; margin-bottom: 30px; text-shadow: 2px 2px 4px rgba(0,0,0,0.3);">🔒 Database Maintenance</h1>
+        <div class="auth-form">
+            <h2 style="margin-bottom: 20px; color: #333;">Admin Authentication Required</h2>
+            <p style="margin-bottom: 20px; color: #666;">This page provides direct database access. Please authenticate to continue.</p>
+
+            <input type="password" id="passwordInput" class="auth-input" placeholder="Enter admin password" />
+            <button onclick="authenticate()" class="auth-btn">Login</button>
+
+            <div id="authError" class="auth-error"></div>
+        </div>
+    </div>
+
+    <!-- Main Database Maintenance Interface -->
+    <div id="mainContent" class="container main-content">
+        <button class="logout-btn" onclick="logout()">Logout</button>
+
         <div class="header">
-            <h1>Database Maintenance</h1>
-            <p>Execute SQL queries for database maintenance</p>
+            <h1>🛠️ Database Maintenance Console</h1>
+            <p>Execute SQL queries for database maintenance operations</p>
         </div>
-        
+
+        <div class="danger-warning">
+            <strong>⚠️ DANGER ZONE:</strong> This tool allows direct database manipulation including DROP TABLE operations.
+            <br>Use with extreme caution and <strong>always backup your data first</strong>.
+            <br>Destructive operations are <strong>IRREVERSIBLE</strong>.
+        </div>
+
         <div class="warning">
-            <strong>⚠️ Warning:</strong> This tool allows direct database manipulation. 
-            Use with caution and make sure you understand the queries before executing them.
-            Always backup your data before running destructive operations.
+            <strong>🔐 Security:</strong> Allowed operations: SELECT, INSERT, UPDATE, DELETE, CREATE/DROP TABLE, CREATE/DROP INDEX, TRUNCATE, ANALYZE, VACUUM, REINDEX.
+            <br>Blocked: DROP DATABASE, ALTER TABLE, CREATE DATABASE, GRANT, REVOKE.
         </div>
-        
+
         <div class="form-group">
             <label class="form-label">SQL Query:</label>
             <textarea class="form-textarea" id="sqlQuery" placeholder="Enter your SQL query here..."></textarea>
         </div>
-        
+
         <div style="display: flex; gap: 10px;">
             <button class="btn" onclick="executeQuery()">Execute Query</button>
             <button class="btn btn-secondary" onclick="clearQuery()">Clear</button>
         </div>
-        
+
         <div id="result"></div>
-        
+
         <div class="quick-queries">
-            <h3>Quick Actions:</h3>
-            
-            <!-- Backup Queries -->
-            <div style="margin-bottom: 25px;">
-                <h4 style="color: #dc3545; margin-bottom: 15px;">📦 Backup Operations</h4>
-                
+            <h3>Quick SQL Operations:</h3>
+
+            <!-- Table Management Queries -->
+            <div class="query-section">
+                <h4 style="color: #dc3545;">🗂️ Table Management Operations</h4>
+
+                <div class="quick-query">
+                    <code>SELECT name FROM sqlite_master WHERE type='table' ORDER BY name;</code>
+                    <button class="btn btn-secondary" onclick="useQuery(this.previousElementSibling.textContent)">Use Query</button>
+                </div>
+
+                <div class="quick-query">
+                    <code>CREATE TABLE backup_table_$(date +%Y%m%d) AS SELECT * FROM your_table;</code>
+                    <button class="btn btn-secondary" onclick="useQuery(this.previousElementSibling.textContent)">Use Query</button>
+                </div>
+
+                <div class="quick-query danger">
+                    <code>DROP TABLE IF EXISTS table_name;</code>
+                    <button class="btn btn-danger" onclick="useQuery(this.previousElementSibling.textContent)">Use Query</button>
+                </div>
+
+                <div class="quick-query danger">
+                    <code>TRUNCATE TABLE table_name;</code>
+                    <button class="btn btn-danger" onclick="useQuery(this.previousElementSibling.textContent)">Use Query</button>
+                </div>
+            </div>
+
+            <!-- Backup Operations -->
+            <div class="query-section">
+                <h4 style="color: #28a745;">📦 Backup Operations</h4>
+
+                <div class="quick-query">
+                    <code>CREATE TABLE teams_backup_$(date +%Y%m%d) AS SELECT * FROM teams;</code>
+                    <button class="btn btn-secondary" onclick="useQuery(this.previousElementSibling.textContent)">Use Query</button>
+                </div>
+
+                <div class="quick-query">
+                    <code>CREATE TABLE team_members_backup_$(date +%Y%m%d) AS SELECT * FROM team_members;</code>
+                    <button class="btn btn-secondary" onclick="useQuery(this.previousElementSibling.textContent)">Use Query</button>
+                </div>
+
                 <div class="quick-query">
                     <code>CREATE TABLE player_disciplinary_records_backup AS SELECT * FROM player_disciplinary_records;</code>
                     <button class="btn btn-secondary" onclick="useQuery(this.previousElementSibling.textContent)">Use Query</button>
                 </div>
-                
+
                 <div class="quick-query">
                     <code>SELECT COUNT(*) as backup_count FROM player_disciplinary_records_backup;</code>
                     <button class="btn btn-secondary" onclick="useQuery(this.previousElementSibling.textContent)">Use Query</button>
                 </div>
-                
-                <div class="quick-query">
-                    <code>CREATE TABLE team_members_backup AS SELECT * FROM team_members;</code>
-                    <button class="btn btn-secondary" onclick="useQuery(this.previousElementSibling.textContent)">Use Query</button>
-                </div>
             </div>
-            
-            <!-- Verification Queries -->
-            <div style="margin-bottom: 25px;">
-                <h4 style="color: #28a745; margin-bottom: 15px;">✅ Import Verification</h4>
-                
+
+            <!-- Database Verification -->
+            <div class="query-section">
+                <h4 style="color: #2196F3;">✅ Database Verification</h4>
+
                 <div class="quick-query">
-                    <code>SELECT COUNT(*) as total_records FROM player_disciplinary_records;</code>
+                    <code>SELECT COUNT(*) as total_teams FROM teams;</code>
                     <button class="btn btn-secondary" onclick="useQuery(this.previousElementSibling.textContent)">Use Query</button>
                 </div>
-                
+
+                <div class="quick-query">
+                    <code>SELECT COUNT(*) as total_members FROM team_members;</code>
+                    <button class="btn btn-secondary" onclick="useQuery(this.previousElementSibling.textContent)">Use Query</button>
+                </div>
+
+                <div class="quick-query">
+                    <code>SELECT COUNT(*) as total_disciplinary_records FROM player_disciplinary_records;</code>
+                    <button class="btn btn-secondary" onclick="useQuery(this.previousElementSibling.textContent)">Use Query</button>
+                </div>
+
                 <div class="quick-query">
                     <code>SELECT card_type, COUNT(*) as count FROM player_disciplinary_records GROUP BY card_type;</code>
                     <button class="btn btn-secondary" onclick="useQuery(this.previousElementSibling.textContent)">Use Query</button>
                 </div>
-                
-                <div class="quick-query">
-                    <code>SELECT DATE(MIN(incident_date_epoch), 'unixepoch') as earliest, DATE(MAX(incident_date_epoch), 'unixepoch') as latest FROM player_disciplinary_records;</code>
-                    <button class="btn btn-secondary" onclick="useQuery(this.previousElementSibling.textContent)">Use Query</button>
-                </div>
-                
+
                 <div class="quick-query">
                     <code>SELECT COUNT(*) as orphaned_records FROM player_disciplinary_records WHERE member_id NOT IN (SELECT id FROM team_members);</code>
                     <button class="btn btn-secondary" onclick="useQuery(this.previousElementSibling.textContent)">Use Query</button>
                 </div>
-                
-                <div class="quick-query">
-                    <code>SELECT COALESCE(active, true) as active_status, COUNT(*) as count FROM team_members GROUP BY COALESCE(active, true);</code>
-                    <button class="btn btn-secondary" onclick="useQuery(this.previousElementSibling.textContent)">Use Query</button>
+            </div>
+
+            <!-- Cleanup Operations -->
+            <div class="query-section">
+                <h4 style="color: #dc3545;">🧹 Cleanup Operations</h4>
+
+                <div class="quick-query danger">
+                    <code>DELETE FROM player_disciplinary_records WHERE created_at < date('now', '-1 year');</code>
+                    <button class="btn btn-danger" onclick="useQuery(this.previousElementSibling.textContent)">Use Query</button>
+                </div>
+
+                <div class="quick-query danger">
+                    <code>UPDATE team_members SET photo = NULL WHERE photo IS NOT NULL;</code>
+                    <button class="btn btn-danger" onclick="useQuery(this.previousElementSibling.textContent)">Use Query</button>
+                </div>
+
+                <div class="quick-query danger">
+                    <code>DROP TABLE IF EXISTS teams_backup_old;</code>
+                    <button class="btn btn-danger" onclick="useQuery(this.previousElementSibling.textContent)">Use Query</button>
+                </div>
+
+                <div class="quick-query danger">
+                    <code>DROP TABLE IF EXISTS team_members_backup_old;</code>
+                    <button class="btn btn-danger" onclick="useQuery(this.previousElementSibling.textContent)">Use Query</button>
                 </div>
             </div>
-            
-            <!-- Restore Queries -->
-            <div style="margin-bottom: 25px;">
-                <h4 style="color: #ffc107; margin-bottom: 15px;">🔄 Restore Operations (Emergency)</h4>
-                
-                <div class="quick-query">
-                    <code>DELETE FROM player_disciplinary_records;</code>
-                    <button class="btn btn-secondary" onclick="useQuery(this.previousElementSibling.textContent)">Use Query</button>
-                </div>
-                
-                <div class="quick-query">
-                    <code>INSERT INTO player_disciplinary_records SELECT * FROM player_disciplinary_records_backup;</code>
-                    <button class="btn btn-secondary" onclick="useQuery(this.previousElementSibling.textContent)">Use Query</button>
-                </div>
-                
-                <div class="quick-query">
-                    <code>DROP TABLE player_disciplinary_records_backup;</code>
-                    <button class="btn btn-secondary" onclick="useQuery(this.previousElementSibling.textContent)">Use Query</button>
-                </div>
-            </div>
-            
-            <!-- Standard Queries -->
-            <div style="margin-bottom: 25px;">
-                <h4 style="color: #2196F3; margin-bottom: 15px;">📊 Standard Database Queries</h4>
-                
-                <div class="quick-query">
-                    <code>SELECT COUNT(*) FROM teams;</code>
-                    <button class="btn btn-secondary" onclick="useQuery(this.previousElementSibling.textContent)">Use Query</button>
-                </div>
-                
-                <div class="quick-query">
-                    <code>SELECT COUNT(*) FROM team_members;</code>
-                    <button class="btn btn-secondary" onclick="useQuery(this.previousElementSibling.textContent)">Use Query</button>
-                </div>
-                
+
+            <!-- Database Maintenance -->
+            <div class="query-section">
+                <h4 style="color: #6c757d;">⚙️ Database Maintenance</h4>
+
                 <div class="quick-query">
                     <code>VACUUM;</code>
                     <button class="btn btn-secondary" onclick="useQuery(this.previousElementSibling.textContent)">Use Query</button>
                 </div>
-                
+
                 <div class="quick-query">
                     <code>ANALYZE;</code>
                     <button class="btn btn-secondary" onclick="useQuery(this.previousElementSibling.textContent)">Use Query</button>
                 </div>
-            </div>
-            
-            <!-- Photo Management Queries -->
-            <div>
-                <h4 style="color: #6c757d; margin-bottom: 15px;">📸 Photo Management</h4>
-                
+
                 <div class="quick-query">
-                    <code>UPDATE team_members SET photo = NULL WHERE photo IS NOT NULL;</code>
+                    <code>REINDEX;</code>
                     <button class="btn btn-secondary" onclick="useQuery(this.previousElementSibling.textContent)">Use Query</button>
                 </div>
-                
+
                 <div class="quick-query">
                     <code>SELECT COUNT(*) as total_members, COUNT(photo) as members_with_photos FROM team_members;</code>
                     <button class="btn btn-secondary" onclick="useQuery(this.previousElementSibling.textContent)">Use Query</button>
                 </div>
-                
+            </div>
+
+            <!-- Emergency Restore -->
+            <div class="query-section">
+                <h4 style="color: #ffc107;">🔄 Emergency Restore Operations</h4>
+
+                <div class="quick-query danger">
+                    <code>DELETE FROM player_disciplinary_records;</code>
+                    <button class="btn btn-danger" onclick="useQuery(this.previousElementSibling.textContent)">Use Query</button>
+                </div>
+
                 <div class="quick-query">
-                    <code>SELECT id, name, photo FROM team_members WHERE photo IS NOT NULL LIMIT 10;</code>
+                    <code>INSERT INTO player_disciplinary_records SELECT * FROM player_disciplinary_records_backup;</code>
                     <button class="btn btn-secondary" onclick="useQuery(this.previousElementSibling.textContent)">Use Query</button>
                 </div>
-                
-                <div class="quick-query">
-                    <code>UPDATE team_members SET photo = NULL WHERE photo LIKE '%/api/photos%';</code>
-                    <button class="btn btn-secondary" onclick="useQuery(this.previousElementSibling.textContent)">Use Query</button>
+
+                <div class="quick-query danger">
+                    <code>DROP TABLE player_disciplinary_records_backup;</code>
+                    <button class="btn btn-danger" onclick="useQuery(this.previousElementSibling.textContent)">Use Query</button>
                 </div>
             </div>
         </div>
     </div>
-    
+
     <script>
+        // Authentication variables
+        let isAuthenticated = false;
+
+        // Show auth section by default
+        document.getElementById('authSection').style.display = 'block';
+        document.getElementById('mainContent').style.display = 'none';
+
+        // Handle Enter key in password input
+        document.getElementById('passwordInput').addEventListener('keypress', function(e) {
+            if (e.key === 'Enter') {
+                authenticate();
+            }
+        });
+
+        async function authenticate() {
+            const password = document.getElementById('passwordInput').value;
+            const errorDiv = document.getElementById('authError');
+
+            if (!password) {
+                showAuthError('Please enter a password');
+                return;
+            }
+
+            try {
+                // Test authentication with a simple API call
+                const response = await fetch('/api/auth-test', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                        'Authorization': 'Basic ' + btoa('admin:' + password)
+                    },
+                    body: JSON.stringify({ test: true })
+                });
+
+                if (response.ok) {
+                    // Authentication successful
+                    isAuthenticated = true;
+                    document.getElementById('authSection').style.display = 'none';
+                    document.getElementById('mainContent').style.display = 'block';
+
+                    // Store credentials for subsequent API calls
+                    window.authHeader = 'Basic ' + btoa('admin:' + password);
+                } else {
+                    showAuthError('Invalid password');
+                }
+            } catch (error) {
+                // Fallback: Try with the password directly
+                if (password === 'your-admin-password') { // You should replace this with actual validation
+                    isAuthenticated = true;
+                    document.getElementById('authSection').style.display = 'none';
+                    document.getElementById('mainContent').style.display = 'block';
+                    window.authHeader = 'Basic ' + btoa('admin:' + password);
+                } else {
+                    showAuthError('Authentication failed - invalid password');
+                }
+            }
+        }
+
+        function showAuthError(message) {
+            const errorDiv = document.getElementById('authError');
+            errorDiv.textContent = message;
+            errorDiv.style.display = 'block';
+
+            // Hide error after 5 seconds
+            setTimeout(() => {
+                errorDiv.style.display = 'none';
+            }, 5000);
+        }
+
+        function logout() {
+            isAuthenticated = false;
+            window.authHeader = null;
+            document.getElementById('authSection').style.display = 'block';
+            document.getElementById('mainContent').style.display = 'none';
+            document.getElementById('passwordInput').value = '';
+            clearQuery();
+        }
+
         function useQuery(query) {
             document.getElementById('sqlQuery').value = query.trim();
         }
-        
+
         function clearQuery() {
             document.getElementById('sqlQuery').value = '';
             document.getElementById('result').innerHTML = '';
         }
-        
+
         async function executeQuery() {
+            if (!isAuthenticated) {
+                showResult('Authentication required', 'error');
+                return;
+            }
+
             const query = document.getElementById('sqlQuery').value.trim();
             const resultDiv = document.getElementById('result');
-            
+
             if (!query) {
                 showResult('Please enter a SQL query.', 'error');
                 return;
             }
-            
+
             // Show loading
             showResult('Executing query...', 'success');
-            
+
             try {
+                const headers = {
+                    'Content-Type': 'application/json'
+                };
+
+                // Add auth header if available
+                if (window.authHeader) {
+                    headers['Authorization'] = window.authHeader;
+                }
+
                 const response = await fetch('/api/db-maintenance', {
                     method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
+                    headers,
                     body: JSON.stringify({ query: query })
                 });
-                
+
                 const result = await response.json();
-                
+
                 if (response.ok) {
                     let message = 'Query executed successfully.\n';
+                    if (result.execution_time_ms !== undefined) {
+                        message += `Execution time: ${result.execution_time_ms}ms\n`;
+                    }
                     if (result.rowCount !== undefined) {
                         message += `Rows affected: ${result.rowCount}\n`;
                     }
@@ -335,13 +600,17 @@
                     }
                     showResult(message, 'success');
                 } else {
-                    showResult(`Error: ${result.error}`, 'error');
+                    if (response.status === 401) {
+                        showResult('Authentication failed. Please logout and login again.', 'error');
+                    } else {
+                        showResult(`Error: ${result.error}`, 'error');
+                    }
                 }
             } catch (error) {
                 showResult(`Network error: ${error.message}`, 'error');
             }
         }
-        
+
         function showResult(message, type) {
             const resultDiv = document.getElementById('result');
             resultDiv.className = `result ${type}`;
