@@ -173,7 +173,7 @@ Primary Issue
 - CSS styling: ✅ Implemented
 - **Pending**: Live testing on deployed app (network access was blocked during session)
 
-## Current Session Summary (2025-09-30)
+## Previous Session Summary (2025-09-30)
 **COMPLETED TASKS**: ✅ API Routing Fix + Console Log Cleanup
 
 ### 1. API Routing Fix - RESOLVED ✅
@@ -192,11 +192,58 @@ Primary Issue
 - It replaced heavy "saveTeams" calls (102KB+) with targeted updates
 - The routing issue prevented these optimized endpoints from working correctly
 
+## Current Session Summary (2025-10-01)
+**COMPLETED TASKS**: ✅ Orphaned Player Recovery + Team Assignment + UI Improvements
+
+### 1. Orphaned Player Recovery - COMPLETED ✅
+- **Issue**: 142 players had photos but no database entries (orphaned UUIDs)
+- **Solution**: Created detection and insertion scripts
+- **Files Created**:
+  - `detect_orphaned_photos.php` - Scans /app/storage/photos/ for UUID files and cross-references with database
+  - `insert_orphaned_members.php` - Bulk inserts 142 orphaned members to default team
+- **Result**: All 142 orphaned players recovered and assigned to "Players without clear match-based team assignment" team
+
+### 2. Team Assignment Feature - COMPLETED ✅
+- **Requirement**: Add team assignment capability to admin interface for easy player management
+- **Implementation**:
+  - Added team dropdown to edit player modal in main admin app (app.js)
+  - Enhanced API updateMemberProfile function to handle team_id parameter
+  - Fixed API persistence issues for team changes
+- **Key Fix**: API now properly handles team assignment with conditional logic for team changes vs regular updates
+- **Result**: Players can now be reassigned between teams through the admin interface
+
+### 3. Manager vs Admin Separation - COMPLETED ✅
+- **Requirement**: Team assignment only in admin app, not manager view
+- **Implementation**:
+  - Reverted manager-app.js edit functionality to read-only
+  - Removed team assignment features from manager view
+  - Kept full edit capabilities in main admin app only
+- **Result**: Clean separation between manager (read-only) and admin (full edit) permissions
+
+### 4. UI Improvements - COMPLETED ✅
+- **Issue**: Edit player modal had poor layout, hidden save button, double scrolling
+- **Solution**: Complete modal redesign through multiple iterations based on user feedback
+- **Final Layout**:
+  - Row 1: Name + Jersey Number
+  - Row 2: Gender + Team Assignment
+  - Row 3: Photo section
+  - Row 4: Compact Lifetime Cards section
+  - Row 5: Visible action buttons
+- **Enhancement**: Removed success alerts, kept only error alerts for cleaner UX
+
+### 5. Database Sync Query - PROVIDED ✅
+- **Request**: SQL to sync player_disciplinary_records with backup table
+- **Solution**: Provided simplified SQL: `INSERT INTO player_disciplinary_records SELECT * FROM player_disciplinary_records_backup;`
+- **Alternative**: Also provided TRUNCATE option for complete replacement
+
 ## Recovery Instructions
-1. **API Routing Fix**: ✅ COMPLETED - Player name updates now persist correctly
+1. **API Routing Fix**: ✅ COMPLETED - Player name updates persist correctly
 2. **Console Logs**: ✅ COMPLETED - Photo spam logs removed from app.js
-3. **Ready for Use**: Both fixes are implemented and tested successfully
-4. **Team Managers**: Previous session's team manager display feature is also complete
+3. **Team Managers**: ✅ COMPLETED - Display feature working in Teams section
+4. **Orphaned Players**: ✅ COMPLETED - All 142 players recovered and ready for manual team reassignment
+5. **Team Assignment**: ✅ COMPLETED - Admin can reassign players between teams
+6. **UI Polish**: ✅ COMPLETED - Clean edit modal with proper layout and no success alerts
+7. **Database Sync**: ✅ PROVIDED - SQL query ready for disciplinary records sync
 
 ## Connection Details
 - **Deployed App**: https://checkinapp-fresh-production.up.railway.app/

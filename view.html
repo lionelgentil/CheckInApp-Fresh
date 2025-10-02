@@ -3,7 +3,7 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>PASS CheckIn App v6.5.0 - View Only</title>
+    <title>PASS CheckIn App v6.5.0 - Referee View</title>
     <meta name="theme-color" content="#2196F3">
     <link rel="manifest" href="manifest.json">
     <link rel="icon" type="image/x-icon" href="favicon.ico">
@@ -63,7 +63,7 @@
             transition: all 0.3s ease;
         }
         
-        .view-only-badge {
+        .referee-view-badge {
             background: rgba(255, 255, 255, 0.2);
             padding: 5px 15px;
             border-radius: 15px;
@@ -3086,7 +3086,7 @@
             font-weight: 600;
         }
         
-        .view-only-notice {
+        .referee-view-notice {
             background: #e3f2fd;
             border: 1px solid #90caf9;
             border-radius: 8px;
@@ -3094,8 +3094,8 @@
             margin-top: 20px;
             text-align: center;
         }
-        
-        .view-only-notice-title {
+
+        .referee-view-notice-title {
             font-weight: 600;
             color: #1565c0;
             margin-bottom: 5px;
@@ -4002,7 +4002,7 @@
             <h1 onclick="toggleHeader()">PASS CheckIn App</h1>
             <div class="header-content" id="header-content">
                 <div class="version-info"><span id="app-version"></span></div>
-                <div class="view-only-badge">View Only Mode</div>
+                <div class="referee-view-badge">Referee View Mode</div>
             </div>
         </div>
         
@@ -4121,7 +4121,7 @@
         
     </div>
     
-    <div class="version-footer">View Only v<span id="footer-version"></span></div>
+    <div class="version-footer">Referee View v<span id="footer-version"></span></div>
     
     <script>
         // Global flag to track Chart.js loading
