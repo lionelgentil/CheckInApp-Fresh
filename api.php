@@ -365,7 +365,27 @@ try {
                 ));
             }
             break;
-            
+
+        case 'backup':
+            // Database backup endpoint - requires authentication
+            if ($method === 'GET') {
+                requireAuth();
+                createBackup($db);
+            } elseif ($method === 'POST') {
+                requireAuth();
+                // Restore from backup (if backup data provided)
+                restoreBackup($db);
+            }
+            break;
+
+        case 'email-notifications-status':
+            // Check email notifications status - requires authentication
+            if ($method === 'GET') {
+                requireAuth();
+                checkEmailNotificationStatus();
+            }
+            break;
+
         case 'teams':
             if ($method === 'GET') {
                 getTeams($db);
@@ -4450,32 +4470,41 @@ function getTeamManagerEmails($db, $teamId) {
 
 // Email notification function using Resend
 function sendManagerNotification($action, $managerData, $teamName = null, $db = null, $oldManagerData = null) {
+    // Check if email notifications are enabled
+    $emailNotificationsEnabled = $_ENV['ENABLE_EMAIL_NOTIFICATIONS'] ?? getenv('ENABLE_EMAIL_NOTIFICATIONS');
+
+    // If explicitly set to 'false', '0', 'no', or 'disabled', skip email notifications
+    if (in_array(strtolower($emailNotificationsEnabled ?? ''), ['false', '0', 'no', 'disabled', 'off'])) {
+        error_log("Email notifications disabled via ENABLE_EMAIL_NOTIFICATIONS environment variable - skipping notification for action: $action");
+        return true; // Return true to indicate "success" but no email was sent
+    }
+
     // Get configuration from environment variables for security
     $apiKey = $_ENV['RESEND_API_KEY'] ?? getenv('RESEND_API_KEY');
     $fromEmail = $_ENV['FROM_EMAIL'] ?? getenv('FROM_EMAIL');
-    
+
     // Parse always-CC emails from environment variable
     $alwaysCcEmailsString = $_ENV['ALWAYS_CC_EMAILS'] ?? getenv('ALWAYS_CC_EMAILS');
-    
+
     // Validate required environment variables
     if (empty($apiKey)) {
         error_log("CRITICAL: RESEND_API_KEY environment variable not set - email notification failed");
         return false;
     }
-    
+
     if (empty($fromEmail)) {
         error_log("CRITICAL: FROM_EMAIL environment variable not set - email notification failed");
         return false;
     }
-    
+
     if (empty($alwaysCcEmailsString)) {
         error_log("CRITICAL: ALWAYS_CC_EMAILS environment variable not set - email notification failed");
         return false;
     }
-    
+
     // Parse email list
     $alwaysCcEmails = array_filter(array_map('trim', explode(',', $alwaysCcEmailsString)));
-    
+
     if (empty($alwaysCcEmails)) {
         error_log("CRITICAL: ALWAYS_CC_EMAILS environment variable is empty or invalid - email notification failed");
         return false;
@@ -4656,5 +4685,145 @@ function sendManagerNotification($action, $managerData, $teamName = null, $db = 
     error_log("Manager notification email - Action: $action, Team: {$teamForSubject}, Manager: {$managerData['first_name']} {$managerData['last_name']}, Recipients: $recipientCount ($recipientList), IP: {$userIP}, Session: {$sessionId}, HTTP Code: $httpCode");
     
     return $httpCode === 200;
+}
+
+// =====================================
+// BACKUP AND RESTORE FUNCTIONS
+// =====================================
+
+function createBackup($db) {
+    try {
+        $timestamp = date('Y-m-d_H-i-s');
+        $backup = array(
+            'created_at' => date('c'),
+            'timestamp' => $timestamp,
+            'version' => '6.5.0',
+            'tables' => array()
+        );
+
+        // Critical tables to backup
+        $criticalTables = [
+            'teams',
+            'team_members',
+            'events',
+            'matches',
+            'match_attendees',
+            'match_cards',
+            'player_disciplinary_records',
+            'team_managers',
+            'referees'
+        ];
+
+        foreach ($criticalTables as $table) {
+            $stmt = $db->query("SELECT * FROM $table ORDER BY id");
+            $backup['tables'][$table] = $stmt->fetchAll(PDO::FETCH_ASSOC);
+        }
+
+        // Set headers for download
+        header('Content-Type: application/json');
+        header('Content-Disposition: attachment; filename="checkinapp_backup_' . $timestamp . '.json"');
+        header('Cache-Control: no-cache, must-revalidate');
+
+        echo json_encode($backup, JSON_PRETTY_PRINT);
+
+    } catch (Exception $e) {
+        http_response_code(500);
+        echo json_encode(['error' => 'Backup failed: ' . $e->getMessage()]);
+    }
+}
+
+function restoreBackup($db) {
+    try {
+        $input = json_decode(file_get_contents('php://input'), true);
+
+        if (!$input || !isset($input['tables'])) {
+            http_response_code(400);
+            echo json_encode(['error' => 'Invalid backup data']);
+            return;
+        }
+
+        $db->beginTransaction();
+
+        // Order matters for restoration due to foreign keys
+        $restoreOrder = [
+            'teams',
+            'team_members',
+            'referees',
+            'events',
+            'matches',
+            'match_attendees',
+            'match_cards',
+            'player_disciplinary_records',
+            'team_managers'
+        ];
+
+        $restored = [];
+
+        foreach ($restoreOrder as $table) {
+            if (!isset($input['tables'][$table])) {
+                continue;
+            }
+
+            $data = $input['tables'][$table];
+            if (empty($data)) {
+                continue;
+            }
+
+            // Clear existing data
+            $db->exec("DELETE FROM $table");
+
+            // Get column names from first record
+            $columns = array_keys($data[0]);
+            $placeholders = str_repeat('?,', count($columns) - 1) . '?';
+
+            $sql = "INSERT INTO $table (" . implode(',', $columns) . ") VALUES ($placeholders)";
+            $stmt = $db->prepare($sql);
+
+            $count = 0;
+            foreach ($data as $row) {
+                $values = array_values($row);
+                $stmt->execute($values);
+                $count++;
+            }
+
+            $restored[$table] = $count;
+        }
+
+        $db->commit();
+
+        echo json_encode([
+            'success' => true,
+            'message' => 'Backup restored successfully',
+            'restored' => $restored,
+            'timestamp' => date('c')
+        ]);
+
+    } catch (Exception $e) {
+        $db->rollback();
+        http_response_code(500);
+        echo json_encode(['error' => 'Restore failed: ' . $e->getMessage()]);
+    }
+}
+
+function checkEmailNotificationStatus() {
+    try {
+        // Check if email notifications are enabled
+        $emailNotificationsEnabled = $_ENV['ENABLE_EMAIL_NOTIFICATIONS'] ?? getenv('ENABLE_EMAIL_NOTIFICATIONS');
+
+        // Default to enabled if not set
+        $isEnabled = !in_array(strtolower($emailNotificationsEnabled ?? ''), ['false', '0', 'no', 'disabled', 'off']);
+
+        echo json_encode([
+            'enabled' => $isEnabled,
+            'status' => $isEnabled ? 'enabled' : 'disabled',
+            'message' => $isEnabled
+                ? 'Email notifications are enabled for manager changes'
+                : 'Email notifications are disabled via ENABLE_EMAIL_NOTIFICATIONS environment variable'
+        ]);
+
+    } catch (Exception $e) {
+        http_response_code(500);
+        echo json_encode(['error' => 'Failed to check notification status: ' . $e->getMessage()]);
+    }
 }
 ?>

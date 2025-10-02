@@ -298,6 +298,28 @@
             color: #1976d2;
             font-size: 0.9em;
         }
+
+        .email-notification-status {
+            background: rgba(255, 255, 255, 0.2);
+            padding: 5px 12px;
+            border-radius: 15px;
+            margin-top: 5px;
+            font-size: 0.8em;
+            display: inline-block;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+        }
+
+        .email-notification-status.enabled {
+            background: rgba(76, 175, 80, 0.3);
+            border-color: rgba(76, 175, 80, 0.5);
+            color: #2e7d32;
+        }
+
+        .email-notification-status.disabled {
+            background: rgba(255, 152, 0, 0.3);
+            border-color: rgba(255, 152, 0, 0.5);
+            color: #ef6c00;
+        }
         
         /* Manager-specific styles */
         .teams-grid {
@@ -1546,6 +1568,9 @@
             <div class="header-content" id="header-content">
                 <div class="version-info"><span id="app-version"></span></div>
                 <div class="manager-portal-badge">Team Manager Portal</div>
+                <div class="email-notification-status" id="email-notification-status">
+                    📧 Email Notifications: Checking...
+                </div>
             </div>
         </div>
         
@@ -1679,6 +1704,38 @@
         // Initialize header state on load and resize
         window.addEventListener('load', initializeHeader);
         window.addEventListener('resize', initializeHeader);
+
+        // Check email notification status
+        async function checkEmailNotificationStatus() {
+            try {
+                const response = await fetch('/api/email-notifications-status', {
+                    credentials: 'include' // Include session cookies for auth
+                });
+
+                if (response.ok) {
+                    const data = await response.json();
+                    const statusElement = document.getElementById('email-notification-status');
+
+                    if (data.enabled) {
+                        statusElement.textContent = '📧 Email Notifications: Enabled';
+                        statusElement.className = 'email-notification-status enabled';
+                    } else {
+                        statusElement.textContent = '📧 Email Notifications: Disabled';
+                        statusElement.className = 'email-notification-status disabled';
+                    }
+                } else {
+                    // If API call fails, show unknown status
+                    const statusElement = document.getElementById('email-notification-status');
+                    statusElement.textContent = '📧 Email Notifications: Unknown';
+                    statusElement.className = 'email-notification-status';
+                }
+            } catch (error) {
+                console.warn('Could not check email notification status:', error);
+                const statusElement = document.getElementById('email-notification-status');
+                statusElement.textContent = '📧 Email Notifications: Unknown';
+                statusElement.className = 'email-notification-status';
+            }
+        }
         
         // Dynamic version loading to prevent cache issues
         async function loadApp() {
@@ -1731,6 +1788,9 @@
                             // Set version numbers from JavaScript constant after script loads
                             document.getElementById('app-version').textContent = APP_VERSION;
                             document.getElementById('footer-version').textContent = APP_VERSION;
+
+                            // Check email notification status after app loads
+                            checkEmailNotificationStatus();
                         };
                         document.body.appendChild(script);
                     };
