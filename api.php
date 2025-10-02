@@ -379,9 +379,8 @@ try {
             break;
 
         case 'email-notifications-status':
-            // Check email notifications status - requires authentication
+            // Check email notifications status - no auth required (read-only info)
             if ($method === 'GET') {
-                requireAuth();
                 checkEmailNotificationStatus();
             }
             break;
