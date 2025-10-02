@@ -3973,16 +3973,14 @@
         // Dynamic version loading to prevent cache issues
         async function loadApp() {
             try {
-                // Fetch current version from API
-                const response = await fetch('/api/version');
-                const data = await response.json();
-                const version = data.version;
-                
-                // Load configuration first
+                // Load config.js first to get the version
                 const configScript = document.createElement('script');
-                configScript.src = `config.js?v=${version}&cb=${Date.now()}`;
+                configScript.src = `config.js?cb=${Date.now()}`;
                 configScript.onload = function() {
-                    // Load core.js first
+                    // Now we have APP_VERSION available, use it for cache-busting
+                    const version = APP_VERSION;
+
+                    // Load core.js with version-based cache-busting
                     const coreScript = document.createElement('script');
                     coreScript.src = `core.js?v=${version}&cb=${Date.now()}`;
                     coreScript.onload = function() {
@@ -4000,7 +3998,7 @@
                 };
                 document.body.appendChild(configScript);
             } catch (error) {
-                console.error('Failed to load version:', error);
+                console.error('Failed to load app:', error);
                 // Fallback: load without version parameter but with cache busting
                 const configScript = document.createElement('script');
                 configScript.src = `config.js?cb=${Date.now()}`;
