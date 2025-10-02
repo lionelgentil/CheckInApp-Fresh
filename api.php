@@ -10,9 +10,6 @@ error_log("CLAUDE TEST: api.php file loaded at " . date('Y-m-d H:i:s') . " for U
 // Start session for authentication BEFORE any output
 session_start();
 
-// Version constant - update this single location to change version everywhere
-const APP_VERSION = '6.5.0';
-
 // Authentication configuration - using environment variables for security
 $adminPassword = $_ENV['ADMIN_PASSWORD'] ?? getenv('ADMIN_PASSWORD');
 $sessionTimeout = (int)($_ENV['SESSION_TIMEOUT'] ?? getenv('SESSION_TIMEOUT') ?: 3600);

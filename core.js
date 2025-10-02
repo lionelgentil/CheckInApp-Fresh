@@ -3,9 +3,6 @@
  * Common utilities and components shared between main and view apps
  */
 
-// Version constant - shared across all apps
-const CORE_VERSION = '6.4.0';
-
 /**
  * Base class with shared functionality for CheckIn apps
  */
