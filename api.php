@@ -3564,26 +3564,32 @@ function deleteSingleMatch($db) {
     }
 }
 
-// Helper function to get team captains
+// Helper function to get team captains (now using team_managers who are also players)
 function getTeamCaptains($db, $teamId = null) {
     if ($teamId) {
-        // Get captains for specific team
+        // Find team managers who are also team members (players)
         $stmt = $db->prepare('
-            SELECT tc.team_id, tc.member_id, tm.name as member_name
-            FROM team_captains tc
-            JOIN team_members tm ON tc.member_id = tm.id
-            WHERE tc.team_id = ? AND (tm.active IS NULL OR tm.active = TRUE)
-            ORDER BY tc.created_at
+            SELECT tm.team_id, mem.id as member_id, mem.name as member_name
+            FROM team_managers tm
+            JOIN team_members mem ON mem.team_id = tm.team_id
+                AND TRIM(LOWER(CONCAT(tm.first_name, \' \', tm.last_name))) = TRIM(LOWER(mem.name))
+            WHERE tm.team_id = ? AND (mem.active IS NULL OR mem.active = TRUE)
+            ORDER BY
+                CASE WHEN tm.role = \'Manager\' THEN 1 ELSE 2 END,
+                tm.created_at
         ');
         $stmt->execute([$teamId]);
     } else {
-        // Get all captains
+        // Find all team managers who are also team members (players)
         $stmt = $db->query('
-            SELECT tc.team_id, tc.member_id, tm.name as member_name
-            FROM team_captains tc
-            JOIN team_members tm ON tc.member_id = tm.id
-            WHERE tm.active IS NULL OR tm.active = TRUE
-            ORDER BY tc.team_id, tc.created_at
+            SELECT tm.team_id, mem.id as member_id, mem.name as member_name
+            FROM team_managers tm
+            JOIN team_members mem ON mem.team_id = tm.team_id
+                AND TRIM(LOWER(CONCAT(tm.first_name, \' \', tm.last_name))) = TRIM(LOWER(mem.name))
+            WHERE mem.active IS NULL OR mem.active = TRUE
+            ORDER BY tm.team_id,
+                CASE WHEN tm.role = \'Manager\' THEN 1 ELSE 2 END,
+                tm.created_at
         ');
     }
     
