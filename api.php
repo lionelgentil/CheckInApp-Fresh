@@ -4145,7 +4145,7 @@ function executeDbMaintenance($db) {
         if (!$operationAllowed) {
             http_response_code(400);
             echo json_encode([
-                'error' => 'Operation not allowed. Only SELECT, INSERT, UPDATE, DELETE, CREATE/DROP INDEX, CREATE/DROP TABLE, ANALYZE, VACUUM, REINDEX, and TRUNCATE are permitted. Operations affecting database structure (DROP DATABASE, ALTER TABLE, etc.) are blocked for security.',
+                'error' => 'Operation not allowed. Only SELECT, INSERT, UPDATE, DELETE, CREATE/DROP INDEX, CREATE/DROP TABLE, ALTER TABLE, ANALYZE, VACUUM, REINDEX, and TRUNCATE are permitted. Operations affecting database structure (DROP DATABASE, etc.) are blocked for security.',
                 'allowed_operations' => $allowedOperations
             ]);
             return;
