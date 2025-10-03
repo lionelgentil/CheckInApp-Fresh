@@ -1855,33 +1855,58 @@ class CheckInViewApp extends CheckInCore {
                         const awayTotalPlayers = awayTeam ? awayTeam.memberCount : 0;
 
                         // Calculate gender-specific attendance for enhanced mobile display
-                        const homeMembers = homeTeam ? homeTeam.members : [];
-                        const awayMembers = awayTeam ? awayTeam.members : [];
+                        // If detailed member data is not available, fall back to simple total counts
+                        const homeMembers = homeTeam && homeTeam.members ? homeTeam.members : [];
+                        const awayMembers = awayTeam && awayTeam.members ? awayTeam.members : [];
 
-                        const homeMaleTotal = homeMembers.filter(m => m.gender === 'male').length;
-                        const homeFemaleTotal = homeMembers.filter(m => m.gender === 'female').length;
-                        const awayMaleTotal = awayMembers.filter(m => m.gender === 'male').length;
-                        const awayFemaleTotal = awayMembers.filter(m => m.gender === 'female').length;
-
+                        let homeMaleTotal = 0, homeFemaleTotal = 0, awayMaleTotal = 0, awayFemaleTotal = 0;
                         let homeMalePresent = 0, homeFemalePresent = 0, awayMalePresent = 0, awayFemalePresent = 0;
 
-                        (match.homeTeamAttendees || []).forEach(attendee => {
-                            const attendeeId = typeof attendee === 'object' ? attendee.memberId : attendee;
-                            const member = homeMembers.find(m => m.id === attendeeId);
-                            if (member) {
-                                if (member.gender === 'male') homeMalePresent++;
-                                else if (member.gender === 'female') homeFemalePresent++;
-                            }
-                        });
+                        if (homeMembers.length > 0) {
+                            // Use detailed member data if available
+                            homeMaleTotal = homeMembers.filter(m => m.gender === 'male').length;
+                            homeFemaleTotal = homeMembers.filter(m => m.gender === 'female').length;
 
-                        (match.awayTeamAttendees || []).forEach(attendee => {
-                            const attendeeId = typeof attendee === 'object' ? attendee.memberId : attendee;
-                            const member = awayMembers.find(m => m.id === attendeeId);
-                            if (member) {
-                                if (member.gender === 'male') awayMalePresent++;
-                                else if (member.gender === 'female') awayFemalePresent++;
-                            }
-                        });
+                            (match.homeTeamAttendees || []).forEach(attendee => {
+                                const attendeeId = typeof attendee === 'object' ? attendee.memberId : attendee;
+                                const member = homeMembers.find(m => m.id === attendeeId);
+                                if (member) {
+                                    if (member.gender === 'male') homeMalePresent++;
+                                    else if (member.gender === 'female') homeFemalePresent++;
+                                }
+                            });
+                        } else {
+                            // Fallback: estimate equal split for display purposes
+                            const totalHome = homeTotalPlayers;
+                            homeMaleTotal = Math.ceil(totalHome / 2);
+                            homeFemaleTotal = Math.floor(totalHome / 2);
+                            const totalHomePresent = homeAttendanceCount;
+                            homeMalePresent = Math.ceil(totalHomePresent / 2);
+                            homeFemalePresent = Math.floor(totalHomePresent / 2);
+                        }
+
+                        if (awayMembers.length > 0) {
+                            // Use detailed member data if available
+                            awayMaleTotal = awayMembers.filter(m => m.gender === 'male').length;
+                            awayFemaleTotal = awayMembers.filter(m => m.gender === 'female').length;
+
+                            (match.awayTeamAttendees || []).forEach(attendee => {
+                                const attendeeId = typeof attendee === 'object' ? attendee.memberId : attendee;
+                                const member = awayMembers.find(m => m.id === attendeeId);
+                                if (member) {
+                                    if (member.gender === 'male') awayMalePresent++;
+                                    else if (member.gender === 'female') awayFemalePresent++;
+                                }
+                            });
+                        } else {
+                            // Fallback: estimate equal split for display purposes
+                            const totalAway = awayTotalPlayers;
+                            awayMaleTotal = Math.ceil(totalAway / 2);
+                            awayFemaleTotal = Math.floor(totalAway / 2);
+                            const totalAwayPresent = awayAttendanceCount;
+                            awayMalePresent = Math.ceil(totalAwayPresent / 2);
+                            awayFemalePresent = Math.floor(totalAwayPresent / 2);
+                        }
                         
                         // Match status and score display
                         const hasScore = match.homeScore !== null && match.awayScore !== null;
