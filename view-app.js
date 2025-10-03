@@ -1853,6 +1853,35 @@ class CheckInViewApp extends CheckInCore {
                         const awayAttendanceCount = match.awayTeamAttendees ? match.awayTeamAttendees.length : 0;
                         const homeTotalPlayers = homeTeam ? homeTeam.memberCount : 0;
                         const awayTotalPlayers = awayTeam ? awayTeam.memberCount : 0;
+
+                        // Calculate gender-specific attendance for enhanced mobile display
+                        const homeMembers = homeTeam ? homeTeam.members : [];
+                        const awayMembers = awayTeam ? awayTeam.members : [];
+
+                        const homeMaleTotal = homeMembers.filter(m => m.gender === 'male').length;
+                        const homeFemaleTotal = homeMembers.filter(m => m.gender === 'female').length;
+                        const awayMaleTotal = awayMembers.filter(m => m.gender === 'male').length;
+                        const awayFemaleTotal = awayMembers.filter(m => m.gender === 'female').length;
+
+                        let homeMalePresent = 0, homeFemalePresent = 0, awayMalePresent = 0, awayFemalePresent = 0;
+
+                        (match.homeTeamAttendees || []).forEach(attendee => {
+                            const attendeeId = typeof attendee === 'object' ? attendee.memberId : attendee;
+                            const member = homeMembers.find(m => m.id === attendeeId);
+                            if (member) {
+                                if (member.gender === 'male') homeMalePresent++;
+                                else if (member.gender === 'female') homeFemalePresent++;
+                            }
+                        });
+
+                        (match.awayTeamAttendees || []).forEach(attendee => {
+                            const attendeeId = typeof attendee === 'object' ? attendee.memberId : attendee;
+                            const member = awayMembers.find(m => m.id === attendeeId);
+                            if (member) {
+                                if (member.gender === 'male') awayMalePresent++;
+                                else if (member.gender === 'female') awayFemalePresent++;
+                            }
+                        });
                         
                         // Match status and score display
                         const hasScore = match.homeScore !== null && match.awayScore !== null;
@@ -1878,7 +1907,10 @@ class CheckInViewApp extends CheckInCore {
                                     <div class="team-info-match">
                                         <span class="team-name-match">${homeTeam ? homeTeam.name : 'Unknown Team'}</span>
                                         ${homeTeam && homeTeam.category ? `<div class="team-category-small">${homeTeam.category}</div>` : ''}
-                                        <div class="attendance-count">👥 ${homeAttendanceCount}/${homeTotalPlayers}</div>
+                                        <div class="attendance-count">
+                                            <span class="gender-badge female">👩 ${homeFemalePresent}/${homeFemaleTotal}</span>
+                                            <span class="gender-badge male">👨 ${homeMalePresent}/${homeMaleTotal}</span>
+                                        </div>
                                     </div>
                                     <div class="vs-text">
                                         ${hasScore ? scoreDisplay : 'VS'}
@@ -1887,7 +1919,10 @@ class CheckInViewApp extends CheckInCore {
                                     <div class="team-info-match">
                                         <span class="team-name-match">${awayTeam ? awayTeam.name : 'Unknown Team'}</span>
                                         ${awayTeam && awayTeam.category ? `<div class="team-category-small">${awayTeam.category}</div>` : ''}
-                                        <div class="attendance-count">👥 ${awayAttendanceCount}/${awayTotalPlayers}</div>
+                                        <div class="attendance-count">
+                                            <span class="gender-badge female">👩 ${awayFemalePresent}/${awayFemaleTotal}</span>
+                                            <span class="gender-badge male">👨 ${awayMalePresent}/${awayMaleTotal}</span>
+                                        </div>
                                     </div>
                                 </div>
                                 ${match.field ? `<div class="match-field">Field: ${match.field}</div>` : ''}
@@ -4012,15 +4047,15 @@ class CheckInViewApp extends CheckInCore {
                     <button class="team-toggle-btn active" id="home-toggle" onclick="app.toggleGridTeam('home')" style="border-left: 4px solid ${homeTeam.colorData};">
                         <span class="team-name">${homeTeam.name}</span>
                         <div class="attendance-count" id="home-attendance-count">
-                            <div class="female-count">0/0 Female</div>
-                            <div class="male-count">0/0 Male</div>
+                            <span class="gender-badge female">👩 0/0</span>
+                            <span class="gender-badge male">👨 0/0</span>
                         </div>
                     </button>
                     <button class="team-toggle-btn" id="away-toggle" onclick="app.toggleGridTeam('away')" style="border-left: 4px solid ${awayTeam.colorData};">
                         <span class="team-name">${awayTeam.name}</span>
                         <div class="attendance-count" id="away-attendance-count">
-                            <div class="female-count">0/0 Female</div>
-                            <div class="male-count">0/0 Male</div>
+                            <span class="gender-badge female">👩 0/0</span>
+                            <span class="gender-badge male">👨 0/0</span>
                         </div>
                     </button>
                 </div>
@@ -4211,30 +4246,30 @@ class CheckInViewApp extends CheckInCore {
                 firstFewMemberIds: homeMembers.slice(0, 3).map(m => ({id: m.id, name: m.name}))
             });
             
-            const femaleCountEl = homeCountElement.querySelector('.female-count');
-            const maleCountEl = homeCountElement.querySelector('.male-count');
-            
+            const femaleCountEl = homeCountElement.querySelector('.gender-badge.female');
+            const maleCountEl = homeCountElement.querySelector('.gender-badge.male');
+
             console.log('🏠 Home DOM elements:', {
                 femaleCountEl: !!femaleCountEl,
                 maleCountEl: !!maleCountEl
             });
-            
+
             if (femaleCountEl) {
                 if (homeFemaleTotal > 0) {
-                    const newText = `${homeFemalePresent}/${homeFemaleTotal} Female`;
+                    const newText = `👩 ${homeFemalePresent}/${homeFemaleTotal}`;
                     console.log('🏠 Setting female count to:', newText);
                     femaleCountEl.textContent = newText;
-                    femaleCountEl.style.display = 'block';
+                    femaleCountEl.style.display = 'inline-flex';
                 } else {
                     femaleCountEl.style.display = 'none';
                 }
             }
             if (maleCountEl) {
                 if (homeMaleTotal > 0) {
-                    const newText = `${homeMalePresent}/${homeMaleTotal} Male`;
+                    const newText = `👨 ${homeMalePresent}/${homeMaleTotal}`;
                     console.log('🏠 Setting male count to:', newText);
                     maleCountEl.textContent = newText;
-                    maleCountEl.style.display = 'block';
+                    maleCountEl.style.display = 'inline-flex';
                 } else {
                     maleCountEl.style.display = 'none';
                 }
@@ -4270,25 +4305,25 @@ class CheckInViewApp extends CheckInCore {
                 firstFewMemberIds: awayMembers.slice(0, 3).map(m => ({id: m.id, name: m.name}))
             });
             
-            const femaleCountEl = awayCountElement.querySelector('.female-count');
-            const maleCountEl = awayCountElement.querySelector('.male-count');
-            
+            const femaleCountEl = awayCountElement.querySelector('.gender-badge.female');
+            const maleCountEl = awayCountElement.querySelector('.gender-badge.male');
+
             if (femaleCountEl) {
                 if (awayFemaleTotal > 0) {
-                    const newText = `${awayFemalePresent}/${awayFemaleTotal} Female`;
+                    const newText = `👩 ${awayFemalePresent}/${awayFemaleTotal}`;
                     console.log('✈️ Setting female count to:', newText);
                     femaleCountEl.textContent = newText;
-                    femaleCountEl.style.display = 'block';
+                    femaleCountEl.style.display = 'inline-flex';
                 } else {
                     femaleCountEl.style.display = 'none';
                 }
             }
             if (maleCountEl) {
                 if (awayMaleTotal > 0) {
-                    const newText = `${awayMalePresent}/${awayMaleTotal} Male`;
+                    const newText = `👨 ${awayMalePresent}/${awayMaleTotal}`;
                     console.log('✈️ Setting male count to:', newText);
                     maleCountEl.textContent = newText;
-                    maleCountEl.style.display = 'block';
+                    maleCountEl.style.display = 'inline-flex';
                 } else {
                     maleCountEl.style.display = 'none';
                 }

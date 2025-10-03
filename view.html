@@ -107,40 +107,309 @@
             .app-header {
                 margin-bottom: 10px;
             }
-            
+
             .app-header h1 {
                 font-size: 1.2em;
                 margin-bottom: 5px;
             }
-            
+
             .header-content {
                 max-height: 0;
                 opacity: 0;
                 margin: 0;
             }
-            
+
             .app-header.expanded .header-content {
                 max-height: 200px;
                 opacity: 1;
                 margin: 10px 0;
             }
-            
+
             .app-header.expanded h1 {
                 font-size: 2em;
                 margin-bottom: 10px;
             }
-            
+
             .main-nav {
                 gap: 8px;
                 margin-bottom: 20px;
             }
-            
+
             .nav-btn {
                 padding: 10px 12px;
                 font-size: 13px;
                 border-radius: 8px;
             }
-            
+
+            /* Enhanced Mobile Match Interface */
+            .team-info-match {
+                background: white;
+                border-radius: 12px;
+                padding: 12px;
+                box-shadow: 0 3px 12px rgba(0, 0, 0, 0.15);
+                border: 2px solid transparent;
+                transition: all 0.3s ease;
+            }
+
+            /* Home Team - Blue Theme */
+            .match-teams .team-info-match:first-child {
+                background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+                border-color: #2196F3;
+                border-left: 4px solid #1976d2;
+            }
+
+            /* Away Team - Red Theme */
+            .match-teams .team-info-match:last-child {
+                background: linear-gradient(135deg, #ffebee 0%, #ffcdd2 100%);
+                border-color: #f44336;
+                border-left: 4px solid #d32f2f;
+            }
+
+            .team-name-match {
+                font-weight: 700;
+                font-size: 1.1em;
+                color: #333;
+                margin-bottom: 4px;
+            }
+
+            /* Enhanced Gender Counters */
+            .team-category-small {
+                font-size: 0.8em;
+                color: #555;
+                font-weight: 600;
+                margin-bottom: 8px;
+            }
+
+            .attendance-count {
+                display: flex;
+                gap: 8px;
+                align-items: center;
+                flex-wrap: wrap;
+            }
+
+            .gender-badge {
+                display: inline-flex;
+                align-items: center;
+                gap: 4px;
+                padding: 4px 8px;
+                border-radius: 12px;
+                font-size: 0.75em;
+                font-weight: 600;
+                color: white;
+            }
+
+            .gender-badge.female {
+                background: linear-gradient(135deg, #e91e63, #c2185b);
+                box-shadow: 0 2px 6px rgba(233, 30, 99, 0.3);
+            }
+
+            .gender-badge.male {
+                background: linear-gradient(135deg, #2196f3, #1976d2);
+                box-shadow: 0 2px 6px rgba(33, 150, 243, 0.3);
+            }
+
+            /* Enhanced Players with Cards Section */
+            .team-card-summary {
+                background: linear-gradient(135deg, #fff3cd 0%, #ffeaa7 100%);
+                border: 2px solid #f39c12;
+                border-radius: 15px;
+                margin: 15px 20px;
+                box-shadow: 0 4px 15px rgba(243, 156, 18, 0.2);
+                overflow: hidden;
+            }
+
+            .card-summary-header {
+                background: linear-gradient(135deg, #f39c12, #e67e22);
+                color: white;
+                padding: 12px 16px;
+                font-weight: 700;
+                font-size: 0.9em;
+                display: flex;
+                align-items: center;
+                justify-content: space-between;
+                cursor: pointer;
+                transition: all 0.3s ease;
+            }
+
+            .card-summary-header:hover {
+                background: linear-gradient(135deg, #e67e22, #d35400);
+            }
+
+            .card-summary-icon {
+                font-size: 1.2em;
+                transition: transform 0.3s ease;
+            }
+
+            .card-summary-icon.expanded {
+                transform: rotate(180deg);
+            }
+
+            .card-summary-content {
+                padding: 12px 16px;
+                background: rgba(255, 255, 255, 0.7);
+            }
+
+            .player-card-summary {
+                display: flex;
+                align-items: center;
+                gap: 8px;
+                padding: 8px 12px;
+                margin-bottom: 6px;
+                background: white;
+                border-radius: 8px;
+                border-left: 3px solid #f39c12;
+                box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+                font-size: 0.85em;
+            }
+
+            .player-card-summary:last-child {
+                margin-bottom: 0;
+            }
+
+            .player-name {
+                font-weight: 700;
+                color: #333;
+            }
+
+            /* Enhanced VS Section */
+            .vs-text {
+                background: white;
+                border-radius: 50%;
+                width: 60px;
+                height: 60px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-weight: 800;
+                font-size: 1.1em;
+                color: #333;
+                box-shadow: 0 4px 12px rgba(0, 0, 0, 0.15);
+                border: 3px solid #e9ecef;
+                position: relative;
+                z-index: 2;
+            }
+
+            /* Enhanced Match Details */
+            .match-field, .match-time {
+                background: rgba(255, 255, 255, 0.9);
+                padding: 6px 12px;
+                border-radius: 20px;
+                font-size: 0.8em;
+                font-weight: 600;
+                color: #555;
+                display: inline-block;
+                margin: 4px;
+                box-shadow: 0 2px 6px rgba(0, 0, 0, 0.1);
+            }
+
+            .match-field {
+                background: linear-gradient(135deg, #e8f5e8, #c8e6c9);
+                color: #2e7d32;
+            }
+
+            .match-time {
+                background: linear-gradient(135deg, #fff3e0, #ffcc02);
+                color: #f57c00;
+            }
+
+            /* Enhanced Status Badges */
+            .status-scheduled {
+                background: linear-gradient(135deg, #e3f2fd, #90caf9);
+                color: #1976d2;
+                padding: 4px 12px;
+                border-radius: 12px;
+                font-weight: 600;
+                font-size: 0.8em;
+            }
+
+            /* Enhanced Referee Bubbles */
+            .referee-bubble {
+                background: linear-gradient(135deg, #f3e5f5, #ce93d8);
+                color: #7b1fa2;
+                padding: 4px 8px;
+                border-radius: 12px;
+                font-size: 0.75em;
+                font-weight: 600;
+                margin: 2px;
+                display: inline-block;
+                box-shadow: 0 2px 6px rgba(123, 31, 162, 0.2);
+            }
+
+            /* Enhanced Card Display */
+            .match-cards {
+                background: rgba(255, 243, 205, 0.9);
+                padding: 6px 12px;
+                border-radius: 12px;
+                font-size: 0.8em;
+                font-weight: 600;
+                color: #856404;
+                margin-top: 8px;
+                border: 1px solid #f39c12;
+            }
+
+            /* Player Grid Enhancements */
+            .player-grid-item {
+                background: white;
+                border-radius: 12px;
+                box-shadow: 0 3px 12px rgba(0, 0, 0, 0.1);
+                transition: all 0.3s ease;
+                border: 2px solid transparent;
+            }
+
+            .player-grid-item.checked-in {
+                background: linear-gradient(135deg, #e8f5e8, #c8e6c9);
+                border-color: #4caf50;
+                transform: scale(1.02);
+            }
+
+            .player-grid-item.has-cards {
+                border-color: #ff9800;
+                background: linear-gradient(135deg, #fff8e1, #ffecb3);
+            }
+
+            .player-grid-item.has-cards::before {
+                content: "⚠️";
+                position: absolute;
+                top: -5px;
+                right: -5px;
+                background: #ff9800;
+                color: white;
+                border-radius: 50%;
+                width: 20px;
+                height: 20px;
+                display: flex;
+                align-items: center;
+                justify-content: center;
+                font-size: 0.8em;
+                box-shadow: 0 2px 6px rgba(255, 152, 0, 0.4);
+            }
+
+            /* Enhanced Team Toggle Buttons */
+            .team-toggle-btn {
+                background: white;
+                border-radius: 12px;
+                box-shadow: 0 3px 12px rgba(0, 0, 0, 0.1);
+                transition: all 0.3s ease;
+                border: 2px solid transparent;
+            }
+
+            .team-toggle-btn.active:first-child,
+            .team-toggle-btn:first-child {
+                background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
+                border-color: #2196F3;
+            }
+
+            .team-toggle-btn.active:last-child,
+            .team-toggle-btn:last-child {
+                background: linear-gradient(135deg, #ffebee 0%, #ffcdd2 100%);
+                border-color: #f44336;
+            }
+
+            .team-toggle-btn.active {
+                transform: scale(1.02);
+                box-shadow: 0 4px 15px rgba(0, 0, 0, 0.2);
+            }
+
             /* Adjust Standings button for mobile */
             .standings-btn {
                 padding: 10px 16px;
