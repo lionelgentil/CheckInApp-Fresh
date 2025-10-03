@@ -434,7 +434,6 @@ class CheckInApp extends CheckInCore {
             category: team.category,
             colorData: team.colorData,
             description: team.description,
-            captainId: team.captainId,
             members: team.members.map(member => ({
                 id: member.id,
                 name: member.name,
@@ -1109,19 +1108,6 @@ class CheckInApp extends CheckInCore {
         if (selectedTeamId) {
             const selectedTeam = this.teams.find(team => team.id === selectedTeamId);
             if (selectedTeam) {
-                // Get captain information (support both legacy captainId and new captains array)
-                const captains = selectedTeam.captains || [];
-                const legacyCaptain = selectedTeam.captainId ? selectedTeam.members.find(m => m.id === selectedTeam.captainId) : null;
-                
-                // Combine legacy and new captain systems
-                const allCaptains = [...captains];
-                if (legacyCaptain && !captains.some(c => c.memberId === legacyCaptain.id)) {
-                    allCaptains.push({ memberId: legacyCaptain.id, memberName: legacyCaptain.name });
-                }
-                
-                // Create captain names list
-                const captainNames = allCaptains.map(c => c.memberName).join(', ');
-
                 // Get team managers for this team
                 const teamManagers = this.teamManagers.filter(manager => manager.team_id === selectedTeam.id);
                 const managerNames = teamManagers.map(manager => `${manager.first_name} ${manager.last_name}`).join(', ');
@@ -1160,12 +1146,10 @@ class CheckInApp extends CheckInCore {
                                 <div>
                                     <div class="team-name">${selectedTeam.name}</div>
                                     <div class="team-category">${selectedTeam.category || ''}</div>
-                                    ${allCaptains.length > 0 ? `<div class="team-captain">👑 Captain${allCaptains.length > 1 ? 's' : ''}: ${captainNames}</div>` : ''}
                                     ${teamManagers.length > 0 ? `<div class="team-manager">💼 Manager${teamManagers.length > 1 ? 's' : ''}: ${managerNames}</div>` : ''}
                                 </div>
                                 <div class="team-actions">
                                     <button class="btn btn-small" onclick="app.showAddMemberModal('${selectedTeam.id}')" title="Add Member">+</button>
-                                    ${selectedTeam.members.length > 0 ? `<button class="btn btn-small btn-captain" onclick="app.showCaptainsModal('${selectedTeam.id}')" title="Manage Captains">👑</button>` : ''}
                                     <button class="btn btn-small btn-secondary" onclick="app.editTeam('${selectedTeam.id}')" title="Edit Team">✏️</button>
                                     <button class="btn btn-small btn-danger" onclick="app.handleActionClick(event, app.deleteTeamWithLoading.bind(app), '${selectedTeam.id}')" title="Delete Team">🗑️</button>
                                 </div>
@@ -1244,7 +1228,7 @@ class CheckInApp extends CheckInCore {
                                             <div class="member-info">
                                                 ${this.getLazyImageHtml(member, 'member-photo')}
                                                 <div class="member-details">
-                                                    <div class="member-name">${member.name}${allCaptains.some(c => c.memberId === member.id) ? ' 👑' : ''}</div>
+                                                    <div class="member-name">${member.name}</div>
                                                     <div class="member-meta" id="member-meta-${member.id}">
                                                         ${member.jerseyNumber ? `#${member.jerseyNumber}` : ''}
                                                         ${member.gender ? ` • ${member.gender}` : ''}
@@ -1817,20 +1801,6 @@ class CheckInApp extends CheckInCore {
                     <option value="Over 40" ${team && team.category === 'Over 40' ? 'selected' : ''}>Over 40</option>
                 </select>
             </div>
-            ${team && team.members && team.members.length > 0 ? `
-            <div class="form-group">
-                <label class="form-label">Team Captain</label>
-                <select class="form-select" id="team-captain">
-                    <option value="">Select team captain (optional)</option>
-                    ${team.members
-                        .slice() // Create a copy to avoid mutating original array
-                        .sort((a, b) => a.name.localeCompare(b.name)) // Sort alphabetically by name
-                        .map(member => 
-                        `<option value="${member.id}" ${team.captainId === member.id ? 'selected' : ''}>${member.name}</option>`
-                    ).join('')}
-                </select>
-            </div>
-            ` : ''}
             <div class="form-group">
                 <label class="form-label">Team Color</label>
                 <input type="color" class="form-input" id="team-color" value="${team ? team.colorData : '#2196F3'}">
@@ -1854,9 +1824,8 @@ class CheckInApp extends CheckInCore {
         const category = document.getElementById('team-category').value;
         const color = document.getElementById('team-color').value;
         const description = document.getElementById('team-description').value.trim();
-        const captainId = document.getElementById('team-captain')?.value || null;
-        
-        console.log('Form values:', { name, category, color, description, captainId });
+
+        console.log('Form values:', { name, category, color, description });
         
         if (!name) {
             alert('Please enter a team name');
@@ -1874,7 +1843,6 @@ class CheckInApp extends CheckInCore {
             this.currentEditingTeam.category = category;
             this.currentEditingTeam.colorData = color;
             this.currentEditingTeam.description = description;
-            this.currentEditingTeam.captainId = captainId;
         } else {
             // Add new team
             const newTeam = {
@@ -1883,7 +1851,6 @@ class CheckInApp extends CheckInCore {
                 category: category,
                 colorData: color,
                 description: description,
-                captainId: null, // New teams don't have captains until members are added
                 members: []
             };
             this.teams.push(newTeam);
@@ -1916,198 +1883,7 @@ Please check the browser console (F12) for more details.`);
             alert('Failed to delete team. Please try again.');
         }
     }
-    
-    // Captain Management
-    showCaptainModal(teamId) {
-        const team = this.teams.find(t => t.id === teamId);
-        if (!team || team.members.length === 0) {
-            alert('This team has no members yet. Add members first to select a captain.');
-            return;
-        }
-        
-        const modal = this.createModal('Select Team Captain', `
-            <div class="form-group">
-                <label class="form-label">Choose Captain for ${team.name} *</label>
-                <select class="form-select" id="captain-select" required>
-                    <option value="">Select team captain</option>
-                    ${team.members
-                        .slice() // Create a copy to avoid mutating original array  
-                        .sort((a, b) => a.name.localeCompare(b.name)) // Sort alphabetically by name
-                        .map(member => 
-                        `<option value="${member.id}" ${team.captainId === member.id ? 'selected' : ''}>${member.name}${member.jerseyNumber ? ` (#${member.jerseyNumber})` : ''}</option>`
-                    ).join('')}
-                </select>
-            </div>
-            <div class="form-group">
-                <button class="btn btn-secondary" onclick="app.removeCaptain('${teamId}')" ${!team.captainId ? 'disabled' : ''}>Remove Captain</button>
-            </div>
-            <div style="display: flex; gap: 10px; justify-content: flex-end;">
-                <button class="btn btn-secondary" onclick="app.closeModal()">Cancel</button>
-                <button class="btn" onclick="app.saveCaptain('${teamId}')">Set Captain</button>
-            </div>
-        `);
-        
-        document.body.appendChild(modal);
-    }
-    
-    async saveCaptain(teamId) {
-        const captainId = document.getElementById('captain-select').value;
-        
-        if (!captainId) {
-            alert('Please select a captain');
-            return;
-        }
-        
-        const team = this.teams.find(t => t.id === teamId);
-        if (!team) return;
-        
-        team.captainId = captainId;
-        
-        try {
-            await this.saveTeams();
-            this.renderTeams();
-            this.closeModal();
-        } catch (error) {
-            alert('Failed to set captain. Please try again.');
-        }
-    }
-    
-    async removeCaptain(teamId) {
-        if (!confirm('Remove the current team captain?')) {
-            return;
-        }
-        
-        const team = this.teams.find(t => t.id === teamId);
-        if (!team) return;
-        
-        team.captainId = null;
-        
-        try {
-            await this.saveTeams();
-            this.renderTeams();
-            this.closeModal();
-        } catch (error) {
-            alert('Failed to remove captain. Please try again.');
-        }
-    }
-    
-    // Multiple Captains Management (New System)
-    async showCaptainsModal(teamId) {
-        const team = this.teams.find(t => t.id === teamId);
-        if (!team || team.members.length === 0) {
-            alert('This team has no members yet. Add members first to manage captains.');
-            return;
-        }
-        
-        // Get current captains from the team data
-        const currentCaptains = team.captains || [];
-        const legacyCaptain = team.captainId ? team.members.find(m => m.id === team.captainId) : null;
-        
-        // Create checkboxes for each team member
-        const memberCheckboxes = team.members
-            .slice()
-            .sort((a, b) => a.name.localeCompare(b.name))
-            .map(member => {
-                const isCaptain = currentCaptains.some(c => c.memberId === member.id) || 
-                                 (legacyCaptain && legacyCaptain.id === member.id);
-                
-                return `
-                    <div class="form-group" style="margin-bottom: 8px;">
-                        <label style="display: flex; align-items: center; cursor: pointer;">
-                            <input type="checkbox" 
-                                   style="margin-right: 8px;" 
-                                   data-member-id="${member.id}" 
-                                   ${isCaptain ? 'checked' : ''}>
-                            <span>${member.name}${member.jerseyNumber ? ` (#${member.jerseyNumber})` : ''}</span>
-                        </label>
-                    </div>
-                `;
-            }).join('');
-        
-        const modal = this.createModal('Manage Team Captains', `
-            <div style="margin-bottom: 15px;">
-                <p style="color: #666; font-size: 0.9em; margin: 0;">
-                    Select multiple captains/co-captains for <strong>${team.name}</strong>. 
-                    This allows for delegation when primary captains are not present.
-                </p>
-            </div>
-            
-            <div style="max-height: 300px; overflow-y: auto; border: 1px solid #ddd; padding: 10px; border-radius: 4px;">
-                ${memberCheckboxes}
-            </div>
-            
-            <div style="display: flex; gap: 10px; justify-content: flex-end; margin-top: 20px;">
-                <button class="btn btn-secondary" onclick="app.closeModal()">Cancel</button>
-                <button class="btn" onclick="app.saveCaptains('${teamId}')">Save Captains</button>
-            </div>
-        `);
-        
-        document.body.appendChild(modal);
-    }
-    
-    async saveCaptains(teamId) {
-        const team = this.teams.find(t => t.id === teamId);
-        if (!team) return;
-        
-        // Get all checked members
-        const checkboxes = document.querySelectorAll('[data-member-id]');
-        const selectedCaptainIds = Array.from(checkboxes)
-            .filter(cb => cb.checked)
-            .map(cb => cb.getAttribute('data-member-id'));
-        
-        try {
-            // Get current captains to determine what needs to be added/removed
-            const currentCaptains = team.captains || [];
-            const currentCaptainIds = currentCaptains.map(c => c.memberId);
-            
-            // Find captains to add and remove
-            const toAdd = selectedCaptainIds.filter(id => !currentCaptainIds.includes(id));
-            const toRemove = currentCaptainIds.filter(id => !selectedCaptainIds.includes(id));
-            
-            // Add new captains
-            for (const memberId of toAdd) {
-                await this.fetch('/api/captains', {
-                    method: 'POST',
-                    headers: {
-                        'Content-Type': 'application/json'
-                    },
-                    body: JSON.stringify({
-                        team_id: teamId,
-                        member_id: memberId
-                    })
-                });
-            }
-            
-            // Remove old captains
-            for (const memberId of toRemove) {
-                await this.fetch(`/api/captains?team_id=${teamId}&member_id=${memberId}`, {
-                    method: 'DELETE'
-                });
-            }
-            
-            // Update local team data
-            team.captains = selectedCaptainIds.map(memberId => {
-                const member = team.members.find(m => m.id === memberId);
-                return {
-                    memberId: memberId,
-                    memberName: member ? member.name : 'Unknown'
-                };
-            });
-            
-            // Clear legacy captain if all captains are now managed through new system
-            if (selectedCaptainIds.length > 0) {
-                team.captainId = null;
-            }
-            
-            this.renderTeams();
-            this.closeModal();
-            
-        } catch (error) {
-            console.error('Error saving captains:', error);
-            alert('Failed to save captains. Please try again.');
-        }
-    }
-    
+
     // Member Management
     showAddMemberModal(teamId) {
         this.currentEditingMember = null;
@@ -3425,7 +3201,6 @@ Please check the browser console (F12) for more details.`);
                 <h3 style="margin: 0 0 4px 0; color: #333; font-size: 1.1em;">${member.name}</h3>
                 <p style="margin: 0; color: #666; font-size: 0.85em;">
                     ${team.name}${member.jerseyNumber ? ` • #${member.jerseyNumber}` : ''}${member.gender ? ` • ${member.gender}` : ''}
-                    ${member.id === team.captainId ? ' • 👑 Captain' : ''}
                 </p>
             </div>`;
     }
@@ -7299,14 +7074,12 @@ Please check the browser console (F12) for more details.`);
             .sort((a, b) => a.name.localeCompare(b.name))
             .map(member => {
                 const isCheckedIn = attendees.some(a => a.memberId === member.id);
-                const isCaptain = this.isMemberCaptain ? this.isMemberCaptain(member, team) : (member.id === team.captainId);
                 const isSuspended = member.suspensionStatus.isSuspended;
-                
+
                 return `
-                    <div class="player-grid-item ${isCheckedIn ? 'checked-in' : ''} ${isSuspended ? 'suspended' : ''}" 
+                    <div class="player-grid-item ${isCheckedIn ? 'checked-in' : ''} ${isSuspended ? 'suspended' : ''}"
                          onclick="app.toggleGridPlayerAttendance('${this.currentEventId}', '${this.currentMatchId}', '${member.id}', '${teamType}')"
-                         title="${isSuspended ? `SUSPENDED: ${member.suspensionStatus.reason}` : 'Click to toggle attendance'}">
-                        ${isCaptain ? '<div class="grid-captain-icon">👑</div>' : ''}
+                         title="${isSuspended ? `SUSPENDED: ${member.suspensionStatus.reason}` : 'Click to toggle attendance'}">`
                         ${isSuspended ? `<div class="grid-suspension-icon ${member.suspensionStatus.suspensionType === 'yellow_accumulation' ? 'yellow-accumulation' : ''}">🚫</div>` : ''}
                         ${member.photo ? 
                             `<img src="${this.getMemberPhotoUrl(member)}" alt="${member.name}" class="player-grid-photo">` :
@@ -7434,22 +7207,7 @@ Please check the browser console (F12) for more details.`);
             </div>
         `).join('');
     }
-    
-    // Helper function to check if a member is a captain (supports both legacy and new system)
-    isMemberCaptain(member, team) {
-        // Check new captains system
-        if (team.captains && team.captains.some(c => c.memberId === member.id)) {
-            return true;
-        }
-        
-        // Check legacy captain system
-        if (team.captainId && member.id === team.captainId) {
-            return true;
-        }
-        
-        return false;
-    }
-    
+
     // Toggle between home and away team in grid view (Admin version)
     async toggleGridTeam(teamType) {
         this.currentGridTeam = teamType;
@@ -7563,7 +7321,6 @@ Please check the browser console (F12) for more details.`);
                      onclick="app.toggleGridPlayerAttendance('${this.currentEventId}', '${this.currentMatchId}', '${member.id}', '${teamType}')"
                      title="${isSuspended ? `SUSPENDED: ${member.suspensionStatus.reason}` : 'Click to toggle attendance'}">
                     <div class="grid-check-icon">✓</div>
-                    ${member.id === team.captainId ? '<div class="grid-captain-icon">👑</div>' : ''}
                     ${isSuspended ? `<div class="grid-suspension-icon ${member.suspensionStatus.suspensionType === 'yellow_accumulation' ? 'yellow-accumulation' : ''}">🚫</div>` : ''}
                     ${this.getLazyImageHtml(member, 'player-grid-photo')}
                     <div class="player-grid-content">
@@ -7741,15 +7498,11 @@ Please check the browser console (F12) for more details.`);
                         
                         // Add suspension icon if not present
                         if (!gridItem.querySelector('.grid-suspension-icon')) {
-                            const captainIcon = gridItem.querySelector('.grid-captain-icon');
                             const suspensionIcon = document.createElement('div');
                             suspensionIcon.className = `grid-suspension-icon ${suspensionStatus.suspensionType === 'yellow_accumulation' ? 'yellow-accumulation' : ''}`;
                             suspensionIcon.textContent = '🚫';
-                            
-                            if (captainIcon) {
-                                captainIcon.insertAdjacentElement('afterend', suspensionIcon);
-                            } else {
-                                gridItem.insertBefore(suspensionIcon, gridItem.firstChild);
+
+                            gridItem.insertBefore(suspensionIcon, gridItem.firstChild);
                             }
                         }
                     } else {

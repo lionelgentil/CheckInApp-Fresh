@@ -226,20 +226,7 @@ class CheckInManagerApp {
             if (selectedTeam) {
                 // Get team managers for this team
                 const teamManagers = this.teamManagers.filter(m => m.team_id === selectedTeam.id);
-                
-                // Get captain information (support both legacy captainId and new captains array)
-                const captains = selectedTeam.captains || [];
-                const legacyCaptain = selectedTeam.captainId ? selectedTeam.members.find(m => m.id === selectedTeam.captainId) : null;
-                
-                // Combine legacy and new captain systems
-                const allCaptains = [...captains];
-                if (legacyCaptain && !captains.some(c => c.memberId === legacyCaptain.id)) {
-                    allCaptains.push({ memberId: legacyCaptain.id, memberName: legacyCaptain.name });
-                }
-                
-                // Create captain names list
-                const captainNames = allCaptains.map(c => c.memberName).join(', ');
-                
+
                 // Calculate roster statistics
                 const totalPlayers = selectedTeam.members.length;
                 const maleCount = selectedTeam.members.filter(m => m.gender === 'male').length;
@@ -272,7 +259,6 @@ class CheckInManagerApp {
                                 <div>
                                     <div class="team-name">${selectedTeam.name}</div>
                                     <div class="team-category">${selectedTeam.category || ''}</div>
-                                    ${allCaptains.length > 0 ? `<div class="team-captain">👑 Captain${allCaptains.length > 1 ? 's' : ''}: ${captainNames}</div>` : ''}
                                     ${this.renderManagerDisplay(teamManagers)}
                                 </div>
                                 <div class="team-actions">
@@ -326,7 +312,7 @@ class CheckInManagerApp {
                                             <div class="member-info">
                                                 <img src="${this.getPlayerPhotoUrl(member)}" alt="${member.name}" class="member-photo">
                                                 <div class="member-details">
-                                                    <div class="member-name">${member.name}${this.isMemberCaptain(member, selectedTeam) ? ' 👑' : ''}</div>
+                                                    <div class="member-name">${member.name}</div>
                                                     <div class="member-meta">
                                                         ${member.jersey_number ? `#${member.jersey_number}` : ''}
                                                         ${member.gender ? ` • ${member.gender}` : ''}
@@ -349,26 +335,6 @@ class CheckInManagerApp {
         }
         
         container.innerHTML = selectorHtml;
-    }
-    
-    // Helper method to check if member is captain
-    isMemberCaptain(member, team) {
-        // Check new captains array
-        if (team.captains && team.captains.some(c => c.memberId === member.id)) {
-            return true;
-        }
-        
-        // Check legacy captain system
-        if (team.captainId === member.id) {
-            return true;
-        }
-        
-        // Check legacy member captain flag
-        if (member.captain) {
-            return true;
-        }
-        
-        return false;
     }
     
     // Player profile view for read-only access
@@ -424,7 +390,7 @@ class CheckInManagerApp {
                         <div class="profile-section" style="display: flex; align-items: center; gap: 15px; margin-bottom: 20px;">
                             <img src="${this.getPlayerPhotoUrl(member)}" alt="${member.name}" style="width: 80px; height: 80px; border-radius: 50%; object-fit: cover; border: 3px solid #e9ecef;">
                             <div>
-                                <h4 style="margin: 0 0 5px 0;">${member.name}${this.isMemberCaptain(member, team) ? ' 👑' : ''}</h4>
+                                <h4 style="margin: 0 0 5px 0;">${member.name}</h4>
                                 <p><strong>Team:</strong> ${team.name}</p>
                                 <p><strong>Jersey Number:</strong> ${member.jersey_number || 'Not assigned'}</p>
                                 <p><strong>Gender:</strong> ${member.gender || 'Not specified'}</p>
@@ -478,17 +444,16 @@ class CheckInManagerApp {
         document.body.appendChild(modal);
     }
     
-    renderTeamCard(team, managers, captain) {
+    renderTeamCard(team, managers) {
         const memberCount = team.members ? team.members.length : 0;
         const managerDisplay = this.renderManagerDisplay(managers);
-        
+
         return `
             <div class="team-card" data-team-id="${team.id}">
                 <div class="team-header">
                     <div class="team-info">
                         <h4 class="team-name">${team.name}</h4>
                         <div class="team-category">${team.category || 'N/A'}</div>
-                        ${captain ? `<div class="team-captain">👑 Captain: ${captain.name}</div>` : ''}
                         ${managerDisplay}
                     </div>
                     <div class="team-actions">
@@ -554,7 +519,7 @@ class CheckInManagerApp {
                     
                     <div class="add-manager-section">
                         <button class="btn" onclick="app.showAddManagerForm('${teamId}')">
-                            ➕ Add Manager
+                            ➕ Add Assistant Manager
                         </button>
                     </div>
                 </div>
@@ -619,7 +584,7 @@ class CheckInManagerApp {
         modal.innerHTML = `
             <div class="modal-content">
                 <div class="modal-header">
-                    <h3 class="modal-title">Add Manager - ${team.name}</h3>
+                    <h3 class="modal-title">Add Assistant Manager - ${team.name}</h3>
                     <button class="close-btn" onclick="this.closest('.modal').remove()">&times;</button>
                 </div>
                 
@@ -657,7 +622,7 @@ class CheckInManagerApp {
                         
                         <div class="form-actions">
                             <button type="button" class="btn btn-secondary" onclick="this.closest('.modal').remove()">Cancel</button>
-                            <button type="submit" class="btn">Add Manager</button>
+                            <button type="submit" class="btn">Add Assistant Manager</button>
                         </div>
                     </form>
                 </div>
@@ -1058,7 +1023,7 @@ class CheckInManagerApp {
                             <img src="${this.getPlayerPhotoUrl(member)}" alt="${member.name}" class="player-avatar" loading="lazy">
                         </div>
                         <div class="player-info">
-                            <div class="player-name">${member.name}${member.captain ? ' 👑' : ''}</div>
+                            <div class="player-name">${member.name}</div>
                             <div class="player-details">
                                 ${member.jersey_number ? `#${member.jersey_number}` : 'No #'} • 
                                 ${member.gender || 'N/A'}
