@@ -4393,17 +4393,17 @@ function deleteTeamManager($db, $managerId) {
 function getTeamManagerEmails($db, $teamId) {
     try {
         $stmt = $db->prepare("
-            SELECT email_address 
-            FROM team_managers 
-            WHERE team_id = ? AND email_address IS NOT NULL AND email_address != ''
+            SELECT email_address
+            FROM team_managers
+            WHERE team_id = ? AND email_address IS NOT NULL AND email_address != '' AND role = 'Manager'
         ");
         $stmt->execute([$teamId]);
-        
+
         $emails = [];
         while ($row = $stmt->fetch(PDO::FETCH_ASSOC)) {
             $emails[] = $row['email_address'];
         }
-        
+
         return $emails;
     } catch (Exception $e) {
         error_log("Error getting team manager emails: " . $e->getMessage());

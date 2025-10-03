@@ -128,28 +128,30 @@ class CheckInManagerApp {
     // Helper function to generate mailto links for managers
     generateManagerEmailLink(category = null) {
         let emails = [];
-        
+
         if (category) {
-            // Get emails for managers of teams in specific category
+            // Get emails for team managers (not assistant managers) of teams in specific category
             const teamsInCategory = this.teams.filter(team => (team.category || 'Other') === category);
             const teamIds = teamsInCategory.map(team => team.id);
             emails = this.teamManagers
-                .filter(manager => teamIds.includes(manager.team_id) && manager.email_address)
+                .filter(manager => teamIds.includes(manager.team_id) &&
+                                   manager.email_address &&
+                                   manager.role === 'Manager')
                 .map(manager => manager.email_address);
         } else {
-            // Get all manager emails
+            // Get all team manager emails (not assistant managers)
             emails = this.teamManagers
-                .filter(manager => manager.email_address)
+                .filter(manager => manager.email_address && manager.role === 'Manager')
                 .map(manager => manager.email_address);
         }
-        
+
         // Remove duplicates
         emails = [...new Set(emails)];
-        
+
         if (emails.length === 0) {
             return null;
         }
-        
+
         return `mailto:${emails.join(',')}`;
     }
     
@@ -179,7 +181,7 @@ class CheckInManagerApp {
             emailSection = `
                 <div class="email-all-managers" style="text-align: center; margin-bottom: 25px; padding: 15px; background: #f8f9fa; border-radius: 8px; border-left: 4px solid #2196F3;">
                     <a href="${allManagersEmailLink}" style="color: #2196F3; text-decoration: none; font-weight: 600; font-size: 16px;">
-                        📧 Email All Managers
+                        📧 Email All Team Managers
                     </a>
                 </div>
             `;
