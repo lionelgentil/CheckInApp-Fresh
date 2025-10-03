@@ -561,10 +561,63 @@ class CheckInViewApp extends CheckInCore {
             this.teams = data;
             this.hasCompleteTeamsData = true; // Mark that we have complete data
             console.log('🔍 Loaded full teams data:', this.teams.length, 'teams with all player details');
+
+            // Load and attach manager data to teams
+            await this.loadAndAttachManagerData();
+
         } catch (error) {
             console.error('Failed to load teams:', error);
             this.teams = [];
             this.hasCompleteTeamsData = false;
+        }
+    }
+
+    // Load manager data and attach it to team objects
+    async loadAndAttachManagerData() {
+        try {
+            console.log('🔄 Loading team managers data...');
+            const managersData = await this.fetch(`/api/team-managers?_t=${Date.now()}`);
+            console.log('✅ Loaded managers data:', managersData.length, 'manager records');
+
+            // Attach manager data to each team
+            this.teams.forEach(team => {
+                // Get managers for this team
+                const teamManagers = managersData.filter(manager => manager.team_id === team.id);
+
+                console.log(`🔍 Team ${team.name}: Found ${teamManagers.length} managers:`, teamManagers);
+
+                // Attach manager data in multiple formats for compatibility
+                team.managers = teamManagers.map(manager => ({
+                    id: manager.id,
+                    memberId: manager.member_id, // This might link to a player
+                    firstName: manager.first_name,
+                    lastName: manager.last_name,
+                    email: manager.email_address,
+                    role: manager.role,
+                    teamId: manager.team_id
+                }));
+
+                // Legacy compatibility: set managerId to first primary manager
+                const primaryManager = teamManagers.find(m => m.role === 'Manager');
+                if (primaryManager) {
+                    team.managerId = primaryManager.member_id;
+                }
+
+                // Set managerIds array
+                team.managerIds = teamManagers
+                    .filter(m => m.member_id) // Only include those with member_id
+                    .map(m => m.member_id);
+
+                console.log(`✅ Team ${team.name} manager data attached:`, {
+                    managers: team.managers.length,
+                    managerId: team.managerId,
+                    managerIds: team.managerIds
+                });
+            });
+
+        } catch (error) {
+            console.warn('⚠️ Failed to load manager data, teams will not show manager crowns:', error);
+            // Don't fail completely, just log the warning
         }
     }
     
