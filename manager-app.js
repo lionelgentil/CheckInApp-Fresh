@@ -563,9 +563,6 @@ class CheckInManagerApp {
                     <button class="btn btn-small" onclick="app.editManager(${manager.id})" title="Edit Manager">
                         ✏️
                     </button>
-                    <button class="btn btn-small" onclick="app.deleteManager(${manager.id}, '${teamId}')" title="Remove Manager">
-                        🗑️
-                    </button>
                 </div>
             </div>`;
         }).join('');
@@ -886,47 +883,7 @@ class CheckInManagerApp {
             this.showError('Failed to update manager: ' + error.message);
         }
     }
-    
-    // Delete manager
-    async deleteManager(managerId, teamId) {
-        const manager = this.teamManagers.find(m => m.id === managerId);
-        if (!manager) return;
-        
-        if (!confirm(`Are you sure you want to remove ${manager.first_name} ${manager.last_name} as a manager?`)) {
-            return;
-        }
-        
-        try {
-            const response = await fetch(`/api/team-managers/${managerId}`, {
-                method: 'DELETE'
-            });
-            
-            if (!response.ok) {
-                const error = await response.json();
-                throw new Error(error.error || 'Failed to delete manager');
-            }
-            
-            // Update local data
-            this.teamManagers = this.teamManagers.filter(m => m.id !== managerId);
-            
-            // Refresh the manager dialog
-            const managersListElement = document.getElementById(`managers-list-${teamId}`);
-            if (managersListElement) {
-                const teamManagers = this.teamManagers.filter(m => m.team_id === teamId);
-                managersListElement.innerHTML = this.renderManagersList(teamManagers, teamId);
-            }
-            
-            // Refresh teams display
-            this.renderTeams();
-            
-            this.showSuccess('Manager removed successfully!');
-            
-        } catch (error) {
-            console.error('Error deleting manager:', error);
-            this.showError('Failed to remove manager: ' + error.message);
-        }
-    }
-    
+
     // Manager profile view-only mode
     showManagerProfile(managerId) {
         const manager = this.teamManagers.find(m => m.id === managerId);
