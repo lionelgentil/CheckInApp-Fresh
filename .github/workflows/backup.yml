@@ -48,9 +48,17 @@ jobs:
 
         echo "Creating $BACKUP_TYPE backup at $TIMESTAMP"
 
-        # Download backup from API
-        curl -s -X GET \
-          -u "admin:$ADMIN_PASSWORD" \
+        # Login and download backup from API using session authentication
+        # Step 1: Login to create session and save cookies
+        curl -c cookies.txt \
+          -X POST \
+          -H "Content-Type: application/json" \
+          -d "{\"password\":\"$ADMIN_PASSWORD\"}" \
+          "$RAILWAY_APP_URL/api/auth/login"
+
+        # Step 2: Use session cookies for authenticated backup
+        curl -b cookies.txt \
+          -X GET \
           "$RAILWAY_APP_URL/api/backup" \
           -o "backup_${BACKUP_TYPE}_${TIMESTAMP}.json"
 
