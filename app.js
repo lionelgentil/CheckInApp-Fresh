@@ -7329,8 +7329,8 @@ Please check the browser console (F12) for more details.`);
                 return `
                     <div class="player-grid-item ${isCheckedIn ? 'checked-in' : ''} ${isSuspended ? 'suspended' : ''}"
                          onclick="app.toggleGridPlayerAttendance('${this.currentEventId}', '${this.currentMatchId}', '${member.id}', '${teamType}')"
-                         title="${isSuspended ? `SUSPENDED: ${member.suspensionStatus.reason}` : 'Click to toggle attendance'}">`
-                        ${isSuspended ? `<div class="grid-suspension-icon ${member.suspensionStatus.suspensionType === 'yellow_accumulation' ? 'yellow-accumulation' : ''}">🚫</div>` : ''}
+                         title="${isSuspended ? 'SUSPENDED: ' + member.suspensionStatus.reason : 'Click to toggle attendance'}">
+                        ${isSuspended ? '<div class="grid-suspension-icon ' + (member.suspensionStatus.suspensionType === 'yellow_accumulation' ? 'yellow-accumulation' : '') + '">🚫</div>' : ''}
                         ${member.photo ? 
                             `<img src="${this.getMemberPhotoUrl(member)}" alt="${member.name}" class="player-grid-photo">` :
                             `<div class="player-grid-photo" style="background: #ddd; display: flex; align-items: center; justify-content: center; color: #666; font-size: 20px;">👤</div>`
@@ -7753,7 +7753,6 @@ Please check the browser console (F12) for more details.`);
                             suspensionIcon.textContent = '🚫';
 
                             gridItem.insertBefore(suspensionIcon, gridItem.firstChild);
-                            }
                         }
                     } else {
                         gridItem.classList.remove('suspended');
