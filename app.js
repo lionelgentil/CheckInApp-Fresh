@@ -1110,12 +1110,7 @@ class CheckInApp extends CheckInCore {
             if (selectedTeam) {
                 // Get team managers for this team
                 const teamManagers = this.teamManagers.filter(manager => manager.team_id === selectedTeam.id);
-                const managerDisplay = teamManagers.length > 0
-                    ? teamManagers.map(manager => {
-                        const roleIcon = manager.role === 'Manager' ? '👔' : '🏃‍♀️';
-                        return `${roleIcon} ${manager.first_name} ${manager.last_name}`;
-                    }).join(', ')
-                    : '';
+                const managerDisplay = this.renderManagerDisplay(teamManagers);
 
                 
                 // Calculate roster statistics
@@ -1152,7 +1147,7 @@ class CheckInApp extends CheckInCore {
                                 <div>
                                     <div class="team-name">${selectedTeam.name}</div>
                                     <div class="team-category">${selectedTeam.category || ''}</div>
-                                    ${teamManagers.length > 0 ? `<div class="team-manager">💼 ${managerDisplay}</div>` : ''}
+                                    ${managerDisplay}
                                 </div>
                                 <div class="team-actions">
                                     <button class="btn btn-small" onclick="app.showAddMemberModal('${selectedTeam.id}')" title="Add Member">+</button>
@@ -2142,6 +2137,26 @@ Please check the browser console (F12) for more details.`);
             console.error('Error swapping manager roles:', error);
             alert('Failed to swap manager roles. Please try again.');
         }
+    }
+
+    // Manager Display Helper
+    renderManagerDisplay(managers) {
+        if (managers.length === 0) {
+            return '<div class="team-managers"><em>👔 No managers assigned</em></div>';
+        }
+
+        // Sort managers: Manager first, then Assistant Managers
+        const sortedManagers = managers.sort((a, b) => {
+            if (a.role === 'Manager' && b.role !== 'Manager') return -1;
+            if (a.role !== 'Manager' && b.role === 'Manager') return 1;
+            return 0;
+        });
+
+        return sortedManagers.map(manager => {
+            const icon = manager.role === 'Manager' ? '👔' : '🏃‍♀️';
+            const roleClass = manager.role === 'Manager' ? 'manager-primary' : 'manager-assistant';
+            return `<div class="team-managers ${roleClass}">${icon} ${manager.first_name} ${manager.last_name}</div>`;
+        }).join('');
     }
 
     // Member Management
