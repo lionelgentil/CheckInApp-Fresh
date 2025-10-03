@@ -1183,30 +1183,37 @@ class CheckInViewApp extends CheckInCore {
                 <h3 style="margin: 0 0 4px 0; color: #333; font-size: 1.1em;">${member.name}</h3>
                 <p style="margin: 0; color: #666; font-size: 0.85em;">
                     ${team.name}${member.jerseyNumber ? ` • #${member.jerseyNumber}` : ''}${member.gender ? ` • ${member.gender}` : ''}
-                    ${this.isMemberCaptain(member, team) ? ' • 👑 Captain' : ''}
+                    ${this.isMemberManager(member, team) ? ' • 👑 Manager' : ''}
                 </p>
             </div>`;
     }
     
-    // Helper function to check if a member is a captain (supports both legacy and new system)
-    isMemberCaptain(member, team) {
-        console.log(`🔍 Checking captain status for ${member.name} in team ${team.name}`);
-        console.log('Team captains:', team.captains);
-        console.log('Team captainId:', team.captainId);
+    // Helper function to check if a member is a team manager (supports both legacy and new system)
+    isMemberManager(member, team) {
+        console.log(`🔍 Checking manager status for ${member.name} in team ${team.name}`);
+        console.log('Team managers:', team.managers);
+        console.log('Team managerId:', team.managerId);
+        console.log('Team managerIds:', team.managerIds);
 
-        // Check new captains system
-        if (team.captains && team.captains.some(c => c.memberId === member.id)) {
-            console.log(`✅ ${member.name} is captain via new system`);
+        // Check new managers system
+        if (team.managers && team.managers.some(m => m.memberId === member.id)) {
+            console.log(`✅ ${member.name} is manager via new system`);
             return true;
         }
 
-        // Check legacy captain system
-        if (team.captainId && member.id === team.captainId) {
-            console.log(`✅ ${member.name} is captain via legacy system`);
+        // Check legacy manager system
+        if (team.managerId && member.id === team.managerId) {
+            console.log(`✅ ${member.name} is manager via legacy system`);
             return true;
         }
 
-        console.log(`❌ ${member.name} is not a captain`);
+        // Check managerIds array
+        if (team.managerIds && team.managerIds.includes(member.id)) {
+            console.log(`✅ ${member.name} is manager via managerIds array`);
+            return true;
+        }
+
+        console.log(`❌ ${member.name} is not a manager`);
         return false;
     }
     
@@ -1466,7 +1473,7 @@ class CheckInViewApp extends CheckInCore {
                                             <div class="member-info">
                                                 <img src="${this.getMemberPhotoUrl(member)}" alt="${member.name}" class="member-photo">
                                                 <div class="member-details">
-                                                    <div class="member-name">${member.name}${this.isMemberCaptain(member, selectedTeam) ? ' 👑' : ''}</div>
+                                                    <div class="member-name">${member.name}${this.isMemberManager(member, selectedTeam) ? ' 👑' : ''}</div>
                                                     <div class="member-meta" id="member-meta-${member.id}">
                                                         ${member.jerseyNumber ? `#${member.jerseyNumber}` : ''}
                                                         ${member.gender ? ` • ${member.gender}` : ''}
@@ -4584,7 +4591,11 @@ class CheckInViewApp extends CheckInCore {
             name: team.name,
             captainId: team.captainId,
             captains: team.captains,
-            memberCount: team.members ? team.members.length : 0
+            managers: team.managers,
+            managerId: team.managerId,
+            managerIds: team.managerIds,
+            memberCount: team.members ? team.members.length : 0,
+            fullTeamObject: team
         });
 
         
@@ -4642,7 +4653,7 @@ class CheckInViewApp extends CheckInCore {
                     <div class="player-grid-item ${isCheckedIn ? 'checked-in' : ''} ${isLocked ? 'locked' : ''} ${isSuspended ? 'suspended' : ''} ${cardsDisplay ? 'has-cards' : ''}"
                          ${!isLocked && !isSuspended ? `onclick="app.toggleGridPlayerAttendance('${this.currentEventId}', '${this.currentMatchId}', '${member.id}', '${teamType}')"` : ''}
                          title="${isSuspended ? `SUSPENDED: ${member.suspensionStatus.reason}` : isLocked ? 'Check-in is locked for this match' : cardsDisplay ? `Current season cards: ${cardsDisplay} • Click to toggle attendance` : 'Click to toggle attendance'}">
-                        ${this.isMemberCaptain(member, team) ? '<div class="grid-captain-icon">👑</div>' : ''}
+                        ${this.isMemberManager(member, team) ? '<div class="grid-captain-icon">👑</div>' : ''}
                         ${isSuspended ? `<div class="grid-suspension-icon ${member.suspensionStatus.suspensionType === 'yellow_accumulation' ? 'yellow-accumulation' : ''}">🚫</div>` : ''}
                         ${cardsDisplay ? `<div class="grid-cards-icon">${cardsDisplay}</div>` : ''}
                         ${member.photo ?
@@ -4730,7 +4741,7 @@ class CheckInViewApp extends CheckInCore {
                      onclick="app.toggleGridPlayerAttendance('${this.currentEventId}', '${this.currentMatchId}', '${member.id}', '${teamType}')"
                      title="${cardsDisplay ? `Current season cards: ${cardsDisplay} • Click to toggle attendance` : 'Click to toggle attendance'}">
                     <div class="grid-check-icon">✓</div>
-                    ${this.isMemberCaptain(member, team) ? '<div class="grid-captain-icon">👑</div>' : ''}
+                    ${this.isMemberManager(member, team) ? '<div class="grid-captain-icon">👑</div>' : ''}
                     ${cardsDisplay ? `<div class="grid-cards-icon">${cardsDisplay}</div>` : ''}
                     <img src="${this.getMemberPhotoUrl(member)}" alt="${member.name}" class="player-grid-photo">
                     <div class="player-grid-content">
