@@ -1,4 +1,5 @@
 name: CheckInApp Database Backup
+# Updated to use actions/upload-artifact@v4 (was @v3)
 
 on:
   schedule:
