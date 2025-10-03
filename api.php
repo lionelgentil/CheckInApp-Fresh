@@ -904,14 +904,12 @@ function getTeams($db) {
             tm.name as member_name,
             tm.jersey_number,
             tm.gender,
-            CASE 
+            CASE
                 WHEN tm.photo = \'has_photo\' THEN \'has_photo\'
                 ELSE tm.photo
-            END AS photo_flag,
-            mp.photo_data
+            END AS photo_flag
         FROM teams t
         LEFT JOIN team_members tm ON t.id = tm.team_id AND (tm.active IS NULL OR tm.active = TRUE)
-        LEFT JOIN member_photos mp ON tm.id = mp.member_id
         ORDER BY t.name, tm.name
     ');
     
@@ -999,12 +997,8 @@ function getTeams($db) {
                         }
                     }
                 }
-            } elseif ($row['photo_data']) {
-                // Fallback to member_photos table data (backup) only if no filename in team_members
-                $photo = $row['photo_data'];
             } elseif ($row['photo_flag'] === 'has_photo') {
-                // Member has photo in member_photos table but photo_data was NULL
-                // This shouldn't happen, but fallback to gender default
+                // Fallback to gender default if photo reference exists but file is missing
                 $photo = getDefaultPhoto($row['gender']);
             } else {
                 $photo = getDefaultPhoto($row['gender']);
@@ -1025,7 +1019,6 @@ function getTeams($db) {
         $teams[] = $currentTeam;
     }
     
-    // Add captain information from new team_captains table
     $allCaptains = getTeamCaptains($db);
     foreach ($teams as &$team) {
         $team['captains'] = $allCaptains[$team['id']] ?? [];
@@ -1140,7 +1133,6 @@ function getTeamsWithoutPhotos($db) {
         $teams[] = $currentTeam;
     }
     
-    // Add captain information from new team_captains table
     $allCaptains = getTeamCaptains($db);
     foreach ($teams as &$team) {
         $team['captains'] = $allCaptains[$team['id']] ?? [];
@@ -1183,7 +1175,6 @@ function getTeamsBasic($db) {
         ];
     }
     
-    // Add captain information from new team_captains table
     $allCaptains = getTeamCaptains($db);
     foreach ($teams as &$team) {
         $team['captains'] = $allCaptains[$team['id']] ?? [];
@@ -1234,15 +1225,13 @@ function getSpecificTeams($db) {
                 WHEN tm.photo = 'has_photo' THEN 'has_photo'
                 ELSE tm.photo
             END AS photo_flag,
-            CASE 
+            CASE
                 WHEN tm.photo = 'has_photo' THEN 'has_photo'
                 WHEN tm.photo IS NOT NULL AND tm.photo != '' THEN 'has_photo'
                 ELSE NULL
-            END AS has_photo,
-            mp.photo_data
+            END AS has_photo
         FROM teams t
         LEFT JOIN team_members tm ON t.id = tm.team_id AND (tm.active IS NULL OR tm.active = TRUE)
-        LEFT JOIN member_photos mp ON tm.id = mp.member_id
         WHERE t.id IN ({$placeholders})
         ORDER BY t.name, tm.name
     ");
@@ -1330,11 +1319,8 @@ function getSpecificTeams($db) {
                         }
                     }
                 }
-            } elseif ($row['photo_data']) {
-                // Fallback to member_photos table data (backup) only if no filename in team_members
-                $photo = $row['photo_data'];
             } elseif ($row['photo_flag'] === 'has_photo') {
-                // Member has photo in member_photos table but photo_data was NULL
+                // Fallback to gender default if photo reference exists but file is missing
                 $photo = getDefaultPhoto($row['gender']);
             } else {
                 $photo = getDefaultPhoto($row['gender']);
@@ -1356,7 +1342,6 @@ function getSpecificTeams($db) {
         $teams[] = $currentTeam;
     }
     
-    // Add captain information from new team_captains table
     $allCaptains = getTeamCaptains($db);
     foreach ($teams as &$team) {
         $team['captains'] = $allCaptains[$team['id']] ?? [];
@@ -2417,10 +2402,6 @@ function uploadPhoto($db) {
     
     // Update database - store filename only (not base64)
     try {
-        // Remove old photo data from member_photos table (if exists)
-        $deleteStmt = $db->prepare('DELETE FROM member_photos WHERE member_id = ?');
-        $deleteStmt->execute([$memberId]);
-        
         // Update team_members table with filename
         $stmt = $db->prepare('UPDATE team_members SET photo = ? WHERE id = ?');
         $result = $stmt->execute([$filename, $memberId]);
@@ -2517,19 +2498,7 @@ function initializeDatabase($db) {
             FOREIGN KEY (team_id) REFERENCES teams(id) ON DELETE CASCADE
         )
     ');
-    
-    // Separate photos table for better performance with 720+ players
-    $db->exec('
-        CREATE TABLE IF NOT EXISTS member_photos (
-            member_id TEXT PRIMARY KEY,
-            photo_data TEXT NOT NULL,
-            content_type VARCHAR(50),
-            file_size INTEGER,
-            uploaded_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (member_id) REFERENCES team_members(id) ON DELETE CASCADE
-        )
-    ');
-    
+
     $db->exec('
         CREATE TABLE IF NOT EXISTS events (
             id TEXT PRIMARY KEY,
@@ -2647,20 +2616,7 @@ function initializeDatabase($db) {
             FOREIGN KEY (member_id) REFERENCES team_members(id) ON DELETE CASCADE
         )
     ');
-    
-    // Create team_captains table for multiple captains support
-    $db->exec('
-        CREATE TABLE IF NOT EXISTS team_captains (
-            id SERIAL PRIMARY KEY,
-            team_id TEXT NOT NULL,
-            member_id TEXT NOT NULL,
-            created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-            FOREIGN KEY (team_id) REFERENCES teams(id) ON DELETE CASCADE,
-            FOREIGN KEY (member_id) REFERENCES team_members(id) ON DELETE CASCADE,
-            UNIQUE(team_id, member_id)
-        )
-    ');
-    
+
     // Create indexes
     try {
         $db->exec('CREATE INDEX IF NOT EXISTS idx_team_members_team_id ON team_members(team_id)');
@@ -2688,11 +2644,7 @@ function initializeDatabase($db) {
         
         // Active members optimization
         $db->exec('CREATE INDEX IF NOT EXISTS idx_team_members_active ON team_members(active, team_id) WHERE active IS NULL OR active = TRUE');
-        
-        // Team captains indexes
-        $db->exec('CREATE INDEX IF NOT EXISTS idx_team_captains_team_id ON team_captains(team_id)');
-        $db->exec('CREATE INDEX IF NOT EXISTS idx_team_captains_member_id ON team_captains(member_id)');
-        
+
     } catch (Exception $e) {
         // Indexes might already exist, ignore errors
     }
@@ -3095,11 +3047,9 @@ function searchInactiveMembers($db) {
         // Search for inactive members with similar names
         $stmt = $db->prepare('
             SELECT tm.id, tm.name, tm.jersey_number, tm.gender, tm.team_id, tm.photo,
-                   t.name as team_name, t.category as team_category,
-                   mp.photo_data
-            FROM team_members tm 
+                   t.name as team_name, t.category as team_category
+            FROM team_members tm
             JOIN teams t ON tm.team_id = t.id
-            LEFT JOIN member_photos mp ON tm.id = mp.member_id
             WHERE tm.active = FALSE AND LOWER(tm.name) = LOWER(?)
             ORDER BY tm.name
         ');
@@ -3108,11 +3058,8 @@ function searchInactiveMembers($db) {
         
         // Get disciplinary records for each inactive member
         foreach ($inactiveMembers as &$member) {
-            // Process photo data similar to getTeams() function
-            if ($member['photo_data']) {
-                // Photo exists in member_photos table - use base64 data directly
-                $member['photo'] = $member['photo_data'];
-            } elseif ($member['photo'] && $member['photo'] !== 'has_photo') {
+            // Process photo data
+            if ($member['photo'] && $member['photo'] !== 'has_photo') {
                 // Legacy photo stored in team_members.photo field
                 $photoValue = $member['photo'];
                 
@@ -3136,7 +3083,7 @@ function searchInactiveMembers($db) {
                     $member['photo'] = '/api/photos?filename=' . urlencode($photoValue);
                 }
             } elseif ($member['photo'] === 'has_photo') {
-                // Member has photo in member_photos table but photo_data was NULL
+                // Fallback to gender default if photo reference exists but file is missing
                 $member['photo'] = getDefaultPhoto($member['gender']);
             } else {
                 $member['photo'] = getDefaultPhoto($member['gender']);
