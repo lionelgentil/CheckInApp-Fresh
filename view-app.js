@@ -4575,8 +4575,18 @@ class CheckInViewApp extends CheckInCore {
     async renderGridTeamFullscreen(teamType, team, attendees) {
         const containerId = `grid-container-${teamType}`;
         const container = document.getElementById(containerId);
-        
+
         if (!container || !team) return;
+
+        // Debug team structure for captain information
+        console.log(`🏈 Team data for ${team.name}:`, {
+            id: team.id,
+            name: team.name,
+            captainId: team.captainId,
+            captains: team.captains,
+            memberCount: team.members ? team.members.length : 0
+        });
+
         
         // Get match team IDs for bulk suspension loading
         const event = this.events.find(e => e.id === this.currentEventId);
