@@ -557,13 +557,16 @@ class CheckInViewApp extends CheckInCore {
     // Full team loading (with all player data) - only when needed
     async loadTeams() {
         try {
+            console.log('🚀 loadTeams() called - starting team loading process');
             const data = await this.fetch(`/api/teams-no-photos?_t=${Date.now()}`);
             this.teams = data;
             this.hasCompleteTeamsData = true; // Mark that we have complete data
             console.log('🔍 Loaded full teams data:', this.teams.length, 'teams with all player details');
 
             // Load and attach manager data to teams
+            console.log('🔄 About to call loadAndAttachManagerData()');
             await this.loadAndAttachManagerData();
+            console.log('✅ loadAndAttachManagerData() completed');
 
         } catch (error) {
             console.error('Failed to load teams:', error);
@@ -620,31 +623,99 @@ class CheckInViewApp extends CheckInCore {
             // Don't fail completely, just log the warning
         }
     }
+
+    // Load manager data and attach it to specific team objects (for performance)
+    async loadAndAttachManagerDataForTeams(specificTeams) {
+        try {
+            console.log('🔄 Loading team managers data for specific teams...');
+            const managersData = await this.fetch(`/api/team-managers?_t=${Date.now()}`);
+            console.log('✅ Loaded managers data:', managersData.length, 'manager records');
+
+            // Get team IDs we're working with
+            const teamIds = specificTeams.map(team => team.id);
+
+            // Attach manager data to each specified team
+            specificTeams.forEach(team => {
+                // Get managers for this team
+                const teamManagers = managersData.filter(manager => manager.team_id === team.id);
+
+                console.log(`🔍 Team ${team.name}: Found ${teamManagers.length} managers:`, teamManagers);
+
+                // Attach manager data in multiple formats for compatibility
+                team.managers = teamManagers.map(manager => ({
+                    id: manager.id,
+                    memberId: manager.member_id, // This might link to a player
+                    firstName: manager.first_name,
+                    lastName: manager.last_name,
+                    email: manager.email_address,
+                    role: manager.role,
+                    teamId: manager.team_id
+                }));
+
+                // Legacy compatibility: set managerId to first primary manager
+                const primaryManager = teamManagers.find(m => m.role === 'Manager');
+                if (primaryManager) {
+                    team.managerId = primaryManager.member_id;
+                }
+
+                // Set managerIds array
+                team.managerIds = teamManagers
+                    .filter(m => m.member_id) // Only include those with member_id
+                    .map(m => m.member_id);
+
+                console.log(`✅ Team ${team.name} manager data attached:`, {
+                    managers: team.managers.length,
+                    managerId: team.managerId,
+                    managerIds: team.managerIds
+                });
+
+                // Also update the team in the main teams array
+                const mainTeamIndex = this.teams.findIndex(t => t.id === team.id);
+                if (mainTeamIndex >= 0) {
+                    this.teams[mainTeamIndex].managers = team.managers;
+                    this.teams[mainTeamIndex].managerId = team.managerId;
+                    this.teams[mainTeamIndex].managerIds = team.managerIds;
+                }
+            });
+
+        } catch (error) {
+            console.warn('⚠️ Failed to load manager data for specific teams, teams will not show manager crowns:', error);
+            // Don't fail completely, just log the warning
+        }
+    }
     
     // Load only specific teams for performance optimization
     async loadSpecificTeams(teamIds) {
         if (!teamIds || teamIds.length === 0) return [];
-        
+
         try {
             // Check if we already have these teams loaded
-            const missingTeamIds = teamIds.filter(teamId => 
+            const missingTeamIds = teamIds.filter(teamId =>
                 !this.teams.some(t => t.id === teamId)
             );
-            
+
             if (missingTeamIds.length === 0) {
-                // All teams already loaded
+                // All teams already loaded, but check if they have manager data
+                const requestedTeams = teamIds.map(teamId => this.teams.find(t => t.id === teamId));
+                const teamsNeedingManagerData = requestedTeams.filter(team => !team.managers);
+
+                if (teamsNeedingManagerData.length > 0) {
+                    console.log(`🔄 Teams loaded but missing manager data: ${teamsNeedingManagerData.map(t => t.name).join(', ')}`);
+                    await this.loadAndAttachManagerDataForTeams(teamsNeedingManagerData);
+                }
+
                 console.log(`✅ All teams already loaded: ${teamIds.join(', ')}`);
-                return teamIds.map(teamId => this.teams.find(t => t.id === teamId));
+                return requestedTeams;
             }
-            
+
             // Load only the missing teams using the new endpoint
             console.log(`🎯 Loading specific teams: ${missingTeamIds.join(', ')}`);
             const response = await fetch(`/api/teams-specific?ids=${missingTeamIds.join(',')}&_t=${Date.now()}`);
-            
+
             if (response.ok) {
                 const loadedTeams = await response.json();
                 console.log(`✅ Loaded ${loadedTeams.length} specific teams with full player data`);
-                
+
                 // Merge loaded teams into our teams array
                 loadedTeams.forEach(loadedTeam => {
                     const existingIndex = this.teams.findIndex(t => t.id === loadedTeam.id);
@@ -654,10 +725,14 @@ class CheckInViewApp extends CheckInCore {
                         this.teams.push(loadedTeam);
                     }
                 });
-                
+
+                // Load and attach manager data for these specific teams
+                console.log('🔄 Loading manager data for specific teams');
+                await this.loadAndAttachManagerDataForTeams(loadedTeams);
+
                 // Mark that we now have only partial data (not complete)
                 this.hasCompleteTeamsData = false;
-                
+
                 // Return all requested teams
                 return teamIds.map(teamId => this.teams.find(t => t.id === teamId));
             } else {
