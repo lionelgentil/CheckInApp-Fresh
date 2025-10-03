@@ -4336,43 +4336,71 @@ function createTeamManager($db) {
 function updateTeamManager($db, $managerId) {
     try {
         $input = json_decode(file_get_contents('php://input'), true);
-        
+
         if (!$input) {
             http_response_code(400);
             echo json_encode(['error' => 'No data provided']);
             return;
         }
-        
+
         // Get old manager data before updating for change comparison
         $oldDataStmt = $db->prepare("
-            SELECT tm.*, t.name as team_name 
-            FROM team_managers tm 
-            LEFT JOIN teams t ON tm.team_id = t.id 
+            SELECT tm.*, t.name as team_name
+            FROM team_managers tm
+            LEFT JOIN teams t ON tm.team_id = t.id
             WHERE tm.id = ?
         ");
         $oldDataStmt->execute([$managerId]);
         $oldManagerData = $oldDataStmt->fetch();
-        
+
         if (!$oldManagerData) {
             http_response_code(404);
             echo json_encode(['error' => 'Team manager not found']);
             return;
         }
-        
-        $stmt = $db->prepare("
-            UPDATE team_managers
-            SET first_name = ?, last_name = ?, phone_number = ?, email_address = ?, role = ?, updated_at = NOW()
-            WHERE id = ?
-        ");
 
-        $stmt->execute([
-            $input['first_name'],
-            $input['last_name'],
-            $input['phone_number'] ?? null,
-            $input['email_address'] ?? null,
-            $input['role'] ?? 'Assistant Manager',  // Default to Assistant Manager
-            $managerId
-        ]);
+        // Build dynamic update query based on provided fields
+        $updateFields = [];
+        $params = [];
+
+        if (isset($input['first_name'])) {
+            $updateFields[] = "first_name = ?";
+            $params[] = $input['first_name'];
+        }
+
+        if (isset($input['last_name'])) {
+            $updateFields[] = "last_name = ?";
+            $params[] = $input['last_name'];
+        }
+
+        if (isset($input['phone_number'])) {
+            $updateFields[] = "phone_number = ?";
+            $params[] = $input['phone_number'];
+        }
+
+        if (isset($input['email_address'])) {
+            $updateFields[] = "email_address = ?";
+            $params[] = $input['email_address'];
+        }
+
+        if (isset($input['role'])) {
+            $updateFields[] = "role = ?";
+            $params[] = $input['role'];
+        }
+
+        if (empty($updateFields)) {
+            http_response_code(400);
+            echo json_encode(['error' => 'No fields to update']);
+            return;
+        }
+
+        // Always update the timestamp
+        $updateFields[] = "updated_at = NOW()";
+        $params[] = $managerId; // For WHERE clause
+
+        $sql = "UPDATE team_managers SET " . implode(', ', $updateFields) . " WHERE id = ?";
+        $stmt = $db->prepare($sql);
+        $stmt->execute($params);
         
         // Return the updated manager
         $stmt = $db->prepare("
@@ -4387,13 +4415,13 @@ function updateTeamManager($db, $managerId) {
         if ($manager) {
             // Send email notification with old data for comparison
             sendManagerNotification('updated', [
-                'first_name' => $input['first_name'],
-                'last_name' => $input['last_name'],
+                'first_name' => $input['first_name'] ?? $manager['first_name'],
+                'last_name' => $input['last_name'] ?? $manager['last_name'],
                 'team_id' => $manager['team_id'],
-                'phone_number' => $input['phone_number'] ?? null,
-                'email_address' => $input['email_address'] ?? null
+                'phone_number' => $input['phone_number'] ?? $manager['phone_number'],
+                'email_address' => $input['email_address'] ?? $manager['email_address']
             ], $manager['team_name'] ?? null, $db, $oldManagerData);
-            
+
             echo json_encode($manager);
         } else {
             http_response_code(404);
