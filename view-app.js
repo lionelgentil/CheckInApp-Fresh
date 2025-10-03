@@ -1190,16 +1190,23 @@ class CheckInViewApp extends CheckInCore {
     
     // Helper function to check if a member is a captain (supports both legacy and new system)
     isMemberCaptain(member, team) {
+        console.log(`🔍 Checking captain status for ${member.name} in team ${team.name}`);
+        console.log('Team captains:', team.captains);
+        console.log('Team captainId:', team.captainId);
+
         // Check new captains system
         if (team.captains && team.captains.some(c => c.memberId === member.id)) {
+            console.log(`✅ ${member.name} is captain via new system`);
             return true;
         }
-        
+
         // Check legacy captain system
         if (team.captainId && member.id === team.captainId) {
+            console.log(`✅ ${member.name} is captain via legacy system`);
             return true;
         }
-        
+
+        console.log(`❌ ${member.name} is not a captain`);
         return false;
     }
     
