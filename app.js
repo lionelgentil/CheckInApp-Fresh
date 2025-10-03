@@ -1958,9 +1958,9 @@ Please check the browser console (F12) for more details.`);
 
     async promoteToManager(managerId, teamId) {
         try {
-            // Convert to number to ensure proper comparison
+            // Convert manager ID to number to ensure proper comparison
             const managerIdNum = parseInt(managerId);
-            const teamIdNum = parseInt(teamId);
+            // teamId is a UUID string, keep as-is
 
             const manager = this.teamManagers.find(m => m.id === managerIdNum);
             if (!manager) {
@@ -1970,7 +1970,7 @@ Please check the browser console (F12) for more details.`);
             }
 
             // Check if there's already a Manager for this team
-            const currentManager = this.teamManagers.find(m => m.team_id === teamIdNum && m.role === 'Manager');
+            const currentManager = this.teamManagers.find(m => m.team_id === teamId && m.role === 'Manager');
 
             if (currentManager && currentManager.id !== managerIdNum) {
                 // Ask for confirmation to swap roles
@@ -1986,7 +1986,7 @@ Please check the browser console (F12) for more details.`);
                 }
 
                 // Swap roles
-                await this.swapManagerRoles(currentManager.id, managerIdNum, teamIdNum);
+                await this.swapManagerRoles(currentManager.id, managerIdNum, teamId);
             } else {
                 // Simple promotion (no current Manager exists)
                 const response = await fetch(`/api/team-managers/${managerIdNum}`, {
@@ -2087,7 +2087,7 @@ Please check the browser console (F12) for more details.`);
                 body: JSON.stringify({
                     currentManagerId: currentManagerIdNum,
                     newManagerId: newManagerIdNum,
-                    teamId: parseInt(teamId)
+                    teamId: teamId  // teamId is a UUID string, keep as-is
                 })
             });
 
