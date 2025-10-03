@@ -994,39 +994,30 @@ class CheckInManagerApp {
     
     // Get player photo URL with fallback to default
     getPlayerPhotoUrl(member) {
-        // Debug: Log what photo data we're receiving
-        console.log('🖼️ getPlayerPhotoUrl for:', member.name, 'photo:', member.photo, 'photo_filename:', member.photo_filename);
-        
         // Check for custom photo in main photo field
         if (member.photo) {
             if (member.photo.startsWith('data:image/')) {
-                console.log('✅ Using base64 photo');
                 return member.photo;
             }
             if (member.photo.startsWith('/photos/')) {
-                console.log('✅ Using direct photo URL');
                 return member.photo;
             }
-            if ((member.photo.includes('.jpg') || member.photo.includes('.jpeg') || 
+            if ((member.photo.includes('.jpg') || member.photo.includes('.jpeg') ||
                 member.photo.includes('.png') || member.photo.includes('.webp')) &&
                 !member.photo.startsWith('/photos/')) {
-                console.log('✅ Converting filename to /photos/ URL');
                 return `/photos/${member.photo}`;
             }
         }
-        
+
         // Check for legacy photo fields
         if (member.photo_filename) {
-            console.log('📁 Using photo_filename:', member.photo_filename);
             return `/photos/${member.photo_filename}`;
         }
         if (member.photo_base64) {
-            console.log('📋 Using photo_base64');
             return member.photo_base64;
         }
-        
+
         // Default photo based on gender
-        console.log('🚫 No photo found, using default for gender:', member.gender);
         return `/photos/default-${member.gender === 'female' ? 'female' : 'male'}.svg`;
     }
     
