@@ -1958,16 +1958,21 @@ Please check the browser console (F12) for more details.`);
 
     async promoteToManager(managerId, teamId) {
         try {
-            const manager = this.teamManagers.find(m => m.id === managerId);
+            // Convert to number to ensure proper comparison
+            const managerIdNum = parseInt(managerId);
+            const teamIdNum = parseInt(teamId);
+
+            const manager = this.teamManagers.find(m => m.id === managerIdNum);
             if (!manager) {
-                alert('Manager not found');
+                alert('Manager not found. Please refresh the page and try again.');
+                console.error('Manager not found. managerId:', managerId, 'Available managers:', this.teamManagers);
                 return;
             }
 
             // Check if there's already a Manager for this team
-            const currentManager = this.teamManagers.find(m => m.team_id === teamId && m.role === 'Manager');
+            const currentManager = this.teamManagers.find(m => m.team_id === teamIdNum && m.role === 'Manager');
 
-            if (currentManager && currentManager.id !== managerId) {
+            if (currentManager && currentManager.id !== managerIdNum) {
                 // Ask for confirmation to swap roles
                 const confirmSwap = confirm(
                     `${currentManager.first_name} ${currentManager.last_name} is already the Manager for this team.\n\n` +
@@ -1981,14 +1986,13 @@ Please check the browser console (F12) for more details.`);
                 }
 
                 // Swap roles
-                await this.swapManagerRoles(currentManager.id, managerId, teamId);
+                await this.swapManagerRoles(currentManager.id, managerIdNum, teamIdNum);
             } else {
                 // Simple promotion (no current Manager exists)
-                const response = await fetch('/api/team-managers', {
+                const response = await fetch(`/api/team-managers/${managerIdNum}`, {
                     method: 'PUT',
                     headers: { 'Content-Type': 'application/json' },
                     body: JSON.stringify({
-                        id: managerId,
                         role: 'Manager'
                     })
                 });
@@ -2015,9 +2019,13 @@ Please check the browser console (F12) for more details.`);
 
     async demoteToAssistant(managerId, teamId) {
         try {
-            const manager = this.teamManagers.find(m => m.id === managerId);
+            // Convert to number to ensure proper comparison
+            const managerIdNum = parseInt(managerId);
+
+            const manager = this.teamManagers.find(m => m.id === managerIdNum);
             if (!manager) {
-                alert('Manager not found');
+                alert('Manager not found. Please refresh the page and try again.');
+                console.error('Manager not found. managerId:', managerId, 'Available managers:', this.teamManagers);
                 return;
             }
 
@@ -2030,11 +2038,10 @@ Please check the browser console (F12) for more details.`);
                 return;
             }
 
-            const response = await fetch('/api/team-managers', {
+            const response = await fetch(`/api/team-managers/${managerIdNum}`, {
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    id: managerId,
                     role: 'Assistant Manager'
                 })
             });
@@ -2060,11 +2067,16 @@ Please check the browser console (F12) for more details.`);
 
     async swapManagerRoles(currentManagerId, newManagerId, teamId) {
         try {
-            const currentManager = this.teamManagers.find(m => m.id === currentManagerId);
-            const newManager = this.teamManagers.find(m => m.id === newManagerId);
+            // Convert to numbers to ensure proper comparison
+            const currentManagerIdNum = parseInt(currentManagerId);
+            const newManagerIdNum = parseInt(newManagerId);
+
+            const currentManager = this.teamManagers.find(m => m.id === currentManagerIdNum);
+            const newManager = this.teamManagers.find(m => m.id === newManagerIdNum);
 
             if (!currentManager || !newManager) {
-                alert('One or both managers not found');
+                alert('One or both managers not found. Please refresh the page and try again.');
+                console.error('Managers not found. currentManagerId:', currentManagerId, 'newManagerId:', newManagerId, 'Available managers:', this.teamManagers);
                 return;
             }
 
@@ -2073,9 +2085,9 @@ Please check the browser console (F12) for more details.`);
                 method: 'PUT',
                 headers: { 'Content-Type': 'application/json' },
                 body: JSON.stringify({
-                    currentManagerId: currentManagerId,
-                    newManagerId: newManagerId,
-                    teamId: teamId
+                    currentManagerId: currentManagerIdNum,
+                    newManagerId: newManagerIdNum,
+                    teamId: parseInt(teamId)
                 })
             });
 
@@ -2083,11 +2095,10 @@ Please check the browser console (F12) for more details.`);
                 // If the swap endpoint doesn't exist, fall back to individual updates
                 if (response.status === 404) {
                     // Update current manager to Assistant Manager
-                    const demoteResponse = await fetch('/api/team-managers', {
+                    const demoteResponse = await fetch(`/api/team-managers/${currentManagerIdNum}`, {
                         method: 'PUT',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
-                            id: currentManagerId,
                             role: 'Assistant Manager'
                         })
                     });
@@ -2097,11 +2108,10 @@ Please check the browser console (F12) for more details.`);
                     }
 
                     // Update new manager to Manager
-                    const promoteResponse = await fetch('/api/team-managers', {
+                    const promoteResponse = await fetch(`/api/team-managers/${newManagerIdNum}`, {
                         method: 'PUT',
                         headers: { 'Content-Type': 'application/json' },
                         body: JSON.stringify({
-                            id: newManagerId,
                             role: 'Manager'
                         })
                     });
