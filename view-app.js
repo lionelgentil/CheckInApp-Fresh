@@ -4597,14 +4597,38 @@ class CheckInViewApp extends CheckInCore {
                 const isManuallyLocked = this.getManualLockStatus(this.currentMatch.id);
                 const isLocked = isAutoLocked || isManuallyLocked;
                 const isSuspended = member.suspensionStatus.isSuspended;
-                
+
+                // Calculate current season cards for this member
+                let currentSeasonYellowCards = 0;
+                let currentSeasonRedCards = 0;
+
+                this.events.forEach(event => {
+                    // Only count cards from current season events
+                    if (this.isCurrentSeasonEvent(event.date_epoch)) {
+                        event.matches.forEach(match => {
+                            if (match.cards) {
+                                const memberCards = match.cards.filter(card => card.memberId === member.id);
+                                currentSeasonYellowCards += memberCards.filter(card => card.cardType === 'yellow').length;
+                                currentSeasonRedCards += memberCards.filter(card => card.cardType === 'red').length;
+                            }
+                        });
+                    }
+                });
+
+                // Create cards display for grid
+                const cardsBadges = [];
+                if (currentSeasonYellowCards > 0) cardsBadges.push(`🟨${currentSeasonYellowCards}`);
+                if (currentSeasonRedCards > 0) cardsBadges.push(`🟥${currentSeasonRedCards}`);
+                const cardsDisplay = cardsBadges.length > 0 ? cardsBadges.join(' ') : '';
+
                 return `
-                    <div class="player-grid-item ${isCheckedIn ? 'checked-in' : ''} ${isLocked ? 'locked' : ''} ${isSuspended ? 'suspended' : ''}" 
+                    <div class="player-grid-item ${isCheckedIn ? 'checked-in' : ''} ${isLocked ? 'locked' : ''} ${isSuspended ? 'suspended' : ''} ${cardsDisplay ? 'has-cards' : ''}"
                          ${!isLocked && !isSuspended ? `onclick="app.toggleGridPlayerAttendance('${this.currentEventId}', '${this.currentMatchId}', '${member.id}', '${teamType}')"` : ''}
-                         title="${isSuspended ? `SUSPENDED: ${member.suspensionStatus.reason}` : isLocked ? 'Check-in is locked for this match' : 'Click to toggle attendance'}">
+                         title="${isSuspended ? `SUSPENDED: ${member.suspensionStatus.reason}` : isLocked ? 'Check-in is locked for this match' : cardsDisplay ? `Current season cards: ${cardsDisplay} • Click to toggle attendance` : 'Click to toggle attendance'}">
                         ${this.isMemberCaptain(member, team) ? '<div class="grid-captain-icon">👑</div>' : ''}
                         ${isSuspended ? `<div class="grid-suspension-icon ${member.suspensionStatus.suspensionType === 'yellow_accumulation' ? 'yellow-accumulation' : ''}">🚫</div>` : ''}
-                        ${member.photo ? 
+                        ${cardsDisplay ? `<div class="grid-cards-icon">${cardsDisplay}</div>` : ''}
+                        ${member.photo ?
                             `<img src="${this.getMemberPhotoUrl(member)}" alt="${member.name}" class="player-grid-photo">` :
                             `<div class="player-grid-photo" style="background: #ddd; display: flex; align-items: center; justify-content: center; color: #666; font-size: 20px;">👤</div>`
                         }
@@ -4660,12 +4684,37 @@ class CheckInViewApp extends CheckInCore {
             .sort((a, b) => a.name.localeCompare(b.name))
             .map(member => {
             const isCheckedIn = attendees.some(a => a.memberId === member.id);
-            
+
+            // Calculate current season cards for this member
+            let currentSeasonYellowCards = 0;
+            let currentSeasonRedCards = 0;
+
+            this.events.forEach(event => {
+                // Only count cards from current season events
+                if (this.isCurrentSeasonEvent(event.date_epoch)) {
+                    event.matches.forEach(match => {
+                        if (match.cards) {
+                            const memberCards = match.cards.filter(card => card.memberId === member.id);
+                            currentSeasonYellowCards += memberCards.filter(card => card.cardType === 'yellow').length;
+                            currentSeasonRedCards += memberCards.filter(card => card.cardType === 'red').length;
+                        }
+                    });
+                }
+            });
+
+            // Create cards display for grid
+            const cardsBadges = [];
+            if (currentSeasonYellowCards > 0) cardsBadges.push(`🟨${currentSeasonYellowCards}`);
+            if (currentSeasonRedCards > 0) cardsBadges.push(`🟥${currentSeasonRedCards}`);
+            const cardsDisplay = cardsBadges.length > 0 ? cardsBadges.join(' ') : '';
+
             return `
-                <div class="player-grid-item ${isCheckedIn ? 'checked-in' : ''}" 
-                     onclick="app.toggleGridPlayerAttendance('${this.currentEventId}', '${this.currentMatchId}', '${member.id}', '${teamType}')">
+                <div class="player-grid-item ${isCheckedIn ? 'checked-in' : ''} ${cardsDisplay ? 'has-cards' : ''}"
+                     onclick="app.toggleGridPlayerAttendance('${this.currentEventId}', '${this.currentMatchId}', '${member.id}', '${teamType}')"
+                     title="${cardsDisplay ? `Current season cards: ${cardsDisplay} • Click to toggle attendance` : 'Click to toggle attendance'}">
                     <div class="grid-check-icon">✓</div>
                     ${this.isMemberCaptain(member, team) ? '<div class="grid-captain-icon">👑</div>' : ''}
+                    ${cardsDisplay ? `<div class="grid-cards-icon">${cardsDisplay}</div>` : ''}
                     <img src="${this.getMemberPhotoUrl(member)}" alt="${member.name}" class="player-grid-photo">
                     <div class="player-grid-content">
                         <div class="player-grid-name">${member.name}</div>

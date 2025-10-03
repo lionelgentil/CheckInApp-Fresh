@@ -141,8 +141,8 @@
                 border-radius: 8px;
             }
 
-            /* Enhanced Mobile Match Interface */
-            .team-info-match {
+            /* Enhanced Mobile Match Interface - Only apply within check-in modal */
+            .checkin-modal .team-info-match {
                 background: white;
                 border-radius: 12px;
                 padding: 12px;
@@ -151,43 +151,43 @@
                 transition: all 0.3s ease;
             }
 
-            /* Home Team - Blue Theme */
-            .match-teams .team-info-match:first-child {
+            /* Home Team - Blue Theme - Only apply within check-in modal */
+            .checkin-modal .match-teams .team-info-match:first-child {
                 background: linear-gradient(135deg, #e3f2fd 0%, #bbdefb 100%);
                 border-color: #2196F3;
                 border-left: 4px solid #1976d2;
             }
 
-            /* Away Team - Red Theme */
-            .match-teams .team-info-match:last-child {
+            /* Away Team - Red Theme - Only apply within check-in modal */
+            .checkin-modal .match-teams .team-info-match:last-child {
                 background: linear-gradient(135deg, #ffebee 0%, #ffcdd2 100%);
                 border-color: #f44336;
                 border-left: 4px solid #d32f2f;
             }
 
-            .team-name-match {
+            .checkin-modal .team-name-match {
                 font-weight: 700;
                 font-size: 1.1em;
                 color: #333;
                 margin-bottom: 4px;
             }
 
-            /* Enhanced Gender Counters */
-            .team-category-small {
+            /* Enhanced Gender Counters - Only apply within check-in modal */
+            .checkin-modal .team-category-small {
                 font-size: 0.8em;
                 color: #555;
                 font-weight: 600;
                 margin-bottom: 8px;
             }
 
-            .attendance-count {
+            .checkin-modal .attendance-count {
                 display: flex;
                 gap: 8px;
                 align-items: center;
                 flex-wrap: wrap;
             }
 
-            .gender-badge {
+            .checkin-modal .gender-badge {
                 display: inline-flex;
                 align-items: center;
                 gap: 4px;
@@ -198,12 +198,12 @@
                 color: white;
             }
 
-            .gender-badge.female {
+            .checkin-modal .gender-badge.female {
                 background: linear-gradient(135deg, #e91e63, #c2185b);
                 box-shadow: 0 2px 6px rgba(233, 30, 99, 0.3);
             }
 
-            .gender-badge.male {
+            .checkin-modal .gender-badge.male {
                 background: linear-gradient(135deg, #2196f3, #1976d2);
                 box-shadow: 0 2px 6px rgba(33, 150, 243, 0.3);
             }
@@ -2804,6 +2804,21 @@
         justify-content: center;
         font-size: 12px;
         font-weight: bold;
+    }
+
+    .grid-cards-icon {
+        position: absolute;
+        top: 55px;
+        right: 6px;
+        background: rgba(255, 193, 7, 0.9);
+        color: #856404;
+        border-radius: 8px;
+        padding: 2px 4px;
+        font-size: 9px;
+        font-weight: bold;
+        border: 1px solid rgba(255, 193, 7, 0.8);
+        box-shadow: 0 1px 3px rgba(0,0,0,0.2);
+        z-index: 3;
     }
 
     .grid-captain-icon {
