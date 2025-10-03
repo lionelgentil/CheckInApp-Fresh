@@ -4129,7 +4129,6 @@ function executeDbMaintenance($db) {
         // Also block dangerous keywords that could affect system integrity
         $dangerousKeywords = [
             'DROP DATABASE',
-            'ALTER TABLE',
             'CREATE DATABASE',
             'GRANT',
             'REVOKE'
