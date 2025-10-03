@@ -1195,9 +1195,9 @@ class CheckInViewApp extends CheckInCore {
         console.log('Team managerId:', team.managerId);
         console.log('Team managerIds:', team.managerIds);
 
-        // Check new managers system
+        // Check new managers system by memberId
         if (team.managers && team.managers.some(m => m.memberId === member.id)) {
-            console.log(`✅ ${member.name} is manager via new system`);
+            console.log(`✅ ${member.name} is manager via new system (memberId match)`);
             return true;
         }
 
@@ -1213,8 +1213,56 @@ class CheckInViewApp extends CheckInCore {
             return true;
         }
 
+        // Fallback: Check by name matching (for cases where manager has firstName/lastName but no memberId link)
+        if (team.managers && team.managers.length > 0) {
+            const memberNameVariants = this.generateNameVariants(member.name);
+            console.log(`🔍 Generated name variants for ${member.name}:`, memberNameVariants);
+
+            for (const manager of team.managers) {
+                if (manager.firstName && manager.lastName) {
+                    const managerFullName = `${manager.firstName} ${manager.lastName}`;
+                    const managerLastFirst = `${manager.lastName}, ${manager.firstName}`;
+
+                    console.log(`🔍 Checking manager: ${managerFullName} (${managerLastFirst})`);
+
+                    if (memberNameVariants.includes(managerFullName) ||
+                        memberNameVariants.includes(managerLastFirst) ||
+                        member.name === managerFullName ||
+                        member.name === managerLastFirst) {
+                        console.log(`✅ ${member.name} is manager via name matching with ${managerFullName}`);
+                        return true;
+                    }
+                }
+            }
+        }
+
         console.log(`❌ ${member.name} is not a manager`);
         return false;
+    }
+
+    // Helper function to generate name variants for matching
+    generateNameVariants(name) {
+        if (!name) return [];
+
+        const variants = [name];
+
+        // If name contains comma (Last, First format), generate First Last variant
+        if (name.includes(',')) {
+            const parts = name.split(',').map(part => part.trim());
+            if (parts.length === 2) {
+                const [lastName, firstName] = parts;
+                variants.push(`${firstName} ${lastName}`);
+            }
+        } else {
+            // If name is First Last format, generate Last, First variant
+            const parts = name.split(' ');
+            if (parts.length === 2) {
+                const [firstName, lastName] = parts;
+                variants.push(`${lastName}, ${firstName}`);
+            }
+        }
+
+        return variants;
     }
     
     // Optimized method for rendering card items
