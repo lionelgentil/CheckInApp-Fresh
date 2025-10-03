@@ -263,7 +263,7 @@ class CheckInManagerApp {
                                 </div>
                                 <div class="team-actions">
                                     <button class="btn btn-small" onclick="app.showManagerDialog('${selectedTeam.id}')" title="Manage Team Managers">
-                                        💼
+                                        👔
                                     </button>
                                 </div>
                             </div>
@@ -461,7 +461,7 @@ class CheckInManagerApp {
                             👥
                         </button>
                         <button class="btn btn-small" onclick="app.showManagerDialog('${team.id}')" title="Manage Team Managers">
-                            💼
+                            👔
                         </button>
                     </div>
                 </div>
@@ -476,7 +476,7 @@ class CheckInManagerApp {
     
     renderManagerDisplay(managers) {
         if (managers.length === 0) {
-            return '<div class="team-managers"><em>💼 No managers assigned</em></div>';
+            return '<div class="team-managers"><em>👔 No managers assigned</em></div>';
         }
 
         // Sort managers: Manager first, then Assistant Managers
@@ -508,7 +508,7 @@ class CheckInManagerApp {
         modal.innerHTML = `
             <div class="modal-content">
                 <div class="modal-header">
-                    <h3 class="modal-title">💼 ${team.name} - Team Managers</h3>
+                    <h3 class="modal-title">👔 ${team.name} - Team Managers</h3>
                     <button class="close-btn" onclick="this.closest('.modal').remove()">&times;</button>
                 </div>
                 
