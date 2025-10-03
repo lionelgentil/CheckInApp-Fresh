@@ -4107,6 +4107,7 @@ function executeDbMaintenance($db) {
             'DELETE',
             'CREATE INDEX',
             'CREATE TABLE',  // Temporary: Allow table creation for team_managers
+            'ALTER TABLE',   // Added for schema modifications
             'DROP INDEX',
             'DROP TABLE',    // Added for table cleanup operations
             'ANALYZE',
