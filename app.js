@@ -1110,7 +1110,13 @@ class CheckInApp extends CheckInCore {
             if (selectedTeam) {
                 // Get team managers for this team
                 const teamManagers = this.teamManagers.filter(manager => manager.team_id === selectedTeam.id);
-                const managerNames = teamManagers.map(manager => `${manager.first_name} ${manager.last_name}`).join(', ');
+                const managerDisplay = teamManagers.length > 0
+                    ? teamManagers.map(manager => {
+                        const roleIcon = manager.role === 'Manager' ? '👔' : '🏃‍♀️';
+                        return `${roleIcon} ${manager.first_name} ${manager.last_name}`;
+                    }).join(', ')
+                    : '';
+
                 
                 // Calculate roster statistics
                 const totalPlayers = selectedTeam.members.length;
@@ -1146,10 +1152,11 @@ class CheckInApp extends CheckInCore {
                                 <div>
                                     <div class="team-name">${selectedTeam.name}</div>
                                     <div class="team-category">${selectedTeam.category || ''}</div>
-                                    ${teamManagers.length > 0 ? `<div class="team-manager">💼 Manager${teamManagers.length > 1 ? 's' : ''}: ${managerNames}</div>` : ''}
+                                    ${teamManagers.length > 0 ? `<div class="team-manager">💼 ${managerDisplay}</div>` : ''}
                                 </div>
                                 <div class="team-actions">
                                     <button class="btn btn-small" onclick="app.showAddMemberModal('${selectedTeam.id}')" title="Add Member">+</button>
+                                    <button class="btn btn-small btn-secondary" onclick="app.showManagerModal('${selectedTeam.id}')" title="Manage Team Managers">👔</button>
                                     <button class="btn btn-small btn-secondary" onclick="app.editTeam('${selectedTeam.id}')" title="Edit Team">✏️</button>
                                     <button class="btn btn-small btn-danger" onclick="app.handleActionClick(event, app.deleteTeamWithLoading.bind(app), '${selectedTeam.id}')" title="Delete Team">🗑️</button>
                                 </div>
@@ -1881,6 +1888,249 @@ Please check the browser console (F12) for more details.`);
             this.renderTeams();
         } catch (error) {
             alert('Failed to delete team. Please try again.');
+        }
+    }
+
+    // Team Manager Management
+    showManagerModal(teamId) {
+        const team = this.teams.find(t => t.id === teamId);
+        if (!team) {
+            alert('Team not found');
+            return;
+        }
+
+        const teamManagers = this.teamManagers.filter(manager => manager.team_id === teamId);
+
+        let managersHtml = '';
+        if (teamManagers.length > 0) {
+            managersHtml = teamManagers.map(manager => {
+                const roleIcon = manager.role === 'Manager' ? '👔' : '🏃‍♀️';
+                const roleText = manager.role === 'Manager' ? 'Manager' : 'Assistant Manager';
+
+                let actionButton = '';
+                if (manager.role === 'Manager') {
+                    actionButton = `<button class="btn btn-small btn-secondary" onclick="app.demoteToAssistant('${manager.id}', '${teamId}')" title="Demote to Assistant Manager">⬇️ Demote</button>`;
+                } else {
+                    actionButton = `<button class="btn btn-small btn-primary" onclick="app.promoteToManager('${manager.id}', '${teamId}')" title="Promote to Manager">⬆️ Promote</button>`;
+                }
+
+                return `
+                    <div class="manager-item" style="display: flex; align-items: center; justify-content: space-between; padding: 10px; margin: 5px 0; background: #f8f9fa; border-radius: 6px;">
+                        <div style="display: flex; align-items: center; gap: 10px;">
+                            <span style="font-size: 1.2em;">${roleIcon}</span>
+                            <div>
+                                <div style="font-weight: 500;">${manager.first_name} ${manager.last_name}</div>
+                                <div style="font-size: 0.9em; color: #666;">${roleText}</div>
+                            </div>
+                        </div>
+                        <div style="display: flex; gap: 5px;">
+                            ${actionButton}
+                        </div>
+                    </div>
+                `;
+            }).join('');
+        } else {
+            managersHtml = '<div style="text-align: center; padding: 20px; color: #666;">No managers assigned to this team</div>';
+        }
+
+        const modal = this.createModal(`Manage Team Managers: ${team.name}`, `
+            <div style="margin-bottom: 20px;">
+                <div style="margin-bottom: 15px;">
+                    <strong>Current Managers:</strong>
+                </div>
+                <div class="managers-list">
+                    ${managersHtml}
+                </div>
+            </div>
+            <div style="border-top: 1px solid #eee; padding-top: 15px; margin-top: 20px;">
+                <div style="font-size: 0.9em; color: #666; margin-bottom: 10px;">
+                    💡 <strong>Note:</strong> Each team can have only one Manager and multiple Assistant Managers.
+                    Promoting an Assistant Manager to Manager will automatically demote the current Manager if one exists.
+                </div>
+            </div>
+            <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                <button class="btn btn-secondary" onclick="app.closeModal()">Close</button>
+            </div>
+        `);
+
+        document.body.appendChild(modal);
+    }
+
+    async promoteToManager(managerId, teamId) {
+        try {
+            const manager = this.teamManagers.find(m => m.id === managerId);
+            if (!manager) {
+                alert('Manager not found');
+                return;
+            }
+
+            // Check if there's already a Manager for this team
+            const currentManager = this.teamManagers.find(m => m.team_id === teamId && m.role === 'Manager');
+
+            if (currentManager && currentManager.id !== managerId) {
+                // Ask for confirmation to swap roles
+                const confirmSwap = confirm(
+                    `${currentManager.first_name} ${currentManager.last_name} is already the Manager for this team.\n\n` +
+                    `Promoting ${manager.first_name} ${manager.last_name} to Manager will automatically demote ` +
+                    `${currentManager.first_name} ${currentManager.last_name} to Assistant Manager.\n\n` +
+                    `Do you want to continue?`
+                );
+
+                if (!confirmSwap) {
+                    return;
+                }
+
+                // Swap roles
+                await this.swapManagerRoles(currentManager.id, managerId, teamId);
+            } else {
+                // Simple promotion (no current Manager exists)
+                const response = await fetch('/api/team-managers', {
+                    method: 'PUT',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        id: managerId,
+                        role: 'Manager'
+                    })
+                });
+
+                if (!response.ok) {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+
+                // Update local data
+                manager.role = 'Manager';
+
+                // Refresh the modal and team display
+                this.closeModal();
+                this.showManagerModal(teamId);
+                this.renderTeams();
+
+                alert(`${manager.first_name} ${manager.last_name} has been promoted to Manager!`);
+            }
+        } catch (error) {
+            console.error('Error promoting manager:', error);
+            alert('Failed to promote manager. Please try again.');
+        }
+    }
+
+    async demoteToAssistant(managerId, teamId) {
+        try {
+            const manager = this.teamManagers.find(m => m.id === managerId);
+            if (!manager) {
+                alert('Manager not found');
+                return;
+            }
+
+            const confirmDemote = confirm(
+                `Are you sure you want to demote ${manager.first_name} ${manager.last_name} ` +
+                `from Manager to Assistant Manager?`
+            );
+
+            if (!confirmDemote) {
+                return;
+            }
+
+            const response = await fetch('/api/team-managers', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    id: managerId,
+                    role: 'Assistant Manager'
+                })
+            });
+
+            if (!response.ok) {
+                throw new Error(`HTTP error! status: ${response.status}`);
+            }
+
+            // Update local data
+            manager.role = 'Assistant Manager';
+
+            // Refresh the modal and team display
+            this.closeModal();
+            this.showManagerModal(teamId);
+            this.renderTeams();
+
+            alert(`${manager.first_name} ${manager.last_name} has been demoted to Assistant Manager.`);
+        } catch (error) {
+            console.error('Error demoting manager:', error);
+            alert('Failed to demote manager. Please try again.');
+        }
+    }
+
+    async swapManagerRoles(currentManagerId, newManagerId, teamId) {
+        try {
+            const currentManager = this.teamManagers.find(m => m.id === currentManagerId);
+            const newManager = this.teamManagers.find(m => m.id === newManagerId);
+
+            if (!currentManager || !newManager) {
+                alert('One or both managers not found');
+                return;
+            }
+
+            // Update both managers in a single API call to ensure consistency
+            const response = await fetch('/api/team-managers/swap-roles', {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    currentManagerId: currentManagerId,
+                    newManagerId: newManagerId,
+                    teamId: teamId
+                })
+            });
+
+            if (!response.ok) {
+                // If the swap endpoint doesn't exist, fall back to individual updates
+                if (response.status === 404) {
+                    // Update current manager to Assistant Manager
+                    const demoteResponse = await fetch('/api/team-managers', {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            id: currentManagerId,
+                            role: 'Assistant Manager'
+                        })
+                    });
+
+                    if (!demoteResponse.ok) {
+                        throw new Error(`Failed to demote current manager: ${demoteResponse.status}`);
+                    }
+
+                    // Update new manager to Manager
+                    const promoteResponse = await fetch('/api/team-managers', {
+                        method: 'PUT',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({
+                            id: newManagerId,
+                            role: 'Manager'
+                        })
+                    });
+
+                    if (!promoteResponse.ok) {
+                        throw new Error(`Failed to promote new manager: ${promoteResponse.status}`);
+                    }
+                } else {
+                    throw new Error(`HTTP error! status: ${response.status}`);
+                }
+            }
+
+            // Update local data
+            currentManager.role = 'Assistant Manager';
+            newManager.role = 'Manager';
+
+            // Refresh the modal and team display
+            this.closeModal();
+            this.showManagerModal(teamId);
+            this.renderTeams();
+
+            alert(
+                `Role swap completed!\n\n` +
+                `${newManager.first_name} ${newManager.last_name} is now the Manager.\n` +
+                `${currentManager.first_name} ${currentManager.last_name} is now an Assistant Manager.`
+            );
+        } catch (error) {
+            console.error('Error swapping manager roles:', error);
+            alert('Failed to swap manager roles. Please try again.');
         }
     }
 
