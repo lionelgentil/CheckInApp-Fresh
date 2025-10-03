@@ -4292,16 +4292,17 @@ function createTeamManager($db) {
         }
         
         $stmt = $db->prepare("
-            INSERT INTO team_managers (team_id, first_name, last_name, phone_number, email_address) 
-            VALUES (?, ?, ?, ?, ?)
+            INSERT INTO team_managers (team_id, first_name, last_name, phone_number, email_address, role)
+            VALUES (?, ?, ?, ?, ?, ?)
         ");
-        
+
         $stmt->execute([
             $input['team_id'],
             $input['first_name'],
             $input['last_name'],
             $input['phone_number'] ?? null,
-            $input['email_address'] ?? null
+            $input['email_address'] ?? null,
+            $input['role'] ?? 'Assistant Manager'  // Default to Assistant Manager
         ]);
         
         $managerId = $db->lastInsertId();
@@ -4359,16 +4360,17 @@ function updateTeamManager($db, $managerId) {
         }
         
         $stmt = $db->prepare("
-            UPDATE team_managers 
-            SET first_name = ?, last_name = ?, phone_number = ?, email_address = ?, updated_at = NOW() 
+            UPDATE team_managers
+            SET first_name = ?, last_name = ?, phone_number = ?, email_address = ?, role = ?, updated_at = NOW()
             WHERE id = ?
         ");
-        
+
         $stmt->execute([
             $input['first_name'],
             $input['last_name'],
             $input['phone_number'] ?? null,
             $input['email_address'] ?? null,
+            $input['role'] ?? 'Assistant Manager',  // Default to Assistant Manager
             $managerId
         ]);
         

@@ -1474,6 +1474,47 @@
             gap: 8px;
             flex-shrink: 0;
         }
+
+        /* Manager Role Styling */
+        .manager-primary {
+            border-left-color: #2196F3 !important;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e3f2fd 100%) !important;
+        }
+
+        .manager-assistant {
+            border-left-color: #4caf50 !important;
+            background: linear-gradient(135deg, #f8f9fa 0%, #e8f5e8 100%) !important;
+        }
+
+        .manager-role-badge {
+            font-size: 0.75em;
+            background: rgba(255, 255, 255, 0.8);
+            color: #666;
+            padding: 2px 6px;
+            border-radius: 10px;
+            margin-left: 8px;
+            font-weight: 500;
+        }
+
+        .manager-primary .manager-role-badge {
+            background: rgba(33, 150, 243, 0.1);
+            color: #1976d2;
+        }
+
+        .manager-assistant .manager-role-badge {
+            background: rgba(76, 175, 80, 0.1);
+            color: #388e3c;
+        }
+
+        .team-managers.manager-primary {
+            font-weight: 600;
+            color: #1976d2;
+        }
+
+        .team-managers.manager-assistant {
+            font-weight: 500;
+            color: #388e3c;
+        }
         
         /* Chart styles for Cards section */
         .card-charts-section {

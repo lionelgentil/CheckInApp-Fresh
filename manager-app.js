@@ -513,10 +513,19 @@ class CheckInManagerApp {
         if (managers.length === 0) {
             return '<div class="team-managers"><em>💼 No managers assigned</em></div>';
         }
-        
-        return managers.map(manager => 
-            `<div class="team-managers">💼 ${manager.first_name} ${manager.last_name}</div>`
-        ).join('');
+
+        // Sort managers: Manager first, then Assistant Managers
+        const sortedManagers = managers.sort((a, b) => {
+            if (a.role === 'Manager' && b.role !== 'Manager') return -1;
+            if (a.role !== 'Manager' && b.role === 'Manager') return 1;
+            return 0;
+        });
+
+        return sortedManagers.map(manager => {
+            const icon = manager.role === 'Manager' ? '👔' : '🏃‍♀️';
+            const roleClass = manager.role === 'Manager' ? 'manager-primary' : 'manager-assistant';
+            return `<div class="team-managers ${roleClass}">${icon} ${manager.first_name} ${manager.last_name}</div>`;
+        }).join('');
     }
     
     // Manager dialog functionality - clear existing modals first
@@ -559,11 +568,26 @@ class CheckInManagerApp {
         if (managers.length === 0) {
             return '<div class="empty-state"><p>No managers assigned to this team.</p></div>';
         }
-        
-        return managers.map(manager => `
-            <div class="manager-item" data-manager-id="${manager.id}">
+
+        // Sort managers: Manager first, then Assistant Managers
+        const sortedManagers = managers.sort((a, b) => {
+            if (a.role === 'Manager' && b.role !== 'Manager') return -1;
+            if (a.role !== 'Manager' && b.role === 'Manager') return 1;
+            return 0;
+        });
+
+        return sortedManagers.map(manager => {
+            const icon = manager.role === 'Manager' ? '👔' : '🏃‍♀️';
+            const roleLabel = manager.role || 'Assistant Manager'; // Default for existing records
+            const roleClass = manager.role === 'Manager' ? 'manager-primary' : 'manager-assistant';
+
+            return `
+            <div class="manager-item ${roleClass}" data-manager-id="${manager.id}">
                 <div class="manager-info">
-                    <div class="manager-name" onclick="app.showManagerProfile(${manager.id})" style="cursor: pointer; color: #2196F3;">${manager.first_name} ${manager.last_name}</div>
+                    <div class="manager-name" onclick="app.showManagerProfile(${manager.id})" style="cursor: pointer; color: #2196F3;">
+                        ${icon} ${manager.first_name} ${manager.last_name}
+                        <span class="manager-role-badge">${roleLabel}</span>
+                    </div>
                     <div class="manager-contact">
                         ${manager.phone_number ? `<div class="contact-line">📞 <a href="tel:${manager.phone_number}" style="color: #2196F3; text-decoration: none;">${manager.phone_number}</a></div>` : ''}
                         ${manager.email_address ? `<div class="contact-line">📧 <a href="mailto:${manager.email_address}" style="color: #2196F3; text-decoration: none;">${manager.email_address}</a></div>` : ''}
@@ -578,8 +602,8 @@ class CheckInManagerApp {
                         🗑️
                     </button>
                 </div>
-            </div>
-        `).join('');
+            </div>`;
+        }).join('');
     }
     
     // Add manager form - clear existing modals first
@@ -619,6 +643,17 @@ class CheckInManagerApp {
                         <div class="form-group">
                             <label>Email Address</label>
                             <input type="email" name="email_address">
+                        </div>
+
+                        <div class="form-group">
+                            <label>Role *</label>
+                            <select name="role" required>
+                                <option value="Assistant Manager" selected>🏃‍♀️ Assistant Manager</option>
+                                <option value="Manager">👔 Manager</option>
+                            </select>
+                            <small style="color: #666; font-size: 0.85em; margin-top: 5px; display: block;">
+                                Note: Only one Manager per team is recommended
+                            </small>
                         </div>
                         
                         <div class="form-actions">
@@ -727,7 +762,8 @@ class CheckInManagerApp {
             first_name: formData.get('first_name'),
             last_name: formData.get('last_name'),
             phone_number: formData.get('phone_number') || null,
-            email_address: formData.get('email_address') || null
+            email_address: formData.get('email_address') || null,
+            role: formData.get('role') || 'Assistant Manager'
         };
         
         try {
