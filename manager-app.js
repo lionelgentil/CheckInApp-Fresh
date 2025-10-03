@@ -560,9 +560,7 @@ class CheckInManagerApp {
                     </div>
                 </div>
                 <div class="manager-actions">
-                    <button class="btn btn-small" onclick="app.editManager(${manager.id})" title="Edit Manager">
-                        ✏️
-                    </button>
+                    <!-- Edit functionality removed - only admins can edit managers -->
                 </div>
             </div>`;
         }).join('');
@@ -762,127 +760,8 @@ class CheckInManagerApp {
             this.showError('Failed to add manager: ' + error.message);
         }
     }
-    
-    // Edit manager
-    editManager(managerId) {
-        const manager = this.teamManagers.find(m => m.id === managerId);
-        if (!manager) return;
-        
-        const modal = document.createElement('div');
-        modal.className = 'modal';
-        modal.innerHTML = `
-            <div class="modal-content">
-                <div class="modal-header">
-                    <h3 class="modal-title">Edit Manager - ${manager.team_name || 'Team'}</h3>
-                    <button class="close-btn" onclick="this.closest('.modal').remove()">&times;</button>
-                </div>
-                
-                <div class="modal-body">
-                    <form id="edit-manager-form" onsubmit="app.saveEditManager(event, ${managerId})">
-                        <div class="form-group">
-                            <label>First Name *</label>
-                            <input type="text" name="first_name" value="${manager.first_name}" required>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label>Last Name *</label>
-                            <input type="text" name="last_name" value="${manager.last_name}" required>
-                        </div>
-                        
-                        <div class="form-group">
-                            <label>Phone Number</label>
-                            <input type="tel" name="phone_number" value="${manager.phone_number || ''}" placeholder="555-555-5555" maxlength="12" oninput="app.formatPhoneNumber(this)">
-                        </div>
-                        
-                        <div class="form-group">
-                            <label>Email Address</label>
-                            <input type="email" name="email_address" value="${manager.email_address || ''}">
-                        </div>
 
-                        <div class="form-group">
-                            <label>Role</label>
-                            <div style="padding: 10px; background: #f8f9fa; border-radius: 8px; border: 2px solid #e9ecef;">
-                                ${manager.role === 'Manager' ? '👔' : '🏃‍♀️'} ${manager.role || 'Assistant Manager'}
-                            </div>
-                            <small style="color: #666; font-size: 0.85em; margin-top: 5px; display: block;">
-                                Role changes can only be made by administrators
-                            </small>
-                        </div>
-                        
-                        <div class="form-actions">
-                            <button type="button" class="btn btn-secondary" onclick="this.closest('.modal').remove()">Cancel</button>
-                            <button type="submit" class="btn">Save Changes</button>
-                        </div>
-                    </form>
-                </div>
-            </div>
-        `;
-
-        document.body.appendChild(modal);
-    }
-    
-    async saveEditManager(event, managerId) {
-        event.preventDefault();
-        
-        const form = event.target;
-        const formData = new FormData(form);
-        
-        // Validate form data
-        const validationErrors = this.validateManagerForm(formData);
-        if (validationErrors.length > 0) {
-            this.showValidationErrors(validationErrors);
-            return;
-        }
-        
-        const managerData = {
-            first_name: formData.get('first_name'),
-            last_name: formData.get('last_name'),
-            phone_number: formData.get('phone_number') || null,
-            email_address: formData.get('email_address') || null
-            // Note: Role is not editable in Manager view - only admin can change roles
-        };
-        
-        try {
-            const response = await fetch(`/api/team-managers/${managerId}`, {
-                method: 'PUT',
-                headers: {
-                    'Content-Type': 'application/json'
-                },
-                body: JSON.stringify(managerData)
-            });
-            
-            if (!response.ok) {
-                const error = await response.json();
-                throw new Error(error.error || 'Failed to update manager');
-            }
-            
-            const updatedManager = await response.json();
-            
-            // Update local data
-            const index = this.teamManagers.findIndex(m => m.id === managerId);
-            if (index !== -1) {
-                this.teamManagers[index] = updatedManager;
-            }
-            
-            // Get the team ID for reopening the manager dialog
-            const teamId = updatedManager.team_id;
-            
-            // Close modal
-            form.closest('.modal').remove();
-            
-            // Refresh teams display
-            this.renderTeams();
-            
-            // Reopen the manager dialog to show updated information
-            this.showManagerDialog(teamId);
-            
-            this.showSuccess('Manager updated successfully!');
-            
-        } catch (error) {
-            console.error('Error updating manager:', error);
-            this.showError('Failed to update manager: ' + error.message);
-        }
-    }
+    // Edit functionality removed - only admins can edit managers
 
     // Manager profile view-only mode
     showManagerProfile(managerId) {
@@ -915,7 +794,7 @@ class CheckInManagerApp {
                     
                     <div class="form-actions">
                         <button type="button" class="btn btn-secondary" onclick="this.closest('.modal').remove()">Close</button>
-                        <button type="button" class="btn" onclick="this.closest('.modal').remove(); app.editManager(${managerId})">Edit Manager</button>
+                        <!-- Edit functionality removed - only admins can edit managers -->
                     </div>
                 </div>
             </div>
