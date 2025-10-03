@@ -837,6 +837,20 @@ class CheckInManagerApp {
                             <label>Email Address</label>
                             <input type="email" name="email_address" value="${manager.email_address || ''}">
                         </div>
+
+                        <div class="form-group">
+                            <label>Role *</label>
+                            <select name="role" required id="edit-role-select" onchange="app.handleRoleChange('${manager.team_id}', ${managerId})">
+                                <option value="Assistant Manager" ${(manager.role || 'Assistant Manager') === 'Assistant Manager' ? 'selected' : ''}>🏃‍♀️ Assistant Manager</option>
+                                <option value="Manager" ${manager.role === 'Manager' ? 'selected' : ''}>👔 Manager</option>
+                            </select>
+                            <div id="role-warning" style="display: none; color: #e74c3c; font-size: 0.85em; margin-top: 5px;">
+                                ⚠️ This team already has a Manager. Please demote the current Manager to Assistant Manager first.
+                            </div>
+                            <small style="color: #666; font-size: 0.85em; margin-top: 5px; display: block;">
+                                Only one Manager per team is allowed
+                            </small>
+                        </div>
                         
                         <div class="form-actions">
                             <button type="button" class="btn btn-secondary" onclick="this.closest('.modal').remove()">Cancel</button>
@@ -846,8 +860,117 @@ class CheckInManagerApp {
                 </div>
             </div>
         `;
-        
+
         document.body.appendChild(modal);
+    }
+
+    // Handle role change validation
+    handleRoleChange(teamId, currentManagerId) {
+        const select = document.getElementById('edit-role-select');
+        const warning = document.getElementById('role-warning');
+        const selectedRole = select.value;
+
+        if (selectedRole === 'Manager') {
+            // Check if team already has a manager (excluding current manager being edited)
+            const existingManager = this.teamManagers.find(m =>
+                m.team_id === teamId &&
+                m.role === 'Manager' &&
+                m.id !== currentManagerId
+            );
+
+            if (existingManager) {
+                // Show warning and reset to Assistant Manager
+                warning.style.display = 'block';
+                select.value = 'Assistant Manager';
+
+                // Show modal with options to handle conflict
+                this.showManagerConflictDialog(existingManager, currentManagerId, teamId);
+            } else {
+                warning.style.display = 'none';
+            }
+        } else {
+            warning.style.display = 'none';
+        }
+    }
+
+    // Show dialog for handling manager role conflicts
+    showManagerConflictDialog(existingManager, newManagerId, teamId) {
+        const modal = document.createElement('div');
+        modal.className = 'modal';
+        modal.style.zIndex = '10001'; // Above other modals
+        modal.innerHTML = `
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3 class="modal-title">⚠️ Manager Role Conflict</h3>
+                    <button class="close-btn" onclick="this.closest('.modal').remove()">&times;</button>
+                </div>
+
+                <div class="modal-body">
+                    <p style="margin-bottom: 20px; color: #666;">
+                        <strong>${existingManager.first_name} ${existingManager.last_name}</strong> is already the Manager for this team.
+                    </p>
+                    <p style="margin-bottom: 20px; color: #666;">
+                        To promote someone else to Manager, the current Manager must first be demoted to Assistant Manager.
+                    </p>
+
+                    <div style="display: flex; gap: 10px; justify-content: center;">
+                        <button class="btn btn-secondary" onclick="this.closest('.modal').remove()">
+                            Cancel
+                        </button>
+                        <button class="btn" onclick="app.swapManagerRoles(${existingManager.id}, ${newManagerId}, '${teamId}')">
+                            👔➡️🏃‍♀️ Swap Roles
+                        </button>
+                    </div>
+                </div>
+            </div>
+        `;
+
+        document.body.appendChild(modal);
+    }
+
+    // Swap manager roles - demote current manager and promote new one
+    async swapManagerRoles(currentManagerId, newManagerId, teamId) {
+        try {
+            // Close all modals
+            document.querySelectorAll('.modal').forEach(modal => modal.remove());
+
+            // Step 1: Demote current manager to Assistant Manager
+            const demoteResponse = await fetch(`/api/team-managers/${currentManagerId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    role: 'Assistant Manager'
+                })
+            });
+
+            if (!demoteResponse.ok) {
+                throw new Error('Failed to demote current manager');
+            }
+
+            // Step 2: Promote new manager to Manager
+            const promoteResponse = await fetch(`/api/team-managers/${newManagerId}`, {
+                method: 'PUT',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify({
+                    role: 'Manager'
+                })
+            });
+
+            if (!promoteResponse.ok) {
+                throw new Error('Failed to promote new manager');
+            }
+
+            // Refresh data and update UI
+            await this.loadTeamManagers();
+            await this.renderTeams();
+
+            // Show success message
+            this.showMessage('Manager roles swapped successfully!', 'success');
+
+        } catch (error) {
+            console.error('Error swapping manager roles:', error);
+            this.showMessage('Failed to swap manager roles. Please try again.', 'error');
+        }
     }
     
     async saveEditManager(event, managerId) {
@@ -867,7 +990,8 @@ class CheckInManagerApp {
             first_name: formData.get('first_name'),
             last_name: formData.get('last_name'),
             phone_number: formData.get('phone_number') || null,
-            email_address: formData.get('email_address') || null
+            email_address: formData.get('email_address') || null,
+            role: formData.get('role') || 'Assistant Manager'
         };
         
         try {
