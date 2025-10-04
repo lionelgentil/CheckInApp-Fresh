@@ -1916,9 +1916,12 @@ Please check the browser console (F12) for more details.`);
                             <div>
                                 <div style="font-weight: 500;">${manager.first_name} ${manager.last_name}</div>
                                 <div style="font-size: 0.9em; color: #666;">${roleText}</div>
+                                ${manager.email_address ? `<div style="font-size: 0.8em; color: #888;">📧 ${manager.email_address}</div>` : ''}
+                                ${manager.phone_number ? `<div style="font-size: 0.8em; color: #888;">📱 ${manager.phone_number}</div>` : ''}
                             </div>
                         </div>
                         <div style="display: flex; gap: 5px;">
+                            <button class="btn btn-small" onclick="app.editManager('${manager.id}', '${teamId}')" title="Edit Manager Details">✏️ Edit</button>
                             ${actionButton}
                         </div>
                     </div>
@@ -2136,6 +2139,154 @@ Please check the browser console (F12) for more details.`);
         } catch (error) {
             console.error('Error swapping manager roles:', error);
             alert('Failed to swap manager roles. Please try again.');
+        }
+    }
+
+    // Edit Manager
+    editManager(managerId, teamId) {
+        const manager = this.teamManagers.find(m => m.id === parseInt(managerId));
+        if (!manager) {
+            alert('Manager not found. Please refresh the page and try again.');
+            return;
+        }
+
+        const team = this.teams.find(t => t.id === teamId);
+        if (!team) {
+            alert('Team not found');
+            return;
+        }
+
+        this.showEditManagerModal(manager, teamId);
+    }
+
+    showEditManagerModal(manager, teamId) {
+        const modal = this.createModal(`Edit Manager: ${manager.first_name} ${manager.last_name}`, `
+            <div class="form-group">
+                <label class="form-label">First Name *</label>
+                <input type="text" class="form-input" id="edit-manager-first-name" value="${manager.first_name || ''}" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Last Name *</label>
+                <input type="text" class="form-input" id="edit-manager-last-name" value="${manager.last_name || ''}" required>
+            </div>
+            <div class="form-group">
+                <label class="form-label">Email Address</label>
+                <input type="email" class="form-input" id="edit-manager-email" value="${manager.email_address || ''}" placeholder="manager@example.com">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Phone Number</label>
+                <input type="tel" class="form-input" id="edit-manager-phone" value="${manager.phone_number || ''}" placeholder="(555) 123-4567">
+            </div>
+            <div class="form-group">
+                <label class="form-label">Role</label>
+                <select class="form-input" id="edit-manager-role">
+                    <option value="Manager" ${manager.role === 'Manager' ? 'selected' : ''}>Manager</option>
+                    <option value="Assistant Manager" ${manager.role === 'Assistant Manager' ? 'selected' : ''}>Assistant Manager</option>
+                </select>
+            </div>
+            <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                <button class="btn btn-secondary" onclick="app.closeModal()">Cancel</button>
+                <button class="btn btn-primary" onclick="app.saveManagerEdit('${manager.id}', '${teamId}')">Update Manager</button>
+            </div>
+        `);
+
+        document.body.appendChild(modal);
+    }
+
+    async saveManagerEdit(managerId, teamId) {
+        const firstName = document.getElementById('edit-manager-first-name').value.trim();
+        const lastName = document.getElementById('edit-manager-last-name').value.trim();
+        const email = document.getElementById('edit-manager-email').value.trim();
+        const phone = document.getElementById('edit-manager-phone').value.trim();
+        const role = document.getElementById('edit-manager-role').value;
+
+        if (!firstName || !lastName) {
+            alert('Please enter both first name and last name');
+            return;
+        }
+
+        // Email validation if provided
+        if (email && !email.match(/^[^\s@]+@[^\s@]+\.[^\s@]+$/)) {
+            alert('Please enter a valid email address');
+            return;
+        }
+
+        try {
+            const managerIdNum = parseInt(managerId);
+            const manager = this.teamManagers.find(m => m.id === managerIdNum);
+
+            if (!manager) {
+                alert('Manager not found. Please refresh the page and try again.');
+                return;
+            }
+
+            // If changing role from Assistant Manager to Manager, check if there's already a Manager
+            if (manager.role !== 'Manager' && role === 'Manager') {
+                const existingManager = this.teamManagers.find(m =>
+                    m.team_id === teamId && m.role === 'Manager' && m.id !== managerIdNum
+                );
+
+                if (existingManager) {
+                    const confirmSwap = confirm(
+                        `${existingManager.first_name} ${existingManager.last_name} is currently the Manager.\n\n` +
+                        `Promoting ${firstName} ${lastName} to Manager will automatically demote ` +
+                        `${existingManager.first_name} ${existingManager.last_name} to Assistant Manager.\n\n` +
+                        `Do you want to continue?`
+                    );
+
+                    if (!confirmSwap) return;
+                }
+            }
+
+            const updateData = {
+                first_name: firstName,
+                last_name: lastName,
+                email_address: email || null,
+                phone_number: phone || null,
+                role: role
+            };
+
+            console.log('Updating manager with data:', updateData);
+
+            const response = await fetch(`/api/team-managers/${managerIdNum}`, {
+                method: 'PUT',
+                headers: {
+                    'Content-Type': 'application/json',
+                },
+                body: JSON.stringify(updateData)
+            });
+
+            if (response.ok) {
+                // Update local data
+                manager.first_name = firstName;
+                manager.last_name = lastName;
+                manager.email_address = email || null;
+                manager.phone_number = phone || null;
+                manager.role = role;
+
+                // If role changed to Manager, demote any existing Manager
+                if (role === 'Manager') {
+                    this.teamManagers.forEach(m => {
+                        if (m.team_id === teamId && m.role === 'Manager' && m.id !== managerIdNum) {
+                            m.role = 'Assistant Manager';
+                        }
+                    });
+                }
+
+                // Refresh displays
+                this.closeModal();
+                this.showManagerModal(teamId);
+                this.renderTeams();
+
+                alert(`Manager details updated successfully!`);
+            } else {
+                const errorData = await response.json();
+                console.error('Failed to update manager:', errorData);
+                alert('Failed to update manager. Please try again.');
+            }
+        } catch (error) {
+            console.error('Error updating manager:', error);
+            alert('Failed to update manager. Please try again.');
         }
     }
 
