@@ -4008,7 +4008,15 @@
         }
         
         // Dynamic version loading to prevent cache issues
+        let appLoaded = false;
         async function loadApp() {
+            // Prevent multiple loading
+            if (appLoaded) {
+                console.log('App already loaded, skipping...');
+                return;
+            }
+            appLoaded = true;
+
             try {
                 // Load config.js first to get the version
                 const configScript = document.createElement('script');
@@ -4036,6 +4044,7 @@
                 document.body.appendChild(configScript);
             } catch (error) {
                 console.error('Failed to load app:', error);
+                appLoaded = false; // Reset flag on error so retry is possible
                 // Fallback: load without version parameter but with cache busting
                 const configScript = document.createElement('script');
                 configScript.src = `config.js?cb=${Date.now()}`;
