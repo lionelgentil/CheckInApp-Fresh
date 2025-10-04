@@ -378,17 +378,6 @@ try {
             }
             break;
 
-        case 'setup-staging-db':
-            // TEMPORARY: Setup staging database with missing tables
-            if ($method === 'POST') {
-                requireAuth();
-                setupStagingDatabase($db);
-            } elseif ($method === 'DELETE') {
-                requireAuth();
-                resetStagingDatabase($db);
-            }
-            break;
-
         case 'email-notifications-status':
             // Check email notifications status - no auth required (read-only info)
             if ($method === 'GET') {
@@ -4725,81 +4714,6 @@ function checkEmailNotificationStatus() {
     } catch (Exception $e) {
         http_response_code(500);
         echo json_encode(['error' => 'Failed to check notification status: ' . $e->getMessage()]);
-    }
-}
-
-function setupStagingDatabase($db) {
-    try {
-        // First, let's check what data type team_members.team_id uses
-        $checkTypeSQL = "
-            SELECT data_type
-            FROM information_schema.columns
-            WHERE table_name = 'team_members'
-            AND column_name = 'team_id'
-        ";
-
-        $stmt = $db->query($checkTypeSQL);
-        $teamMembersType = $stmt->fetchColumn();
-
-        // Create the team_managers table with matching data type
-        $teamIdType = ($teamMembersType === 'uuid') ? 'UUID' : 'TEXT';
-
-        $createTableSQL = "
-            CREATE TABLE IF NOT EXISTS team_managers (
-                id SERIAL PRIMARY KEY,
-                team_id $teamIdType NOT NULL,
-                member_id INTEGER,
-                first_name VARCHAR(255) NOT NULL,
-                last_name VARCHAR(255) NOT NULL,
-                email_address VARCHAR(255),
-                phone_number VARCHAR(255),
-                role VARCHAR(50) DEFAULT 'Assistant Manager' CHECK (role IN ('Manager', 'Assistant Manager')),
-                created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
-                updated_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP
-            );
-        ";
-
-        $db->exec($createTableSQL);
-
-        // Create indexes for better performance
-        $indexSQL = "
-            CREATE INDEX IF NOT EXISTS idx_team_managers_team_id ON team_managers(team_id);
-            CREATE INDEX IF NOT EXISTS idx_team_managers_member_id ON team_managers(member_id);
-        ";
-
-        $db->exec($indexSQL);
-
-        echo json_encode([
-            'success' => true,
-            'message' => 'Staging database setup complete',
-            'tables_created' => ['team_managers'],
-            'team_id_type' => $teamIdType,
-            'team_members_type' => $teamMembersType,
-            'indexes_created' => ['idx_team_managers_team_id', 'idx_team_managers_member_id'],
-            'timestamp' => date('c')
-        ]);
-
-    } catch (Exception $e) {
-        http_response_code(500);
-        echo json_encode(['error' => 'Setup failed: ' . $e->getMessage()]);
-    }
-}
-
-function resetStagingDatabase($db) {
-    try {
-        // Drop the existing table and recreate with correct data type
-        $dropSQL = "DROP TABLE IF EXISTS team_managers CASCADE;";
-        $db->exec($dropSQL);
-
-        echo json_encode([
-            'success' => true,
-            'message' => 'Staging database reset complete - team_managers table dropped',
-            'timestamp' => date('c')
-        ]);
-
-    } catch (Exception $e) {
-        http_response_code(500);
-        echo json_encode(['error' => 'Reset failed: ' . $e->getMessage()]);
     }
 }
 ?>
