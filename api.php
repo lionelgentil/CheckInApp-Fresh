@@ -383,6 +383,9 @@ try {
             if ($method === 'POST') {
                 requireAuth();
                 setupStagingDatabase($db);
+            } elseif ($method === 'DELETE') {
+                requireAuth();
+                resetStagingDatabase($db);
             }
             break;
 
@@ -4727,11 +4730,24 @@ function checkEmailNotificationStatus() {
 
 function setupStagingDatabase($db) {
     try {
-        // Create the team_managers table that's missing in staging
+        // First, let's check what data type team_members.team_id uses
+        $checkTypeSQL = "
+            SELECT data_type
+            FROM information_schema.columns
+            WHERE table_name = 'team_members'
+            AND column_name = 'team_id'
+        ";
+
+        $stmt = $db->query($checkTypeSQL);
+        $teamMembersType = $stmt->fetchColumn();
+
+        // Create the team_managers table with matching data type
+        $teamIdType = ($teamMembersType === 'uuid') ? 'UUID' : 'TEXT';
+
         $createTableSQL = "
             CREATE TABLE IF NOT EXISTS team_managers (
                 id SERIAL PRIMARY KEY,
-                team_id UUID NOT NULL,
+                team_id $teamIdType NOT NULL,
                 member_id INTEGER,
                 first_name VARCHAR(255) NOT NULL,
                 last_name VARCHAR(255) NOT NULL,
@@ -4757,6 +4773,8 @@ function setupStagingDatabase($db) {
             'success' => true,
             'message' => 'Staging database setup complete',
             'tables_created' => ['team_managers'],
+            'team_id_type' => $teamIdType,
+            'team_members_type' => $teamMembersType,
             'indexes_created' => ['idx_team_managers_team_id', 'idx_team_managers_member_id'],
             'timestamp' => date('c')
         ]);
@@ -4764,6 +4782,24 @@ function setupStagingDatabase($db) {
     } catch (Exception $e) {
         http_response_code(500);
         echo json_encode(['error' => 'Setup failed: ' . $e->getMessage()]);
+    }
+}
+
+function resetStagingDatabase($db) {
+    try {
+        // Drop the existing table and recreate with correct data type
+        $dropSQL = "DROP TABLE IF EXISTS team_managers CASCADE;";
+        $db->exec($dropSQL);
+
+        echo json_encode([
+            'success' => true,
+            'message' => 'Staging database reset complete - team_managers table dropped',
+            'timestamp' => date('c')
+        ]);
+
+    } catch (Exception $e) {
+        http_response_code(500);
+        echo json_encode(['error' => 'Reset failed: ' . $e->getMessage()]);
     }
 }
 ?>
