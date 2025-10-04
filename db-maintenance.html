@@ -306,6 +306,32 @@
             <button class="btn btn-secondary" onclick="clearQuery()">Clear</button>
         </div>
 
+        <!-- Database Backup Restore Section -->
+        <div style="margin: 30px 0; padding: 20px; background: #e8f4fd; border-radius: 10px; border-left: 4px solid #2196F3;">
+            <h3 style="color: #1976d2; margin-bottom: 15px;">📦 Database Backup Restore</h3>
+            <p style="margin-bottom: 15px; color: #666;">
+                Restore database from a backup JSON file. This will replace ALL current data.
+                <strong>This operation is IRREVERSIBLE.</strong>
+            </p>
+
+            <div class="form-group">
+                <label class="form-label">Backup JSON Data:</label>
+                <textarea class="form-textarea" id="backupData" placeholder="Paste your backup JSON here..." style="min-height: 150px;"></textarea>
+            </div>
+
+            <div style="display: flex; gap: 10px; align-items: center;">
+                <button class="btn" onclick="restoreFromBackup()" style="background: #ff9800; color: white;">
+                    🔄 Restore Database
+                </button>
+                <button class="btn btn-secondary" onclick="clearBackupData()">Clear</button>
+                <span style="color: #666; font-size: 0.9em; margin-left: 10px;">
+                    ⚠️ This will overwrite all existing data
+                </span>
+            </div>
+
+            <div id="restoreResult" style="margin-top: 15px;"></div>
+        </div>
+
         <div id="result"></div>
 
         <div class="quick-queries">
@@ -616,6 +642,77 @@
             const resultDiv = document.getElementById('result');
             resultDiv.className = `result ${type}`;
             resultDiv.textContent = message;
+        }
+
+        // Database Backup Restore Functions
+        function clearBackupData() {
+            document.getElementById('backupData').value = '';
+            document.getElementById('restoreResult').innerHTML = '';
+        }
+
+        async function restoreFromBackup() {
+            const backupData = document.getElementById('backupData').value.trim();
+            const resultDiv = document.getElementById('restoreResult');
+
+            if (!backupData) {
+                resultDiv.innerHTML = '<div class="result error">Please paste backup JSON data first.</div>';
+                return;
+            }
+
+            // Validate JSON format
+            let parsedData;
+            try {
+                parsedData = JSON.parse(backupData);
+            } catch (error) {
+                resultDiv.innerHTML = '<div class="result error">Invalid JSON format. Please check your backup data.</div>';
+                return;
+            }
+
+            // Confirm the operation
+            const confirmRestore = confirm(
+                'WARNING: This will replace ALL existing data in the database with the backup data.\n\n' +
+                'This operation is IRREVERSIBLE.\n\n' +
+                'Are you sure you want to continue?'
+            );
+
+            if (!confirmRestore) {
+                resultDiv.innerHTML = '<div class="result info">Restore operation cancelled.</div>';
+                return;
+            }
+
+            // Show loading state
+            resultDiv.innerHTML = '<div class="result info">🔄 Restoring database... This may take a while.</div>';
+
+            try {
+                const response = await fetch('/api/backup', {
+                    method: 'POST',
+                    headers: {
+                        'Content-Type': 'application/json',
+                    },
+                    body: backupData
+                });
+
+                const result = await response.json();
+
+                if (response.ok && result.success) {
+                    resultDiv.innerHTML = `
+                        <div class="result success">
+                            ✅ Database restored successfully!<br>
+                            <strong>Restored tables:</strong> ${JSON.stringify(result.restored || {})}<br>
+                            <strong>Timestamp:</strong> ${result.timestamp || 'Unknown'}
+                        </div>
+                    `;
+
+                    // Clear the backup data after successful restore
+                    setTimeout(() => {
+                        document.getElementById('backupData').value = '';
+                    }, 2000);
+                } else {
+                    resultDiv.innerHTML = `<div class="result error">❌ Restore failed: ${result.error || 'Unknown error'}</div>`;
+                }
+            } catch (error) {
+                resultDiv.innerHTML = `<div class="result error">❌ Restore failed: ${error.message}</div>`;
+            }
         }
     </script>
 </body>
