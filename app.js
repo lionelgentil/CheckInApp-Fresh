@@ -9136,8 +9136,12 @@ Changes have been reverted.`);
 
 // Global functions for onclick handlers
 async function showSection(sectionName) {
-    await app.showSection(sectionName);
+    await window.app.showSection(sectionName);
 }
 
-// Initialize app
-const app = new CheckInApp();
+// Initialize app with protection against duplicate loading
+if (typeof window.app === 'undefined') {
+    window.app = new CheckInApp();
+} else {
+    console.log('CheckInApp already initialized, skipping...');
+}// Staging environment test
